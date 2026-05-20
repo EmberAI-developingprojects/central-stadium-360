@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Шууд дамжуулал — Төв Цэнгэлдэх Хүрээлэн</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="watch-page">
+
+  <header class="watch-header">
+    <a class="watch-logo" href="index.html" aria-label="Төв Цэнгэлдэх Хүрээлэн — Нүүр">
+      <img src="assets/images/brand/logo-white.png" alt="Төв Цэнгэлдэх Хүрээлэн" />
+    </a>
+
+    <nav class="watch-tabs" aria-label="Үзэх төрөл">
+      <a class="watch-tab is-active" href="#live">Шууд</a>
+      <a class="watch-tab" href="#upcoming">Удахгүй</a>
+      <a class="watch-tab" href="#tickets">
+        Тасалбар
+        <span class="watch-tab-count" id="watchTabCount" hidden>0</span>
+      </a>
+    </nav>
+
+    <div class="watch-user">
+      <span class="watch-user-chip" id="watchUserChip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/>
+        </svg>
+        <span id="watchUserName">Хэрэглэгч</span>
+      </span>
+      <button type="button" class="watch-logout" id="watchLogout">Гарах</button>
+    </div>
+  </header>
+
+  <main class="watch-main">
+
+    <!-- ============== LIVE NOW ============== -->
+    <section class="watch-section" id="live">
+      <div class="watch-section-head">
+        <span class="watch-eyebrow">
+          <span class="watch-live-dot" aria-hidden="true"></span>
+          Шууд дамжуулал
+        </span>
+        <h1 class="watch-title">Одоо явагдаж буй</h1>
+      </div>
+
+      <article class="watch-feature">
+        <div class="watch-player" id="watchPlayer">
+          <video id="watchLive" autoplay loop muted playsinline preload="metadata" poster="assets/images/events/Tengri-_Shoppy_(1920x648).png">
+            <source src="assets/video/our-story.mp4" type="video/mp4" />
+          </video>
+          <div class="watch-locked" id="watchLocked" hidden>
+            <div class="watch-locked-inner">
+              <span class="watch-locked-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                     stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2"/>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+              </span>
+              <strong>Энэ эфир төлбөртэй</strong>
+              <span>«Шууд үзэх» товч дээр дарж тасалбараа авна уу.</span>
+            </div>
+          </div>
+          <div class="watch-player-overlay">
+            <span class="watch-live-pill">
+              <span class="watch-live-pulse" aria-hidden="true"></span>
+              LIVE · 360°
+            </span>
+            <div class="watch-player-meta">
+              <span id="watchViewers">12,480</span> үзэгчид
+            </div>
+          </div>
+          <button type="button" class="watch-play" id="watchPlay" aria-label="Тоглуулах/Зогсоох">
+            <svg class="icon-pause" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <rect x="6" y="5" width="4" height="14" rx="1"/>
+              <rect x="14" y="5" width="4" height="14" rx="1"/>
+            </svg>
+            <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="watch-feature-text">
+          <span class="watch-badge">Шууд · 360°</span>
+          <h2 class="watch-feature-title">Thunderz × Tengri — Гранд тоглолт</h2>
+          <p class="watch-feature-desc">
+            Гэрээсээ, ажлын газраасаа, эсвэл аяллын дунд — хаанаас ч энэ тоглолтыг
+            шууд үзээрэй. Төв Цэнгэлдэх Хүрээлэнгээс зөвхөн вэбсайтаар цацагдах 360°
+            гранд эфир. Концертын танхимд биш, дэлгэцэн дээрээ суух мэдрэмж.
+          </p>
+          <ul class="watch-meta-list">
+            <li>📅 2026 / 05 / 20 · 21:00 (UTC+8)</li>
+            <li>📡 Шууд дамжуулж байна · ямар ч төхөөрөмжөөс үзнэ</li>
+            <li>🎥 360° олон өнцөг · 4K HDR</li>
+          </ul>
+          <div class="watch-feature-actions">
+            <button type="button"
+                    class="watch-btn watch-btn-primary"
+                    id="openViewerBtn"
+                    data-event-id="thunderz-tengri"
+                    data-title="Thunderz × Tengri — Гранд тоглолт"
+                    data-date="2026 / 05 / 20 · 21:00 (Шууд)"
+                    data-image="assets/images/events/Tengri-_Shoppy_(1920x648).png"
+                    data-base="35000">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+              Шууд үзэх
+            </button>
+            <button type="button" class="watch-btn watch-btn-ghost">Чанар: 4K</button>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- ============== UPCOMING ============== -->
+    <section class="watch-section" id="upcoming">
+      <div class="watch-section-head">
+        <span class="watch-eyebrow">Удахгүй</span>
+        <h2 class="watch-title">Удахгүй болох арга хэмжээ</h2>
+      </div>
+
+      <div class="watch-grid">
+
+        <article class="watch-card">
+          <div class="watch-card-img">
+            <img src="assets/images/events/Tengri-_Shoppy_(1920x648).png" alt="Thunderz — Tengri" />
+            <span class="watch-card-pill">Концерт</span>
+          </div>
+          <div class="watch-card-body">
+            <span class="watch-card-date">05 / 23 · 2026</span>
+            <h3 class="watch-card-title">Thunderz — Tengri</h3>
+            <p class="watch-card-desc">Үндэсний рок хамтлагын гранд тоглолт.</p>
+            <div class="watch-card-actions">
+              <button type="button" class="watch-btn watch-btn-primary watch-buy"
+                      data-event-id="thunderz-tengri"
+                      data-title="Thunderz — Tengri"
+                      data-date="2026 / 05 / 23 · 21:00"
+                      data-image="assets/images/events/Tengri-_Shoppy_(1920x648).png"
+                      data-base="35000">Тасалбар авах</button>
+              <span class="watch-card-price">35,000₮-аас</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="watch-card">
+          <div class="watch-card-img">
+            <img src="assets/images/events/1920x648.png" alt="Zunii Zugaa — Homecoming 26" />
+            <span class="watch-card-pill">Концерт</span>
+          </div>
+          <div class="watch-card-body">
+            <span class="watch-card-date">05 / 30 · 2026</span>
+            <h3 class="watch-card-title">Zunii Zugaa — Homecoming 26</h3>
+            <p class="watch-card-desc">Зуны эхэн үеийн уламжлалт нээлтийн тоглолт.</p>
+            <div class="watch-card-actions">
+              <button type="button" class="watch-btn watch-btn-primary watch-buy"
+                      data-event-id="zunii-zugaa-26"
+                      data-title="Zunii Zugaa — Homecoming 26"
+                      data-date="2026 / 05 / 30 · 20:00"
+                      data-image="assets/images/events/1920x648.png"
+                      data-base="25000">Тасалбар авах</button>
+              <span class="watch-card-price">25,000₮-аас</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="watch-card">
+          <div class="watch-card-img">
+            <img src="assets/images/events/Ginjin_1920x648.png" alt="Б. Сарантуяа — Хайрын Бурхан" />
+            <span class="watch-card-pill">Live Concert</span>
+          </div>
+          <div class="watch-card-body">
+            <span class="watch-card-date">06 / 06 · 2026</span>
+            <h3 class="watch-card-title">Б. Сарантуяа — Хайрын Бурхан</h3>
+            <p class="watch-card-desc">Дуучин Б.Сарантуяагийн соло тоглолт.</p>
+            <div class="watch-card-actions">
+              <button type="button" class="watch-btn watch-btn-primary watch-buy"
+                      data-event-id="sarantuya-khairyn-burkhan"
+                      data-title="Б. Сарантуяа — Хайрын Бурхан"
+                      data-date="2026 / 06 / 06 · 20:30"
+                      data-image="assets/images/events/Ginjin_1920x648.png"
+                      data-base="45000">Тасалбар авах</button>
+              <span class="watch-card-price">45,000₮-аас</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="watch-card">
+          <div class="watch-card-img">
+            <img src="assets/images/events/HEVTEE_BANNER_1.png" alt="Super Concert — Phase 3" />
+            <span class="watch-card-pill">Super Concert</span>
+          </div>
+          <div class="watch-card-body">
+            <span class="watch-card-date">06 / 20 · 2026</span>
+            <h3 class="watch-card-title">Super Concert — Phase 3</h3>
+            <p class="watch-card-desc">Олон шилдэг уран бүтээлчийн нэгдсэн тоглолт.</p>
+            <div class="watch-card-actions">
+              <button type="button" class="watch-btn watch-btn-primary watch-buy"
+                      data-event-id="super-concert-phase-3"
+                      data-title="Super Concert — Phase 3"
+                      data-date="2026 / 06 / 20 · 19:30"
+                      data-image="assets/images/events/HEVTEE_BANNER_1.png"
+                      data-base="55000">Тасалбар авах</button>
+              <span class="watch-card-price">55,000₮-аас</span>
+            </div>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- ============== MY TICKETS ============== -->
+    <section class="watch-section" id="tickets">
+      <div class="watch-section-head">
+        <span class="watch-eyebrow">Хувийн булан</span>
+        <h2 class="watch-title">Миний тасалбарууд</h2>
+      </div>
+      <div class="tickets-list" id="ticketsList"></div>
+    </section>
+
+  </main>
+
+  <!-- Multi-cam live viewer overlay -->
+  <div class="viewer" id="viewer" hidden role="dialog" aria-modal="true" aria-label="Шууд дамжуулал">
+    <header class="viewer-header">
+      <button type="button" class="viewer-close" id="viewerClose" aria-label="Хаах">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+      <div class="viewer-title-wrap">
+        <h3 class="viewer-title">Thunderz × Tengri — Гранд тоглолт</h3>
+        <span class="viewer-live-pill">
+          <span class="viewer-live-pulse" aria-hidden="true"></span>
+          LIVE · <span id="viewerElapsed">00:00:00</span>
+        </span>
+      </div>
+      <div class="viewer-stats">
+        <span class="viewer-stat" title="Үзэгчид">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/>
+          </svg>
+          <span id="viewerCount">12,480</span>
+        </span>
+        <button type="button" class="viewer-icon-btn" id="viewerPip" aria-label="Жижиг цонх (PiP)" title="Жижиг цонх">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="14" rx="2"/>
+            <rect x="13" y="11" width="6" height="5" rx="1" fill="currentColor"/>
+          </svg>
+        </button>
+        <button type="button" class="viewer-icon-btn" id="viewerFs" aria-label="Бүтэн дэлгэц" title="Бүтэн дэлгэц">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+            <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="viewer-body">
+
+      <!-- Camera angles (left rail) -->
+      <aside class="viewer-angles" aria-label="Камерын өнцөг">
+        <button type="button" class="viewer-angle" data-angle="crowd">
+          <span class="viewer-angle-thumb" data-vfx="crowd">
+            <video muted autoplay loop playsinline preload="metadata">
+              <source src="assets/video/our-story.mp4" type="video/mp4" />
+            </video>
+            <span class="viewer-angle-live"></span>
+          </span>
+          <span class="viewer-angle-label"><strong>Үзэгчид</strong><small>Cam 02</small></span>
+        </button>
+
+        <button type="button" class="viewer-angle" data-angle="drone">
+          <span class="viewer-angle-thumb" data-vfx="drone">
+            <video muted autoplay loop playsinline preload="metadata">
+              <source src="assets/video/our-story.mp4" type="video/mp4" />
+            </video>
+            <span class="viewer-angle-live"></span>
+          </span>
+          <span class="viewer-angle-label"><strong>Панорама</strong><small>Cam 03 · 4K</small></span>
+        </button>
+
+        <button type="button" class="viewer-angle" data-angle="band">
+          <span class="viewer-angle-thumb" data-vfx="band">
+            <video muted autoplay loop playsinline preload="metadata">
+              <source src="assets/video/our-story.mp4" type="video/mp4" />
+            </video>
+            <span class="viewer-angle-live"></span>
+          </span>
+          <span class="viewer-angle-label"><strong>Хөгжимчид</strong><small>Cam 04</small></span>
+        </button>
+      </aside>
+
+      <!-- Main stage -->
+      <section class="viewer-stage" id="viewerStage">
+        <div class="viewer-stage-shell" data-vfx="stage">
+          <video id="viewerMain" autoplay loop playsinline preload="metadata">
+            <source src="assets/video/our-story.mp4" type="video/mp4" />
+          </video>
+        </div>
+        <span class="viewer-main-cam">
+          <strong id="viewerMainLabel">Тайз</strong> · <span id="viewerMainSub">Cam 01 · 4K HDR</span>
+        </span>
+
+        <div class="viewer-react-float" id="viewerReactFloat" aria-hidden="true"></div>
+
+        <div class="viewer-controls">
+          <div class="viewer-controls-left">
+            <button type="button" class="viewer-icon-btn" id="viewerPlay" aria-label="Тоглуулах/Зогсоох">
+              <svg class="icon-pause" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>
+              </svg>
+              <svg class="icon-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+            </button>
+            <button type="button" class="viewer-icon-btn" id="viewerMute" aria-label="Дуу/Дуугүй">
+              <svg class="icon-vol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+              </svg>
+              <svg class="icon-mute" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                <line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>
+              </svg>
+            </button>
+            <input type="range" id="viewerVol" min="0" max="100" value="60" aria-label="Дуу" />
+          </div>
+
+          <div class="viewer-reactions" role="group" aria-label="Реакц">
+            <button type="button" class="viewer-react" data-react="❤️" aria-label="Хайр">❤️</button>
+            <button type="button" class="viewer-react" data-react="🔥" aria-label="Гал">🔥</button>
+            <button type="button" class="viewer-react" data-react="👏" aria-label="Алга ташилт">👏</button>
+            <button type="button" class="viewer-react" data-react="🎉" aria-label="Баяр">🎉</button>
+          </div>
+
+          <div class="viewer-controls-right">
+            <label class="viewer-quality">
+              <span>Чанар</span>
+              <select id="viewerQuality">
+                <option value="auto">Auto</option>
+                <option value="2160">4K · 2160p</option>
+                <option value="1080" selected>1080p</option>
+                <option value="720">720p</option>
+                <option value="480">480p</option>
+              </select>
+            </label>
+            <button type="button" class="viewer-icon-btn" id="viewerCc" aria-label="Хадмал орчуулга" title="Хадмал">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="14" rx="2"/>
+                <path d="M7 13a2 2 0 1 0 0-2"/><path d="M14 13a2 2 0 1 0 0-2"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Chat panel -->
+      <aside class="viewer-chat" aria-label="Шууд чат">
+        <header class="viewer-chat-head">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          Шууд чат
+          <span class="viewer-chat-count" id="viewerChatCount">0</span>
+        </header>
+        <div class="viewer-chat-list" id="viewerChatList" aria-live="polite"></div>
+        <form class="viewer-chat-form" id="viewerChatForm" autocomplete="off">
+          <input type="text" id="viewerChatInput" placeholder="Мессеж бичих…" maxlength="140" />
+          <button type="submit" class="viewer-chat-send" aria-label="Илгээх">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+          </button>
+        </form>
+      </aside>
+
+    </div>
+  </div>
+
+  <!-- Ticket purchase modal -->
+  <div class="ticket-modal" id="ticketModal" hidden role="dialog" aria-modal="true" aria-labelledby="ticketModalTitle">
+    <div class="ticket-modal-backdrop" data-close></div>
+    <div class="ticket-modal-card" role="document">
+      <button type="button" class="ticket-modal-close" aria-label="Хаах" data-close>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+      <div class="ticket-modal-body" id="ticketModalBody">
+        <div class="ticket-modal-cover">
+          <img id="tmCover" src="" alt="" />
+          <div class="ticket-modal-cover-meta">
+            <span id="tmDate" class="ticket-modal-date"></span>
+            <h2 id="ticketModalTitle" class="ticket-modal-title"></h2>
+            <span class="ticket-modal-venue">📡 Онлайн шууд дамжуулал · энэ вэбсайтаас үзнэ</span>
+          </div>
+        </div>
+
+        <div class="ticket-modal-form">
+          <div class="ticket-section">
+            <span class="ticket-section-label">Үзэх багц</span>
+            <div class="ticket-tiers" role="radiogroup">
+              <label class="ticket-tier">
+                <input type="radio" name="tier" value="standard" checked />
+                <span class="ticket-tier-card">
+                  <span class="ticket-tier-name">Стандарт</span>
+                  <span class="ticket-tier-desc">HD 1080p шууд дамжуулал · нэг төхөөрөмж</span>
+                  <span class="ticket-tier-price" data-mult="1">—</span>
+                </span>
+              </label>
+              <label class="ticket-tier">
+                <input type="radio" name="tier" value="vip" />
+                <span class="ticket-tier-card">
+                  <span class="ticket-tier-name">VIP 360°</span>
+                  <span class="ticket-tier-desc">4K · 360° форматаар · хоёр төхөөрөмж зэрэг үзэх</span>
+                  <span class="ticket-tier-price" data-mult="2">—</span>
+                </span>
+              </label>
+              <label class="ticket-tier">
+                <input type="radio" name="tier" value="platinum" />
+                <span class="ticket-tier-card">
+                  <span class="ticket-tier-name">Платинум</span>
+                  <span class="ticket-tier-desc">4K · 360° · олон өнцөг · 30 хоног дахин үзэх</span>
+                  <span class="ticket-tier-price" data-mult="3">—</span>
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <div class="ticket-section ticket-row">
+            <div>
+              <span class="ticket-section-label">Үзэх эрхийн тоо</span>
+              <div class="ticket-qty">
+                <button type="button" class="ticket-qty-btn" data-step="-1" aria-label="Хасах">−</button>
+                <span class="ticket-qty-val" id="tmQty">1</span>
+                <button type="button" class="ticket-qty-btn" data-step="1" aria-label="Нэмэх">+</button>
+              </div>
+            </div>
+            <div class="ticket-total-wrap">
+              <span class="ticket-section-label">Нийт төлөх</span>
+              <span class="ticket-total" id="tmTotal">—</span>
+            </div>
+          </div>
+
+          <div class="ticket-section">
+            <span class="ticket-section-label">Төлбөрийн хэрэгсэл</span>
+            <div class="ticket-pays" role="radiogroup">
+              <label class="ticket-pay">
+                <input type="radio" name="pay" value="qpay" checked />
+                <span class="ticket-pay-card">
+                  <span class="ticket-pay-name">QPay</span>
+                  <span class="ticket-pay-desc">Банкны апп-аар</span>
+                </span>
+              </label>
+              <label class="ticket-pay">
+                <input type="radio" name="pay" value="socialpay" />
+                <span class="ticket-pay-card">
+                  <span class="ticket-pay-name">SocialPay</span>
+                  <span class="ticket-pay-desc">Хаан банкны хэтэвч</span>
+                </span>
+              </label>
+              <label class="ticket-pay">
+                <input type="radio" name="pay" value="card" />
+                <span class="ticket-pay-card">
+                  <span class="ticket-pay-name">Карт</span>
+                  <span class="ticket-pay-desc">Visa · Mastercard</span>
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <div class="ticket-alert" id="tmAlert" hidden></div>
+
+          <button type="button" class="watch-btn watch-btn-primary ticket-checkout" id="tmCheckout">
+            <span class="ticket-checkout-label">Худалдан авах</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+              <polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </button>
+          <p class="ticket-fineprint">
+            Төлбөр амжилттай болсны дараа таны бүртгэлд үзэх эрх нэмэгдэж, «Миний тасалбарууд»
+            хэсгээс эфирийн цагт шууд үзэх боломжтой болно. Физик тасалбар өгөхгүй.
+          </p>
+        </div>
+      </div>
+
+      <!-- Success state (swapped in after purchase) -->
+      <div class="ticket-modal-success" id="ticketSuccess" hidden>
+        <div class="ticket-success-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+               stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+        <h3 class="ticket-success-title">Худалдан авалт амжилттай!</h3>
+        <p class="ticket-success-desc">
+          <strong id="tsTitle"></strong><br>
+          <span id="tsTier"></span> · <span id="tsQty"></span> төхөөрөмж ·
+          <span id="tsTotal"></span><br>
+          <small>Эфирийн цагт «Миний тасалбарууд» эсвэл «Шууд» хэсгээс үзэх боломжтой.</small>
+        </p>
+        <div class="ticket-success-code">
+          Захиалгын код<br>
+          <strong id="tsCode"></strong>
+        </div>
+        <div class="ticket-success-actions">
+          <button type="button" class="watch-btn watch-btn-ghost" data-close>Хаах</button>
+          <a class="watch-btn watch-btn-primary" href="#tickets" data-close>Миний тасалбарууд</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      // 1) Require session — else bounce to login with next=watch.html
+      var session = null;
+      try { session = JSON.parse(localStorage.getItem('tsengeldekh_session') || 'null'); } catch (e) {}
+      if (!session || !session.identifier) {
+        window.location.replace('login.html?next=watch.html');
+        return;
+      }
+
+      // 2) Header user chip
+      var nameEl = document.getElementById('watchUserName');
+      if (nameEl) nameEl.textContent = session.fullname || session.identifier;
+
+      // 3) Logout
+      var logout = document.getElementById('watchLogout');
+      if (logout) logout.addEventListener('click', function () {
+        try { localStorage.removeItem('tsengeldekh_session'); } catch (e) {}
+        window.location.href = 'index.html';
+      });
+
+      // 4) Player play/pause
+      var v = document.getElementById('watchLive');
+      var btn = document.getElementById('watchPlay');
+      if (v && btn) {
+        var sync = function () { btn.classList.toggle('is-paused', v.paused); };
+        btn.addEventListener('click', function () { v.paused ? v.play() : v.pause(); });
+        v.addEventListener('play', sync); v.addEventListener('pause', sync); sync();
+      }
+
+      // 5) Multi-cam viewer overlay
+      var viewer = document.getElementById('viewer');
+      var viewerMain = document.getElementById('viewerMain');
+      var viewerStage = document.getElementById('viewerStage');
+      var stageShell = viewer.querySelector('.viewer-stage-shell');
+      var viewerVol = document.getElementById('viewerVol');
+      var viewerCount = document.getElementById('viewerCount');
+      var viewerElapsed = document.getElementById('viewerElapsed');
+      var viewerMainLabel = document.getElementById('viewerMainLabel');
+      var viewerMainSub = document.getElementById('viewerMainSub');
+      var angles = viewer.querySelectorAll('.viewer-angle');
+      var angleVideos = viewer.querySelectorAll('.viewer-angle-thumb video');
+
+      // Camera-angle metadata. Each one applies a different CSS effect via data-vfx,
+      // so the same MP4 reads as 4 different feeds.
+      var CAMS = {
+        stage: { label: 'Тайз',      sub: 'Cam 01 · 4K HDR' },
+        crowd: { label: 'Үзэгчид',   sub: 'Cam 02 · 1080p' },
+        drone: { label: 'Панорама',  sub: 'Cam 03 · 4K' },
+        band:  { label: 'Хөгжимчид', sub: 'Cam 04 · 1080p' }
+      };
+
+      function openViewer() {
+        viewer.hidden = false;
+        document.body.style.overflow = 'hidden';
+        // Pause the inline page video to save bandwidth
+        if (v && !v.paused) v.pause();
+        // Resume main viewer + thumbnails
+        viewerMain.play().catch(function () {});
+        angleVideos.forEach(function (a) { a.play().catch(function () {}); });
+        startElapsed();
+        startViewerDrift();
+        if (!chatSeeded) seedChat();
+      }
+      function closeViewer() {
+        viewer.hidden = true;
+        document.body.style.overflow = '';
+        viewerMain.pause();
+        angleVideos.forEach(function (a) { a.pause(); });
+        stopElapsed();
+        stopViewerDrift();
+        // Restore inline page video
+        if (v) v.play().catch(function () {});
+      }
+
+      var openViewerBtn = document.getElementById('openViewerBtn');
+      var watchPlayer = document.getElementById('watchPlayer');
+      var watchLocked = document.getElementById('watchLocked');
+
+      function userOwnsEvent(eventId) {
+        if (!eventId) return false;
+        try {
+          var all = JSON.parse(localStorage.getItem('tsengeldekh_tickets') || '[]');
+          return all.some(function (t) {
+            return t.eventId === eventId && (!t.user || t.user === session.identifier);
+          });
+        } catch (e) { return false; }
+      }
+      function refreshAccessState() {
+        var id = openViewerBtn.dataset.eventId;
+        var owns = userOwnsEvent(id);
+        watchPlayer.classList.toggle('is-locked', !owns);
+        watchLocked.hidden = owns;
+      }
+      refreshAccessState();
+      window._refreshAccessState = refreshAccessState;
+
+      openViewerBtn.addEventListener('click', function () {
+        var id = openViewerBtn.dataset.eventId;
+        if (userOwnsEvent(id)) {
+          openViewer();
+        } else {
+          // No ticket — fall through to the purchase modal with this event's data.
+          openModal(openViewerBtn);
+        }
+      });
+      document.getElementById('viewerClose').addEventListener('click', closeViewer);
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && !viewer.hidden) closeViewer();
+      });
+
+      // Angle swap: clicking a thumbnail swaps it into the main stage
+      function setMainAngle(angleKey, clickedThumb) {
+        var meta = CAMS[angleKey] || CAMS.stage;
+        viewerMainLabel.textContent = meta.label;
+        viewerMainSub.textContent = meta.sub;
+        stageShell.setAttribute('data-vfx', angleKey);
+        angles.forEach(function (a) { a.classList.remove('is-active'); });
+        if (clickedThumb) clickedThumb.classList.add('is-active');
+      }
+      angles.forEach(function (a) {
+        a.addEventListener('click', function () { setMainAngle(a.dataset.angle, a); });
+      });
+
+      // Play/pause main
+      var viewerPlay = document.getElementById('viewerPlay');
+      function syncPlay() { viewerPlay.classList.toggle('is-paused', viewerMain.paused); }
+      viewerPlay.addEventListener('click', function () { viewerMain.paused ? viewerMain.play() : viewerMain.pause(); });
+      viewerMain.addEventListener('play', syncPlay);
+      viewerMain.addEventListener('pause', syncPlay);
+
+      // Mute toggle + volume slider
+      var viewerMute = document.getElementById('viewerMute');
+      function syncMute() { viewerMute.classList.toggle('is-muted', viewerMain.muted || viewerMain.volume === 0); }
+      viewerMain.volume = 0.6; viewerMain.muted = true; // start muted to allow autoplay
+      syncMute();
+      viewerMute.addEventListener('click', function () {
+        viewerMain.muted = !viewerMain.muted;
+        if (!viewerMain.muted && viewerMain.volume === 0) { viewerMain.volume = 0.6; viewerVol.value = 60; }
+        syncMute();
+      });
+      viewerVol.addEventListener('input', function () {
+        viewerMain.volume = parseInt(viewerVol.value, 10) / 100;
+        viewerMain.muted = viewerMain.volume === 0;
+        syncMute();
+      });
+
+      // Picture-in-Picture
+      var viewerPip = document.getElementById('viewerPip');
+      viewerPip.addEventListener('click', function () {
+        try {
+          if (document.pictureInPictureElement) {
+            document.exitPictureInPicture();
+          } else if (viewerMain.requestPictureInPicture) {
+            viewerMain.requestPictureInPicture();
+          }
+        } catch (e) {}
+      });
+
+      // Fullscreen the live show — target the stage only so chat + angles
+      // don't take real estate when you just want to watch the broadcast.
+      function toggleStageFs() {
+        var t = viewerStage;
+        var inFs = document.fullscreenElement || document.webkitFullscreenElement;
+        if (!inFs) {
+          (t.requestFullscreen || t.webkitRequestFullscreen).call(t);
+        } else {
+          (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+        }
+      }
+      document.getElementById('viewerFs').addEventListener('click', toggleStageFs);
+      // Double-click on the video → fullscreen toggle (YouTube-style)
+      viewerMain.addEventListener('dblclick', toggleStageFs);
+      // "F" key when the viewer is open → fullscreen toggle
+      document.addEventListener('keydown', function (e) {
+        if (viewer.hidden) return;
+        // Ignore when typing in chat
+        if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+        if (e.key === 'f' || e.key === 'F') { e.preventDefault(); toggleStageFs(); }
+      });
+      // Reflect FS state on the stage element so CSS can adjust
+      function syncFsClass() {
+        var fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+        viewerStage.classList.toggle('is-fs', fsEl === viewerStage);
+      }
+      document.addEventListener('fullscreenchange', syncFsClass);
+      document.addEventListener('webkitfullscreenchange', syncFsClass);
+
+      // Auto-hide controls + cursor when the mouse goes idle in fullscreen.
+      // Any movement re-reveals them and restarts the 2.5s countdown.
+      var idleTimer = null;
+      function clearIdle() {
+        viewerStage.classList.remove('is-idle');
+        if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
+      }
+      function scheduleIdle() {
+        if (idleTimer) clearTimeout(idleTimer);
+        if (!viewerStage.classList.contains('is-fs')) return;
+        idleTimer = setTimeout(function () {
+          viewerStage.classList.add('is-idle');
+        }, 2500);
+      }
+      viewerStage.addEventListener('mousemove', function () {
+        clearIdle();
+        scheduleIdle();
+      });
+      viewerStage.addEventListener('mouseleave', clearIdle);
+      function onFsIdleSync() {
+        if (viewerStage.classList.contains('is-fs')) scheduleIdle();
+        else clearIdle();
+      }
+      document.addEventListener('fullscreenchange', onFsIdleSync);
+      document.addEventListener('webkitfullscreenchange', onFsIdleSync);
+
+      // Quality picker is cosmetic (no HLS yet); reflect in subtitle of main cam
+      document.getElementById('viewerQuality').addEventListener('change', function (e) {
+        var q = e.target.value;
+        var qLabel = q === 'auto' ? 'Auto' : (q === '2160' ? '4K · 2160p' : q + 'p');
+        viewerMainSub.textContent = viewerMainSub.textContent.replace(/·\s*[^·]+$/, '· ' + qLabel);
+      });
+
+      // Captions toggle (placeholder)
+      document.getElementById('viewerCc').addEventListener('click', function (e) {
+        e.currentTarget.classList.toggle('is-on');
+      });
+
+      // Floating reactions
+      var reactFloat = document.getElementById('viewerReactFloat');
+      function emitReact(emoji) {
+        var el = document.createElement('span');
+        el.className = 'viewer-react-bubble';
+        el.textContent = emoji;
+        el.style.left = (15 + Math.random() * 70) + '%';
+        el.style.animationDuration = (1.6 + Math.random() * 0.8) + 's';
+        reactFloat.appendChild(el);
+        setTimeout(function () { el.remove(); }, 2500);
+      }
+      viewer.querySelectorAll('.viewer-react').forEach(function (r) {
+        r.addEventListener('click', function () {
+          var e = r.dataset.react;
+          for (var i = 0; i < 5; i++) {
+            setTimeout(function () { emitReact(e); }, i * 80);
+          }
+        });
+      });
+
+      // Elapsed time ticker
+      var elapsedTimer = null, elapsedSec = 42 * 60 + 18; // start at 00:42:18
+      function fmtElapsed(s) {
+        var h = String(Math.floor(s / 3600)).padStart(2, '0');
+        var m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+        var sec = String(s % 60).padStart(2, '0');
+        return h + ':' + m + ':' + sec;
+      }
+      function startElapsed() {
+        if (elapsedTimer) return;
+        viewerElapsed.textContent = fmtElapsed(elapsedSec);
+        elapsedTimer = setInterval(function () {
+          elapsedSec++;
+          viewerElapsed.textContent = fmtElapsed(elapsedSec);
+        }, 1000);
+      }
+      function stopElapsed() { if (elapsedTimer) { clearInterval(elapsedTimer); elapsedTimer = null; } }
+
+      // Viewer count drift (mirrors the page-level counter feel)
+      var viewerDriftTimer = null, vN = 12480;
+      function startViewerDrift() {
+        if (viewerDriftTimer) return;
+        viewerDriftTimer = setInterval(function () {
+          vN += Math.round((Math.random() - 0.4) * 22);
+          if (vN < 9000) vN = 9000;
+          viewerCount.textContent = vN.toLocaleString('en-US');
+        }, 2200);
+      }
+      function stopViewerDrift() { if (viewerDriftTimer) { clearInterval(viewerDriftTimer); viewerDriftTimer = null; } }
+
+      // Chat: seed with bots + accept user input + drip messages while open
+      var chatList = document.getElementById('viewerChatList');
+      var chatForm = document.getElementById('viewerChatForm');
+      var chatInput = document.getElementById('viewerChatInput');
+      var chatCount = document.getElementById('viewerChatCount');
+      var chatSeeded = false;
+      var chatDripTimer = null;
+      var BOTS = [
+        { name: 'Болормаа', color: '#F87171' },
+        { name: 'Нямсүрэн', color: '#34D399' },
+        { name: 'Цэцэгмаа', color: '#FBBF24' },
+        { name: 'Энхбаяр',  color: '#60A5FA' },
+        { name: 'Дөлгөөн',  color: '#C084FC' },
+        { name: 'Алтанзул', color: '#F472B6' },
+        { name: 'Баяржаргал', color: '#22D3EE' }
+      ];
+      var SAMPLE = [
+        'Хөөх ямар үзэсгэлэнтэй юм бэ 🔥',
+        '360° формат супер!',
+        'Тайзны цахилгаан тоног төхөөрөмж дэвшилттэй болсон',
+        'Хөгжмийн зохиолын чанар маш сайн байна',
+        'Дроне cam-ийн өнцөг үнэхээр гоё',
+        'Алгаа ташсаар ❤️',
+        'Энэ дууг хүлээж байсан',
+        'Гар утаснаасаа үзэж байна, чанар нь хүчтэй',
+        'Тайзны гэрэлтүүлэг шилдэг',
+        'Live chat-д хүн их байна 👏',
+        '4K чанартай үзэхэд талбай дээр байгаа мэт'
+      ];
+      function escHtml(s) {
+        return String(s).replace(/[&<>"']/g, function (c) {
+          return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+        });
+      }
+      function addMsg(name, color, text, mine) {
+        var msg = document.createElement('div');
+        msg.className = 'viewer-msg' + (mine ? ' is-mine' : '');
+        msg.innerHTML =
+          '<span class="viewer-msg-name" style="color:' + color + '">' + escHtml(name) + '</span>' +
+          '<span class="viewer-msg-text">' + escHtml(text) + '</span>';
+        chatList.appendChild(msg);
+        chatList.scrollTop = chatList.scrollHeight;
+        chatCount.textContent = chatList.children.length;
+      }
+      function randomBotMessage() {
+        var b = BOTS[Math.floor(Math.random() * BOTS.length)];
+        var t = SAMPLE[Math.floor(Math.random() * SAMPLE.length)];
+        addMsg(b.name, b.color, t, false);
+      }
+      function seedChat() {
+        chatSeeded = true;
+        for (var i = 0; i < 6; i++) randomBotMessage();
+        if (chatDripTimer) clearInterval(chatDripTimer);
+        chatDripTimer = setInterval(function () {
+          if (viewer.hidden) return;
+          if (chatList.children.length > 80) chatList.firstChild.remove();
+          randomBotMessage();
+        }, 3200);
+      }
+      chatForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var text = chatInput.value.trim();
+        if (!text) return;
+        var name = (session && (session.fullname || session.identifier)) || 'Та';
+        addMsg(name, 'var(--brand-blue-soft)', text, true);
+        chatInput.value = '';
+      });
+
+      // 6) Live viewer count — drift to feel real
+      var viewers = document.getElementById('watchViewers');
+      if (viewers) {
+        var n = 12480;
+        setInterval(function () {
+          n += Math.round((Math.random() - 0.45) * 18);
+          if (n < 9000) n = 9000;
+          viewers.textContent = n.toLocaleString('en-US');
+        }, 2500);
+      }
+
+      // 7) Ticket purchase flow
+      var modal = document.getElementById('ticketModal');
+      var modalBody = document.getElementById('ticketModalBody');
+      var successView = document.getElementById('ticketSuccess');
+      var tmCover = document.getElementById('tmCover');
+      var tmDate = document.getElementById('tmDate');
+      var tmTitle = document.getElementById('ticketModalTitle');
+      var tmQty = document.getElementById('tmQty');
+      var tmTotal = document.getElementById('tmTotal');
+      var tmAlert = document.getElementById('tmAlert');
+      var tmCheckout = document.getElementById('tmCheckout');
+      var tierPriceEls = modal.querySelectorAll('.ticket-tier-price');
+
+      var current = null; // { id, title, date, image, base }
+      var qty = 1;
+
+      function fmt(n) {
+        return n.toLocaleString('en-US').replace(/,/g, ',') + '₮';
+      }
+      function selectedTier() {
+        var input = modal.querySelector('input[name="tier"]:checked');
+        var tierEl = input.parentElement.querySelector('.ticket-tier-price');
+        return {
+          value: input.value,
+          name: input.parentElement.querySelector('.ticket-tier-name').textContent,
+          mult: parseFloat(tierEl.dataset.mult)
+        };
+      }
+      function selectedPay() {
+        var input = modal.querySelector('input[name="pay"]:checked');
+        return {
+          value: input.value,
+          name: input.parentElement.querySelector('.ticket-pay-name').textContent
+        };
+      }
+      function recalc() {
+        if (!current) return;
+        tierPriceEls.forEach(function (el) {
+          var mult = parseFloat(el.dataset.mult);
+          el.textContent = fmt(current.base * mult);
+        });
+        var t = selectedTier();
+        tmTotal.textContent = fmt(current.base * t.mult * qty);
+      }
+      function openModal(btn) {
+        current = {
+          id: btn.dataset.eventId,
+          title: btn.dataset.title,
+          date: btn.dataset.date,
+          image: btn.dataset.image,
+          base: parseInt(btn.dataset.base, 10) || 0
+        };
+        qty = 1;
+        tmQty.textContent = '1';
+        tmCover.src = current.image;
+        tmCover.alt = current.title;
+        tmDate.textContent = current.date;
+        tmTitle.textContent = current.title;
+        // Reset radio defaults
+        modal.querySelector('input[name="tier"][value="standard"]').checked = true;
+        modal.querySelector('input[name="pay"][value="qpay"]').checked = true;
+        tmAlert.hidden = true;
+        modalBody.hidden = false;
+        successView.hidden = true;
+        tmCheckout.disabled = false;
+        tmCheckout.querySelector('.ticket-checkout-label').textContent = 'Худалдан авах';
+        recalc();
+        modal.hidden = false;
+        document.body.style.overflow = 'hidden';
+      }
+      function closeModal() {
+        modal.hidden = true;
+        document.body.style.overflow = '';
+      }
+
+      document.querySelectorAll('.watch-buy').forEach(function (b) {
+        b.addEventListener('click', function () { openModal(b); });
+      });
+
+      // Close handlers (backdrop, X, success buttons)
+      modal.addEventListener('click', function (e) {
+        if (e.target.closest('[data-close]')) closeModal();
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && !modal.hidden) closeModal();
+      });
+
+      // Tier change recalculates total
+      modal.querySelectorAll('input[name="tier"]').forEach(function (r) {
+        r.addEventListener('change', recalc);
+      });
+
+      // Quantity +/- (1..10)
+      modal.querySelectorAll('.ticket-qty-btn').forEach(function (q) {
+        q.addEventListener('click', function () {
+          var step = parseInt(q.dataset.step, 10);
+          qty = Math.max(1, Math.min(10, qty + step));
+          tmQty.textContent = qty;
+          recalc();
+        });
+      });
+
+      // Checkout — simulate the payment round-trip
+      tmCheckout.addEventListener('click', function () {
+        if (!current) return;
+        tmAlert.hidden = true;
+        var tier = selectedTier();
+        var pay = selectedPay();
+        var total = current.base * tier.mult * qty;
+
+        tmCheckout.disabled = true;
+        tmCheckout.querySelector('.ticket-checkout-label').textContent =
+          (pay.value === 'qpay' || pay.value === 'socialpay'
+            ? pay.name + ' рүү шилжиж байна…'
+            : 'Картаар төлж байна…');
+
+        setTimeout(function () {
+          // Fake 5% failure to demonstrate the error path
+          if (Math.random() < 0.05) {
+            tmCheckout.disabled = false;
+            tmCheckout.querySelector('.ticket-checkout-label').textContent = 'Дахин оролдох';
+            tmAlert.textContent = 'Төлбөр амжилтгүй боллоо. Дахин оролдоно уу.';
+            tmAlert.hidden = false;
+            return;
+          }
+
+          // Build the order record
+          var order = {
+            code: 'TS-' + Math.random().toString(36).slice(2, 8).toUpperCase(),
+            user: (session && session.identifier) || '',
+            eventId: current.id,
+            title: current.title,
+            date: current.date,
+            image: current.image,
+            tier: tier.value,
+            tierName: tier.name,
+            qty: qty,
+            unitPrice: current.base * tier.mult,
+            total: total,
+            payment: pay.value,
+            paymentName: pay.name,
+            purchasedAt: new Date().toISOString()
+          };
+          try {
+            var all = JSON.parse(localStorage.getItem('tsengeldekh_tickets') || '[]');
+            all.push(order);
+            localStorage.setItem('tsengeldekh_tickets', JSON.stringify(all));
+          } catch (e) {}
+          if (typeof window._renderTickets === 'function') window._renderTickets();
+          if (typeof window._refreshAccessState === 'function') window._refreshAccessState();
+
+          // Swap to success view
+          document.getElementById('tsTitle').textContent = order.title;
+          document.getElementById('tsTier').textContent = order.tierName;
+          document.getElementById('tsQty').textContent = order.qty;
+          document.getElementById('tsTotal').textContent = fmt(order.total);
+          document.getElementById('tsCode').textContent = order.code;
+          modalBody.hidden = true;
+          successView.hidden = false;
+        }, 1100);
+      });
+
+      // 8) Tab anchors smooth scroll + active state
+      var tabs = document.querySelectorAll('.watch-tab');
+      tabs.forEach(function (t) {
+        t.addEventListener('click', function (e) {
+          var href = t.getAttribute('href');
+          if (!href) return;
+          var target = document.querySelector(href);
+          if (!target) return;
+          e.preventDefault();
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          tabs.forEach(function (x) { x.classList.remove('is-active'); });
+          t.classList.add('is-active');
+        });
+      });
+      // Also catch any "Миний тасалбарууд" / [href="#tickets"] elsewhere on the page
+      // (e.g. inside the success modal) so they smooth-scroll like the tab.
+      document.addEventListener('click', function (e) {
+        var a = e.target.closest('a[href="#tickets"]');
+        if (!a || a.classList.contains('watch-tab')) return;
+        var target = document.getElementById('tickets');
+        if (!target) return;
+        setTimeout(function () {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          tabs.forEach(function (x) { x.classList.toggle('is-active', x.getAttribute('href') === '#tickets'); });
+        }, modal.hidden ? 0 : 250); // wait for modal close animation
+      });
+
+      // 9) Render "Миний тасалбарууд" from localStorage
+      var ticketsList = document.getElementById('ticketsList');
+      var ticketsCount = document.getElementById('watchTabCount');
+
+      function loadTickets() {
+        try {
+          var all = JSON.parse(localStorage.getItem('tsengeldekh_tickets') || '[]');
+          return all.filter(function (t) { return !t.user || t.user === session.identifier; });
+        } catch (e) { return []; }
+      }
+      function fmtMoney(n) { return n.toLocaleString('en-US') + '₮'; }
+      function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, function (c) {
+          return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+        });
+      }
+
+      function renderTickets() {
+        var list = loadTickets();
+        if (ticketsCount) {
+          ticketsCount.textContent = list.length;
+          ticketsCount.hidden = list.length === 0;
+        }
+        if (!list.length) {
+          ticketsList.innerHTML =
+            '<div class="tickets-empty">' +
+              '<div class="tickets-empty-icon" aria-hidden="true">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+                  '<path d="M2 9a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z"/>' +
+                  '<line x1="13" y1="5" x2="13" y2="7"/><line x1="13" y1="11" x2="13" y2="13"/><line x1="13" y1="17" x2="13" y2="19"/>' +
+                '</svg>' +
+              '</div>' +
+              '<h3>Танд одоогоор тасалбар алга</h3>' +
+              '<p>«Удахгүй болох арга хэмжээ» хэсгээс тасалбар авч, эндээ хадгална уу.</p>' +
+              '<a class="watch-btn watch-btn-primary" href="#upcoming">Арга хэмжээ үзэх</a>' +
+            '</div>';
+          return;
+        }
+
+        // Newest first
+        list.sort(function (a, b) { return (b.purchasedAt || '').localeCompare(a.purchasedAt || ''); });
+
+        ticketsList.innerHTML = list.map(function (t, i) {
+          return (
+            '<article class="ticket-stub" data-code="' + escapeHtml(t.code) + '">' +
+              '<div class="ticket-stub-cover">' +
+                '<img src="' + escapeHtml(t.image) + '" alt="' + escapeHtml(t.title) + '" />' +
+                '<span class="ticket-stub-tier">' + escapeHtml(t.tierName) + '</span>' +
+              '</div>' +
+              '<div class="ticket-stub-body">' +
+                '<span class="ticket-stub-date">' + escapeHtml(t.date) + '</span>' +
+                '<h3 class="ticket-stub-title">' + escapeHtml(t.title) + '</h3>' +
+                '<dl class="ticket-stub-meta">' +
+                  '<div><dt>Захиалгын код</dt><dd class="ticket-stub-code">' + escapeHtml(t.code) + '</dd></div>' +
+                  '<div><dt>Үзэх эрх</dt><dd>' + t.qty + ' төхөөрөмж</dd></div>' +
+                  '<div><dt>Нийт төлбөр</dt><dd>' + escapeHtml(fmtMoney(t.total)) + '</dd></div>' +
+                  '<div><dt>Төлбөрийн хэрэгсэл</dt><dd>' + escapeHtml(t.paymentName || t.payment) + '</dd></div>' +
+                '</dl>' +
+                '<div class="ticket-stub-barcode" aria-hidden="true"></div>' +
+                '<div class="ticket-stub-actions">' +
+                  '<button type="button" class="watch-btn watch-btn-ghost ticket-stub-remove" data-remove="' + i + '">Цуцлах</button>' +
+                  '<button type="button" class="watch-btn watch-btn-primary ticket-stub-watch" data-code="' + escapeHtml(t.code) + '">' +
+                    '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
+                      '<path d="M8 5v14l11-7z"/>' +
+                    '</svg>' +
+                    'Шууд үзэх' +
+                  '</button>' +
+                '</div>' +
+              '</div>' +
+            '</article>'
+          );
+        }).join('');
+      }
+
+      // Delegated handlers for ticket actions (cancel + download)
+      ticketsList.addEventListener('click', function (e) {
+        var rm = e.target.closest('[data-remove]');
+        if (rm) {
+          if (!confirm('Энэ тасалбарыг цуцлах уу?')) return;
+          var idx = parseInt(rm.dataset.remove, 10);
+          var visible = loadTickets();
+          var victim = visible[idx];
+          if (!victim) return;
+          try {
+            var all = JSON.parse(localStorage.getItem('tsengeldekh_tickets') || '[]');
+            all = all.filter(function (t) { return t.code !== victim.code; });
+            localStorage.setItem('tsengeldekh_tickets', JSON.stringify(all));
+          } catch (e2) {}
+          renderTickets();
+          return;
+        }
+        var watchBtn = e.target.closest('.ticket-stub-watch');
+        if (watchBtn) {
+          openViewer();
+        }
+      });
+
+      // Expose so the purchase flow can re-render
+      window._renderTickets = renderTickets;
+      renderTickets();
+    })();
+  </script>
+</body>
+</html>
