@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useAuth } from './auth.jsx';
 import Home from './pages/Home.jsx';
 import Login from './pages/Login.jsx';

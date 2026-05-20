@@ -1,4 +1,4 @@
-import { forwardRef, useState } from 'react';
+import React, { forwardRef, useState } from 'react';
 
 const VIDEO_SRC = '/assets/video/our-story.mp4';
 

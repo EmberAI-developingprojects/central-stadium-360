@@ -22,6 +22,7 @@ Thumbs.db
 # Local agent state
 .claude/
 
-# Large media (exceeds GitHub's 100 MB per-file limit).
-# Kept on disk locally — use Git LFS or host externally if other devs need it.
-frontend/public/assets/video/our-story.mp4
+# Local archives accidentally created in the repo (e.g. backups, rar/zip exports)
+frontend.rar
+*.rar
+*.zip

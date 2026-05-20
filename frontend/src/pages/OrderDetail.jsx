@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth, useRequireAuth } from '../auth.jsx';
 import UserMenu from '../components/UserMenu.jsx';
