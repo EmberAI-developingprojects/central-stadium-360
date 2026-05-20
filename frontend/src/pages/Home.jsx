@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import SiteHeader from '../components/SiteHeader.jsx';
 import SiteFooter from '../components/SiteFooter.jsx';
+import StoryVideo from '../components/StoryVideo.jsx';
 import useRevealOnScroll from '../hooks/useRevealOnScroll.js';
 import useSmoothAnchors from '../hooks/useSmoothAnchors.js';
 import { useGatedNavigate } from '../auth.jsx';
@@ -447,9 +448,16 @@ function VideoCta() {
             </a>
           </div>
           <div className="video-wrap">
-            <video ref={videoRef} autoPlay loop muted playsInline preload="metadata">
-              <source src="/assets/video/our-story.mp4" type="video/mp4" />
-            </video>
+            <StoryVideo
+              ref={videoRef}
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="metadata"
+              poster="/assets/images/stadium/exterior.jpg"
+              fallbackAriaLabel="Чамтай бас чамгүй — тоглолтын зураг"
+            />
             <button className={`video-toggle${paused ? ' is-paused' : ''}`} type="button" aria-label="Видео тоглуулах/түр зогсоох" onClick={toggle}>
               <svg className="icon-pause" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <rect x="6" y="5" width="4" height="14" rx="1"/>

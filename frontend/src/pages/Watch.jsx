@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth, useRequireAuth } from '../auth.jsx';
 import UserMenu from '../components/UserMenu.jsx';
+import StoryVideo from '../components/StoryVideo.jsx';
 
 // ---------- Static data ----------
 const FEATURED_EVENT = {
@@ -261,9 +262,16 @@ function LiveSection({ ownsFeatured, onWatch, viewerOpen }) {
 
       <article className="watch-feature">
         <div className={`watch-player${ownsFeatured ? '' : ' is-locked'}`}>
-          <video ref={videoRef} autoPlay loop muted playsInline preload="metadata" poster={FEATURED_EVENT.image}>
-            <source src="/assets/video/our-story.mp4" type="video/mp4" />
-          </video>
+          <StoryVideo
+            ref={videoRef}
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="metadata"
+            poster={FEATURED_EVENT.image}
+            fallbackAriaLabel={FEATURED_EVENT.title}
+          />
           <div className="watch-locked" hidden={ownsFeatured}>
             <div className="watch-locked-inner">
               <span className="watch-locked-icon" aria-hidden="true">
@@ -662,9 +670,15 @@ function ViewerOverlay({ session, onClose }) {
           {['crowd', 'drone', 'band'].map((k) => (
             <button key={k} type="button" className={`viewer-angle${angle === k ? ' is-active' : ''}`} onClick={() => setAngle(k)}>
               <span className="viewer-angle-thumb" data-vfx={k}>
-                <video muted autoPlay loop playsInline preload="metadata">
-                  <source src="/assets/video/our-story.mp4" type="video/mp4" />
-                </video>
+                <StoryVideo
+                  muted
+                  autoPlay
+                  loop
+                  playsInline
+                  preload="metadata"
+                  poster={FEATURED_EVENT.image}
+                  fallbackAriaLabel={CAMS[k].label}
+                />
                 <span className="viewer-angle-live"></span>
               </span>
               <span className="viewer-angle-label">
@@ -677,9 +691,16 @@ function ViewerOverlay({ session, onClose }) {
 
         <section className={`viewer-stage${isFs ? ' is-fs' : ''}${idle ? ' is-idle' : ''}`} ref={stageRef}>
           <div className="viewer-stage-shell" data-vfx={angle}>
-            <video ref={mainRef} autoPlay loop playsInline preload="metadata" onDoubleClick={toggleStageFs}>
-              <source src="/assets/video/our-story.mp4" type="video/mp4" />
-            </video>
+            <StoryVideo
+              ref={mainRef}
+              autoPlay
+              loop
+              playsInline
+              preload="metadata"
+              poster={FEATURED_EVENT.image}
+              onDoubleClick={toggleStageFs}
+              fallbackAriaLabel={FEATURED_EVENT.title}
+            />
           </div>
           <span className="viewer-main-cam">
             <strong>{meta.label}</strong> · <span>{subLabel}</span>
