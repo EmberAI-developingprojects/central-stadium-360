@@ -3,7 +3,10 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App.jsx';
 import { AuthProvider } from './auth.jsx';
+import { seedIfEmpty } from './data/store.js';
 import './styles.css';
+
+seedIfEmpty();
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

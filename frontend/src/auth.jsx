@@ -31,6 +31,7 @@ export function AuthProvider({ children }) {
       fullname: account.fullname,
       avatar: account.avatar || null,
       bio: account.bio || '',
+      role: account.role || 'user',
       loggedInAt: new Date().toISOString(),
     };
     try { localStorage.setItem(SESSION_KEY, JSON.stringify(next)); } catch {}
@@ -102,4 +103,26 @@ export function useGatedNavigate() {
     if (session && session.identifier) navigate(to);
     else navigate(`/login?next=${encodeURIComponent(to)}`);
   }, [session, navigate]);
+}
+
+// Route guard for admin-only routes: anonymous users go to /login,
+// non-admin signed-in users bounce to /watch.
+export function useRequireAdmin() {
+  const { session } = useAuth();
+  const navigate = useNavigate();
+  const loc = useLocation();
+  useEffect(() => {
+    if (!session || !session.identifier) {
+      navigate(`/login?next=${encodeURIComponent(loc.pathname)}`, { replace: true });
+    } else if (session.role !== 'admin') {
+      navigate('/watch', { replace: true });
+    }
+  }, [session, navigate, loc.pathname]);
+  return session && session.role === 'admin' ? session : null;
+}
+
+export function RequireAdmin({ children }) {
+  const session = useRequireAdmin();
+  if (!session) return null;
+  return children;
 }

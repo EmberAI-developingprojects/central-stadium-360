@@ -5,18 +5,25 @@ import StoryVideo from '../components/StoryVideo.jsx';
 import useRevealOnScroll from '../hooks/useRevealOnScroll.js';
 import useSmoothAnchors from '../hooks/useSmoothAnchors.js';
 import { useGatedNavigate } from '../auth.jsx';
-
-const UPCOMING = [
-  { src: '/assets/images/events/Tengri-_Shoppy_(1920x648).png', alt: 'Thunderz — Tengri', date: '05 / 23', year: 2026, pill: 'Концерт' },
-  { src: '/assets/images/events/1920x648.png', alt: 'Zunii Zugaa — Homecoming 26', date: '05 / 30', year: 2026, pill: 'Концерт' },
-  { src: '/assets/images/events/Ginjin_1920x648.png', alt: 'Б. Сарантуяа — Хайрын Бурхан', date: '06 / 06', year: 2026, pill: 'Live Concert' },
-  { src: '/assets/images/events/HEVTEE_BANNER_1.png', alt: 'Super Concert — Phase 3', date: '06 / 20', year: 2026, pill: 'Super Concert' },
-];
+import { getHomeContent, listEvents } from '../data/store.js';
 
 export default function Home() {
   useRevealOnScroll();
   useSmoothAnchors();
   const gatedGo = useGatedNavigate();
+
+  const [events, setEvents] = useState([]);
+  const [content, setContent] = useState({ news: [], partners: [], roadmap: [], members: [] });
+
+  useEffect(() => {
+    let alive = true;
+    Promise.all([listEvents(), getHomeContent()]).then(([evts, c]) => {
+      if (!alive) return;
+      setEvents(evts);
+      setContent(c);
+    });
+    return () => { alive = false; };
+  }, []);
 
   return (
     <>
@@ -24,12 +31,12 @@ export default function Home() {
       <Hero gatedGo={gatedGo} />
       <Highlights />
       <Stats />
-      <Upcoming gatedGo={gatedGo} />
-      <Members />
+      <Upcoming gatedGo={gatedGo} events={events} />
+      <Members items={content.members} />
       <VideoCta />
-      <Partners />
-      <Roadmap />
-      <News />
+      <Partners items={content.partners} />
+      <Roadmap items={content.roadmap} />
+      <News items={content.news} />
       <SiteFooter />
     </>
   );
@@ -53,13 +60,13 @@ function Hero({ gatedGo }) {
 
           <p className="description">
             Улаанбаатарын төвд, дэлхийн жишигт нийцсэн арга хэмжээ, сэтгэл хөдөлгөм
-            тоглолт, мартагдашгүй мөчүүд таныг угтаж байна. Та энд ирж, эсвэл
-            360° форматаар манай вэбсайтаас шууд үзээрэй.
+            тоглолт, мартагдашгүй мөчүүдийг 360° форматаар манай вэбсайтаас
+            хаанаас ч шууд үзээрэй.
           </p>
 
           <div className="cta-row">
             <button className="btn-primary" type="button" onClick={() => gatedGo('/watch')}>
-              Тасалбар авах
+              Live тасалбар авах
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <line x1="5" y1="12" x2="19" y2="12"/>
                 <polyline points="12 5 19 12 12 19"/>
@@ -161,15 +168,26 @@ function Stats() {
   );
 }
 
-function Upcoming({ gatedGo }) {
+function Upcoming({ gatedGo, events = [] }) {
+  // Map store events to the shape this component expects (src/alt/date/year/pill).
+  const upcoming = events.map((e) => {
+    const [d, y] = (e.date || '').split('·').map((s) => s.trim());
+    return { id: e.id, src: e.image, alt: e.title, date: d || e.date, year: y || '', pill: e.pill };
+  });
+
   const [idx, setIdx] = useState(0);
   const [progress, setProgress] = useState(0);
   const stageRef = useRef(null);
   const intervalMs = 5500;
 
   useEffect(() => {
+    if (upcoming.length === 0) return;
+    if (idx >= upcoming.length) setIdx(0);
+  }, [upcoming.length, idx]);
+
+  useEffect(() => {
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReduced) return;
+    if (prefersReduced || upcoming.length === 0) return;
 
     let rafId = null;
     let startTs = 0;
@@ -182,7 +200,7 @@ function Upcoming({ gatedGo }) {
       const pct = Math.min(100, (elapsed / intervalMs) * 100);
       setProgress(pct);
       if (elapsed >= intervalMs) {
-        setIdx((i) => (i + 1) % UPCOMING.length);
+        setIdx((i) => (i + 1) % upcoming.length);
         startTs = ts;
       }
       rafId = requestAnimationFrame(tick);
@@ -235,7 +253,8 @@ function Upcoming({ gatedGo }) {
 
   // Reset progress on manual change
   const go = (next) => {
-    setIdx((next + UPCOMING.length) % UPCOMING.length);
+    if (upcoming.length === 0) return;
+    setIdx((next + upcoming.length) % upcoming.length);
     setProgress(0);
   };
 
@@ -260,12 +279,12 @@ function Upcoming({ gatedGo }) {
 
         <div className="up-stage reveal-up" ref={stageRef}>
           <div className="up-track">
-            {UPCOMING.map((u, i) => (
-              <article key={u.alt} className={`up-slide${i === idx ? ' is-active' : ''}`} data-up={i}>
+            {upcoming.map((u, i) => (
+              <article key={u.id || u.alt} className={`up-slide${i === idx ? ' is-active' : ''}`} data-up={i}>
                 <img src={u.src} alt={u.alt} loading={i === 0 ? 'eager' : 'lazy'} />
                 <div className="up-overlay">
                   <div className="up-meta">
-                    <span className="up-date"><strong>{u.date}</strong> · {u.year}</span>
+                    <span className="up-date"><strong>{u.date}</strong>{u.year ? ` · ${u.year}` : ''}</span>
                     <span className="up-pill">{u.pill}</span>
                   </div>
                 </div>
@@ -275,7 +294,7 @@ function Upcoming({ gatedGo }) {
 
           <div className="up-actions">
             <button type="button" className="up-btn up-btn-gold" onClick={() => gatedGo('/watch')}>Live үзэх</button>
-            <button type="button" className="up-text-cta" onClick={() => gatedGo('/watch')} style={{ background: 'none', border: 'none', cursor: 'pointer', font: 'inherit', color: 'inherit' }}>Тасалбар</button>
+            <button type="button" className="up-text-cta" onClick={() => gatedGo('/watch')} style={{ background: 'none', border: 'none', cursor: 'pointer', font: 'inherit', color: 'inherit' }}>Live тасалбар</button>
           </div>
 
           <button className="up-nav up-prev" onClick={() => go(idx - 1)} aria-label="Өмнөх">
@@ -289,8 +308,8 @@ function Upcoming({ gatedGo }) {
         </div>
 
         <ol className="up-thumbs reveal-up" role="tablist" aria-label="Арга хэмжээ сонгох">
-          {UPCOMING.map((u, i) => (
-            <li key={u.alt}>
+          {upcoming.map((u, i) => (
+            <li key={u.id || u.alt}>
               <button onClick={() => go(i)} className={i === idx ? 'is-active' : undefined} aria-label={u.alt}>
                 <img src={u.src} alt="" />
               </button>
@@ -302,7 +321,27 @@ function Upcoming({ gatedGo }) {
   );
 }
 
-function Members() {
+function MemberIcon({ iconKey }) {
+  const common = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: '1.8', strokeLinecap: 'round', strokeLinejoin: 'round' };
+  switch (iconKey) {
+    case 'music':
+      return <svg {...common}><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>;
+    case 'doc':
+      return <svg {...common}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>;
+    case 'news':
+      return <svg {...common}><path d="M4 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/><path d="M20 8h2v8a2 2 0 0 1-2 2"/></svg>;
+    case 'chat':
+      return <svg {...common}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="13" y2="14"/></svg>;
+    case 'stream':
+      return <svg {...common}><ellipse cx="12" cy="12" rx="10" ry="4"/><path d="M12 8v8"/><path d="M9 10.5L15 13.5"/><path d="M15 10.5L9 13.5"/></svg>;
+    case 'stadium':
+      return <svg {...common}><path d="M2 12c0-4 4.5-7 10-7s10 3 10 7-4.5 7-10 7S2 16 2 12z"/><path d="M2 12c0 2 4.5 4 10 4s10-2 10-4"/><path d="M12 5v14"/><path d="M7 6.2v11.6"/><path d="M17 6.2v11.6"/></svg>;
+    default:
+      return <svg {...common}><circle cx="12" cy="12" r="9"/></svg>;
+  }
+}
+
+function Members({ items = [] }) {
   return (
     <section className="members" id="membership">
       <div className="members-inner">
@@ -312,86 +351,20 @@ function Members() {
         </p>
 
         <div className="members-grid">
-
-          <article className="member-card reveal-up" data-stagger="1">
-            <span className="card-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
-              </svg>
-            </span>
-            <h3 className="card-title">Тоглолт, арга хэмжээ, талбайн түрээс</h3>
-            <p className="card-desc">«Төв Цэнгэлдэх Хүрээлэн» ХХК нь үндэсний болон олон улсын томоохон арга хэмжээ, тоглолт зохион байгуулах, талбай түрээслүүлэх үйлчилгээг иргэд, байгууллагуудад хүргэдэг.</p>
-            <a href="#" className="card-btn">Цааш үзэх<Arrow/></a>
-          </article>
-
-          <article className="member-card reveal-up" data-stagger="2">
-            <span className="card-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-                <line x1="9" y1="13" x2="15" y2="13"/>
-                <line x1="9" y1="17" x2="15" y2="17"/>
-              </svg>
-            </span>
-            <h3 className="card-title">Хууль, эрх зүй</h3>
-            <p className="card-desc">Иргэн, байгууллагын эрх зүйн асуудал, манай үйл ажиллагаатай холбоотой хууль, дүрэм, журамтай танилцана уу.</p>
-            <a href="#" className="card-btn">Цааш үзэх<Arrow/></a>
-          </article>
-
-          <article className="member-card reveal-up" data-stagger="3">
-            <span className="card-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M4 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4z"/>
-                <line x1="8" y1="9"  x2="16" y2="9"/>
-                <line x1="8" y1="13" x2="16" y2="13"/>
-                <line x1="8" y1="17" x2="13" y2="17"/>
-                <path d="M20 8h2v8a2 2 0 0 1-2 2"/>
-              </svg>
-            </span>
-            <h3 className="card-title">Мэдээ, мэдээлэл</h3>
-            <p className="card-desc">Манай байгууллагын үйл ажиллагаа, удахгүй болох арга хэмжээ, шинэ мэдээллийг эндээс цаг алдалгүй авах боломжтой.</p>
-            <a href="#news" className="card-btn">Цааш үзэх<Arrow/></a>
-          </article>
-
-          <article className="member-card reveal-up" data-stagger="4">
-            <span className="card-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                <line x1="8"  y1="10" x2="16" y2="10"/>
-                <line x1="8"  y1="14" x2="13" y2="14"/>
-              </svg>
-            </span>
-            <h3 className="card-title">Холбоо барих, санал хүсэлт</h3>
-            <p className="card-desc">Та санал, шүүмж, талархал болон ерөнхий чиглэлийн асуултаа бидэнд илгээж, шуурхай хариу авах боломжтой.</p>
-            <a href="#contact" className="card-btn">Цааш үзэх<Arrow/></a>
-          </article>
-
-          <article className="member-card reveal-up" data-stagger="5">
-            <span className="card-badge" aria-label="Шууд дамжуулалт">Live</span>
-            <span className="card-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <ellipse cx="12" cy="12" rx="10" ry="4"/>
-                <path d="M12 8v8"/><path d="M9 10.5L15 13.5"/><path d="M15 10.5L9 13.5"/>
-              </svg>
-            </span>
-            <h3 className="card-title">360° шууд дамжуулалт</h3>
-            <p className="card-desc">Цэнгэлдэхэд болж буй тоглолт, тэмцээн, арга хэмжээг 360° форматаар манай вэбсайтаас шууд үзэх боломжтой — танхимд байгаа мэт мэдрэмж.</p>
-            <a href="#" className="card-btn">Шууд үзэх<Arrow/></a>
-          </article>
-
-          <article className="member-card reveal-up" data-stagger="6">
-            <span className="card-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M2 12c0-4 4.5-7 10-7s10 3 10 7-4.5 7-10 7S2 16 2 12z"/>
-                <path d="M2 12c0 2 4.5 4 10 4s10-2 10-4"/>
-                <path d="M12 5v14"/><path d="M7 6.2v11.6"/><path d="M17 6.2v11.6"/>
-              </svg>
-            </span>
-            <h3 className="card-title">Төв Цэнгэлдэх Хүрээлэн</h3>
-            <p className="card-desc">1958 онд байгуулагдсан, 12,500 суудалтай, 25,000 хүртэлх үзэгчийг хүлээн авах хүчин чадалтай Монгол Улсын анхдагч цогцолбор. Спорт, соёл, олон нийтийн арга хэмжээний голлох тавцан.</p>
-            <a href="#about" className="card-btn">Цааш үзэх<Arrow/></a>
-          </article>
-
+          {items.map((m, i) => (
+            <article key={m.id} className="member-card reveal-up" data-stagger={i + 1}>
+              {m.badge && <span className="card-badge" aria-label={m.badge}>{m.badge}</span>}
+              <span className="card-icon" aria-hidden="true">
+                <MemberIcon iconKey={m.iconKey} />
+              </span>
+              <h3 className="card-title">{m.title}</h3>
+              <p className="card-desc">{m.desc}</p>
+              <a href={m.href || '#'} className="card-btn">
+                {m.badge === 'Live' ? 'Шууд үзэх' : 'Цааш үзэх'}
+                <Arrow/>
+              </a>
+            </article>
+          ))}
         </div>
       </div>
     </section>
@@ -474,7 +447,10 @@ function VideoCta() {
   );
 }
 
-function Partners() {
+function Partners({ items = [] }) {
+  // Render rows of 4 logos at a time, matching the original two-row layout.
+  const rows = [];
+  for (let i = 0; i < items.length; i += 4) rows.push(items.slice(i, i + 4));
   return (
     <section className="partners" id="partners">
       <div className="partners-inner">
@@ -487,23 +463,29 @@ function Partners() {
           иргэддээ хүргэх үйлчилгээний чанарын гол түшиц юм.
         </p>
 
-        <div className="partners-logos">
-          <a href="#" className="partner-logo"><img src="/assets/images/partners/LogoT.webp" alt="Партнёр байгууллага" loading="lazy"/></a>
-          <a href="#" className="partner-logo"><img src="/assets/images/partners/partner-1.png" alt="Партнёр байгууллага" loading="lazy"/></a>
-          <a href="#" className="partner-logo"><img src="/assets/images/partners/partner-2.jpeg" alt="Партнёр байгууллага" loading="lazy"/></a>
-          <a href="#" className="partner-logo"><img src="/assets/images/partners/partner-3.png" alt="Партнёр байгууллага" loading="lazy"/></a>
-        </div>
-        <div className="partners-logos">
-          <a href="#" className="partner-logo"><img src="/assets/images/partners/partner-4.png" alt="Партнёр байгууллага" loading="lazy"/></a>
-          <a href="#" className="partner-logo"><img src="/assets/images/partners/485805154_693233113229983_1842200449251181263_n.jpg" alt="Партнёр байгууллага" loading="lazy"/></a>
-          <a href="#" className="partner-logo"><img src="/assets/images/partners/ad0c4ccd-a055-472a-aa21-1dc056def10f.jpg" alt="Партнёр байгууллага" loading="lazy"/></a>
-        </div>
+        {rows.map((row, ri) => (
+          <div key={ri} className="partners-logos">
+            {row.map((p) => (
+              <a key={p.id} href="#" className="partner-logo">
+                <img src={p.image} alt={p.alt || 'Партнёр байгууллага'} loading="lazy"/>
+              </a>
+            ))}
+          </div>
+        ))}
       </div>
     </section>
   );
 }
 
-function Roadmap() {
+function Roadmap({ items = [] }) {
+  // Distribute milestones evenly across the chart. The SVG path is decorative.
+  const bot = items.filter((m) => m.position === 'bot');
+  const top = items.filter((m) => m.position !== 'bot');
+  const posFor = (count, i) => {
+    if (count <= 1) return 50;
+    const span = 92; // leave 4% margin each side
+    return 4 + (i * span) / (count - 1);
+  };
   return (
     <section className="roadmap" id="events">
       <div className="roadmap-inner">
@@ -546,18 +528,16 @@ function Roadmap() {
             <circle cx="1170" cy="70"  r="4.5" fill="#A89968"/>
           </svg>
 
-          <div className="milestone milestone-bot" style={{ left: '5%' }}><strong>1958</strong><span>БНХАУ-ын тусламжтай байгуулагдсан</span></div>
-          <div className="milestone milestone-bot" style={{ left: '14.25%' }}><strong>1961</strong><span>Нийслэлийн өмчид шилжсэн</span></div>
-          <div className="milestone milestone-bot" style={{ left: '23.5%' }}><strong>1971</strong><span>Төв асар ашиглалтад · 12,500 суудал</span></div>
-          <div className="milestone milestone-bot" style={{ left: '32.75%' }}><strong>1990</strong><span>Ашиг орлогын тогтолцоо бүрдсэн</span></div>
-          <div className="milestone milestone-bot" style={{ left: '51.25%' }}><strong>1993</strong><span>Эзэмшлийн маргаан үүссэн</span></div>
-
-          <div className="milestone milestone-top" style={{ left: '42%' }}><strong>2007</strong><span>Үзэгчийн суудал шинэчлэгдсэн</span></div>
-          <div className="milestone milestone-top" style={{ left: '60.5%' }}><strong>2014</strong><span>Эзэмшил дахин үнэлэгдсэн · 12.7 га</span></div>
-          <div className="milestone milestone-top" style={{ left: '69.75%' }}><strong>2019</strong><span>100% нийслэлийн өмчид шилжсэн</span></div>
-          <div className="milestone milestone-top" style={{ left: '79%' }}><strong>2024</strong><span>Шинэ гүйцэтгэх захирал томилогдсон</span></div>
-          <div className="milestone milestone-top" style={{ left: '88.25%' }}><strong>2025</strong><span>Дэвшилтэт шинэ бодлого хэрэгжсэн</span></div>
-          <div className="milestone milestone-top" style={{ left: '97.5%' }}><strong>2026</strong><span>360° Live вэбсайтын шинэчлэл</span></div>
+          {bot.map((m, i) => (
+            <div key={m.id} className="milestone milestone-bot" style={{ left: `${posFor(bot.length, i)}%` }}>
+              <strong>{m.year}</strong><span>{m.title}</span>
+            </div>
+          ))}
+          {top.map((m, i) => (
+            <div key={m.id} className="milestone milestone-top" style={{ left: `${posFor(top.length, i)}%` }}>
+              <strong>{m.year}</strong><span>{m.title}</span>
+            </div>
+          ))}
         </div>
 
         <div className="roadmap-legend">
@@ -569,7 +549,22 @@ function Roadmap() {
   );
 }
 
-function News() {
+function News({ items = [] }) {
+  const featured = items.find((n) => n.featured) || items[0];
+  const side = items.filter((n) => n !== featured).slice(0, 3);
+
+  if (!featured) {
+    return (
+      <section className="news" id="news">
+        <div className="news-inner">
+          <div className="news-header reveal-up">
+            <h2 className="news-title">Сүүлийн мэдээ</h2>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="news" id="news">
       <div className="news-inner">
@@ -582,50 +577,28 @@ function News() {
         </div>
 
         <div className="news-grid">
-          <a href="#" className="news-image news-image-lg reveal-up" data-stagger="1" aria-label="ДӨЛ-2026 тэмцээн">
-            <img src="/assets/images/news/dol-tournament.jpg" alt="ДӨЛ-2026 тэмцээний нээлт" />
+          <a href="#" className="news-image news-image-lg reveal-up" data-stagger="1" aria-label={featured.title}>
+            <img src={featured.image} alt={featured.title} />
           </a>
 
           <div className="news-side">
-            <article className="news-card reveal-up" data-stagger="2">
-              <a href="#" className="news-image news-image-sm" aria-label="2026 оны үйл явдлууд">
-                <img src="/assets/images/news/events-2026.jpg" alt="2026 оны үйл явдлуудын товч" />
-              </a>
-              <div className="news-card-text">
-                <span className="news-label">Үйл явдал</span>
-                <h3 className="news-card-headline">2026 онд Төв цэнгэлдэхэд болох шилдэг үзвэрүүд</h3>
-              </div>
-            </article>
-
-            <article className="news-card reveal-up" data-stagger="3">
-              <a href="#" className="news-image news-image-sm" aria-label="Дуут дохио бэлтгэл">
-                <img src="/assets/images/news/training.jpg" alt="Дуут дохио сургалт" />
-              </a>
-              <div className="news-card-text">
-                <span className="news-label">Сургалт</span>
-                <h3 className="news-card-headline">Дуут дохио ба онцгой нөхцлийн бэлэн байдлын сургалт</h3>
-              </div>
-            </article>
-
-            <article className="news-card reveal-up" data-stagger="4">
-              <a href="#" className="news-image news-image-sm" aria-label="Ж.Мөнхбатын хөшөө">
-                <img src="/assets/images/news/monument.jpg" alt="Ж.Мөнхбатын хөшөөний нээлт" />
-              </a>
-              <div className="news-card-text">
-                <span className="news-label">Түүх</span>
-                <h3 className="news-card-headline">Ардын тамирчин Ж.Мөнхбатын хөшөөг хүндэтгэлтэйгээр залрууллаа</h3>
-              </div>
-            </article>
+            {side.map((n, i) => (
+              <article key={n.id} className="news-card reveal-up" data-stagger={i + 2}>
+                <a href="#" className="news-image news-image-sm" aria-label={n.title}>
+                  <img src={n.image} alt={n.title} />
+                </a>
+                <div className="news-card-text">
+                  <span className="news-label">{n.label}</span>
+                  <h3 className="news-card-headline">{n.title}</h3>
+                </div>
+              </article>
+            ))}
           </div>
 
           <div className="news-body reveal-up" data-stagger="2">
-            <span className="news-label">Онцлох</span>
-            <h3 className="news-headline">ДӨЛ-2026 тэмцээний нээлтийн ёслол Төв цэнгэлдэхэд боллоо</h3>
-            <p className="news-desc">
-              Монгол улсын хөдөлмөрчдийн уламжлалт «ДӨЛ» спортын наадам энэ онд дахин Төв цэнгэлдэх
-              хүрээлэнгийн дэвжээн дээр өрнөж байна. Нээлтийн ёслолд олон мянган үзэгчид цугларч,
-              тамирчид өндөр хөтөлбөртэй жагсаал, дүрсжүүлсэн тоглолтоор хүндэтгэл үзүүлэв.
-            </p>
+            <span className="news-label">{featured.label}</span>
+            <h3 className="news-headline">{featured.title}</h3>
+            {featured.body && <p className="news-desc">{featured.body}</p>}
           </div>
         </div>
       </div>

@@ -1,23 +1,14 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useAuth, useRequireAuth } from '../auth.jsx';
+import { useRequireAuth } from '../auth.jsx';
 import UserMenu from '../components/UserMenu.jsx';
-
-const TICKETS_KEY = 'tsengeldekh_tickets';
+import { cancelOrder, getOrder } from '../data/store.js';
 
 const PAY_LABEL = {
   qpay: 'QPay',
   socialpay: 'SocialPay',
   card: 'Карт',
 };
-
-function readOrders() {
-  try { return JSON.parse(localStorage.getItem(TICKETS_KEY) || '[]'); }
-  catch { return []; }
-}
-function writeOrders(all) {
-  try { localStorage.setItem(TICKETS_KEY, JSON.stringify(all)); } catch {}
-}
 
 const money = (n) => (n || 0).toLocaleString('en-US') + '₮';
 const fmtDateTime = (iso) => {
@@ -34,18 +25,18 @@ export default function OrderDetail() {
   const session = useRequireAuth();
   const { code } = useParams();
   const navigate = useNavigate();
-  const { } = useAuth();
+  const [order, setOrder] = useState(undefined); // undefined = loading, null = not found
 
-  const orders = useMemo(() => readOrders(), []);
-  const order = orders.find((t) => t.code === code);
+  useEffect(() => { getOrder(code).then((o) => setOrder(o || null)); }, [code]);
+
   const owned = order && (!order.user || order.user === session?.identifier);
 
   if (!session) return null;
 
-  const onCancel = () => {
+  const onCancel = async () => {
     if (!order) return;
     if (!confirm('Энэ захиалгыг буцаах уу? Үүнийг сэргээх боломжгүй.')) return;
-    writeOrders(readOrders().filter((t) => t.code !== order.code));
+    await cancelOrder(order.code);
     navigate('/watch#tickets', { replace: true });
   };
 
@@ -80,7 +71,9 @@ export default function OrderDetail() {
           </Link>
         </div>
 
-        {!order ? (
+        {order === undefined ? (
+          <section className="order-empty"><h1>Уншиж байна…</h1></section>
+        ) : !order ? (
           <section className="order-empty">
             <h1>Захиалга олдсонгүй</h1>
             <p>Энэ кодтой захиалга байхгүй эсвэл устгагдсан байна.</p>

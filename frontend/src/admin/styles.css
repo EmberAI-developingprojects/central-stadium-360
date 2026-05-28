@@ -1,0 +1,402 @@
+/* Admin shell — all styles scoped under .admin-shell so they cannot leak
+   into the public site. Keep this self-contained. */
+
+.admin-shell {
+  --admin-bg: #f6f7fb;
+  --admin-surface: #ffffff;
+  --admin-border: #e5e7eb;
+  --admin-text: #0f172a;
+  --admin-muted: #64748b;
+  --admin-muted-2: #94a3b8;
+  --admin-sidebar: #0f172a;
+  --admin-sidebar-text: #cbd5e1;
+  --admin-sidebar-active: #1e293b;
+  --admin-danger: #dc2626;
+  --admin-warning: #d97706;
+  --admin-success: #16a34a;
+  --admin-radius: 10px;
+  --admin-radius-sm: 6px;
+
+  font-family: 'TT Commons', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--admin-text);
+  background: var(--admin-bg);
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 240px 1fr;
+}
+
+.admin-shell *,
+.admin-shell *::before,
+.admin-shell *::after { box-sizing: border-box; }
+
+/* ============================ Sidebar ============================ */
+.admin-shell .admin-sidebar {
+  background: var(--admin-sidebar);
+  color: var(--admin-sidebar-text);
+  padding: 20px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.admin-shell .admin-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  margin-bottom: 12px;
+}
+.admin-shell .admin-brand-mark {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #2230C6, #4451DC);
+  display: grid; place-items: center;
+  color: #fff; font-weight: 700; font-size: 14px;
+}
+.admin-shell .admin-brand-text {
+  display: flex; flex-direction: column;
+  font-size: 12px; color: #94a3b8;
+}
+.admin-shell .admin-brand-text strong { color: #fff; font-size: 13px; }
+
+.admin-shell .admin-nav {
+  display: flex; flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  overflow-y: auto;
+}
+.admin-shell .admin-nav a {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px;
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-sidebar-text);
+  text-decoration: none;
+  font-size: 13.5px;
+  transition: background .15s, color .15s;
+}
+.admin-shell .admin-nav a:hover { background: rgba(255,255,255,0.04); color: #fff; }
+.admin-shell .admin-nav a.is-active { background: var(--admin-sidebar-active); color: #fff; }
+.admin-shell .admin-nav a svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+.admin-shell .admin-sidebar-footer {
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding-top: 12px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.admin-shell .admin-sidebar-footer a,
+.admin-shell .admin-sidebar-footer button {
+  background: none; border: 0; color: var(--admin-sidebar-text);
+  font: inherit; text-align: left; cursor: pointer;
+  padding: 7px 10px; border-radius: var(--admin-radius-sm);
+  font-size: 12.5px;
+  text-decoration: none;
+  display: flex; align-items: center; gap: 9px;
+  line-height: 1.2;
+}
+.admin-shell .admin-sidebar-footer a svg,
+.admin-shell .admin-sidebar-footer button svg {
+  width: 14px; height: 14px; flex-shrink: 0;
+}
+.admin-shell .admin-sidebar-footer a:hover,
+.admin-shell .admin-sidebar-footer button:hover { background: rgba(255,255,255,0.04); color: #fff; }
+
+/* ============================ Main ============================ */
+.admin-shell .admin-main {
+  display: flex; flex-direction: column;
+  min-width: 0;
+}
+
+.admin-shell .admin-topbar {
+  background: var(--admin-surface);
+  border-bottom: 1px solid var(--admin-border);
+  height: 56px;
+  display: flex; align-items: center;
+  padding: 0 24px;
+  position: sticky; top: 0;
+  z-index: 5;
+}
+.admin-shell .admin-topbar h1 {
+  font-size: 16px; font-weight: 600; margin: 0;
+  letter-spacing: -0.01em;
+}
+.admin-shell .admin-topbar .admin-topbar-spacer { flex: 1; }
+.admin-shell .admin-topbar .admin-topbar-user {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 13px;
+  color: var(--admin-muted);
+}
+.admin-shell .admin-topbar .admin-topbar-user .avatar {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: linear-gradient(135deg, #2230C6, #4451DC);
+  color: #fff; display: grid; place-items: center;
+  font-weight: 600; font-size: 12px;
+}
+
+.admin-shell .admin-content {
+  padding: 24px;
+  flex: 1;
+}
+
+.admin-shell .admin-page-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.admin-shell .admin-page-header h2 {
+  font-size: 22px; font-weight: 600; margin: 0 0 4px;
+  letter-spacing: -0.015em;
+}
+.admin-shell .admin-page-header p {
+  margin: 0; color: var(--admin-muted); font-size: 13.5px;
+}
+
+/* ============================ Cards / panels ============================ */
+.admin-shell .admin-card {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  padding: 18px;
+}
+.admin-shell .admin-card h3 {
+  margin: 0 0 12px;
+  font-size: 14px; font-weight: 600;
+  color: var(--admin-text);
+}
+
+.admin-shell .admin-grid {
+  display: grid;
+  gap: 16px;
+}
+.admin-shell .admin-grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.admin-shell .admin-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+.admin-shell .stat-card .stat-label {
+  font-size: 12px; color: var(--admin-muted);
+  text-transform: uppercase; letter-spacing: .04em;
+}
+.admin-shell .stat-card .stat-value {
+  font-size: 26px; font-weight: 600;
+  margin-top: 4px;
+  letter-spacing: -0.01em;
+}
+.admin-shell .stat-card .stat-sub {
+  font-size: 12px; color: var(--admin-muted); margin-top: 4px;
+}
+
+.admin-shell .sparkline {
+  width: 100%; height: 140px;
+  display: block;
+}
+
+/* ============================ Buttons ============================ */
+.admin-shell .btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--admin-radius-sm);
+  font: inherit; font-size: 13px; font-weight: 500;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface);
+  color: var(--admin-text);
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+  text-decoration: none;
+}
+.admin-shell .btn:hover { background: #f8fafc; border-color: #cbd5e1; }
+.admin-shell .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+.admin-shell .btn-primary {
+  background: #2230C6; border-color: #2230C6; color: #fff;
+}
+.admin-shell .btn-primary:hover { background: #1A26A0; border-color: #1A26A0; }
+
+.admin-shell .btn-danger {
+  border-color: #fecaca; color: var(--admin-danger);
+}
+.admin-shell .btn-danger:hover { background: #fef2f2; border-color: #fca5a5; }
+
+.admin-shell .btn-ghost {
+  border-color: transparent; background: transparent;
+}
+.admin-shell .btn-ghost:hover { background: #f1f5f9; }
+
+.admin-shell .btn-sm { padding: 5px 9px; font-size: 12.5px; }
+
+/* ============================ Tables ============================ */
+.admin-shell .admin-table-wrap {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  overflow: hidden;
+}
+.admin-shell .admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.admin-shell .admin-table th,
+.admin-shell .admin-table td {
+  text-align: left;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--admin-border);
+  vertical-align: middle;
+}
+.admin-shell .admin-table tr:last-child td { border-bottom: 0; }
+.admin-shell .admin-table th {
+  background: #f8fafc;
+  color: var(--admin-muted);
+  font-weight: 500;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.admin-shell .admin-table tbody tr:hover { background: #fafafa; }
+
+.admin-shell .admin-table-thumb {
+  width: 56px; height: 32px;
+  border-radius: 4px;
+  background: #e2e8f0;
+  background-size: cover;
+  background-position: center;
+  display: inline-block;
+}
+
+.admin-shell .admin-empty {
+  padding: 36px 24px;
+  text-align: center;
+  color: var(--admin-muted);
+  background: var(--admin-surface);
+  border: 1px dashed var(--admin-border);
+  border-radius: var(--admin-radius);
+}
+.admin-shell .admin-empty strong { display: block; color: var(--admin-text); margin-bottom: 4px; }
+
+/* ============================ Forms ============================ */
+.admin-shell .admin-form { display: flex; flex-direction: column; gap: 14px; max-width: 720px; }
+.admin-shell .admin-form-row {
+  display: grid; gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.admin-shell .admin-field { display: flex; flex-direction: column; gap: 5px; }
+.admin-shell .admin-field label {
+  font-size: 12px; color: var(--admin-muted);
+  font-weight: 500;
+}
+.admin-shell .admin-field input,
+.admin-shell .admin-field textarea,
+.admin-shell .admin-field select {
+  font: inherit; font-size: 13.5px;
+  padding: 8px 11px;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-text);
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.admin-shell .admin-field input:focus,
+.admin-shell .admin-field textarea:focus,
+.admin-shell .admin-field select:focus {
+  border-color: #2230C6;
+  box-shadow: 0 0 0 3px rgba(34, 48, 198, .12);
+}
+.admin-shell .admin-field textarea { resize: vertical; min-height: 80px; }
+.admin-shell .admin-checkbox {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13.5px;
+}
+.admin-shell .admin-checkbox input { width: 16px; height: 16px; }
+
+.admin-shell .admin-form-actions {
+  display: flex; gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--admin-border);
+}
+
+/* ============================ Badges / pills ============================ */
+.admin-shell .badge {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11.5px; font-weight: 500;
+  background: #f1f5f9; color: var(--admin-text);
+}
+.admin-shell .badge-admin { background: #ede9fe; color: #5b21b6; }
+.admin-shell .badge-paid { background: #dcfce7; color: #15803d; }
+.admin-shell .badge-refunded { background: #fee2e2; color: #b91c1c; }
+.admin-shell .badge-cancelled { background: #fef3c7; color: #92400e; }
+.admin-shell .badge-disabled { background: #fef2f2; color: var(--admin-danger); }
+.admin-shell .badge-featured { background: #fef3c7; color: #92400e; }
+
+/* ============================ Misc ============================ */
+.admin-shell .admin-filters {
+  display: flex; gap: 10px; align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.admin-shell .admin-filters input,
+.admin-shell .admin-filters select {
+  font: inherit; font-size: 13px;
+  padding: 7px 10px;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+}
+.admin-shell .admin-filters input { min-width: 220px; }
+
+.admin-shell .admin-tabs {
+  display: flex; gap: 4px;
+  border-bottom: 1px solid var(--admin-border);
+  margin-bottom: 18px;
+}
+.admin-shell .admin-tabs button {
+  background: none; border: 0;
+  font: inherit; font-size: 13.5px; font-weight: 500;
+  padding: 9px 14px;
+  cursor: pointer;
+  color: var(--admin-muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.admin-shell .admin-tabs button.is-active {
+  color: var(--admin-text);
+  border-bottom-color: #2230C6;
+}
+
+.admin-shell .admin-link {
+  color: #2230C6; text-decoration: none; font-weight: 500;
+}
+.admin-shell .admin-link:hover { text-decoration: underline; }
+
+.admin-shell .admin-actions { display: inline-flex; gap: 6px; }
+
+.admin-shell .admin-alert {
+  padding: 10px 14px;
+  border-radius: var(--admin-radius-sm);
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 13px;
+}
+
+.admin-shell .admin-image-preview {
+  width: 100%; max-width: 320px;
+  aspect-ratio: 16 / 6;
+  background: #f1f5f9 center / cover no-repeat;
+  border-radius: var(--admin-radius-sm);
+  border: 1px solid var(--admin-border);
+  margin-top: 6px;
+}
+
+@media (max-width: 980px) {
+  .admin-shell { grid-template-columns: 1fr; }
+  .admin-shell .admin-sidebar { position: relative; height: auto; }
+  .admin-shell .admin-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .admin-shell .admin-grid-2 { grid-template-columns: 1fr; }
+  .admin-shell .admin-form-row { grid-template-columns: 1fr; }
+}

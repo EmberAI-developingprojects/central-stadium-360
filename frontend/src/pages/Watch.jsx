@@ -3,22 +3,16 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth, useRequireAuth } from '../auth.jsx';
 import UserMenu from '../components/UserMenu.jsx';
 import StoryVideo from '../components/StoryVideo.jsx';
+import { cancelOrder, createOrder, listEvents, listOrders } from '../data/store.js';
 
-// ---------- Static data ----------
-const FEATURED_EVENT = {
-  id: 'thunderz-tengri',
-  title: 'Thunderz × Tengri — Гранд тоглолт',
-  date: '2026 / 05 / 20 · 21:00 (Шууд)',
-  image: '/assets/images/events/Tengri-_Shoppy_(1920x648).png',
-  base: 35000,
+// Fallback used if no event is marked featured in the store.
+const FEATURED_FALLBACK = {
+  id: 'featured-placeholder',
+  title: 'Удахгүй',
+  date: '',
+  image: '/assets/images/stadium/exterior.jpg',
+  base: 0,
 };
-
-const UPCOMING = [
-  { id: 'thunderz-tengri',         title: 'Thunderz — Tengri',          desc: 'Үндэсний рок хамтлагын гранд тоглолт.',                date: '05 / 23 · 2026', when: '2026 / 05 / 23 · 21:00', pill: 'Концерт',       image: '/assets/images/events/Tengri-_Shoppy_(1920x648).png', base: 35000 },
-  { id: 'zunii-zugaa-26',          title: 'Zunii Zugaa — Homecoming 26', desc: 'Зуны эхэн үеийн уламжлалт нээлтийн тоглолт.',          date: '05 / 30 · 2026', when: '2026 / 05 / 30 · 20:00', pill: 'Концерт',       image: '/assets/images/events/1920x648.png',                 base: 25000 },
-  { id: 'sarantuya-khairyn-burkhan', title: 'Б. Сарантуяа — Хайрын Бурхан', desc: 'Дуучин Б.Сарантуяагийн соло тоглолт.',              date: '06 / 06 · 2026', when: '2026 / 06 / 06 · 20:30', pill: 'Live Concert',  image: '/assets/images/events/Ginjin_1920x648.png',           base: 45000 },
-  { id: 'super-concert-phase-3',   title: 'Super Concert — Phase 3',      desc: 'Олон шилдэг уран бүтээлчийн нэгдсэн тоглолт.',         date: '06 / 20 · 2026', when: '2026 / 06 / 20 · 19:30', pill: 'Super Concert', image: '/assets/images/events/HEVTEE_BANNER_1.png',           base: 55000 },
-];
 
 const CAMS = {
   stage: { label: 'Тайз',      sub: 'Cam 01 · 4K HDR' },
@@ -38,8 +32,6 @@ const PAY_METHODS = [
   { value: 'socialpay', name: 'SocialPay', desc: 'Хаан банкны хэтэвч' },
   { value: 'card',      name: 'Карт',      desc: 'Visa · Mastercard' },
 ];
-
-const TICKETS_KEY = 'tsengeldekh_tickets';
 
 const BOTS = [
   { name: 'Болормаа',   color: '#F87171' },
@@ -68,14 +60,6 @@ const CHAT_SAMPLES = [
 // ---------- Helpers ----------
 const money = (n) => n.toLocaleString('en-US') + '₮';
 
-function readTickets() {
-  try { return JSON.parse(localStorage.getItem(TICKETS_KEY) || '[]'); }
-  catch { return []; }
-}
-function writeTickets(all) {
-  try { localStorage.setItem(TICKETS_KEY, JSON.stringify(all)); } catch {}
-}
-
 // ---------- Top-level page ----------
 export default function Watch() {
   const session = useRequireAuth();
@@ -85,9 +69,24 @@ export default function Watch() {
     ? location.hash.slice(1)
     : 'live';
   const [activeTab, setActiveTab] = useState(initialTab);
-  const [tickets, setTickets] = useState(() => readTickets());
+  const [tickets, setTickets] = useState([]);
+  const [events, setEvents] = useState([]);
   const [modalEvent, setModalEvent] = useState(null);     // event object when modal open
   const [viewerOpen, setViewerOpen] = useState(false);
+
+  const refreshTickets = useCallback(() => {
+    listOrders().then((all) => setTickets(all.filter((t) => t.status !== 'refunded')));
+  }, []);
+
+  useEffect(() => {
+    refreshTickets();
+    listEvents().then(setEvents);
+  }, [refreshTickets]);
+
+  const featuredEvent = useMemo(
+    () => events.find((e) => e.featured) || FEATURED_FALLBACK,
+    [events]
+  );
 
   const myTickets = useMemo(
     () => tickets.filter((t) => !t.user || (session && t.user === session.identifier)),
@@ -95,11 +94,9 @@ export default function Watch() {
   );
 
   const ownsFeatured = useMemo(
-    () => myTickets.some((t) => t.eventId === FEATURED_EVENT.id),
-    [myTickets]
+    () => myTickets.some((t) => t.eventId === featuredEvent.id),
+    [myTickets, featuredEvent.id]
   );
-
-  const refreshTickets = useCallback(() => setTickets(readTickets()), []);
 
   const openTicketModal = useCallback((event) => setModalEvent(event), []);
   const closeTicketModal = useCallback(() => setModalEvent(null), []);
@@ -161,19 +158,19 @@ export default function Watch() {
 
       <main className="watch-main">
         <LiveSection
+          featuredEvent={featuredEvent}
           ownsFeatured={ownsFeatured}
-          onWatch={() => ownsFeatured ? openViewer() : openTicketModal(FEATURED_EVENT)}
+          onWatch={() => ownsFeatured ? openViewer() : openTicketModal(featuredEvent)}
           viewerOpen={viewerOpen}
         />
 
-        <UpcomingSection events={UPCOMING} onBuy={openTicketModal} />
+        <UpcomingSection events={events} onBuy={openTicketModal} />
 
         <TicketsSection
           tickets={myTickets}
-          onCancel={(code) => {
+          onCancel={async (code) => {
             if (!confirm('Энэ тасалбарыг цуцлах уу?')) return;
-            const all = readTickets().filter((t) => t.code !== code);
-            writeTickets(all);
+            await cancelOrder(code);
             refreshTickets();
           }}
           onWatch={openViewer}
@@ -181,7 +178,7 @@ export default function Watch() {
       </main>
 
       {viewerOpen && (
-        <ViewerOverlay session={session} onClose={closeViewer} />
+        <ViewerOverlay session={session} featuredEvent={featuredEvent} onClose={closeViewer} />
       )}
 
       {modalEvent && (
@@ -189,10 +186,8 @@ export default function Watch() {
           event={modalEvent}
           session={session}
           onClose={closeTicketModal}
-          onPurchased={(order) => {
-            const all = readTickets();
-            all.push(order);
-            writeTickets(all);
+          onPurchased={async (order) => {
+            await createOrder(order);
             refreshTickets();
           }}
           onWatchSuccess={() => {
@@ -207,7 +202,7 @@ export default function Watch() {
 }
 
 // ---------- Live section ----------
-function LiveSection({ ownsFeatured, onWatch, viewerOpen }) {
+function LiveSection({ featuredEvent, ownsFeatured, onWatch, viewerOpen }) {
   const videoRef = useRef(null);
   const [paused, setPaused] = useState(false);
 
@@ -269,8 +264,8 @@ function LiveSection({ ownsFeatured, onWatch, viewerOpen }) {
             muted
             playsInline
             preload="metadata"
-            poster={FEATURED_EVENT.image}
-            fallbackAriaLabel={FEATURED_EVENT.title}
+            poster={featuredEvent.image}
+            fallbackAriaLabel={featuredEvent.title}
           />
           <div className="watch-locked" hidden={ownsFeatured}>
             <div className="watch-locked-inner">
@@ -306,7 +301,7 @@ function LiveSection({ ownsFeatured, onWatch, viewerOpen }) {
 
         <div className="watch-feature-text">
           <span className="watch-badge">Шууд · 360°</span>
-          <h2 className="watch-feature-title">{FEATURED_EVENT.title}</h2>
+          <h2 className="watch-feature-title">{featuredEvent.title}</h2>
           <p className="watch-feature-desc">
             Гэрээсээ, ажлын газраасаа, эсвэл аяллын дунд — хаанаас ч энэ тоглолтыг
             шууд үзээрэй. Төв Цэнгэлдэх Хүрээлэнгээс зөвхөн вэбсайтаар цацагдах 360°
@@ -332,6 +327,7 @@ function LiveSection({ ownsFeatured, onWatch, viewerOpen }) {
 
 // ---------- Upcoming section ----------
 function UpcomingSection({ events, onBuy }) {
+  const list = events.filter((e) => !e.featured);
   return (
     <section className="watch-section" id="upcoming">
       <div className="watch-section-head">
@@ -340,7 +336,7 @@ function UpcomingSection({ events, onBuy }) {
       </div>
 
       <div className="watch-grid">
-        {events.map((ev) => (
+        {list.map((ev) => (
           <article key={ev.id} className="watch-card">
             <div className="watch-card-img">
               <img src={ev.image} alt={ev.title} />
@@ -433,7 +429,7 @@ function TicketsSection({ tickets, onCancel, onWatch }) {
 }
 
 // ---------- Multi-cam viewer overlay ----------
-function ViewerOverlay({ session, onClose }) {
+function ViewerOverlay({ session, featuredEvent, onClose }) {
   const mainRef = useRef(null);
   const stageRef = useRef(null);
   const chatListRef = useRef(null);
@@ -637,7 +633,7 @@ function ViewerOverlay({ session, onClose }) {
           </svg>
         </button>
         <div className="viewer-title-wrap">
-          <h3 className="viewer-title">{FEATURED_EVENT.title}</h3>
+          <h3 className="viewer-title">{featuredEvent.title}</h3>
           <span className="viewer-live-pill">
             <span className="viewer-live-pulse" aria-hidden="true"></span>
             LIVE · <span>{fmtElapsed(elapsedSec)}</span>
@@ -676,7 +672,7 @@ function ViewerOverlay({ session, onClose }) {
                   loop
                   playsInline
                   preload="metadata"
-                  poster={FEATURED_EVENT.image}
+                  poster={featuredEvent.image}
                   fallbackAriaLabel={CAMS[k].label}
                 />
                 <span className="viewer-angle-live"></span>
@@ -697,9 +693,9 @@ function ViewerOverlay({ session, onClose }) {
               loop
               playsInline
               preload="metadata"
-              poster={FEATURED_EVENT.image}
+              poster={featuredEvent.image}
               onDoubleClick={toggleStageFs}
-              fallbackAriaLabel={FEATURED_EVENT.title}
+              fallbackAriaLabel={featuredEvent.title}
             />
           </div>
           <span className="viewer-main-cam">

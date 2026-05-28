@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { readUsers, useAuth } from '../auth.jsx';
 
-const TEST_USER = { identifier: 'admin', password: 'admin', fullname: 'Admin' };
-
-// Normalize: gmail trimmed + lowercased; phone reduced to +976 + 8 digits
+// Normalize: gmail trimmed + lowercased; phone reduced to +976 + 8 digits.
+// Leave bare 'admin' alone so the bootstrap admin can log in without normalization.
 function normalize(raw) {
   const v = raw.trim();
+  if (v.toLowerCase() === 'admin') return 'admin';
   if (/@/.test(v)) return v.toLowerCase();
   let digits = v.replace(/\D/g, '');
   if (digits.length === 11 && digits.indexOf('976') === 0) digits = digits.slice(3);
@@ -42,21 +42,18 @@ export default function Login() {
     if (!rawId) return setAlert('И-мэйл эсвэл утасны дугаараа оруулна уу.');
     if (!password) return setAlert('Нууц үгээ оруулна уу.');
 
-    let account = null;
-    if (rawId.toLowerCase() === TEST_USER.identifier && password === TEST_USER.password) {
-      account = TEST_USER;
-    } else {
-      const id = normalize(rawId);
-      const users = readUsers();
-      account = users.find((u) => u.identifier === id);
-      if (!account) return setAlert('Бүртгэл олдсонгүй. Шинээр бүртгүүлнэ үү.');
-      if (account.password !== password) return setAlert('Нууц үг буруу байна.');
-    }
+    const id = normalize(rawId);
+    const users = readUsers();
+    const account = users.find((u) => u.identifier === id);
+    if (!account) return setAlert('Бүртгэл олдсонгүй. Шинээр бүртгүүлнэ үү.');
+    if (account.disabled) return setAlert('Энэ бүртгэлийн хандалт хязгаарлагдсан байна.');
+    if (account.password !== password) return setAlert('Нууц үг буруу байна.');
 
     login(account);
     setBusy(true);
     setSubmitLabel(`Тавтай морилно уу, ${account.fullname || ''} ✓`);
-    const next = safeNext(params.get('next'));
+    const adminLanding = account.role === 'admin';
+    const next = adminLanding ? '/admin' : safeNext(params.get('next'));
     setTimeout(() => navigate(next, { replace: true }), 900);
   };
 
