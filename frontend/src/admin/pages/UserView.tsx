@@ -1,15 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { deleteUser, getUser, listOrders, setUserDisabled, setUserRole } from '../../data/store.js';
+import { deleteUser, getUser, listOrders, setUserDisabled, setUserRole } from '../../data/store';
+import type { OrderRecord, UserRecord, UserRole } from '../../data/store';
 
-const money = (n) => (n || 0).toLocaleString('en-US') + '₮';
+const money = (n: number | undefined): string => (n || 0).toLocaleString('en-US') + '₮';
+
+// undefined = loading, null = not found, UserRecord = loaded
+type LoadState = UserRecord | null | undefined;
 
 export default function UserView() {
-  const { identifier } = useParams();
-  const decoded = decodeURIComponent(identifier);
+  const { identifier } = useParams<{ identifier: string }>();
+  const decoded = decodeURIComponent(identifier ?? '');
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [orders, setOrders] = useState([]);
+  const [user, setUser] = useState<LoadState>(undefined);
+  const [orders, setOrders] = useState<OrderRecord[]>([]);
 
   const load = () => {
     Promise.all([getUser(decoded), listOrders({ user: decoded })]).then(([u, o]) => {
@@ -18,9 +22,9 @@ export default function UserView() {
     });
   };
 
-  useEffect(() => { load(); }, [decoded]);
+  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [decoded]);
 
-  if (user === null) return <div className="admin-empty">Уншиж байна…</div>;
+  if (user === undefined) return <div className="admin-empty">Уншиж байна…</div>;
   if (!user) {
     return (
       <>
@@ -33,7 +37,7 @@ export default function UserView() {
   }
 
   const toggleRole = async () => {
-    const next = user.role === 'admin' ? 'user' : 'admin';
+    const next: UserRole = user.role === 'admin' ? 'user' : 'admin';
     if (!window.confirm(`Эрхийг «${next}» болгох уу?`)) return;
     await setUserRole(user.identifier, next);
     load();

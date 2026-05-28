@@ -1,13 +1,16 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../auth.jsx';
+import { useAuth } from '../auth';
+import type { Session } from '../auth';
 
 const TICKETS_KEY = 'tsengeldekh_tickets';
 
-function ticketCountFor(session) {
+type Ticket = { user?: string } & Record<string, unknown>;
+
+function ticketCountFor(session: Session | null): number {
   if (!session) return 0;
   try {
-    const all = JSON.parse(localStorage.getItem(TICKETS_KEY) || '[]');
+    const all = JSON.parse(localStorage.getItem(TICKETS_KEY) || '[]') as Ticket[];
     return all.filter((t) => !t.user || t.user === session.identifier).length;
   } catch {
     return 0;
@@ -18,16 +21,18 @@ export default function UserMenu() {
   const { session, logout } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const rootRef = useRef(null);
-  const triggerRef = useRef(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   // Close on outside click + Esc
   useEffect(() => {
     if (!open) return;
-    const onDown = (e) => {
-      if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false);
+    const onDown = (e: MouseEvent) => {
+      if (rootRef.current && e.target instanceof Node && !rootRef.current.contains(e.target)) {
+        setOpen(false);
+      }
     };
-    const onKey = (e) => {
+    const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setOpen(false);
         triggerRef.current?.focus();
@@ -48,7 +53,7 @@ export default function UserMenu() {
   const avatar = session.avatar;
   const ticketCount = ticketCountFor(session);
 
-  const go = (to) => {
+  const go = (to: string) => {
     setOpen(false);
     navigate(to);
   };

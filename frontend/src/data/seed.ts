@@ -2,7 +2,9 @@
 // (or when localStorage is cleared) to populate the store. Edit the live data
 // from the admin panel — don't change this file unless you want to reset.
 
-export const SEED_EVENTS = [
+import type { EventRecord, HomeContent, UserRecord } from './store';
+
+export const SEED_EVENTS: EventRecord[] = [
   {
     id: 'thunderz-tengri',
     title: 'Thunderz × Tengri — Гранд тоглолт',
@@ -49,7 +51,7 @@ export const SEED_EVENTS = [
   },
 ];
 
-export const SEED_CONTENT = {
+export const SEED_CONTENT: HomeContent = {
   news: [
     {
       id: 'dol-2026',
@@ -153,7 +155,7 @@ export const SEED_CONTENT = {
   ],
 };
 
-export const SEED_ADMIN_USER = {
+export const SEED_ADMIN_USER: UserRecord = {
   identifier: 'admin',
   password: 'admin',
   fullname: 'Admin',

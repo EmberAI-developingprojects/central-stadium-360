@@ -1,9 +1,11 @@
-import React from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../auth.jsx';
+import type { ComponentType } from 'react';
+import { useAuth } from '../auth';
 import './styles.css';
 
-const NAV = [
+type NavItem = { to: string; end?: boolean; label: string; icon: ComponentType };
+
+const NAV: NavItem[] = [
   { to: '/admin', end: true, label: 'Хяналт', icon: IconGrid },
   { to: '/admin/events', label: 'Арга хэмжээ', icon: IconCalendar },
   { to: '/admin/orders', label: 'Захиалга', icon: IconReceipt },
@@ -11,7 +13,7 @@ const NAV = [
   { to: '/admin/content', label: 'Контент', icon: IconLayout },
 ];
 
-const PAGE_TITLES = {
+const PAGE_TITLES: Record<string, string> = {
   '/admin': 'Хяналтын самбар',
   '/admin/events': 'Арга хэмжээ',
   '/admin/events/new': 'Шинэ арга хэмжээ',

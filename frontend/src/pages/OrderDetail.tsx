@@ -1,35 +1,41 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useRequireAuth } from '../auth.jsx';
-import UserMenu from '../components/UserMenu.jsx';
-import { cancelOrder, getOrder } from '../data/store.js';
+import { useRequireAuth } from '../auth';
+import UserMenu from '../components/UserMenu';
+import { cancelOrder, getOrder, type OrderRecord } from '../data/store';
 
-const PAY_LABEL = {
+const PAY_LABEL: Record<string, string> = {
   qpay: 'QPay',
   socialpay: 'SocialPay',
   card: 'Карт',
 };
 
-const money = (n) => (n || 0).toLocaleString('en-US') + '₮';
-const fmtDateTime = (iso) => {
+const money = (n: number | undefined): string => (n || 0).toLocaleString('en-US') + '₮';
+const fmtDateTime = (iso: string | undefined): string => {
   if (!iso) return '—';
   try {
     return new Date(iso).toLocaleString('mn-MN', {
       year: 'numeric', month: '2-digit', day: '2-digit',
       hour: '2-digit', minute: '2-digit',
     });
-  } catch { return iso; }
+  } catch {
+    return iso;
+  }
 };
 
 export default function OrderDetail() {
   const session = useRequireAuth();
-  const { code } = useParams();
+  const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
-  const [order, setOrder] = useState(undefined); // undefined = loading, null = not found
+  // undefined = loading, null = not found, OrderRecord = loaded
+  const [order, setOrder] = useState<OrderRecord | null | undefined>(undefined);
 
-  useEffect(() => { getOrder(code).then((o) => setOrder(o || null)); }, [code]);
+  useEffect(() => {
+    if (!code) return;
+    getOrder(code).then((o) => setOrder(o || null));
+  }, [code]);
 
-  const owned = order && (!order.user || order.user === session?.identifier);
+  const owned = !!order && (!order.user || order.user === session?.identifier);
 
   if (!session) return null;
 
@@ -138,18 +144,18 @@ export default function OrderDetail() {
                       <td>{order.tierName} — {order.title}</td>
                       <td>{money(order.unitPrice)}</td>
                       <td>{order.qty}</td>
-                      <td>{money(order.unitPrice * order.qty)}</td>
+                      <td>{money((order.unitPrice ?? 0) * (order.qty ?? 0))}</td>
                     </tr>
                   </tbody>
                   <tfoot>
-                    <tr><th colSpan="3">Дэд дүн</th><td>{money(order.unitPrice * order.qty)}</td></tr>
-                    <tr><th colSpan="3">НӨАТ (багтсан)</th><td>{money(Math.round(order.total - order.total / 1.1))}</td></tr>
-                    <tr className="order-total-row"><th colSpan="3">Нийт төлсөн</th><td>{money(order.total)}</td></tr>
+                    <tr><th colSpan={3}>Дэд дүн</th><td>{money((order.unitPrice ?? 0) * (order.qty ?? 0))}</td></tr>
+                    <tr><th colSpan={3}>НӨАТ (багтсан)</th><td>{money(Math.round(order.total - order.total / 1.1))}</td></tr>
+                    <tr className="order-total-row"><th colSpan={3}>Нийт төлсөн</th><td>{money(order.total)}</td></tr>
                   </tfoot>
                 </table>
                 <p className="order-pay-method">
                   <span>Төлбөрийн хэрэгсэл:</span>
-                  <strong>{order.paymentName || PAY_LABEL[order.payment] || order.payment}</strong>
+                  <strong>{order.paymentName || (order.payment ? PAY_LABEL[order.payment] : '') || order.payment}</strong>
                 </p>
               </section>
 
@@ -200,7 +206,7 @@ export default function OrderDetail() {
 
 // Make the placeholder "QR" deterministic per order so it looks like a real code
 // rather than a random pattern that flickers on every render.
-function hashFill(seed, i) {
+function hashFill(seed: string, i: number): string {
   let h = 0;
   for (let k = 0; k < seed.length; k++) h = (h * 31 + seed.charCodeAt(k)) >>> 0;
   return ((h >>> (i % 31)) & 1) ? '#0B0F1A' : '#fff';

@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { readUsers, useAuth, useRequireAuth, writeUsers } from '../auth.jsx';
+import { readUsers, useAuth, useRequireAuth, writeUsers } from '../auth';
+
+type AlertState = { kind: 'error' | 'ok'; msg: string } | null;
 
 export default function Settings() {
   const session = useRequireAuth();
@@ -10,7 +12,7 @@ export default function Settings() {
   const [currentPw, setCurrentPw] = useState('');
   const [newPw, setNewPw] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
-  const [alert, setAlert] = useState(null); // { kind: 'error' | 'ok', msg }
+  const [alert, setAlert] = useState<AlertState>(null);
 
   if (!session) return null;
 
@@ -18,7 +20,7 @@ export default function Settings() {
   const account = users.find((u) => u.identifier === session.identifier);
   const createdAt = account?.createdAt ? new Date(account.createdAt).toLocaleString('mn-MN') : '—';
 
-  const onChangePassword = (e) => {
+  const onChangePassword = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setAlert(null);
 

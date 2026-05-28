@@ -1,18 +1,21 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { readUsers, useAuth, useRequireAuth } from '../auth.jsx';
+import { readUsers, useAuth, useRequireAuth } from '../auth';
 
 const TICKETS_KEY = 'tsengeldekh_tickets';
 const MAX_AVATAR_DIM = 256;       // resize uploaded image to this on the longer edge
 const MAX_AVATAR_BYTES = 8 * 1024 * 1024; // refuse files larger than 8 MB up front
 const MAX_BIO_LEN = 280;
 
+type Ticket = { user?: string; total?: number };
+type AlertState = { kind: 'error' | 'ok'; msg: string } | null;
+
 // Read an image File, downscale it on a canvas, return a JPEG data URL
 // so it stays small enough for localStorage even if the source is multi-MB.
-async function fileToResizedDataUrl(file) {
+async function fileToResizedDataUrl(file: File): Promise<string> {
   const url = URL.createObjectURL(file);
   try {
-    const img = await new Promise((resolve, reject) => {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
       const el = new Image();
       el.onload = () => resolve(el);
       el.onerror = reject;
@@ -25,6 +28,7 @@ async function fileToResizedDataUrl(file) {
     canvas.width = w;
     canvas.height = h;
     const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('canvas-2d-unavailable');
     ctx.drawImage(img, 0, 0, w, h);
     return canvas.toDataURL('image/jpeg', 0.85);
   } finally {
@@ -35,13 +39,13 @@ async function fileToResizedDataUrl(file) {
 export default function Profile() {
   const session = useRequireAuth();
   const { updateSession } = useAuth();
-  const fileRef = useRef(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const [fullname, setFullname] = useState('');
   const [bio, setBio] = useState('');
-  const [avatar, setAvatar] = useState(null);
+  const [avatar, setAvatar] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
-  const [alert, setAlert] = useState(null); // { kind, msg }
+  const [alert, setAlert] = useState<AlertState>(null);
   const [saving, setSaving] = useState(false);
 
   // Seed local form state when session arrives
@@ -54,15 +58,17 @@ export default function Profile() {
 
   const account = useMemo(
     () => readUsers().find((u) => u.identifier === session?.identifier),
-    [session]
+    [session],
   );
 
-  const tickets = useMemo(() => {
+  const tickets: Ticket[] = useMemo(() => {
     if (!session) return [];
     try {
-      const all = JSON.parse(localStorage.getItem(TICKETS_KEY) || '[]');
+      const all = JSON.parse(localStorage.getItem(TICKETS_KEY) || '[]') as Ticket[];
       return all.filter((t) => !t.user || t.user === session.identifier);
-    } catch { return []; }
+    } catch {
+      return [];
+    }
   }, [session]);
 
   const totalSpent = tickets.reduce((sum, t) => sum + (t.total || 0), 0);
@@ -70,7 +76,7 @@ export default function Profile() {
 
   if (!session) return null;
 
-  const handleFile = async (file) => {
+  const handleFile = async (file: File | null | undefined) => {
     setAlert(null);
     if (!file) return;
     if (!file.type.startsWith('image/')) {
@@ -87,13 +93,13 @@ export default function Profile() {
     }
   };
 
-  const onDrop = (e) => {
+  const onDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDragOver(false);
     handleFile(e.dataTransfer.files?.[0]);
   };
 
-  const onSave = (e) => {
+  const onSave = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setAlert(null);
     const name = fullname.trim();
@@ -104,7 +110,7 @@ export default function Profile() {
     try {
       updateSession({ fullname: name, bio, avatar });
       setAlert({ kind: 'ok', msg: 'Профайл хадгалагдлаа.' });
-    } catch (err) {
+    } catch {
       // localStorage quota is the realistic failure here; bail with a clear message.
       setAlert({ kind: 'error', msg: 'Хадгалахад алдаа гарлаа (хадгалах сан дүүрсэн байж магадгүй).' });
     } finally {

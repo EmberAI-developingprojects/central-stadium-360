@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { createEvent, deleteEvent, getEvent, updateEvent } from '../../data/store.js';
+import { createEvent, deleteEvent, getEvent, updateEvent } from '../../data/store';
+import type { EventRecord } from '../../data/store';
 
-const EMPTY = {
+const EMPTY: EventRecord = {
   id: '',
   title: '',
   desc: '',
@@ -15,17 +16,17 @@ const EMPTY = {
 };
 
 export default function EventEdit() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isNew = !id;
 
-  const [form, setForm] = useState(EMPTY);
+  const [form, setForm] = useState<EventRecord>(EMPTY);
   const [loaded, setLoaded] = useState(isNew);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (isNew) return;
+    if (isNew || !id) return;
     getEvent(id).then((e) => {
       if (!e) {
         setError('Арга хэмжээ олдсонгүй.');
@@ -39,9 +40,9 @@ export default function EventEdit() {
 
   if (!loaded) return <div className="admin-empty">Уншиж байна…</div>;
 
-  const update = (patch) => setForm((f) => ({ ...f, ...patch }));
+  const update = (patch: Partial<EventRecord>) => setForm((f) => ({ ...f, ...patch }));
 
-  const onSubmit = async (e) => {
+  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
     if (!form.title.trim()) { setError('Гарчиг шаардлагатай.'); return; }
@@ -50,18 +51,19 @@ export default function EventEdit() {
       if (isNew) {
         const created = await createEvent(form);
         navigate(`/admin/events/${created.id}`, { replace: true });
-      } else {
+      } else if (id) {
         await updateEvent(id, form);
       }
       navigate('/admin/events');
     } catch (err) {
-      setError(err.message || 'Хадгалах боломжгүй.');
+      setError((err as Error).message || 'Хадгалах боломжгүй.');
     } finally {
       setBusy(false);
     }
   };
 
   const onDelete = async () => {
+    if (!id) return;
     if (!window.confirm(`«${form.title}» арга хэмжээг устгах уу?`)) return;
     await deleteEvent(id);
     navigate('/admin/events');

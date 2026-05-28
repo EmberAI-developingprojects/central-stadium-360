@@ -1,19 +1,29 @@
-import React, { useEffect, useRef, useState } from 'react';
-import SiteHeader from '../components/SiteHeader.jsx';
-import SiteFooter from '../components/SiteFooter.jsx';
+import { useEffect, useRef, useState } from 'react';
+import SiteHeader from '../components/SiteHeader';
+import SiteFooter from '../components/SiteFooter';
 import StoryVideo from '../components/StoryVideo';
-import useRevealOnScroll from '../hooks/useRevealOnScroll.js';
-import useSmoothAnchors from '../hooks/useSmoothAnchors.js';
-import { useGatedNavigate } from '../auth.jsx';
-import { getHomeContent, listEvents } from '../data/store.js';
+import useRevealOnScroll from '../hooks/useRevealOnScroll';
+import useSmoothAnchors from '../hooks/useSmoothAnchors';
+import { useGatedNavigate } from '../auth';
+import { getHomeContent, listEvents } from '../data/store';
+import type {
+  EventRecord,
+  HomeContent,
+  MemberItem,
+  NewsItem,
+  Partner,
+  RoadmapItem,
+} from '../data/store';
+
+const EMPTY_CONTENT: HomeContent = { news: [], partners: [], roadmap: [], members: [] };
 
 export default function Home() {
   useRevealOnScroll();
   useSmoothAnchors();
   const gatedGo = useGatedNavigate();
 
-  const [events, setEvents] = useState([]);
-  const [content, setContent] = useState({ news: [], partners: [], roadmap: [], members: [] });
+  const [events, setEvents] = useState<EventRecord[]>([]);
+  const [content, setContent] = useState<HomeContent>(EMPTY_CONTENT);
 
   useEffect(() => {
     let alive = true;
@@ -42,7 +52,7 @@ export default function Home() {
   );
 }
 
-function Hero({ gatedGo }) {
+function Hero({ gatedGo }: { gatedGo: (to: string) => void }) {
   return (
     <section className="hero" id="top">
       <div className="hero-container">
@@ -168,7 +178,9 @@ function Stats() {
   );
 }
 
-function Upcoming({ gatedGo, events = [] }) {
+type UpcomingProps = { gatedGo: (to: string) => void; events: EventRecord[] };
+
+function Upcoming({ gatedGo, events }: UpcomingProps) {
   // Map store events to the shape this component expects (src/alt/date/year/pill).
   const upcoming = events.map((e) => {
     const [d, y] = (e.date || '').split('·').map((s) => s.trim());
@@ -177,7 +189,7 @@ function Upcoming({ gatedGo, events = [] }) {
 
   const [idx, setIdx] = useState(0);
   const [progress, setProgress] = useState(0);
-  const stageRef = useRef(null);
+  const stageRef = useRef<HTMLDivElement>(null);
   const intervalMs = 5500;
 
   useEffect(() => {
@@ -189,11 +201,11 @@ function Upcoming({ gatedGo, events = [] }) {
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (prefersReduced || upcoming.length === 0) return;
 
-    let rafId = null;
+    let rafId: number | null = null;
     let startTs = 0;
     let paused = false;
 
-    const tick = (ts) => {
+    const tick = (ts: number) => {
       if (paused) { rafId = requestAnimationFrame(tick); return; }
       if (!startTs) startTs = ts;
       const elapsed = ts - startTs;
@@ -249,10 +261,11 @@ function Upcoming({ gatedGo, events = [] }) {
         }
       };
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Reset progress on manual change
-  const go = (next) => {
+  const go = (next: number) => {
     if (upcoming.length === 0) return;
     setIdx((next + upcoming.length) % upcoming.length);
     setProgress(0);
@@ -321,8 +334,8 @@ function Upcoming({ gatedGo, events = [] }) {
   );
 }
 
-function MemberIcon({ iconKey }) {
-  const common = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: '1.8', strokeLinecap: 'round', strokeLinejoin: 'round' };
+function MemberIcon({ iconKey }: { iconKey: string }) {
+  const common = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: '1.8', strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
   switch (iconKey) {
     case 'music':
       return <svg {...common}><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>;
@@ -341,7 +354,7 @@ function MemberIcon({ iconKey }) {
   }
 }
 
-function Members({ items = [] }) {
+function Members({ items = [] }: { items: MemberItem[] }) {
   return (
     <section className="members" id="membership">
       <div className="members-inner">
@@ -381,7 +394,7 @@ function Arrow() {
 }
 
 function VideoCta() {
-  const videoRef = useRef(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [paused, setPaused] = useState(false);
 
   useEffect(() => {
@@ -447,9 +460,9 @@ function VideoCta() {
   );
 }
 
-function Partners({ items = [] }) {
+function Partners({ items = [] }: { items: Partner[] }) {
   // Render rows of 4 logos at a time, matching the original two-row layout.
-  const rows = [];
+  const rows: Partner[][] = [];
   for (let i = 0; i < items.length; i += 4) rows.push(items.slice(i, i + 4));
   return (
     <section className="partners" id="partners">
@@ -477,11 +490,11 @@ function Partners({ items = [] }) {
   );
 }
 
-function Roadmap({ items = [] }) {
+function Roadmap({ items = [] }: { items: RoadmapItem[] }) {
   // Distribute milestones evenly across the chart. The SVG path is decorative.
   const bot = items.filter((m) => m.position === 'bot');
   const top = items.filter((m) => m.position !== 'bot');
-  const posFor = (count, i) => {
+  const posFor = (count: number, i: number): number => {
     if (count <= 1) return 50;
     const span = 92; // leave 4% margin each side
     return 4 + (i * span) / (count - 1);
@@ -549,7 +562,7 @@ function Roadmap({ items = [] }) {
   );
 }
 
-function News({ items = [] }) {
+function News({ items = [] }: { items: NewsItem[] }) {
   const featured = items.find((n) => n.featured) || items[0];
   const side = items.filter((n) => n !== featured).slice(0, 3);
 
