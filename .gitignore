@@ -2,6 +2,12 @@
 node_modules/
 **/node_modules/
 
+# Lock files — pnpm only (never commit npm/yarn lock)
+package-lock.json
+**/package-lock.json
+yarn.lock
+**/yarn.lock
+
 # Build output
 dist/
 build/

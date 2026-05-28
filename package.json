@@ -1,0 +1,20 @@
+{
+  "name": "central-stadium-360",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Central Stadium 360 — 360° multi-angle live stadium streaming platform",
+  "packageManager": "pnpm@9.12.3",
+  "scripts": {
+    "dev": "concurrently -k -n FE,BE -c magenta,cyan \"pnpm --filter @cs360/frontend dev\" \"pnpm --filter @cs360/backend dev\"",
+    "dev:frontend": "pnpm --filter @cs360/frontend dev",
+    "dev:backend": "pnpm --filter @cs360/backend dev",
+    "build": "pnpm --filter @cs360/shared build && pnpm --filter @cs360/frontend build && pnpm --filter @cs360/backend build",
+    "typecheck": "pnpm -r run typecheck",
+    "db:push": "supabase db push",
+    "db:reset": "supabase db reset",
+    "db:diff": "supabase db diff"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1"
+  }
+}

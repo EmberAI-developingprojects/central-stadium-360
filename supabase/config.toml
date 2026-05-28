@@ -1,0 +1,16 @@
+# Minimal Supabase CLI config for `supabase db push`.
+# Run from repo root: pnpm db:push
+project_id = "central-stadium-360"
+
+[db]
+major_version = 15
+
+[auth]
+enabled = true
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["http://localhost:5173"]
+jwt_expiry = 3600
+
+[auth.sms]
+enable_signup = true
+enable_confirmations = true
