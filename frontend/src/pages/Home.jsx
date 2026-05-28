@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import SiteHeader from '../components/SiteHeader.jsx';
 import SiteFooter from '../components/SiteFooter.jsx';
-import StoryVideo from '../components/StoryVideo.jsx';
+import StoryVideo from '../components/StoryVideo';
 import useRevealOnScroll from '../hooks/useRevealOnScroll.js';
 import useSmoothAnchors from '../hooks/useSmoothAnchors.js';
 import { useGatedNavigate } from '../auth.jsx';

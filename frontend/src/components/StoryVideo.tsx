@@ -1,13 +1,17 @@
-import React, { forwardRef, useState } from 'react';
+import { forwardRef, useState, type VideoHTMLAttributes } from 'react';
 
 const VIDEO_SRC = '/assets/video/our-story.mp4';
 
-// Renders the project's story video, falling back to a still poster when the
-// MP4 isn't reachable. The MP4 is git-ignored (>100 MB), so this keeps the page
-// from showing a broken <video> in deployed builds while still working in dev.
-const StoryVideo = forwardRef(function StoryVideo(
+type StoryVideoProps = VideoHTMLAttributes<HTMLVideoElement> & {
+  fallbackClassName?: string;
+  fallbackAriaLabel?: string;
+};
+
+// The MP4 is git-ignored (>100 MB), so we render a still-poster div when the
+// <video> errors out — keeps deployed builds from showing a broken player.
+const StoryVideo = forwardRef<HTMLVideoElement, StoryVideoProps>(function StoryVideo(
   { poster, className, style, fallbackClassName, fallbackAriaLabel, children, ...videoProps },
-  ref
+  ref,
 ) {
   const [failed, setFailed] = useState(false);
 
