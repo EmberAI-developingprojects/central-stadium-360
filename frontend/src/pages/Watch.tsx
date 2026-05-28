@@ -1,12 +1,38 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+  type MouseEvent as ReactMouseEvent,
+} from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth, useRequireAuth } from '../auth.jsx';
-import UserMenu from '../components/UserMenu.jsx';
+import { useRequireAuth } from '../auth';
+import type { Session } from '../auth';
+import UserMenu from '../components/UserMenu';
 import StoryVideo from '../components/StoryVideo';
-import { cancelOrder, createOrder, listEvents, listOrders } from '../data/store.js';
+import { cancelOrder, createOrder, listEvents, listOrders } from '../data/store';
+import type { EventRecord, OrderRecord } from '../data/store';
+
+type TabId = 'live' | 'upcoming' | 'tickets';
+type CamKey = 'stage' | 'crowd' | 'drone' | 'band';
+type TierValue = 'standard' | 'vip' | 'platinum';
+type PayValue = 'qpay' | 'socialpay' | 'card';
+
+type TicketModalEvent = {
+  id: string;
+  title: string;
+  date: string;
+  image: string;
+  base: number;
+};
+
+type ChatMessage = { name: string; color: string; text: string; mine: boolean };
 
 // Fallback used if no event is marked featured in the store.
-const FEATURED_FALLBACK = {
+const FEATURED_FALLBACK: TicketModalEvent = {
   id: 'featured-placeholder',
   title: 'Удахгүй',
   date: '',
@@ -14,20 +40,20 @@ const FEATURED_FALLBACK = {
   base: 0,
 };
 
-const CAMS = {
+const CAMS: Record<CamKey, { label: string; sub: string }> = {
   stage: { label: 'Тайз',      sub: 'Cam 01 · 4K HDR' },
   crowd: { label: 'Үзэгчид',   sub: 'Cam 02 · 1080p' },
   drone: { label: 'Панорама',  sub: 'Cam 03 · 4K' },
   band:  { label: 'Хөгжимчид', sub: 'Cam 04 · 1080p' },
 };
 
-const TICKET_TIERS = [
+const TICKET_TIERS: { value: TierValue; name: string; desc: string; mult: number }[] = [
   { value: 'standard', name: 'Стандарт',   desc: 'HD 1080p шууд дамжуулал · нэг төхөөрөмж',         mult: 1 },
   { value: 'vip',      name: 'VIP 360°',   desc: '4K · 360° форматаар · хоёр төхөөрөмж зэрэг үзэх',  mult: 2 },
   { value: 'platinum', name: 'Платинум',   desc: '4K · 360° · олон өнцөг · 30 хоног дахин үзэх',     mult: 3 },
 ];
 
-const PAY_METHODS = [
+const PAY_METHODS: { value: PayValue; name: string; desc: string }[] = [
   { value: 'qpay',      name: 'QPay',      desc: 'Банкны апп-аар' },
   { value: 'socialpay', name: 'SocialPay', desc: 'Хаан банкны хэтэвч' },
   { value: 'card',      name: 'Карт',      desc: 'Visa · Mastercard' },
@@ -57,21 +83,24 @@ const CHAT_SAMPLES = [
   '4K чанартай үзэхэд талбай дээр байгаа мэт',
 ];
 
+const TAB_IDS: readonly TabId[] = ['live', 'upcoming', 'tickets'] as const;
+const isTabId = (value: string): value is TabId =>
+  (TAB_IDS as readonly string[]).includes(value);
+
 // ---------- Helpers ----------
-const money = (n) => n.toLocaleString('en-US') + '₮';
+const money = (n: number): string => n.toLocaleString('en-US') + '₮';
 
 // ---------- Top-level page ----------
 export default function Watch() {
   const session = useRequireAuth();
   const location = useLocation();
 
-  const initialTab = ['live', 'upcoming', 'tickets'].includes(location.hash.slice(1))
-    ? location.hash.slice(1)
-    : 'live';
-  const [activeTab, setActiveTab] = useState(initialTab);
-  const [tickets, setTickets] = useState([]);
-  const [events, setEvents] = useState([]);
-  const [modalEvent, setModalEvent] = useState(null);     // event object when modal open
+  const hashId = location.hash.slice(1);
+  const initialTab: TabId = isTabId(hashId) ? hashId : 'live';
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab);
+  const [tickets, setTickets] = useState<OrderRecord[]>([]);
+  const [events, setEvents] = useState<EventRecord[]>([]);
+  const [modalEvent, setModalEvent] = useState<TicketModalEvent | null>(null);
   const [viewerOpen, setViewerOpen] = useState(false);
 
   const refreshTickets = useCallback(() => {
@@ -83,29 +112,30 @@ export default function Watch() {
     listEvents().then(setEvents);
   }, [refreshTickets]);
 
-  const featuredEvent = useMemo(
-    () => events.find((e) => e.featured) || FEATURED_FALLBACK,
-    [events]
-  );
+  const featuredEvent = useMemo<TicketModalEvent>(() => {
+    const found = events.find((e) => e.featured);
+    if (!found) return FEATURED_FALLBACK;
+    return { id: found.id, title: found.title, date: found.date, image: found.image, base: found.base };
+  }, [events]);
 
   const myTickets = useMemo(
     () => tickets.filter((t) => !t.user || (session && t.user === session.identifier)),
-    [tickets, session]
+    [tickets, session],
   );
 
   const ownsFeatured = useMemo(
     () => myTickets.some((t) => t.eventId === featuredEvent.id),
-    [myTickets, featuredEvent.id]
+    [myTickets, featuredEvent.id],
   );
 
-  const openTicketModal = useCallback((event) => setModalEvent(event), []);
+  const openTicketModal = useCallback((event: TicketModalEvent) => setModalEvent(event), []);
   const closeTicketModal = useCallback(() => setModalEvent(null), []);
 
   const openViewer = useCallback(() => setViewerOpen(true), []);
   const closeViewer = useCallback(() => setViewerOpen(false), []);
 
   // Scroll to a section + activate tab
-  const goSection = useCallback((id) => {
+  const goSection = useCallback((id: TabId) => {
     setActiveTab(id);
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -127,7 +157,7 @@ export default function Watch() {
       const el = document.getElementById(id);
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        setActiveTab(id);
+        if (isTabId(id)) setActiveTab(id);
       }
     }, 50);
     return () => clearTimeout(t);
@@ -202,8 +232,15 @@ export default function Watch() {
 }
 
 // ---------- Live section ----------
-function LiveSection({ featuredEvent, ownsFeatured, onWatch, viewerOpen }) {
-  const videoRef = useRef(null);
+type LiveSectionProps = {
+  featuredEvent: TicketModalEvent;
+  ownsFeatured: boolean;
+  onWatch: () => void;
+  viewerOpen: boolean;
+};
+
+function LiveSection({ featuredEvent, ownsFeatured, onWatch, viewerOpen }: LiveSectionProps) {
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [paused, setPaused] = useState(false);
 
   useEffect(() => {
@@ -326,7 +363,12 @@ function LiveSection({ featuredEvent, ownsFeatured, onWatch, viewerOpen }) {
 }
 
 // ---------- Upcoming section ----------
-function UpcomingSection({ events, onBuy }) {
+type UpcomingSectionProps = {
+  events: EventRecord[];
+  onBuy: (event: TicketModalEvent) => void;
+};
+
+function UpcomingSection({ events, onBuy }: UpcomingSectionProps) {
   const list = events.filter((e) => !e.featured);
   return (
     <section className="watch-section" id="upcoming">
@@ -365,10 +407,16 @@ function UpcomingSection({ events, onBuy }) {
 }
 
 // ---------- Tickets section ----------
-function TicketsSection({ tickets, onCancel, onWatch }) {
+type TicketsSectionProps = {
+  tickets: OrderRecord[];
+  onCancel: (code: string) => void;
+  onWatch: () => void;
+};
+
+function TicketsSection({ tickets, onCancel, onWatch }: TicketsSectionProps) {
   const sorted = useMemo(
     () => [...tickets].sort((a, b) => (b.purchasedAt || '').localeCompare(a.purchasedAt || '')),
-    [tickets]
+    [tickets],
   );
 
   return (
@@ -429,13 +477,28 @@ function TicketsSection({ tickets, onCancel, onWatch }) {
 }
 
 // ---------- Multi-cam viewer overlay ----------
-function ViewerOverlay({ session, featuredEvent, onClose }) {
-  const mainRef = useRef(null);
-  const stageRef = useRef(null);
-  const chatListRef = useRef(null);
-  const reactFloatRef = useRef(null);
+type ViewerOverlayProps = {
+  session: Session;
+  featuredEvent: TicketModalEvent;
+  onClose: () => void;
+};
 
-  const [angle, setAngle] = useState('stage');
+type FullscreenDocument = Document & {
+  webkitFullscreenElement?: Element | null;
+  webkitExitFullscreen?: () => Promise<void> | void;
+};
+
+type FullscreenElement = HTMLElement & {
+  webkitRequestFullscreen?: () => Promise<void> | void;
+};
+
+function ViewerOverlay({ session, featuredEvent, onClose }: ViewerOverlayProps) {
+  const mainRef = useRef<HTMLVideoElement>(null);
+  const stageRef = useRef<HTMLElement>(null);
+  const chatListRef = useRef<HTMLDivElement>(null);
+  const reactFloatRef = useRef<HTMLDivElement>(null);
+
+  const [angle, setAngle] = useState<CamKey>('stage');
   const [paused, setPaused] = useState(false);
   const [muted, setMuted] = useState(true);
   const [volume, setVolume] = useState(60);
@@ -445,19 +508,31 @@ function ViewerOverlay({ session, featuredEvent, onClose }) {
   const [cc, setCc] = useState(false);
   const [isFs, setIsFs] = useState(false);
   const [idle, setIdle] = useState(false);
-  const [chat, setChat] = useState([]); // { name, color, text, mine }
+  const [chat, setChat] = useState<ChatMessage[]>([]);
+
+  const toggleStageFs = useCallback(() => {
+    const t = stageRef.current as FullscreenElement | null;
+    if (!t) return;
+    const doc = document as FullscreenDocument;
+    const inFs = doc.fullscreenElement || doc.webkitFullscreenElement;
+    if (!inFs) {
+      (t.requestFullscreen || t.webkitRequestFullscreen)?.call(t);
+    } else {
+      (doc.exitFullscreen || doc.webkitExitFullscreen)?.call(doc);
+    }
+  }, []);
 
   // ESC key to close
   useEffect(() => {
-    const onKey = (e) => {
-      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+    const onKey = (e: KeyboardEvent) => {
+      const tgt = e.target as HTMLElement | null;
+      if (tgt && (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA')) return;
       if (e.key === 'Escape') onClose();
       if (e.key === 'f' || e.key === 'F') { e.preventDefault(); toggleStageFs(); }
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onClose]);
+  }, [onClose, toggleStageFs]);
 
   // Sync main video play/pause + mute state
   useEffect(() => {
@@ -473,6 +548,7 @@ function ViewerOverlay({ session, featuredEvent, onClose }) {
       v.removeEventListener('play', syncPlay);
       v.removeEventListener('pause', syncPlay);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -502,7 +578,8 @@ function ViewerOverlay({ session, featuredEvent, onClose }) {
   // Fullscreen change sync
   useEffect(() => {
     const onFs = () => {
-      const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+      const doc = document as FullscreenDocument;
+      const fsEl = doc.fullscreenElement || doc.webkitFullscreenElement;
       setIsFs(fsEl === stageRef.current);
     };
     document.addEventListener('fullscreenchange', onFs);
@@ -516,7 +593,7 @@ function ViewerOverlay({ session, featuredEvent, onClose }) {
   // Auto-hide controls when idle in fullscreen
   useEffect(() => {
     if (!isFs) { setIdle(false); return; }
-    let t = null;
+    let t: ReturnType<typeof setTimeout> | null = null;
     const stage = stageRef.current;
     if (!stage) return;
     const onMove = () => {
@@ -567,7 +644,7 @@ function ViewerOverlay({ session, featuredEvent, onClose }) {
     });
   };
 
-  const onVolume = (e) => {
+  const onVolume = (e: ChangeEvent<HTMLInputElement>) => {
     const v = parseInt(e.target.value, 10);
     setVolume(v);
     setMuted(v === 0);
@@ -580,21 +657,12 @@ function ViewerOverlay({ session, featuredEvent, onClose }) {
       } else if (mainRef.current?.requestPictureInPicture) {
         await mainRef.current.requestPictureInPicture();
       }
-    } catch {}
+    } catch {
+      /* ignore PiP errors */
+    }
   };
 
-  const toggleStageFs = useCallback(() => {
-    const t = stageRef.current;
-    if (!t) return;
-    const inFs = document.fullscreenElement || document.webkitFullscreenElement;
-    if (!inFs) {
-      (t.requestFullscreen || t.webkitRequestFullscreen).call(t);
-    } else {
-      (document.exitFullscreen || document.webkitExitFullscreen).call(document);
-    }
-  }, []);
-
-  const emitReact = (emoji) => {
+  const emitReact = (emoji: string) => {
     const float = reactFloatRef.current;
     if (!float) return;
     for (let i = 0; i < 5; i++) {
@@ -611,11 +679,11 @@ function ViewerOverlay({ session, featuredEvent, onClose }) {
   };
 
   const [chatInput, setChatInput] = useState('');
-  const onChatSubmit = (e) => {
+  const onChatSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const text = chatInput.trim();
     if (!text) return;
-    const name = (session && (session.fullname || session.identifier)) || 'Та';
+    const name = session.fullname || session.identifier || 'Та';
     setChat((prev) => [...prev, { name, color: 'var(--brand-blue-soft)', text, mine: true }]);
     setChatInput('');
   };
@@ -663,7 +731,7 @@ function ViewerOverlay({ session, featuredEvent, onClose }) {
 
       <div className="viewer-body">
         <aside className="viewer-angles" aria-label="Камерын өнцөг">
-          {['crowd', 'drone', 'band'].map((k) => (
+          {(['crowd', 'drone', 'band'] as const).map((k) => (
             <button key={k} type="button" className={`viewer-angle${angle === k ? ' is-active' : ''}`} onClick={() => setAngle(k)}>
               <span className="viewer-angle-thumb" data-vfx={k}>
                 <StoryVideo
@@ -790,28 +858,36 @@ function ViewerOverlay({ session, featuredEvent, onClose }) {
   );
 }
 
-function fmtElapsed(s) {
+function fmtElapsed(s: number): string {
   const h = String(Math.floor(s / 3600)).padStart(2, '0');
   const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
   const sec = String(s % 60).padStart(2, '0');
   return `${h}:${m}:${sec}`;
 }
 
-function randomBotMessage() {
+function randomBotMessage(): ChatMessage {
   const b = BOTS[Math.floor(Math.random() * BOTS.length)];
   const t = CHAT_SAMPLES[Math.floor(Math.random() * CHAT_SAMPLES.length)];
   return { name: b.name, color: b.color, text: t, mine: false };
 }
 
 // ---------- Ticket purchase modal ----------
-function TicketModal({ event, session, onClose, onPurchased, onWatchSuccess }) {
-  const [tier, setTier] = useState('standard');
-  const [pay, setPay] = useState('qpay');
+type TicketModalProps = {
+  event: TicketModalEvent;
+  session: Session;
+  onClose: () => void;
+  onPurchased: (order: OrderRecord) => void;
+  onWatchSuccess: () => void;
+};
+
+function TicketModal({ event, session, onClose, onPurchased, onWatchSuccess }: TicketModalProps) {
+  const [tier, setTier] = useState<TierValue>('standard');
+  const [pay, setPay] = useState<PayValue>('qpay');
   const [qty, setQty] = useState(1);
   const [busy, setBusy] = useState(false);
   const [alert, setAlert] = useState('');
   const [checkoutLabel, setCheckoutLabel] = useState('Худалдан авах');
-  const [success, setSuccess] = useState(null); // order object on success
+  const [success, setSuccess] = useState<OrderRecord | null>(null);
 
   const selectedTier = TICKET_TIERS.find((t) => t.value === tier);
   const selectedPay = PAY_METHODS.find((p) => p.value === pay);
@@ -819,7 +895,7 @@ function TicketModal({ event, session, onClose, onPurchased, onWatchSuccess }) {
   const total = event.base * (selectedTier?.mult || 1) * qty;
 
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
@@ -829,8 +905,8 @@ function TicketModal({ event, session, onClose, onPurchased, onWatchSuccess }) {
     setBusy(true);
     setCheckoutLabel(
       pay === 'qpay' || pay === 'socialpay'
-        ? `${selectedPay.name} рүү шилжиж байна…`
-        : 'Картаар төлж байна…'
+        ? `${selectedPay?.name ?? ''} рүү шилжиж байна…`
+        : 'Картаар төлж байна…',
     );
 
     setTimeout(() => {
@@ -841,29 +917,31 @@ function TicketModal({ event, session, onClose, onPurchased, onWatchSuccess }) {
         setAlert('Төлбөр амжилтгүй боллоо. Дахин оролдоно уу.');
         return;
       }
-      const order = {
+      const order: OrderRecord = {
         code: 'TS-' + Math.random().toString(36).slice(2, 8).toUpperCase(),
-        user: (session && session.identifier) || '',
+        user: session.identifier || '',
         eventId: event.id,
         title: event.title,
         date: event.date,
         image: event.image,
         tier,
-        tierName: selectedTier.name,
+        tierName: selectedTier?.name,
         qty,
-        unitPrice: event.base * selectedTier.mult,
+        unitPrice: event.base * (selectedTier?.mult ?? 1),
         total,
         payment: pay,
-        paymentName: selectedPay.name,
+        paymentName: selectedPay?.name,
         purchasedAt: new Date().toISOString(),
+        status: 'paid',
       };
       onPurchased(order);
       setSuccess(order);
     }, 1100);
   };
 
-  const onBackdrop = (e) => {
-    if (e.target.dataset.close !== undefined || e.target.closest('[data-close]')) onClose();
+  const onBackdrop = (e: ReactMouseEvent<HTMLDivElement>) => {
+    const tgt = e.target as HTMLElement;
+    if (tgt.dataset?.close !== undefined || tgt.closest('[data-close]')) onClose();
   };
 
   return (

@@ -1,17 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { deleteEvent, listEvents, listOrders, setFeaturedEvent } from '../../data/store.js';
+import { deleteEvent, listEvents, listOrders, setFeaturedEvent } from '../../data/store';
+import type { EventRecord } from '../../data/store';
 
-const money = (n) => (n || 0).toLocaleString('en-US') + '₮';
+const money = (n: number | undefined): string => (n || 0).toLocaleString('en-US') + '₮';
 
 export default function EventsList() {
-  const [events, setEvents] = useState(null);
-  const [salesByEvent, setSalesByEvent] = useState({});
+  const [events, setEvents] = useState<EventRecord[] | null>(null);
+  const [salesByEvent, setSalesByEvent] = useState<Record<string, number>>({});
 
   const load = () => {
     Promise.all([listEvents(), listOrders({ status: 'paid' })]).then(([evts, orders]) => {
       setEvents(evts);
-      const map = {};
+      const map: Record<string, number> = {};
       orders.forEach((o) => { map[o.eventId] = (map[o.eventId] || 0) + (Number(o.qty) || 0); });
       setSalesByEvent(map);
     });
@@ -19,13 +20,13 @@ export default function EventsList() {
 
   useEffect(() => { load(); }, []);
 
-  const onDelete = async (id, title) => {
+  const onDelete = async (id: string, title: string) => {
     if (!window.confirm(`«${title}» арга хэмжээг устгах уу?`)) return;
     await deleteEvent(id);
     load();
   };
 
-  const onFeature = async (id) => {
+  const onFeature = async (id: string) => {
     await setFeaturedEvent(id);
     load();
   };

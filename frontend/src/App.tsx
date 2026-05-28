@@ -1,22 +1,22 @@
+import { useEffect, type ReactNode } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import React, { useEffect } from 'react';
-import { useAuth, RequireAdmin } from './auth.jsx';
-import Home from './pages/Home.jsx';
-import Login from './pages/Login.jsx';
-import Register from './pages/Register.jsx';
-import Watch from './pages/Watch.jsx';
-import Settings from './pages/Settings.jsx';
-import Profile from './pages/Profile.jsx';
-import OrderDetail from './pages/OrderDetail.jsx';
-import AdminLayout from './admin/AdminLayout.jsx';
-import Dashboard from './admin/pages/Dashboard.jsx';
-import EventsList from './admin/pages/EventsList.jsx';
-import EventEdit from './admin/pages/EventEdit.jsx';
-import OrdersList from './admin/pages/OrdersList.jsx';
-import OrderView from './admin/pages/OrderView.jsx';
-import UsersList from './admin/pages/UsersList.jsx';
-import UserView from './admin/pages/UserView.jsx';
-import Content from './admin/pages/Content.jsx';
+import { useAuth, RequireAdmin } from './auth';
+import Home from './pages/Home';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Watch from './pages/Watch';
+import Settings from './pages/Settings';
+import Profile from './pages/Profile';
+import OrderDetail from './pages/OrderDetail';
+import AdminLayout from './admin/AdminLayout';
+import Dashboard from './admin/pages/Dashboard';
+import EventsList from './admin/pages/EventsList';
+import EventEdit from './admin/pages/EventEdit';
+import OrdersList from './admin/pages/OrdersList';
+import OrderView from './admin/pages/OrderView';
+import UsersList from './admin/pages/UsersList';
+import UserView from './admin/pages/UserView';
+import Content from './admin/pages/Content';
 
 function ScrollToTop() {
   const { pathname, hash } = useLocation();
@@ -29,12 +29,12 @@ function ScrollToTop() {
 
 // Redirect logged-in visitors away from guest pages (home, login, register).
 // Admins land in /admin; regular users land in /watch.
-function GuestOnly({ children }) {
+function GuestOnly({ children }: { children: ReactNode }) {
   const { session } = useAuth();
   if (session && session.identifier) {
     return <Navigate to={session.role === 'admin' ? '/admin' : '/watch'} replace />;
   }
-  return children;
+  return <>{children}</>;
 }
 
 export default function App() {

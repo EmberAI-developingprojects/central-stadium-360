@@ -1,16 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { listOrders, listUsers, setUserDisabled, setUserRole } from '../../data/store.js';
+import { listOrders, listUsers, setUserDisabled, setUserRole } from '../../data/store';
+import type { UserRecord, UserRole } from '../../data/store';
 
 export default function UsersList() {
-  const [users, setUsers] = useState(null);
-  const [orderCounts, setOrderCounts] = useState({});
+  const [users, setUsers] = useState<UserRecord[] | null>(null);
+  const [orderCounts, setOrderCounts] = useState<Record<string, number>>({});
   const [q, setQ] = useState('');
 
   const load = () => {
     Promise.all([listUsers(), listOrders()]).then(([all, orders]) => {
       setUsers(all);
-      const counts = {};
+      const counts: Record<string, number> = {};
       orders.forEach((o) => { counts[o.user] = (counts[o.user] || 0) + 1; });
       setOrderCounts(counts);
     });
@@ -18,14 +19,14 @@ export default function UsersList() {
 
   useEffect(() => { load(); }, []);
 
-  const onToggleRole = async (u) => {
-    const next = u.role === 'admin' ? 'user' : 'admin';
+  const onToggleRole = async (u: UserRecord) => {
+    const next: UserRole = u.role === 'admin' ? 'user' : 'admin';
     if (!window.confirm(`«${u.fullname || u.identifier}»-ийн эрхийг «${next}» болгох уу?`)) return;
     await setUserRole(u.identifier, next);
     load();
   };
 
-  const onToggleDisabled = async (u) => {
+  const onToggleDisabled = async (u: UserRecord) => {
     const next = !u.disabled;
     if (next && !window.confirm(`«${u.fullname || u.identifier}»-ийн хандалтыг хязгаарлах уу?`)) return;
     await setUserDisabled(u.identifier, next);

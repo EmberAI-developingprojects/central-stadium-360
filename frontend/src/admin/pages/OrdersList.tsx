@@ -1,19 +1,22 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { listOrders } from '../../data/store.js';
+import { listOrders } from '../../data/store';
+import type { OrderRecord, OrderStatus } from '../../data/store';
 
-const money = (n) => (n || 0).toLocaleString('en-US') + '₮';
+const money = (n: number | undefined): string => (n || 0).toLocaleString('en-US') + '₮';
 
-const STATUS_BADGE = {
+const STATUS_BADGE: Record<string, string> = {
   paid: 'badge badge-paid',
   refunded: 'badge badge-refunded',
   cancelled: 'badge badge-cancelled',
 };
 
+type StatusFilter = OrderStatus | 'all';
+
 export default function OrdersList() {
-  const [orders, setOrders] = useState(null);
+  const [orders, setOrders] = useState<OrderRecord[] | null>(null);
   const [q, setQ] = useState('');
-  const [status, setStatus] = useState('all');
+  const [status, setStatus] = useState<StatusFilter>('all');
 
   useEffect(() => {
     listOrders({ q, status }).then(setOrders);
@@ -35,7 +38,7 @@ export default function OrdersList() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
-        <select value={status} onChange={(e) => setStatus(e.target.value)}>
+        <select value={status} onChange={(e) => setStatus(e.target.value as StatusFilter)}>
           <option value="all">Бүх төлөв</option>
           <option value="paid">Төлбөртэй</option>
           <option value="refunded">Буцаагдсан</option>

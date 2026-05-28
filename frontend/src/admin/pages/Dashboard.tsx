@@ -1,13 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { listEvents, listOrders, listUsers, ordersStats } from '../../data/store.js';
+import { listEvents, listOrders, listUsers, ordersStats } from '../../data/store';
+import type { OrderRecord, OrdersStats, UserRecord } from '../../data/store';
 
-const money = (n) => (n || 0).toLocaleString('en-US') + '₮';
+const money = (n: number | undefined): string => (n || 0).toLocaleString('en-US') + '₮';
 
 export default function Dashboard() {
-  const [stats, setStats] = useState(null);
-  const [recentOrders, setRecentOrders] = useState([]);
-  const [recentUsers, setRecentUsers] = useState([]);
+  const [stats, setStats] = useState<OrdersStats | null>(null);
+  const [recentOrders, setRecentOrders] = useState<OrderRecord[]>([]);
+  const [recentUsers, setRecentUsers] = useState<UserRecord[]>([]);
   const [userCount, setUserCount] = useState(0);
   const [upcomingCount, setUpcomingCount] = useState(0);
 
@@ -23,10 +24,10 @@ export default function Dashboard() {
           users
             .filter((u) => u.identifier !== 'admin')
             .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
-            .slice(0, 5)
+            .slice(0, 5),
         );
         setUpcomingCount(events.length);
-      }
+      },
     );
     return () => { alive = false; };
   }, []);
@@ -120,12 +121,14 @@ export default function Dashboard() {
   );
 }
 
-function Sparkline({ series }) {
+type SparkSeries = OrdersStats['last30d'];
+
+function Sparkline({ series }: { series: SparkSeries }) {
   if (!series || series.length === 0) return null;
   const W = 800, H = 140, P = 8;
   const max = Math.max(1, ...series.map((d) => d.total));
   const step = (W - P * 2) / (series.length - 1 || 1);
-  const points = series.map((d, i) => {
+  const points: [number, number][] = series.map((d, i) => {
     const x = P + i * step;
     const y = H - P - (d.total / max) * (H - P * 2);
     return [x, y];
@@ -137,7 +140,7 @@ function Sparkline({ series }) {
       <path d={fill} fill="rgba(34,48,198,0.10)" />
       <path d={path} stroke="#2230C6" strokeWidth="2" fill="none" />
       {points.map(([x, y], i) =>
-        series[i].total > 0 ? <circle key={i} cx={x} cy={y} r="2.5" fill="#2230C6" /> : null
+        series[i].total > 0 ? <circle key={i} cx={x} cy={y} r="2.5" fill="#2230C6" /> : null,
       )}
     </svg>
   );

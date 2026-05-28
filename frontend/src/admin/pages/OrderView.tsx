@@ -1,18 +1,25 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { cancelOrder, getOrder, refundOrder } from '../../data/store.js';
+import { cancelOrder, getOrder, refundOrder } from '../../data/store';
+import type { OrderRecord } from '../../data/store';
 
-const money = (n) => (n || 0).toLocaleString('en-US') + '₮';
+const money = (n: number | undefined): string => (n || 0).toLocaleString('en-US') + '₮';
+
+// undefined = loading, null = not found, OrderRecord = loaded
+type LoadState = OrderRecord | null | undefined;
 
 export default function OrderView() {
-  const { code } = useParams();
+  const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
-  const [order, setOrder] = useState(null);
+  const [order, setOrder] = useState<LoadState>(undefined);
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => { getOrder(code).then(setOrder); }, [code]);
+  useEffect(() => {
+    if (!code) return;
+    getOrder(code).then((o) => setOrder(o));
+  }, [code]);
 
-  if (order === null) return <div className="admin-empty">Уншиж байна…</div>;
+  if (order === undefined) return <div className="admin-empty">Уншиж байна…</div>;
   if (!order) {
     return (
       <>

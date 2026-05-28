@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../auth.jsx';
-import UserMenu from './UserMenu.jsx';
+import { useAuth } from '../auth';
+import UserMenu from './UserMenu';
 
 export default function SiteHeader() {
   const { session } = useAuth();

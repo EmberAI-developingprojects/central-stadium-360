@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { readUsers, useAuth } from '../auth.jsx';
+import { readUsers, useAuth } from '../auth';
 
 // Normalize: gmail trimmed + lowercased; phone reduced to +976 + 8 digits.
 // Leave bare 'admin' alone so the bootstrap admin can log in without normalization.
-function normalize(raw) {
+function normalize(raw: string): string {
   const v = raw.trim();
   if (v.toLowerCase() === 'admin') return 'admin';
   if (/@/.test(v)) return v.toLowerCase();
@@ -16,7 +16,7 @@ function normalize(raw) {
 
 // Restrict ?next= to local SPA routes so we can't be used as an open redirect.
 // Default to /watch so freshly-signed-in users land in their dashboard.
-function safeNext(next) {
+function safeNext(next: string | null): string {
   if (!next) return '/watch';
   if (!next.startsWith('/')) return '/watch';
   if (next.startsWith('//')) return '/watch';
@@ -35,7 +35,7 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const [submitLabel, setSubmitLabel] = useState('Нэвтрэх');
 
-  const onSubmit = (e) => {
+  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setAlert('');
     const rawId = identifier.trim();

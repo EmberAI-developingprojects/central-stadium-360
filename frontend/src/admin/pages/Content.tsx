@@ -1,16 +1,30 @@
-import React, { useEffect, useState } from 'react';
-import { getHomeContent, updateHomeContent } from '../../data/store.js';
+import { useEffect, useState, type ReactNode } from 'react';
+import { getHomeContent, updateHomeContent } from '../../data/store';
+import type {
+  HomeContent,
+  MemberItem,
+  NewsItem,
+  Partner,
+  RoadmapItem,
+} from '../../data/store';
 
-const TABS = [
+type SectionKey = 'news' | 'partners' | 'roadmap' | 'members';
+
+const TABS: { key: SectionKey; label: string }[] = [
   { key: 'news',     label: 'Мэдээ' },
   { key: 'partners', label: 'Хамтрагч' },
   { key: 'roadmap',  label: 'Түүхэн замнал' },
   { key: 'members',  label: 'Үйлчилгээ' },
 ];
 
-const ICON_KEYS = ['music', 'doc', 'news', 'chat', 'stream', 'stadium'];
+const ICON_KEYS = ['music', 'doc', 'news', 'chat', 'stream', 'stadium'] as const;
 
-const NEW_ITEM = {
+const NEW_ITEM: {
+  news: () => NewsItem;
+  partners: () => Partner;
+  roadmap: () => RoadmapItem;
+  members: () => MemberItem;
+} = {
   news:     () => ({ id: 'news-' + Math.random().toString(36).slice(2, 7), label: 'Шинэ', title: '', body: '', image: '', featured: false }),
   partners: () => ({ id: 'partner-' + Math.random().toString(36).slice(2, 7), image: '', alt: 'Партнёр байгууллага' }),
   roadmap:  () => ({ id: 'm' + Math.random().toString(36).slice(2, 6), year: '', title: '', position: 'top' }),
@@ -18,8 +32,8 @@ const NEW_ITEM = {
 };
 
 export default function Content() {
-  const [tab, setTab] = useState('news');
-  const [content, setContent] = useState(null);
+  const [tab, setTab] = useState<SectionKey>('news');
+  const [content, setContent] = useState<HomeContent | null>(null);
   const [busy, setBusy] = useState(false);
   const [savedAt, setSavedAt] = useState(0);
 
@@ -29,23 +43,38 @@ export default function Content() {
 
   const section = content[tab] || [];
 
-  const updateSection = (next) => setContent({ ...content, [tab]: next });
+  const updateSectionNews = (next: NewsItem[]) => setContent({ ...content, news: next });
+  const updateSectionPartners = (next: Partner[]) => setContent({ ...content, partners: next });
+  const updateSectionRoadmap = (next: RoadmapItem[]) => setContent({ ...content, roadmap: next });
+  const updateSectionMembers = (next: MemberItem[]) => setContent({ ...content, members: next });
 
-  const updateItem = (id, patch) =>
-    updateSection(section.map((it) => (it.id === id ? { ...it, ...patch } : it)));
+  const removeItem = (id: string) => {
+    if (tab === 'news') updateSectionNews(content.news.filter((it) => it.id !== id));
+    else if (tab === 'partners') updateSectionPartners(content.partners.filter((it) => it.id !== id));
+    else if (tab === 'roadmap') updateSectionRoadmap(content.roadmap.filter((it) => it.id !== id));
+    else updateSectionMembers(content.members.filter((it) => it.id !== id));
+  };
 
-  const removeItem = (id) =>
-    updateSection(section.filter((it) => it.id !== id));
+  const updateNews = (id: string, patch: Partial<NewsItem>) =>
+    updateSectionNews(content.news.map((it) => (it.id === id ? { ...it, ...patch } : it)));
+  const updatePartner = (id: string, patch: Partial<Partner>) =>
+    updateSectionPartners(content.partners.map((it) => (it.id === id ? { ...it, ...patch } : it)));
+  const updateRoadmap = (id: string, patch: Partial<RoadmapItem>) =>
+    updateSectionRoadmap(content.roadmap.map((it) => (it.id === id ? { ...it, ...patch } : it)));
+  const updateMember = (id: string, patch: Partial<MemberItem>) =>
+    updateSectionMembers(content.members.map((it) => (it.id === id ? { ...it, ...patch } : it)));
 
   const addItem = () => {
-    const next = [...section, NEW_ITEM[tab]()];
-    updateSection(next);
+    if (tab === 'news') updateSectionNews([...content.news, NEW_ITEM.news()]);
+    else if (tab === 'partners') updateSectionPartners([...content.partners, NEW_ITEM.partners()]);
+    else if (tab === 'roadmap') updateSectionRoadmap([...content.roadmap, NEW_ITEM.roadmap()]);
+    else updateSectionMembers([...content.members, NEW_ITEM.members()]);
   };
 
   const onSave = async () => {
     setBusy(true);
     try {
-      await updateHomeContent({ [tab]: section });
+      await updateHomeContent({ [tab]: content[tab] });
       setSavedAt(Date.now());
     } finally { setBusy(false); }
   };
@@ -88,20 +117,24 @@ export default function Content() {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {section.map((it) => (
+          {tab === 'news' && content.news.map((it) => (
             <div key={it.id} className="admin-card">
-              {tab === 'news' && (
-                <NewsRow item={it} onChange={(p) => updateItem(it.id, p)} onRemove={() => removeItem(it.id)} />
-              )}
-              {tab === 'partners' && (
-                <PartnerRow item={it} onChange={(p) => updateItem(it.id, p)} onRemove={() => removeItem(it.id)} />
-              )}
-              {tab === 'roadmap' && (
-                <RoadmapRow item={it} onChange={(p) => updateItem(it.id, p)} onRemove={() => removeItem(it.id)} />
-              )}
-              {tab === 'members' && (
-                <MemberRow item={it} onChange={(p) => updateItem(it.id, p)} onRemove={() => removeItem(it.id)} />
-              )}
+              <NewsRow item={it} onChange={(p) => updateNews(it.id, p)} onRemove={() => removeItem(it.id)} />
+            </div>
+          ))}
+          {tab === 'partners' && content.partners.map((it) => (
+            <div key={it.id} className="admin-card">
+              <PartnerRow item={it} onChange={(p) => updatePartner(it.id, p)} onRemove={() => removeItem(it.id)} />
+            </div>
+          ))}
+          {tab === 'roadmap' && content.roadmap.map((it) => (
+            <div key={it.id} className="admin-card">
+              <RoadmapRow item={it} onChange={(p) => updateRoadmap(it.id, p)} onRemove={() => removeItem(it.id)} />
+            </div>
+          ))}
+          {tab === 'members' && content.members.map((it) => (
+            <div key={it.id} className="admin-card">
+              <MemberRow item={it} onChange={(p) => updateMember(it.id, p)} onRemove={() => removeItem(it.id)} />
             </div>
           ))}
         </div>
@@ -110,7 +143,7 @@ export default function Content() {
   );
 }
 
-function RowHeader({ children, onRemove }) {
+function RowHeader({ children, onRemove }: { children: ReactNode; onRemove: () => void }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
       <strong style={{ fontSize: 13 }}>{children}</strong>
@@ -119,7 +152,7 @@ function RowHeader({ children, onRemove }) {
   );
 }
 
-function NewsRow({ item, onChange, onRemove }) {
+function NewsRow({ item, onChange, onRemove }: { item: NewsItem; onChange: (p: Partial<NewsItem>) => void; onRemove: () => void }) {
   return (
     <>
       <RowHeader onRemove={onRemove}>{item.title || 'Шинэ мэдээ'}</RowHeader>
@@ -149,7 +182,7 @@ function NewsRow({ item, onChange, onRemove }) {
   );
 }
 
-function PartnerRow({ item, onChange, onRemove }) {
+function PartnerRow({ item, onChange, onRemove }: { item: Partner; onChange: (p: Partial<Partner>) => void; onRemove: () => void }) {
   return (
     <>
       <RowHeader onRemove={onRemove}>{item.alt || 'Хамтрагч'}</RowHeader>
@@ -170,7 +203,7 @@ function PartnerRow({ item, onChange, onRemove }) {
   );
 }
 
-function RoadmapRow({ item, onChange, onRemove }) {
+function RoadmapRow({ item, onChange, onRemove }: { item: RoadmapItem; onChange: (p: Partial<RoadmapItem>) => void; onRemove: () => void }) {
   return (
     <>
       <RowHeader onRemove={onRemove}>{item.year || 'Шинэ мөр'} — {item.title}</RowHeader>
@@ -181,7 +214,7 @@ function RoadmapRow({ item, onChange, onRemove }) {
         </div>
         <div className="admin-field">
           <label>Байршил</label>
-          <select value={item.position || 'top'} onChange={(e) => onChange({ position: e.target.value })}>
+          <select value={item.position || 'top'} onChange={(e) => onChange({ position: e.target.value as 'top' | 'bot' })}>
             <option value="top">Дээр</option>
             <option value="bot">Доор</option>
           </select>
@@ -195,7 +228,7 @@ function RoadmapRow({ item, onChange, onRemove }) {
   );
 }
 
-function MemberRow({ item, onChange, onRemove }) {
+function MemberRow({ item, onChange, onRemove }: { item: MemberItem; onChange: (p: Partial<MemberItem>) => void; onRemove: () => void }) {
   return (
     <>
       <RowHeader onRemove={onRemove}>{item.title || 'Үйлчилгээ'}</RowHeader>

@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { readUsers, writeUsers } from '../auth.jsx';
+import { readUsers, writeUsers } from '../auth';
+import type { UserRecord } from '../data/store';
+
+type Method = 'phone' | 'email';
 
 export default function Register() {
   const navigate = useNavigate();
-  const [method, setMethod] = useState('phone');
+  const [method, setMethod] = useState<Method>('phone');
   const [fullname, setFullname] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -17,18 +20,18 @@ export default function Register() {
   const [busy, setBusy] = useState(false);
 
   // Mongolian phone formatting: 8 digits, with a space after the first 4.
-  const onPhoneChange = (e) => {
+  const onPhoneChange = (e: ChangeEvent<HTMLInputElement>) => {
     const digits = e.target.value.replace(/\D/g, '').slice(0, 8);
     setPhone(digits.length > 4 ? digits.slice(0, 4) + ' ' + digits.slice(4) : digits);
   };
 
-  const onSubmit = (e) => {
+  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setAlert('');
 
     if (fullname.trim().length < 2) return setAlert('Бүтэн нэрээ оруулна уу.');
 
-    let identifier;
+    let identifier: string;
     if (method === 'phone') {
       const digits = phone.replace(/\D/g, '');
       if (digits.length !== 8) return setAlert('Утасны дугаар 8 оронтой байх ёстой.');
@@ -49,13 +52,18 @@ export default function Register() {
       return setAlert(`Энэ ${method === 'phone' ? 'утасны дугаар' : 'и-мэйл'} аль хэдийн бүртгэлтэй байна.`);
     }
 
-    users.push({
+    const fresh: UserRecord = {
       fullname: fullname.trim(),
       method,
       identifier,
       password,
+      avatar: null,
+      bio: '',
+      role: 'user',
+      disabled: false,
       createdAt: new Date().toISOString(),
-    });
+    };
+    users.push(fresh);
     writeUsers(users);
 
     setBusy(true);
