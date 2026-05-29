@@ -1,12 +1,12 @@
-// Alert primitive — mirrors .reg-alert / .reg-alert.is-ok.
+
 
 import type { ReactNode } from 'react';
 
 type Props = {
   kind?: 'error' | 'ok';
-  /** When true the alert is rendered hidden (matches the existing `hidden` attr pattern). */
+  
   hidden?: boolean;
-  /** "alert" (default for errors) or "status" (for non-interrupting confirmations). */
+  
   role?: 'alert' | 'status';
   className?: string;
   children: ReactNode;

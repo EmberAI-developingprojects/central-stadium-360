@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { cancelOrder, getOrder, refundOrder } from '../../data/store';
 import type { OrderRecord } from '../../data/store';
+import { ADMIN_ACTIONS_CLS, ADMIN_BTN_CLS, ADMIN_BTN_DANGER_CLS, ADMIN_BTN_GHOST_CLS, ADMIN_BTN_PRIMARY_CLS, ADMIN_CARD_CLS, ADMIN_EMPTY_CLS, ADMIN_GRID_2_CLS, ADMIN_GRID_CLS, ADMIN_PAGE_HEADER_CLS, ADMIN_TABLE_CLS } from '../_adminStyles';
 
 const money = (n: number | undefined): string => (n || 0).toLocaleString('en-US') + '₮';
 
-// undefined = loading, null = not found, OrderRecord = loaded
 type LoadState = OrderRecord | null | undefined;
 
 export default function OrderView() {
@@ -19,11 +19,11 @@ export default function OrderView() {
     getOrder(code).then((o) => setOrder(o));
   }, [code]);
 
-  if (order === undefined) return <div className="admin-empty">Уншиж байна…</div>;
+  if (order === undefined) return <div className={ADMIN_EMPTY_CLS}>Уншиж байна…</div>;
   if (!order) {
     return (
       <>
-        <div className="admin-page-header">
+        <div className={ADMIN_PAGE_HEADER_CLS}>
           <div><h2>Захиалга олдсонгүй</h2></div>
           <Link to="/admin/orders" className="btn">← Жагсаалт руу</Link>
         </div>
@@ -51,18 +51,18 @@ export default function OrderView() {
 
   return (
     <>
-      <div className="admin-page-header">
+      <div className={ADMIN_PAGE_HEADER_CLS}>
         <div>
           <h2>{order.title}</h2>
           <p>Код: <code>{order.code}</code></p>
         </div>
-        <Link to="/admin/orders" className="btn btn-ghost">← Жагсаалт руу</Link>
+        <Link to="/admin/orders" className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_GHOST_CLS}`}>← Жагсаалт руу</Link>
       </div>
 
-      <div className="admin-grid admin-grid-2">
-        <div className="admin-card">
+      <div className={`${ADMIN_GRID_CLS} ${ADMIN_GRID_2_CLS}`}>
+        <div className={ADMIN_CARD_CLS}>
           <h3>Дэлгэрэнгүй</h3>
-          <table className="admin-table">
+          <table className={ADMIN_TABLE_CLS}>
             <tbody>
               <tr><th>Хэрэглэгч</th><td>{order.user || '—'}</td></tr>
               <tr><th>Багц</th><td>{order.tierName || order.tier}</td></tr>
@@ -79,23 +79,23 @@ export default function OrderView() {
           </table>
         </div>
 
-        <div className="admin-card">
+        <div className={ADMIN_CARD_CLS}>
           <h3>Үйлдэл</h3>
           {order.status === 'refunded' ? (
-            <p style={{ color: 'var(--admin-muted)' }}>
+            <p style={{ color: '#64748b' }}>
               Энэ захиалгыг аль хэдийн буцаасан байна.
             </p>
           ) : (
-            <p style={{ color: 'var(--admin-muted)' }}>
+            <p style={{ color: '#64748b' }}>
               Буцаалт хийвэл захиалгын төлөв «refunded» болж, бүртгэлээс хасагдахгүй.
               Бүрмөсөн устгахыг сонговол захиалга мэдээллийн санд үлдэхгүй.
             </p>
           )}
-          <div className="admin-actions" style={{ marginTop: 14 }}>
+          <div className={ADMIN_ACTIONS_CLS} style={{ marginTop: 14 }}>
             {order.status !== 'refunded' && (
-              <button type="button" className="btn btn-primary" onClick={onRefund} disabled={busy}>Буцаалт хийх</button>
+              <button type="button" className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_PRIMARY_CLS}`} onClick={onRefund} disabled={busy}>Буцаалт хийх</button>
             )}
-            <button type="button" className="btn btn-danger" onClick={onCancel} disabled={busy}>Бүрмөсөн устгах</button>
+            <button type="button" className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_DANGER_CLS}`} onClick={onCancel} disabled={busy}>Бүрмөсөн устгах</button>
           </div>
         </div>
       </div>

@@ -1,21 +1,10 @@
-// Provider-agnostic SMS dispatch.
-//
-// Supabase's "Send SMS Hook" calls our backend whenever it wants to send an
-// OTP. We receive { user, sms: { phone, otp } } and route the message
-// according to SMS_PROVIDER:
-//
-//   unset / "dev"       — log the OTP to the console (no real SMS sent)
-//   "twilio"            — Twilio REST API
-//   "mobicom"|"skytel"  — local Mongolian aggregator (adapter stubs)
-//
-// Each adapter is fully self-contained; switching providers is a config
-// change (env vars), never a code change to the call sites.
+
 
 export type SmsProvider = "dev" | "twilio" | "mobicom" | "skytel";
 
 export interface SmsMessage {
-  phone: string; // E.164, e.g. +97699112233
-  otp: string;   // the one-time code Supabase wants to deliver
+  phone: string;
+  otp: string;
   /** Optional override of the rendered text. Default: localized OTP message. */
   text?: string;
 }
@@ -36,17 +25,13 @@ function resolveProvider(): SmsProvider {
 }
 
 function defaultText(otp: string): string {
-  // Mongolian by default — matches the rest of the app.
+
   return `Төв Цэнгэлдэх — баталгаажуулах код: ${otp}`;
 }
 
-// ---------------------------------------------------------------------------
-// Adapters
-// ---------------------------------------------------------------------------
-
 async function sendViaDev(msg: SmsMessage): Promise<SmsResult> {
   const text = msg.text ?? defaultText(msg.otp);
-  // Visible in dev: prefixed banner so devs can grep for it.
+
   // eslint-disable-next-line no-console
   console.log(
     `\n────────── [DEV SMS] no SMS_PROVIDER configured ──────────\n` +
@@ -65,7 +50,7 @@ async function sendViaDev(msg: SmsMessage): Promise<SmsResult> {
 async function sendViaTwilio(msg: SmsMessage): Promise<SmsResult> {
   const sid = process.env.TWILIO_ACCOUNT_SID;
   const token = process.env.TWILIO_AUTH_TOKEN;
-  const from = process.env.TWILIO_FROM; // E.164 sender or Messaging Service SID
+  const from = process.env.TWILIO_FROM;
   if (!sid || !token || !from) {
     throw new Error(
       "SMS_PROVIDER=twilio but TWILIO_ACCOUNT_SID/AUTH_TOKEN/FROM are not set.",
@@ -76,14 +61,15 @@ async function sendViaTwilio(msg: SmsMessage): Promise<SmsResult> {
     To: msg.phone,
     Body: msg.text ?? defaultText(msg.otp),
   });
-  // MessagingServiceSid takes precedence over From when set
+
   if (from.startsWith("MG")) body.set("MessagingServiceSid", from);
   else body.set("From", from);
 
   const res = await fetch(url, {
     method: "POST",
     headers: {
-      Authorization: "Basic " + Buffer.from(`${sid}:${token}`).toString("base64"),
+      Authorization:
+        "Basic " + Buffer.from(`${sid}:${token}`).toString("base64"),
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: body.toString(),
@@ -99,8 +85,7 @@ async function sendViaTwilio(msg: SmsMessage): Promise<SmsResult> {
 }
 
 async function sendViaMobicom(_msg: SmsMessage): Promise<SmsResult> {
-  // STUB. Real implementation goes here once Mobicom credentials are issued.
-  // Expected env: MOBICOM_API_KEY, MOBICOM_SENDER (alpha sender id).
+
   throw new Error(
     "SMS_PROVIDER=mobicom is not implemented. Add the HTTP integration in " +
       "backend/src/lib/sms.ts (sendViaMobicom) when the carrier is finalized.",
@@ -108,25 +93,25 @@ async function sendViaMobicom(_msg: SmsMessage): Promise<SmsResult> {
 }
 
 async function sendViaSkytel(_msg: SmsMessage): Promise<SmsResult> {
-  // STUB. Same shape as Mobicom — fill in the carrier's REST endpoint.
+
   throw new Error(
     "SMS_PROVIDER=skytel is not implemented. Add the HTTP integration in " +
       "backend/src/lib/sms.ts (sendViaSkytel) when the carrier is finalized.",
   );
 }
 
-// ---------------------------------------------------------------------------
-// Public dispatcher
-// ---------------------------------------------------------------------------
-
 export async function sendSms(msg: SmsMessage): Promise<SmsResult> {
   const provider = resolveProvider();
   switch (provider) {
-    case "twilio":   return sendViaTwilio(msg);
-    case "mobicom":  return sendViaMobicom(msg);
-    case "skytel":   return sendViaSkytel(msg);
+    case "twilio":
+      return sendViaTwilio(msg);
+    case "mobicom":
+      return sendViaMobicom(msg);
+    case "skytel":
+      return sendViaSkytel(msg);
     case "dev":
-    default:         return sendViaDev(msg);
+    default:
+      return sendViaDev(msg);
   }
 }
 

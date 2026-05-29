@@ -1,21 +1,4 @@
-// Password-based registration with verified phone (SMS OTP) or email link.
-//
-// - register/phone    → Supabase signUp({ phone, password }) — triggers OTP.
-// - register/email    → Supabase signUp({ email, password })  — triggers email link.
-// - verify-phone      → Supabase verifyOtp({ phone, code, type:'sms' }) → session.
-// - login             → signInWithPassword (phone OR email). Reject if unverified.
-// - resend-code       → re-send OTP or email link.
-// - logout            → best-effort server signout.
-// - me                → resolves the bearer JWT to profile fields.
-// - DELETE /account   → soft-delete: ban auth user + null PII in public.users.
-//                       Tickets/payments rows stay intact (FK is restrict).
-//
-// Rate limits (Upstash sliding window):
-//   - per identifier (phone or email): 3 per 10 min
-//   - per IP: 5 per 10 min
-//
-// SMS sending is provider-agnostic and lives in lib/sms.ts; this file never
-// touches Twilio/Mobicom/etc. directly. See AUTH.md for setup.
+
 
 import { Hono, type Context } from "hono";
 import { z } from "zod";
@@ -28,10 +11,6 @@ import { getSupabaseAdmin } from "../lib/supabase";
 import { getIdentifierLimiter, getIpLimiter } from "../lib/redis";
 
 const auth = new Hono();
-
-// ----------------------------------------------------------------------------
-// Validation
-// ----------------------------------------------------------------------------
 
 const phoneSchema = z
   .string()
@@ -50,7 +29,9 @@ const emailSchema = z
     message: "Only @gmail.com addresses are accepted.",
   });
 
-const passwordSchema = z.string().min(8, "Password must be at least 8 characters.");
+const passwordSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters.");
 
 const fullNameSchema = z
   .string()
@@ -71,7 +52,10 @@ const registerEmailSchema = z.object({
 
 const verifyPhoneSchema = z.object({
   phone: phoneSchema,
-  code: z.string().trim().regex(/^\d{4,8}$/, "OTP must be 4–8 digits."),
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{4,8}$/, "OTP must be 4–8 digits."),
 });
 
 const loginSchema = z.object({
@@ -82,10 +66,6 @@ const loginSchema = z.object({
 const resendSchema = z.object({
   identifier: z.string().trim().min(1),
 });
-
-// ----------------------------------------------------------------------------
-// Helpers
-// ----------------------------------------------------------------------------
 
 function getClientIp(c: Context): string {
   return (
@@ -103,8 +83,9 @@ function getBearer(authHeader: string | undefined): string | null {
   return token;
 }
 
-/** Classify a raw login identifier as phone, email, or neither. */
-function classifyIdentifier(raw: string): { kind: "phone" | "email"; value: string } | null {
+function classifyIdentifier(
+  raw: string,
+): { kind: "phone" | "email"; value: string } | null {
   const trimmed = raw.trim();
   if (!trimmed) return null;
   if (trimmed.includes("@")) {
@@ -115,7 +96,6 @@ function classifyIdentifier(raw: string): { kind: "phone" | "email"; value: stri
   return parsed.success ? { kind: "phone", value: parsed.data } : null;
 }
 
-/** Apply identifier + IP rate limiters. Returns the 429 response or null. */
 async function applyRateLimits(
   c: Context,
   identifier: string,
@@ -123,8 +103,11 @@ async function applyRateLimits(
   const ip = getClientIp(c);
   const idRl = getIdentifierLimiter();
   const ipRl = getIpLimiter();
-  if (!idRl || !ipRl) return null; // Redis not configured — skip (dev convenience).
-  const [byId, byIp] = await Promise.all([idRl.limit(identifier), ipRl.limit(ip)]);
+  if (!idRl || !ipRl) return null;
+  const [byId, byIp] = await Promise.all([
+    idRl.limit(identifier),
+    ipRl.limit(ip),
+  ]);
   if (byId.success && byIp.success) return null;
   const reset = Math.max(byId.reset, byIp.reset);
   const retryAfter = Math.max(1, Math.ceil((reset - Date.now()) / 1000));
@@ -140,7 +123,10 @@ async function applyRateLimits(
   );
 }
 
-function invalidInput(c: Context, parsed: z.ZodSafeParseError<unknown>): Response {
+function invalidInput(
+  c: Context,
+  parsed: z.ZodSafeParseError<unknown>,
+): Response {
   return c.json(
     {
       ok: false,
@@ -151,9 +137,6 @@ function invalidInput(c: Context, parsed: z.ZodSafeParseError<unknown>): Respons
   );
 }
 
-// ----------------------------------------------------------------------------
-// POST /api/auth/register/phone
-// ----------------------------------------------------------------------------
 auth.post("/register/phone", async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const parsed = registerPhoneSchema.safeParse(body);
@@ -165,19 +148,19 @@ auth.post("/register/phone", async (c) => {
 
   const supabase = getSupabaseAnon();
   if (!supabase) {
-    return c.json({ ok: false, error: "supabase_not_configured" } as const, 503);
+    return c.json(
+      { ok: false, error: "supabase_not_configured" } as const,
+      503,
+    );
   }
 
-  // signUp({ phone, password }) creates the user and triggers Supabase's
-  // SMS OTP flow. Our Send SMS Hook receives the OTP — in dev it logs to
-  // the backend console; in prod it forwards to the configured provider.
   const { error } = await supabase.auth.signUp({
     phone,
     password,
     options: { data: { full_name: fullName } },
   });
   if (error) {
-    // The anon client surfaces "User already registered" when phone is taken.
+
     if (/already.*registered|already.*exists/i.test(error.message ?? "")) {
       return c.json({ ok: false, error: "already_registered" } as const, 409);
     }
@@ -190,9 +173,6 @@ auth.post("/register/phone", async (c) => {
   return c.json({ ok: true, data: { phone } } as const);
 });
 
-// ----------------------------------------------------------------------------
-// POST /api/auth/register/email
-// ----------------------------------------------------------------------------
 auth.post("/register/email", async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const parsed = registerEmailSchema.safeParse(body);
@@ -204,7 +184,10 @@ auth.post("/register/email", async (c) => {
 
   const supabase = getSupabaseAnon();
   if (!supabase) {
-    return c.json({ ok: false, error: "supabase_not_configured" } as const, 503);
+    return c.json(
+      { ok: false, error: "supabase_not_configured" } as const,
+      503,
+    );
   }
 
   const redirectTo = process.env.FRONTEND_URL
@@ -232,9 +215,6 @@ auth.post("/register/email", async (c) => {
   return c.json({ ok: true, data: { email } } as const);
 });
 
-// ----------------------------------------------------------------------------
-// POST /api/auth/verify-phone
-// ----------------------------------------------------------------------------
 auth.post("/verify-phone", async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const parsed = verifyPhoneSchema.safeParse(body);
@@ -243,7 +223,10 @@ auth.post("/verify-phone", async (c) => {
 
   const supabase = getSupabaseAnon();
   if (!supabase) {
-    return c.json({ ok: false, error: "supabase_not_configured" } as const, 503);
+    return c.json(
+      { ok: false, error: "supabase_not_configured" } as const,
+      503,
+    );
   }
 
   const { data, error } = await supabase.auth.verifyOtp({
@@ -258,7 +241,6 @@ auth.post("/verify-phone", async (c) => {
     );
   }
 
-  // Look up role from public.users (set to 'admin' manually via SQL).
   const admin = getSupabaseAdmin();
   let role: "user" | "admin" = "user";
   if (admin) {
@@ -284,9 +266,6 @@ auth.post("/verify-phone", async (c) => {
   } as const);
 });
 
-// ----------------------------------------------------------------------------
-// POST /api/auth/login
-// ----------------------------------------------------------------------------
 auth.post("/login", async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const parsed = loginSchema.safeParse(body);
@@ -305,18 +284,21 @@ auth.post("/login", async (c) => {
 
   const supabase = getSupabaseAnon();
   if (!supabase) {
-    return c.json({ ok: false, error: "supabase_not_configured" } as const, 503);
+    return c.json(
+      { ok: false, error: "supabase_not_configured" } as const,
+      503,
+    );
   }
 
-  const creds = cls.kind === "phone"
-    ? { phone: cls.value, password: parsed.data.password }
-    : { email: cls.value, password: parsed.data.password };
+  const creds =
+    cls.kind === "phone"
+      ? { phone: cls.value, password: parsed.data.password }
+      : { email: cls.value, password: parsed.data.password };
 
   const { data, error } = await supabase.auth.signInWithPassword(creds);
   if (error || !data.session || !data.user) {
     const msg = error?.message ?? "";
-    // Supabase returns "Email not confirmed" / "Phone not confirmed" for
-    // accounts that exist but haven't been verified yet.
+
     if (/not.*confirmed|not.*verified/i.test(msg)) {
       return c.json(
         {
@@ -331,7 +313,6 @@ auth.post("/login", async (c) => {
     return c.json({ ok: false, error: "invalid_credentials" } as const, 401);
   }
 
-  // Block soft-deleted accounts.
   const admin = getSupabaseAdmin();
   let role: "user" | "admin" = "user";
   if (admin) {
@@ -341,7 +322,7 @@ auth.post("/login", async (c) => {
       .eq("id", data.user.id)
       .maybeSingle<Pick<DbUser, "role" | "deleted_at">>();
     if (row?.deleted_at) {
-      // Best-effort signout to invalidate the session we just issued.
+
       await supabase.auth.signOut().catch(() => undefined);
       return c.json({ ok: false, error: "account_deleted" } as const, 403);
     }
@@ -367,19 +348,13 @@ auth.post("/login", async (c) => {
   } as const);
 });
 
-// ----------------------------------------------------------------------------
-// POST /api/auth/resend-code
-// ----------------------------------------------------------------------------
 auth.post("/resend-code", async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const parsed = resendSchema.safeParse(body);
   if (!parsed.success) return invalidInput(c, parsed);
   const cls = classifyIdentifier(parsed.data.identifier);
   if (!cls) {
-    return c.json(
-      { ok: false, error: "invalid_input" } as const,
-      400,
-    );
+    return c.json({ ok: false, error: "invalid_input" } as const, 400);
   }
 
   const limited = await applyRateLimits(c, cls.value);
@@ -387,7 +362,10 @@ auth.post("/resend-code", async (c) => {
 
   const supabase = getSupabaseAnon();
   if (!supabase) {
-    return c.json({ ok: false, error: "supabase_not_configured" } as const, 503);
+    return c.json(
+      { ok: false, error: "supabase_not_configured" } as const,
+      503,
+    );
   }
 
   if (cls.kind === "phone") {
@@ -420,12 +398,12 @@ auth.post("/resend-code", async (c) => {
     }
   }
 
-  return c.json({ ok: true, data: { kind: cls.kind, identifier: cls.value } } as const);
+  return c.json({
+    ok: true,
+    data: { kind: cls.kind, identifier: cls.value },
+  } as const);
 });
 
-// ----------------------------------------------------------------------------
-// POST /api/auth/logout
-// ----------------------------------------------------------------------------
 auth.post("/logout", async (c) => {
   const token = getBearer(c.req.header("authorization"));
   if (!token) return c.json({ ok: true } as const);
@@ -436,16 +414,16 @@ auth.post("/logout", async (c) => {
   return c.json({ ok: true } as const);
 });
 
-// ----------------------------------------------------------------------------
-// GET /api/auth/me
-// ----------------------------------------------------------------------------
 auth.get("/me", async (c) => {
   const token = getBearer(c.req.header("authorization"));
   if (!token) return c.json({ ok: false, error: "unauthorized" } as const, 401);
 
   const sb = getSupabaseForAccessToken(token);
   if (!sb) {
-    return c.json({ ok: false, error: "supabase_not_configured" } as const, 503);
+    return c.json(
+      { ok: false, error: "supabase_not_configured" } as const,
+      503,
+    );
   }
 
   const { data, error } = await sb.auth.getUser(token);
@@ -453,7 +431,10 @@ auth.get("/me", async (c) => {
     return c.json({ ok: false, error: "unauthorized" } as const, 401);
   }
 
-  type Profile = Pick<DbUser, "role" | "phone" | "email" | "full_name" | "created_at" | "deleted_at">;
+  type Profile = Pick<
+    DbUser,
+    "role" | "phone" | "email" | "full_name" | "created_at" | "deleted_at"
+  >;
   const admin = getSupabaseAdmin();
   let profile: Profile | null = null;
   if (admin) {
@@ -484,10 +465,6 @@ auth.get("/me", async (c) => {
   } as const);
 });
 
-// ----------------------------------------------------------------------------
-// DELETE /api/auth/account
-// Soft-delete: ban the auth user, anonymize public.users, leave tickets intact.
-// ----------------------------------------------------------------------------
 auth.delete("/account", async (c) => {
   const token = getBearer(c.req.header("authorization"));
   if (!token) return c.json({ ok: false, error: "unauthorized" } as const, 401);
@@ -495,7 +472,10 @@ auth.delete("/account", async (c) => {
   const sb = getSupabaseForAccessToken(token);
   const admin = getSupabaseAdmin();
   if (!sb || !admin) {
-    return c.json({ ok: false, error: "supabase_not_configured" } as const, 503);
+    return c.json(
+      { ok: false, error: "supabase_not_configured" } as const,
+      503,
+    );
   }
 
   const { data: u, error: uerr } = await sb.auth.getUser(token);
@@ -504,7 +484,6 @@ auth.delete("/account", async (c) => {
   }
   const userId = u.user.id;
 
-  // 1. Wipe PII + mark deleted in public.users. Tickets/payments stay linked.
   const { error: dbErr } = await admin
     .from("users")
     .update({
@@ -519,22 +498,19 @@ auth.delete("/account", async (c) => {
     return c.json({ ok: false, error: "delete_failed" } as const, 502);
   }
 
-  // 2. Ban the auth user so the credentials can't be used to log back in.
-  //    Use a 100-year ban — effectively permanent without losing the row.
-  const banUntil = new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000).toISOString();
-  // The admin client types don't expose updateUserById's ban_duration cleanly,
-  // so we use the REST shape directly via headers.
+  const banUntil = new Date(
+    Date.now() + 100 * 365 * 24 * 60 * 60 * 1000,
+  ).toISOString();
+
   const { error: banErr } = await admin.auth.admin.updateUserById(userId, {
-    ban_duration: "876000h", // 100 years
+    ban_duration: "876000h",
     user_metadata: { deleted_at: banUntil },
   });
   if (banErr) {
     console.error("[auth] delete account ban:", banErr);
-    // PII is already wiped; don't fail the request just because the ban
-    // failed — the deleted_at check in /me + /login also blocks access.
+
   }
 
-  // 3. Best-effort server signout.
   await sb.auth.signOut().catch(() => undefined);
   return c.json({ ok: true } as const);
 });

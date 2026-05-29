@@ -3,8 +3,42 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth, useRequireAuth } from '../auth';
 import { supabase } from '../lib/supabase';
 import { api } from '../lib/api';
+import {
+  BACK_CLS,
+  CARD_CLS,
+  DIVIDER_CLS,
+  EYEBROW_CLS,
+  EYEBROW_DOT_CLS,
+  FIELD_CLS,
+  FORM_CLS,
+  HEADER_CLS,
+  HOME_CLS,
+  INPUT_CLS,
+  LABEL_CLS,
+  LOGO_CLS,
+  LOGO_IMG_CLS,
+  MAIN_CLS,
+  PAGE_BG,
+  PAGE_CLS,
+  REG_ALERT_CLS,
+  REG_ALERT_OK_CLS,
+  REG_HINT_CLS,
+  SUBMIT_CLS,
+  SUBTITLE_CLS,
+  TITLE_CLS,
+} from './_authStyles';
 
 type AlertState = { kind: 'error' | 'ok'; msg: string } | null;
+
+const SETTINGS_CARD_EXTRA = "max-w-[520px]";
+const SETTINGS_GRID_CLS =
+  "grid bg-brand-blue-tint rounded-xl [grid-template-columns:1fr_1fr] gap-x-5 gap-y-[14px] mt-2 mb-6 py-[18px] px-5";
+const SETTINGS_GRID_ITEM_CLS = "flex flex-col gap-1 min-w-0";
+const SETTINGS_GRID_DT_CLS = "text-[11px] font-semibold uppercase text-ink-soft tracking-[0.06em]";
+const SETTINGS_GRID_DD_CLS = "m-0 text-sm font-semibold text-ink break-words";
+const SETTINGS_SECTION_TITLE_CLS = "text-base font-bold text-ink mt-2 mb-[14px]";
+const SETTINGS_DANGER_CLS =
+  "self-center bg-white rounded-full text-[13px] font-semibold cursor-pointer py-2.5 px-[18px] border border-solid border-[rgba(185,28,28,0.35)] text-[#B91C1C] font-[inherit] [transition:background_.15s_ease,color_.15s_ease] hover:bg-[#B91C1C] hover:text-white";
 
 export default function Settings() {
   const session = useRequireAuth();
@@ -34,9 +68,7 @@ export default function Settings() {
     }
 
     setBusy(true);
-    // Re-verify the current password by hitting our login endpoint with the
-    // session's identifier (phone or email). Supabase's updateUser doesn't
-    // check the old password on its own.
+
     const check = await api.login({ identifier: session.identifier, password: currentPw });
     if (!check.ok) {
       setBusy(false);
@@ -69,12 +101,12 @@ export default function Settings() {
   };
 
   return (
-    <div className="login-page">
-      <header className="login-header">
-        <Link className="login-logo" to="/" aria-label="Төв Цэнгэлдэх Хүрээлэн — Нүүр">
-          <img src="/assets/images/brand/logo.png" alt="Төв Цэнгэлдэх Хүрээлэн" />
+    <div className={PAGE_CLS} style={{ background: PAGE_BG }}>
+      <header className={HEADER_CLS}>
+        <Link className={LOGO_CLS} to="/" aria-label="Төв Цэнгэлдэх Хүрээлэн — Нүүр">
+          <img className={LOGO_IMG_CLS} src="/assets/images/brand/logo.png" alt="Төв Цэнгэлдэх Хүрээлэн" />
         </Link>
-        <Link className="login-back" to="/">
+        <Link className={BACK_CLS} to="/">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <line x1="19" y1="12" x2="5" y2="12"/>
             <polyline points="12 19 5 12 12 5"/>
@@ -83,27 +115,27 @@ export default function Settings() {
         </Link>
       </header>
 
-      <main className="login-main">
-        <section className="login-card settings-card">
-          <span className="login-eyebrow">
-            <span className="login-eyebrow-dot" aria-hidden="true"></span>
+      <main className={MAIN_CLS}>
+        <section className={`${CARD_CLS} ${SETTINGS_CARD_EXTRA}`}>
+          <span className={EYEBROW_CLS}>
+            <span className={EYEBROW_DOT_CLS} aria-hidden="true"></span>
             Тохиргоо
           </span>
 
-          <h1 className="login-title">Хэрэглэгчийн тохиргоо</h1>
-          <p className="login-subtitle">Бүртгэлийн мэдээлэл болон нууц үгээ удирдах.</p>
+          <h1 className={TITLE_CLS}>Хэрэглэгчийн тохиргоо</h1>
+          <p className={SUBTITLE_CLS}>Бүртгэлийн мэдээлэл болон нууц үгээ удирдах.</p>
 
-          <dl className="settings-grid">
-            <div><dt>Бүтэн нэр</dt><dd>{session.fullname || '—'}</dd></div>
-            <div><dt>Холбоо барих</dt><dd>{session.identifier}</dd></div>
+          <dl className={SETTINGS_GRID_CLS}>
+            <div className={SETTINGS_GRID_ITEM_CLS}><dt className={SETTINGS_GRID_DT_CLS}>Бүтэн нэр</dt><dd className={SETTINGS_GRID_DD_CLS}>{session.fullname || '—'}</dd></div>
+            <div className={SETTINGS_GRID_ITEM_CLS}><dt className={SETTINGS_GRID_DT_CLS}>Холбоо барих</dt><dd className={SETTINGS_GRID_DD_CLS}>{session.identifier}</dd></div>
           </dl>
 
-          <h2 className="settings-section-title">Нууц үг солих</h2>
-          <form className="login-form" onSubmit={onChangePassword} noValidate>
-            <label className="login-field">
-              <span className="login-label">Одоогийн нууц үг</span>
+          <h2 className={SETTINGS_SECTION_TITLE_CLS}>Нууц үг солих</h2>
+          <form className={FORM_CLS} onSubmit={onChangePassword} noValidate>
+            <label className={FIELD_CLS}>
+              <span className={LABEL_CLS}>Одоогийн нууц үг</span>
               <input
-                className="login-input"
+                className={INPUT_CLS}
                 type="password"
                 autoComplete="current-password"
                 value={currentPw}
@@ -111,10 +143,10 @@ export default function Settings() {
                 required
               />
             </label>
-            <label className="login-field">
-              <span className="login-label">Шинэ нууц үг</span>
+            <label className={FIELD_CLS}>
+              <span className={LABEL_CLS}>Шинэ нууц үг</span>
               <input
-                className="login-input"
+                className={INPUT_CLS}
                 type="password"
                 autoComplete="new-password"
                 minLength={8}
@@ -122,12 +154,12 @@ export default function Settings() {
                 onChange={(e) => setNewPw(e.target.value)}
                 required
               />
-              <span className="reg-hint">Хамгийн багадаа 8 тэмдэгт</span>
+              <span className={REG_HINT_CLS}>Хамгийн багадаа 8 тэмдэгт</span>
             </label>
-            <label className="login-field">
-              <span className="login-label">Шинэ нууц үг давтах</span>
+            <label className={FIELD_CLS}>
+              <span className={LABEL_CLS}>Шинэ нууц үг давтах</span>
               <input
-                className="login-input"
+                className={INPUT_CLS}
                 type="password"
                 autoComplete="new-password"
                 minLength={8}
@@ -138,12 +170,12 @@ export default function Settings() {
             </label>
 
             {alert && (
-              <div className={`reg-alert${alert.kind === 'ok' ? ' is-ok' : ''}`} role="alert">
+              <div className={alert.kind === 'ok' ? REG_ALERT_OK_CLS : REG_ALERT_CLS} role="alert">
                 {alert.msg}
               </div>
             )}
 
-            <button type="submit" className="login-submit" disabled={busy}>
+            <button type="submit" className={SUBMIT_CLS} disabled={busy}>
               {busy ? 'Хадгалж байна…' : 'Хадгалах'}
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <line x1="5" y1="12" x2="19" y2="12"/>
@@ -152,16 +184,16 @@ export default function Settings() {
             </button>
           </form>
 
-          <div className="login-divider"><span>аюултай бүс</span></div>
+          <div className={DIVIDER_CLS}><span>аюултай бүс</span></div>
 
-          <p className="reg-hint" style={{ textAlign: 'center', marginTop: 4 }}>
+          <p className={REG_HINT_CLS} style={{ textAlign: 'center', marginTop: 4 }}>
             Бүртгэл устгасны дараа худалдан авсан тасалбарууд тань хадгалагдсаар үлдэх боловч нэвтрэх боломжгүй болно.
           </p>
-          <button type="button" className="settings-danger" onClick={onDeleteAccount} disabled={busy}>
+          <button type="button" className={SETTINGS_DANGER_CLS} onClick={onDeleteAccount} disabled={busy}>
             Бүртгэл устгах
           </button>
 
-          <Link className="login-home" to="/watch">Хувийн булан руу буцах</Link>
+          <Link className={HOME_CLS} to="/watch">Хувийн булан руу буцах</Link>
         </section>
       </main>
     </div>

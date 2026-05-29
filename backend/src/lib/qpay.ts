@@ -1,16 +1,4 @@
-/**
- * Minimal QPay v2 client.
- * Docs: https://developer.qpay.mn
- *
- * Surface area used by this app:
- *   - POST /v2/auth/token       (Basic auth)
- *   - POST /v2/auth/refresh     (Bearer refresh token)
- *   - POST /v2/invoice          (Create invoice)
- *   - POST /v2/payment/check    (Verify paid amount for an invoice)
- *   - DELETE /v2/invoice/:id    (Optional — not used here yet)
- *
- * All env access is lazy so the rest of the app boots even if QPay isn't set up.
- */
+
 
 import type { QPayInvoiceLink } from "@cs360/shared";
 
@@ -18,7 +6,7 @@ interface TokenResponse {
   token_type: "bearer";
   access_token: string;
   refresh_token: string;
-  expires_in: number; // seconds (token); access typically ~1h
+  expires_in: number;
   refresh_expires_in: number;
   scope?: string;
 }
@@ -26,13 +14,13 @@ interface TokenResponse {
 interface CachedToken {
   access_token: string;
   refresh_token: string;
-  expires_at: number; // ms epoch
+  expires_at: number;
 }
 
 export interface CreateInvoiceInput {
-  /** Our internal ticket id, used as sender_invoice_no. Must be unique per QPay invoice. */
+  
   senderInvoiceNo: string;
-  /** Receiver — typically the user id or phone. */
+  
   receiverCode: string;
   amountMnt: number;
   description: string;
@@ -78,10 +66,9 @@ function env() {
   const username = process.env.QPAY_USERNAME;
   const password = process.env.QPAY_PASSWORD;
   const invoiceCode = process.env.QPAY_INVOICE_CODE;
-  const baseUrl = (process.env.QPAY_BASE_URL ?? "https://merchant.qpay.mn").replace(
-    /\/$/,
-    "",
-  );
+  const baseUrl = (
+    process.env.QPAY_BASE_URL ?? "https://merchant.qpay.mn"
+  ).replace(/\/$/, "");
   return { username, password, invoiceCode, baseUrl };
 }
 
@@ -108,7 +95,7 @@ async function fetchNewToken(): Promise<CachedToken> {
     throw new Error(`qpay_auth_failed:${res.status}:${await res.text()}`);
   }
   const data = (await res.json()) as TokenResponse;
-  // Refresh 60s before expiry to avoid edge races.
+
   const expires_at = Date.now() + Math.max(1, data.expires_in - 60) * 1000;
   return {
     access_token: data.access_token,
@@ -213,8 +200,9 @@ export async function checkInvoicePayment(
   };
 }
 
-/** True if QPay reports this invoice has been paid (any PAID row). */
 export function isPaid(check: PaymentCheckResult): boolean {
   if (check.count <= 0) return false;
-  return check.rows.some((r) => String(r.payment_status).toUpperCase() === "PAID");
+  return check.rows.some(
+    (r) => String(r.payment_status).toUpperCase() === "PAID",
+  );
 }

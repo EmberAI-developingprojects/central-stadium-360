@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { deleteEvent, listEvents, listOrders, setFeaturedEvent } from '../../data/store';
 import type { EventRecord } from '../../data/store';
+import { ADMIN_ACTIONS_CLS, ADMIN_BADGE_CLS, ADMIN_BADGE_FEATURED_CLS, ADMIN_BTN_CLS, ADMIN_BTN_DANGER_CLS, ADMIN_BTN_GHOST_CLS, ADMIN_BTN_PRIMARY_CLS, ADMIN_BTN_SM_CLS, ADMIN_EMPTY_CLS, ADMIN_PAGE_HEADER_CLS, ADMIN_TABLE_CLS, ADMIN_TABLE_THUMB_CLS, ADMIN_TABLE_WRAP_CLS } from '../_adminStyles';
 
 const money = (n: number | undefined): string => (n || 0).toLocaleString('en-US') + '₮';
 
@@ -31,26 +32,26 @@ export default function EventsList() {
     load();
   };
 
-  if (!events) return <div className="admin-empty">Уншиж байна…</div>;
+  if (!events) return <div className={ADMIN_EMPTY_CLS}>Уншиж байна…</div>;
 
   return (
     <>
-      <div className="admin-page-header">
+      <div className={ADMIN_PAGE_HEADER_CLS}>
         <div>
           <h2>Арга хэмжээ</h2>
           <p>Удахгүй болох тоглолтуудыг үүсгэх, засах, устгах.</p>
         </div>
-        <Link to="/admin/events/new" className="btn btn-primary">+ Шинэ арга хэмжээ</Link>
+        <Link to="/admin/events/new" className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_PRIMARY_CLS}`}>+ Шинэ арга хэмжээ</Link>
       </div>
 
       {events.length === 0 ? (
-        <div className="admin-empty">
+        <div className={ADMIN_EMPTY_CLS}>
           <strong>Арга хэмжээ алга</strong>
           Эхлэхийн тулд «Шинэ арга хэмжээ» товч дээр дарна уу.
         </div>
       ) : (
-        <div className="admin-table-wrap">
-          <table className="admin-table">
+        <div className={ADMIN_TABLE_WRAP_CLS}>
+          <table className={ADMIN_TABLE_CLS}>
             <thead>
               <tr>
                 <th></th>
@@ -67,7 +68,7 @@ export default function EventsList() {
                 <tr key={e.id}>
                   <td>
                     <span
-                      className="admin-table-thumb"
+                      className={ADMIN_TABLE_THUMB_CLS}
                       style={{ backgroundImage: e.image ? `url('${e.image}')` : undefined }}
                       aria-hidden="true"
                     />
@@ -75,9 +76,9 @@ export default function EventsList() {
                   <td>
                     <div style={{ fontWeight: 500 }}>
                       {e.title}{' '}
-                      {e.featured && <span className="badge badge-featured">Featured</span>}
+                      {e.featured && <span className={`${ADMIN_BADGE_CLS} ${ADMIN_BADGE_FEATURED_CLS}`}>Featured</span>}
                     </div>
-                    <div style={{ fontSize: 12, color: 'var(--admin-muted)' }}>{e.id}</div>
+                    <div style={{ fontSize: 12, color: '#64748b' }}>{e.id}</div>
                   </td>
                   <td>{e.date}</td>
                   <td>{money(e.base)}</td>
@@ -85,7 +86,7 @@ export default function EventsList() {
                   <td>
                     <button
                       type="button"
-                      className="btn btn-sm btn-ghost"
+                      className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS} ${ADMIN_BTN_GHOST_CLS}`}
                       onClick={() => onFeature(e.id)}
                       disabled={e.featured}
                       title={e.featured ? 'Аль хэдийн featured' : 'Featured болгох'}
@@ -94,9 +95,9 @@ export default function EventsList() {
                     </button>
                   </td>
                   <td>
-                    <div className="admin-actions">
-                      <Link to={`/admin/events/${e.id}`} className="btn btn-sm">Засах</Link>
-                      <button type="button" className="btn btn-sm btn-danger" onClick={() => onDelete(e.id, e.title)}>Устгах</button>
+                    <div className={ADMIN_ACTIONS_CLS}>
+                      <Link to={`/admin/events/${e.id}`} className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS}`}>Засах</Link>
+                      <button type="button" className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS} ${ADMIN_BTN_DANGER_CLS}`} onClick={() => onDelete(e.id, e.title)}>Устгах</button>
                     </div>
                   </td>
                 </tr>

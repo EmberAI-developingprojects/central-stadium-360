@@ -3,8 +3,45 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      @font-face {
+        font-family: 'TT Commons';
+        src: url('/assets/fonts/TTCommons-Regular.otf') format('opentype');
+        font-weight: 400;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'TT Commons';
+        src: url('/assets/fonts/TTCommons-Medium.otf') format('opentype');
+        font-weight: 500;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'TT Commons';
+        src: url('/assets/fonts/TTCommons-DemiBold.otf') format('opentype');
+        font-weight: 600;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'TT Commons';
+        src: url('/assets/fonts/TTCommons-Bold.otf') format('opentype');
+        font-weight: 700;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'TT Commons';
+        src: url('/assets/fonts/TTCommons-ExtraBold.otf') format('opentype');
+        font-weight: 800;
+        font-display: swap;
+      }
+      *, *::before, *::after { box-sizing: border-box; }
+      html, body, h1, h2, h3, h4, h5, h6, p, span, a, li, ul, ol, blockquote, em, strong,
+      button, input, select, textarea, optgroup, label, legend, fieldset {
+        font-family: 'TT Commons', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      }
+    </style>
   </head>
-  <body>
+  <body class="m-0 p-0 text-[#1a1a1a] bg-white [-webkit-font-smoothing:antialiased] [-moz-osx-font-smoothing:grayscale]">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

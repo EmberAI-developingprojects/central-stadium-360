@@ -7,8 +7,6 @@ type StoryVideoProps = VideoHTMLAttributes<HTMLVideoElement> & {
   fallbackAriaLabel?: string;
 };
 
-// The MP4 is git-ignored (>100 MB), so we render a still-poster div when the
-// <video> errors out — keeps deployed builds from showing a broken player.
 const StoryVideo = forwardRef<HTMLVideoElement, StoryVideoProps>(function StoryVideo(
   { poster, className, style, fallbackClassName, fallbackAriaLabel, children, ...videoProps },
   ref,

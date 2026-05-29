@@ -1,6 +1,4 @@
-// Initial data lifted from Home.jsx and Watch.jsx. Used once on first boot
-// (or when localStorage is cleared) to populate the store. Edit the live data
-// from the admin panel — don't change this file unless you want to reset.
+
 
 import type { EventRecord, HomeContent, UserRecord } from './store';
 

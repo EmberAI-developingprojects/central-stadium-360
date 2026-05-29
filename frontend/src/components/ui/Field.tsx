@@ -1,7 +1,4 @@
-// Field primitive — wraps the .login-field label / input / hint structure.
-//
-// Layout-only: the caller supplies the actual <input> / <textarea> / <select>
-// as children so password toggles, phone prefixes, etc. can live alongside.
+
 
 import type { ReactNode } from 'react';
 
@@ -24,8 +21,6 @@ export function Field({ label, hint, className, children }: Props) {
   );
 }
 
-// Shared input class so a bare <input> matches .login-input visually.
-// Phase 2 will likely fold this into a <TextInput> component.
 export const INPUT_CLASS =
   'w-full h-[46px] px-4 rounded-xl border border-ink/[0.14] bg-white font-[inherit] ' +
   'text-[14.5px] text-ink outline-none ' +

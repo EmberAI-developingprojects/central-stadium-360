@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { listOrders } from '../../data/store';
 import type { OrderRecord, OrderStatus } from '../../data/store';
+import { ADMIN_BTN_CLS, ADMIN_BTN_SM_CLS, ADMIN_EMPTY_CLS, ADMIN_FILTERS_CLS, ADMIN_PAGE_HEADER_CLS, ADMIN_TABLE_CLS, ADMIN_TABLE_WRAP_CLS } from '../_adminStyles';
 
 const money = (n: number | undefined): string => (n || 0).toLocaleString('en-US') + '₮';
 
@@ -24,14 +25,14 @@ export default function OrdersList() {
 
   return (
     <>
-      <div className="admin-page-header">
+      <div className={ADMIN_PAGE_HEADER_CLS}>
         <div>
           <h2>Захиалга</h2>
           <p>Бүх тасалбарын борлуулалт. Шууд буцаалт хийх боломжтой.</p>
         </div>
       </div>
 
-      <div className="admin-filters">
+      <div className={ADMIN_FILTERS_CLS}>
         <input
           type="search"
           placeholder="Код, хэрэглэгч, арга хэмжээгээр хайх…"
@@ -45,15 +46,15 @@ export default function OrdersList() {
         </select>
       </div>
 
-      {!orders ? <div className="admin-empty">Уншиж байна…</div>
+      {!orders ? <div className={ADMIN_EMPTY_CLS}>Уншиж байна…</div>
         : orders.length === 0 ? (
-          <div className="admin-empty">
+          <div className={ADMIN_EMPTY_CLS}>
             <strong>Захиалга алга</strong>
             Хайлтын үр дүнд таарсан захиалга алга байна.
           </div>
         ) : (
-          <div className="admin-table-wrap">
-            <table className="admin-table">
+          <div className={ADMIN_TABLE_WRAP_CLS}>
+            <table className={ADMIN_TABLE_CLS}>
               <thead>
                 <tr>
                   <th>Код</th>
@@ -87,7 +88,7 @@ export default function OrdersList() {
                       </span>
                     </td>
                     <td>
-                      <Link to={`/admin/orders/${o.code}`} className="btn btn-sm">Үзэх</Link>
+                      <Link to={`/admin/orders/${o.code}`} className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS}`}>Үзэх</Link>
                     </td>
                   </tr>
                 ))}
