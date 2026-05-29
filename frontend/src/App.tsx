@@ -23,14 +23,12 @@ import Content from './admin/pages/Content';
 function ScrollToTop() {
   const { pathname, hash } = useLocation();
   useEffect(() => {
-    if (hash) return; // let in-page anchors handle themselves
+    if (hash) return;
     window.scrollTo(0, 0);
   }, [pathname, hash]);
   return null;
 }
 
-// Redirect logged-in visitors away from guest pages (home, login, register).
-// Admins land in /admin; regular users land in /watch.
 function GuestOnly({ children }: { children: ReactNode }) {
   const { session } = useAuth();
   if (session && session.identifier) {

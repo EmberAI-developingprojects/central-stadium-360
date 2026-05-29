@@ -11,19 +11,6 @@ import {
 
 const payments = new Hono<AuthEnv>();
 
-// ----------------------------------------------------------------------------
-// POST /api/payments/qpay-callback        (PUBLIC — verified by HMAC + check)
-// ----------------------------------------------------------------------------
-// QPay calls this when an invoice changes state. URL was minted at
-// invoice-create time with `?ticket=<uuid>&sig=<hmac(uuid)>`.
-//
-// Defense-in-depth:
-//   1. HMAC check — discards random/forged calls before any work.
-//   2. Independent /v2/payment/check — only QPay can tell us "paid" for real.
-//   3. Idempotent UPDATE ... WHERE status='pending' — repeat calls no-op.
-//
-// We intentionally never trust the request body or query for amounts.
-// ----------------------------------------------------------------------------
 payments.post("/qpay-callback", async (c) => {
   const ticketId = c.req.query("ticket") ?? "";
   const sig = c.req.query("sig") ?? "";
@@ -41,14 +28,19 @@ payments.post("/qpay-callback", async (c) => {
 
   const admin = getSupabaseAdmin();
   if (!admin) {
-    return c.json({ ok: false, error: "supabase_not_configured" } as const, 503);
+    return c.json(
+      { ok: false, error: "supabase_not_configured" } as const,
+      503,
+    );
   }
 
   const { data: ticket, error: tErr } = await admin
     .from("tickets")
     .select("id, status, qpay_invoice_id, price")
     .eq("id", ticketId)
-    .maybeSingle<Pick<DbTicket, "id" | "status" | "qpay_invoice_id" | "price">>();
+    .maybeSingle<
+      Pick<DbTicket, "id" | "status" | "qpay_invoice_id" | "price">
+    >();
   if (tErr) {
     console.error("[payments] ticket lookup failed:", tErr);
     return c.json({ ok: false, error: "internal_error" } as const, 500);
@@ -57,12 +49,10 @@ payments.post("/qpay-callback", async (c) => {
     return c.json({ ok: false, error: "ticket_not_found" } as const, 404);
   }
 
-  // Idempotency: if already paid, ACK and exit without re-querying QPay.
   if (ticket.status === "paid") {
     return c.json({ ok: true, data: { idempotent: true } } as const);
   }
 
-  // Independent confirmation with QPay.
   if (!isQPayConfigured()) {
     return c.json({ ok: false, error: "qpay_not_configured" } as const, 503);
   }
@@ -77,7 +67,7 @@ payments.post("/qpay-callback", async (c) => {
     return c.json({ ok: false, error: "not_paid" } as const, 409);
   }
   if (check.paid_amount < ticket.price) {
-    // Underpayment — do not mark paid.
+
     console.warn("[payments] underpayment", {
       ticketId,
       expected: ticket.price,
@@ -86,7 +76,6 @@ payments.post("/qpay-callback", async (c) => {
     return c.json({ ok: false, error: "underpaid" } as const, 409);
   }
 
-  // Idempotent state transition: only update if still pending.
   const { data: updated, error: upErr } = await admin
     .from("tickets")
     .update({ status: "paid", paid_at: new Date().toISOString() })
@@ -99,19 +88,12 @@ payments.post("/qpay-callback", async (c) => {
     return c.json({ ok: false, error: "internal_error" } as const, 500);
   }
   if (!updated) {
-    // Someone else marked it paid between our SELECT and UPDATE — that's fine.
+
     return c.json({ ok: true, data: { idempotent: true } } as const);
   }
 
   return c.json({ ok: true, data: { idempotent: false } } as const);
 });
-
-// ----------------------------------------------------------------------------
-// GET /api/payments/status/:invoiceId     (AUTH REQUIRED)
-// ----------------------------------------------------------------------------
-// Polled by the OrderDetail page while the user waits at the QR. Also
-// reconciles if the webhook was dropped.
-// ----------------------------------------------------------------------------
 
 const statusRoute = new Hono<AuthEnv>();
 statusRoute.use("*", requireUser);
@@ -128,7 +110,10 @@ statusRoute.get("/:invoiceId", async (c) => {
 
   const admin = getSupabaseAdmin();
   if (!admin) {
-    return c.json({ ok: false, error: "supabase_not_configured" } as const, 503);
+    return c.json(
+      { ok: false, error: "supabase_not_configured" } as const,
+      503,
+    );
   }
 
   const { data: ticket } = await admin
@@ -143,11 +128,10 @@ statusRoute.get("/:invoiceId", async (c) => {
     >();
 
   if (!ticket || ticket.user_id !== user.id || !ticket.qpay_invoice_id) {
-    // Don't disclose whether the invoice exists for someone else.
+
     return c.json({ ok: false, error: "not_found" } as const, 404);
   }
 
-  // If already paid in DB, return cached status.
   if (ticket.status === "paid") {
     const resp: PaymentStatus = {
       invoice_id: ticket.qpay_invoice_id,
@@ -159,8 +143,6 @@ statusRoute.get("/:invoiceId", async (c) => {
     return c.json({ ok: true, data: resp } as const);
   }
 
-  // Otherwise reconcile with QPay. If paid, mirror the callback's effect
-  // (also idempotent: WHERE status='pending').
   if (!isQPayConfigured()) {
     return c.json({ ok: false, error: "qpay_not_configured" } as const, 503);
   }

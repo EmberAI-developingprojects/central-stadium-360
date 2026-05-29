@@ -5,10 +5,7 @@ import type { DbTicket, TicketCreateResponse } from "@cs360/shared";
 import { getSupabaseAdmin } from "../lib/supabase";
 import { requireUser, type AuthEnv } from "../middleware/require-user";
 import { createInvoice, isQPayConfigured } from "../lib/qpay";
-import {
-  buildCallbackUrl,
-  getCallbackSecret,
-} from "../lib/qpay-signature";
+import { buildCallbackUrl, getCallbackSecret } from "../lib/qpay-signature";
 
 const tickets = new Hono<AuthEnv>();
 
@@ -18,9 +15,6 @@ const createSchema = z.object({
   event_id: z.string().uuid(),
 });
 
-// ----------------------------------------------------------------------------
-// POST /api/tickets/create
-// ----------------------------------------------------------------------------
 tickets.post("/create", async (c) => {
   const user = c.get("user");
   const body = await c.req.json().catch(() => ({}));
@@ -39,10 +33,12 @@ tickets.post("/create", async (c) => {
 
   const admin = getSupabaseAdmin();
   if (!admin) {
-    return c.json({ ok: false, error: "supabase_not_configured" } as const, 503);
+    return c.json(
+      { ok: false, error: "supabase_not_configured" } as const,
+      503,
+    );
   }
 
-  // 1. Load event + price from DB (NEVER trust client-supplied price).
   const { data: event, error: evErr } = await admin
     .from("events")
     .select("id, title, status, price")
@@ -67,7 +63,6 @@ tickets.post("/create", async (c) => {
     return c.json({ ok: false, error: "event_not_for_sale" } as const, 409);
   }
 
-  // 2. QPay must be configured.
   if (!isQPayConfigured()) {
     return c.json({ ok: false, error: "qpay_not_configured" } as const, 503);
   }
@@ -79,7 +74,6 @@ tickets.post("/create", async (c) => {
     );
   }
 
-  // 3. Insert pending ticket — we own the id, use it as sender_invoice_no.
   const ticketId = randomUUID();
   const { error: insertErr } = await admin.from("tickets").insert({
     id: ticketId,
@@ -93,7 +87,6 @@ tickets.post("/create", async (c) => {
     return c.json({ ok: false, error: "ticket_insert_failed" } as const, 500);
   }
 
-  // 4. Build authenticated callback URL and create QPay invoice.
   const backendUrl =
     process.env.PUBLIC_BACKEND_URL ??
     process.env.BACKEND_URL ??
@@ -111,20 +104,18 @@ tickets.post("/create", async (c) => {
     });
   } catch (err) {
     console.error("[tickets] qpay createInvoice failed:", err);
-    // Roll back the pending ticket so we don't leak orphans.
+
     await admin.from("tickets").delete().eq("id", ticketId);
     return c.json({ ok: false, error: "qpay_invoice_failed" } as const, 502);
   }
 
-  // 5. Persist QPay invoice id on the ticket.
   const { error: updErr } = await admin
     .from("tickets")
     .update({ qpay_invoice_id: invoice.invoice_id })
     .eq("id", ticketId);
   if (updErr) {
     console.error("[tickets] qpay_invoice_id update failed:", updErr);
-    // Don't roll back — the invoice exists in QPay; let the user pay & we'll
-    // reconcile via callback or status polling.
+
   }
 
   const response: TicketCreateResponse = {
@@ -139,14 +130,14 @@ tickets.post("/create", async (c) => {
   return c.json({ ok: true, data: response } as const);
 });
 
-// ----------------------------------------------------------------------------
-// GET /api/tickets/my
-// ----------------------------------------------------------------------------
 tickets.get("/my", async (c) => {
   const user = c.get("user");
   const admin = getSupabaseAdmin();
   if (!admin) {
-    return c.json({ ok: false, error: "supabase_not_configured" } as const, 503);
+    return c.json(
+      { ok: false, error: "supabase_not_configured" } as const,
+      503,
+    );
   }
 
   const { data, error } = await admin

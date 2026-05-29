@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="mn">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>360° Live Stream Test Player</title>
+
+    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.137.0/build/three.min.js"></script>
+    <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/videojs-vr@2.0.0/dist/videojs-vr.min.js"></script>
+    <link
+      href="https://cdn.jsdelivr.net/npm/videojs-vr@2.0.0/dist/videojs-vr.css"
+      rel="stylesheet"
+    />
+
+    <style>
+      body {
+        margin: 0;
+        background: #0a0a0a;
+        color: #eee;
+        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        padding: 20px;
+      }
+      h1 {
+        color: #2e9e8f;
+        margin-bottom: 8px;
+      }
+      .hint {
+        color: #888;
+        font-size: 14px;
+        margin-bottom: 16px;
+      }
+      .player-wrap {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      #my-video {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        background: #000;
+      }
+      .url-box {
+        margin-top: 16px;
+        padding: 12px;
+        background: #1a1a1a;
+        border: 1px solid #333;
+        border-radius: 6px;
+      }
+      .url-box label {
+        display: block;
+        color: #888;
+        font-size: 12px;
+        margin-bottom: 6px;
+      }
+      .url-box input {
+        width: 100%;
+        padding: 8px;
+        background: #0a0a0a;
+        color: #eee;
+        border: 1px solid #444;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 13px;
+      }
+      button {
+        margin-top: 10px;
+        padding: 10px 20px;
+        background: #2e9e8f;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      button:hover {
+        background: #257d72;
+      }
+      .status {
+        margin-top: 12px;
+        font-size: 13px;
+        color: #c9a227;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="player-wrap">
+      <h1>360° Live Stream Test Player</h1>
+      <p class="hint">
+        Видео ачаалагдсаны дараа хулганаар <b>drag</b> хийж 360° эргүүлээрэй.
+      </p>
+
+      <video
+        id="my-video"
+        class="video-js vjs-default-skin"
+        controls
+        muted
+        playsinline
+        crossorigin="anonymous"
+      ></video>
+
+      <div class="url-box">
+        <label>AWS IVS Playback URL (.m3u8)</label>
+        <input
+          id="url-input"
+          type="text"
+          placeholder="https://...playback.live-video.net/.../master.m3u8"
+        />
+        <button id="load-btn">Урсгал ачаалах</button>
+        <div class="status" id="status"></div>
+      </div>
+    </div>
+
+    <script>
+      const player = videojs("my-video", {
+        autoplay: false,
+        controls: true,
+        preload: "auto",
+        liveui: true,
+        liveTracker: {
+          trackingThreshold: 0,
+          liveTolerance: 5,
+        },
+        html5: {
+          vhs: {
+            overrideNative: true,
+            liveSyncDurationCount: 2,
+            liveMaxLatencyDurationCount: 4,
+            lowLatencyMode: true,
+            backBufferLength: 0,
+            maxBufferLength: 4,
+            maxMaxBufferLength: 8,
+            enableLowInitialPlaylist: true,
+          },
+        },
+      });
+
+      let vrInited = false;
+
+      function loadStream(url) {
+        const status = document.getElementById("status");
+        status.textContent = "Ачаалж байна...";
+
+        player.src({ src: url, type: "application/x-mpegURL" });
+
+        player.ready(() => {
+          if (!vrInited) {
+            player.vr({ projection: "360", forceCardboard: false });
+            vrInited = true;
+          }
+          player
+            .play()
+            .then(() => {
+              status.textContent =
+                "✓ Тоглож байна. Хулганаар drag хийж эргүүлээрэй.";
+              // Force seek to live edge every few seconds
+              setInterval(() => {
+                const liveTracker = player.liveTracker;
+                if (
+                  liveTracker &&
+                  liveTracker.isLive() &&
+                  liveTracker.atLiveEdge() === false
+                ) {
+                  const seekable = player.seekable();
+                  if (seekable.length > 0) {
+                    player.currentTime(seekable.end(seekable.length - 1));
+                  }
+                }
+              }, 3000);
+            })
+            .catch((e) => {
+              status.textContent = "Алдаа: " + e.message;
+            });
+        });
+      }
+
+      document.getElementById("load-btn").addEventListener("click", () => {
+        const url = document.getElementById("url-input").value.trim();
+        if (!url) {
+          document.getElementById("status").textContent = "URL оруулна уу.";
+          return;
+        }
+        loadStream(url);
+      });
+
+      // Pre-fill if URL is in hash like #url=https://...
+      const hashUrl = location.hash.replace(/^#url=/, "");
+      if (hashUrl) {
+        document.getElementById("url-input").value =
+          decodeURIComponent(hashUrl);
+      }
+    </script>
+  </body>
+</html>

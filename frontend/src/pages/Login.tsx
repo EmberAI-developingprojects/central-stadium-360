@@ -1,9 +1,37 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth";
+import {
+  BACK_CLS,
+  BTN_RESET_STYLE as BACK_BTN_STYLE,
+  CARD_CLS,
+  DIVIDER_CLS,
+  EYEBROW_CLS,
+  EYEBROW_DOT_CLS,
+  FIELD_CLS,
+  FORM_CLS,
+  FULL_RESET_BTN_STYLE as RESEND_BTN_STYLE,
+  HEADER_CLS,
+  HOME_CLS,
+  INPUT_CLS,
+  LABEL_CLS,
+  LOGO_CLS,
+  LOGO_IMG_CLS,
+  MAIN_CLS,
+  PAGE_BG,
+  PAGE_CLS,
+  PWD_INPUT_CLS,
+  PWD_TOGGLE_CLS,
+  PWD_WRAP_CLS,
+  REG_ALERT_CLS,
+  REG_ALERT_OK_CLS,
+  REG_HINT_CLS,
+  REGISTER_CLS,
+  SUBMIT_CLS,
+  SUBTITLE_CLS,
+  TITLE_CLS,
+} from "./_authStyles";
 
-// Restrict ?next= to local SPA routes so we can't be used as an open redirect.
-// Default to /watch so freshly-signed-in users land in their dashboard.
 function safeNext(next: string | null): string {
   if (!next) return "/watch";
   if (!next.startsWith("/")) return "/watch";
@@ -134,35 +162,30 @@ export default function Login() {
     });
   };
 
-  // ─────────────────────────────────────────── Verification: phone
   if (step === "verify-phone") {
     return (
-      <div className="login-page">
-        <header className="login-header">
+      <div className={PAGE_CLS} style={{ background: PAGE_BG }}>
+        <header className={HEADER_CLS}>
           <Link
-            className="login-logo"
+            className={LOGO_CLS}
             to="/"
             aria-label="Төв Цэнгэлдэх Хүрээлэн — Нүүр"
           >
             <img
+              className={LOGO_IMG_CLS}
               src="/assets/images/brand/logo.png"
               alt="Төв Цэнгэлдэх Хүрээлэн"
             />
           </Link>
           <button
             type="button"
-            className="login-back"
+            className={BACK_CLS}
             onClick={() => {
               setStep("form");
               setCode("");
               setVerifyAlert(null);
             }}
-            style={{
-              background: "none",
-              border: 0,
-              cursor: "pointer",
-              font: "inherit",
-            }}
+            style={BACK_BTN_STYLE}
           >
             <svg
               viewBox="0 0 24 24"
@@ -180,24 +203,24 @@ export default function Login() {
           </button>
         </header>
 
-        <main className="login-main">
-          <section className="login-card">
-            <span className="login-eyebrow">
-              <span className="login-eyebrow-dot" aria-hidden="true"></span>
+        <main className={MAIN_CLS}>
+          <section className={CARD_CLS}>
+            <span className={EYEBROW_CLS}>
+              <span className={EYEBROW_DOT_CLS} aria-hidden="true"></span>
               Баталгаажуулалт
             </span>
 
-            <h1 className="login-title">Утсаа баталгаажуулах</h1>
-            <p className="login-subtitle">
+            <h1 className={TITLE_CLS}>Утсаа баталгаажуулах</h1>
+            <p className={SUBTITLE_CLS}>
               {pendingIdentifier} дугаар руу 6 оронтой код илгээлээ. Хүлээж
               аваад доор оруулна уу.
             </p>
 
-            <form className="login-form" onSubmit={onVerifySubmit} noValidate>
-              <label className="login-field">
-                <span className="login-label">Баталгаажуулах код</span>
+            <form className={FORM_CLS} onSubmit={onVerifySubmit} noValidate>
+              <label className={FIELD_CLS}>
+                <span className={LABEL_CLS}>Баталгаажуулах код</span>
                 <input
-                  className="login-input"
+                  className={INPUT_CLS}
                   type="text"
                   inputMode="numeric"
                   autoComplete="one-time-code"
@@ -208,14 +231,14 @@ export default function Login() {
                   required
                   autoFocus
                 />
-                <span className="reg-hint">
+                <span className={REG_HINT_CLS}>
                   Кодын хүчинтэй хугацаа: 5 минут
                 </span>
               </label>
 
               {verifyAlert && (
                 <div
-                  className={`reg-alert${verifyAlert.kind === "ok" ? " is-ok" : ""}`}
+                  className={verifyAlert.kind === "ok" ? REG_ALERT_OK_CLS : REG_ALERT_CLS}
                   role="alert"
                 >
                   {verifyAlert.msg}
@@ -224,7 +247,7 @@ export default function Login() {
 
               <button
                 type="submit"
-                className="login-submit"
+                className={SUBMIT_CLS}
                 disabled={verifyBusy}
               >
                 {verifyBusy ? "Шалгаж байна…" : "Баталгаажуулах"}
@@ -243,26 +266,20 @@ export default function Login() {
               </button>
             </form>
 
-            <div className="login-divider">
+            <div className={DIVIDER_CLS}>
               <span>эсвэл</span>
             </div>
 
             <button
               type="button"
-              className="login-register"
+              className={REGISTER_CLS}
               onClick={onResend}
               disabled={resendBusy}
-              style={{
-                background: "none",
-                border: 0,
-                cursor: "pointer",
-                width: "100%",
-                font: "inherit",
-              }}
+              style={RESEND_BTN_STYLE}
             >
               {resendBusy ? "Илгээж байна…" : "Дахин код илгээх"}
             </button>
-            <Link className="login-home" to="/">
+            <Link className={HOME_CLS} to="/">
               Нүүр хуудас руу буцах
             </Link>
           </section>
@@ -271,34 +288,29 @@ export default function Login() {
     );
   }
 
-  // ─────────────────────────────────────────── Verification: email
   if (step === "verify-email") {
     return (
-      <div className="login-page">
-        <header className="login-header">
+      <div className={PAGE_CLS} style={{ background: PAGE_BG }}>
+        <header className={HEADER_CLS}>
           <Link
-            className="login-logo"
+            className={LOGO_CLS}
             to="/"
             aria-label="Төв Цэнгэлдэх Хүрээлэн — Нүүр"
           >
             <img
+              className={LOGO_IMG_CLS}
               src="/assets/images/brand/logo.png"
               alt="Төв Цэнгэлдэх Хүрээлэн"
             />
           </Link>
           <button
             type="button"
-            className="login-back"
+            className={BACK_CLS}
             onClick={() => {
               setStep("form");
               setVerifyAlert(null);
             }}
-            style={{
-              background: "none",
-              border: 0,
-              cursor: "pointer",
-              font: "inherit",
-            }}
+            style={BACK_BTN_STYLE}
           >
             <svg
               viewBox="0 0 24 24"
@@ -316,26 +328,26 @@ export default function Login() {
           </button>
         </header>
 
-        <main className="login-main">
-          <section className="login-card">
-            <span className="login-eyebrow">
-              <span className="login-eyebrow-dot" aria-hidden="true"></span>
+        <main className={MAIN_CLS}>
+          <section className={CARD_CLS}>
+            <span className={EYEBROW_CLS}>
+              <span className={EYEBROW_DOT_CLS} aria-hidden="true"></span>
               Баталгаажуулалт
             </span>
 
-            <h1 className="login-title">Гмэйлээ шалгана уу</h1>
-            <p className="login-subtitle">
+            <h1 className={TITLE_CLS}>Гмэйлээ шалгана уу</h1>
+            <p className={SUBTITLE_CLS}>
               Бид {pendingIdentifier} хаяг руу баталгаажуулах линк илгээлээ.
               Линк дээр дарж бүртгэлээ идэвхжүүлээрэй.
             </p>
 
-            <div className="reg-alert is-ok" role="status">
+            <div className={REG_ALERT_OK_CLS} role="status">
               Дахин харагдахгүй бол спам хавтсаа шалгана уу.
             </div>
 
             {verifyAlert && (
               <div
-                className={`reg-alert${verifyAlert.kind === "ok" ? " is-ok" : ""}`}
+                className={verifyAlert.kind === "ok" ? REG_ALERT_OK_CLS : REG_ALERT_CLS}
                 role="alert"
                 style={{ marginTop: 8 }}
               >
@@ -343,26 +355,20 @@ export default function Login() {
               </div>
             )}
 
-            <div className="login-divider">
+            <div className={DIVIDER_CLS}>
               <span>эсвэл</span>
             </div>
 
             <button
               type="button"
-              className="login-register"
+              className={REGISTER_CLS}
               onClick={onResend}
               disabled={resendBusy}
-              style={{
-                background: "none",
-                border: 0,
-                cursor: "pointer",
-                width: "100%",
-                font: "inherit",
-              }}
+              style={RESEND_BTN_STYLE}
             >
               {resendBusy ? "Илгээж байна…" : "Дахин линк илгээх"}
             </button>
-            <Link className="login-home" to="/">
+            <Link className={HOME_CLS} to="/">
               Нүүр хуудас руу буцах
             </Link>
           </section>
@@ -371,21 +377,21 @@ export default function Login() {
     );
   }
 
-  // ─────────────────────────────────────────── Login form (unchanged design)
   return (
-    <div className="login-page">
-      <header className="login-header">
+    <div className={PAGE_CLS} style={{ background: PAGE_BG }}>
+      <header className={HEADER_CLS}>
         <Link
-          className="login-logo"
+          className={LOGO_CLS}
           to="/"
           aria-label="Төв Цэнгэлдэх Хүрээлэн — Нүүр"
         >
           <img
+            className={LOGO_IMG_CLS}
             src="/assets/images/brand/logo.png"
             alt="Төв Цэнгэлдэх Хүрээлэн"
           />
         </Link>
-        <Link className="login-back" to="/">
+        <Link className={BACK_CLS} to="/">
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -402,24 +408,24 @@ export default function Login() {
         </Link>
       </header>
 
-      <main className="login-main">
-        <section className="login-card">
-          <span className="login-eyebrow">
-            <span className="login-eyebrow-dot" aria-hidden="true"></span>
+      <main className={MAIN_CLS}>
+        <section className={CARD_CLS}>
+          <span className={EYEBROW_CLS}>
+            <span className={EYEBROW_DOT_CLS} aria-hidden="true"></span>
             Хувийн булан
           </span>
 
-          <h1 className="login-title">Нэвтрэх</h1>
-          <p className="login-subtitle">
+          <h1 className={TITLE_CLS}>Нэвтрэх</h1>
+          <p className={SUBTITLE_CLS}>
             Тасалбар, шууд дамжуулал, гишүүнчлэлдээ хандахын тулд бүртгэлээрээ
             нэвтэрнэ үү.
           </p>
 
-          <form className="login-form" onSubmit={onSubmit} noValidate>
-            <label className="login-field">
-              <span className="login-label">И-мэйл эсвэл утасны дугаар</span>
+          <form className={FORM_CLS} onSubmit={onSubmit} noValidate>
+            <label className={FIELD_CLS}>
+              <span className={LABEL_CLS}>И-мэйл эсвэл утасны дугаар</span>
               <input
-                className="login-input"
+                className={INPUT_CLS}
                 type="text"
                 name="identifier"
                 placeholder="name@gmail.com эсвэл 8800 0000"
@@ -430,11 +436,11 @@ export default function Login() {
               />
             </label>
 
-            <label className="login-field">
-              <span className="login-label">Нууц үг</span>
-              <span className="login-password-wrap">
+            <label className={FIELD_CLS}>
+              <span className={LABEL_CLS}>Нууц үг</span>
+              <span className={PWD_WRAP_CLS}>
                 <input
-                  className="login-input"
+                  className={PWD_INPUT_CLS}
                   type={showPw ? "text" : "password"}
                   name="password"
                   placeholder="••••••••"
@@ -445,7 +451,7 @@ export default function Login() {
                 />
                 <button
                   type="button"
-                  className="login-pass-toggle"
+                  className={PWD_TOGGLE_CLS}
                   aria-label={showPw ? "Нууц үг нуух" : "Нууц үг харах"}
                   onClick={() => setShowPw((s) => !s)}
                 >
@@ -465,11 +471,11 @@ export default function Login() {
               </span>
             </label>
 
-            <div className="reg-alert" role="alert" hidden={!alert}>
+            <div className={REG_ALERT_CLS} role="alert" hidden={!alert}>
               {alert}
             </div>
 
-            <button type="submit" className="login-submit" disabled={busy}>
+            <button type="submit" className={SUBMIT_CLS} disabled={busy}>
               {submitLabel}
               <svg
                 viewBox="0 0 24 24"
@@ -486,14 +492,14 @@ export default function Login() {
             </button>
           </form>
 
-          <div className="login-divider">
+          <div className={DIVIDER_CLS}>
             <span>эсвэл</span>
           </div>
 
-          <Link className="login-register" to="/register">
+          <Link className={REGISTER_CLS} to="/register">
             Шинээр бүртгүүлэх
           </Link>
-          <Link className="login-home" to="/">
+          <Link className={HOME_CLS} to="/">
             Нүүр хуудас руу буцах
           </Link>
         </section>

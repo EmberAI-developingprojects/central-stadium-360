@@ -1,6 +1,4 @@
-// Typed fetch wrapper for the backend's /api endpoints.
-// Pulls the current access token from supabase-js so every request to a
-// protected endpoint is automatically authenticated.
+
 
 import { supabase } from './supabase';
 
@@ -52,10 +50,6 @@ async function request<T>(
   }
   return { ok: true, data: (json.data as T) ?? (undefined as unknown as T) };
 }
-
-// ---------------------------------------------------------------------------
-// Auth endpoints
-// ---------------------------------------------------------------------------
 
 export type AuthSessionPayload = {
   session: {

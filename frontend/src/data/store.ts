@@ -1,6 +1,4 @@
-// Single source of truth for everything the admin manages.
-// All methods are async (return Promises) so a real backend can swap in
-// without changing any callers.
+
 
 import { SEED_EVENTS, SEED_CONTENT, SEED_ADMIN_USER } from "./seed";
 
@@ -130,13 +128,10 @@ function writeJSON(key: string, value: unknown): void {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch {
-    /* ignore quota errors */
+    
   }
 }
 
-// Backfill `status: 'paid'` only on legacy records that don't have one.
-// Equivalent to the original `{ status: 'paid', ...o }` spread, written so
-// TypeScript doesn't flag it as an overwritten literal.
 const withDefaultStatus = <T extends { status?: OrderStatus }>(
   o: T,
 ): T & { status: OrderStatus } =>
@@ -155,10 +150,6 @@ function slugify(s: string): string {
       .slice(0, 60) || "event-" + Math.random().toString(36).slice(2, 7)
   );
 }
-
-// ============================================================================
-// Events
-// ============================================================================
 
 export function listEvents(): Promise<EventRecord[]> {
   return ok(readJSON<EventRecord[]>(KEYS.events, []));
@@ -233,10 +224,6 @@ export function setFeaturedEvent(id: string): Promise<void> {
   return ok(undefined);
 }
 
-// ============================================================================
-// Orders (legacy key: tsengeldekh_tickets — kept for back-compat)
-// ============================================================================
-
 export function listOrders(filter: OrderFilter = {}): Promise<OrderRecord[]> {
   let all = readJSON<OrderRecord[]>(KEYS.orders, []).map(withDefaultStatus);
   const { q, status, eventId, from, to, user } = filter;
@@ -302,7 +289,7 @@ export function ordersStats(): Promise<OrdersStats> {
     byTier[o.tier] = (byTier[o.tier] || 0) + (Number(o.total) || 0);
     byEvent[o.eventId] = (byEvent[o.eventId] || 0) + (Number(o.total) || 0);
   });
-  // Last 30 days bucket by day
+
   const today = new Date();
   const last30d: { date: string; total: number }[] = [];
   for (let i = 29; i >= 0; i--) {
@@ -323,10 +310,6 @@ export function ordersStats(): Promise<OrdersStats> {
     last30d,
   });
 }
-
-// ============================================================================
-// Users
-// ============================================================================
 
 export function listUsers(): Promise<UserRecord[]> {
   return ok(readJSON<UserRecord[]>(KEYS.users, []));
@@ -369,10 +352,6 @@ export function deleteUser(identifier: string): Promise<void> {
   return ok(undefined);
 }
 
-// ============================================================================
-// Home content (News, Partners, Roadmap, Members)
-// ============================================================================
-
 const EMPTY_CONTENT: HomeContent = {
   news: [],
   partners: [],
@@ -393,27 +372,23 @@ export function updateHomeContent(
   return ok(next);
 }
 
-// ============================================================================
-// Bootstrap / seed
-// ============================================================================
-
 export function seedIfEmpty(): Promise<void> {
-  // Events
+
   if (!localStorage.getItem(KEYS.events)) {
     writeJSON(KEYS.events, SEED_EVENTS);
   }
-  // Content
+
   if (!localStorage.getItem(KEYS.content)) {
     writeJSON(KEYS.content, SEED_CONTENT);
   }
-  // Admin user (always ensure it exists; do not overwrite if real one already there)
+
   const users = readJSON<UserRecord[]>(KEYS.users, []);
   let mutated = false;
   if (!users.some((u) => u.identifier === SEED_ADMIN_USER.identifier)) {
     users.push(SEED_ADMIN_USER);
     mutated = true;
   }
-  // Migration: ensure every user has a role
+
   users.forEach((u) => {
     if (!u.role) {
       u.role = u.identifier === "admin" ? "admin" : "user";
@@ -426,7 +401,6 @@ export function seedIfEmpty(): Promise<void> {
   });
   if (mutated) writeJSON(KEYS.users, users);
 
-  // Orders: backfill status:'paid' on legacy records
   const orders = readJSON<OrderRecord[]>(KEYS.orders, []);
   let ordersMutated = false;
   orders.forEach((o) => {

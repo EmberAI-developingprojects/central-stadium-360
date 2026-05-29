@@ -1,18 +1,4 @@
-// Supabase "Send SMS Hook" endpoint.
-//
-// Configure in Supabase dashboard:
-//   Auth → Hooks → Send SMS Hook
-//     URL:    {PUBLIC_BACKEND_URL}/api/internal/sms-hook
-//     Secret: same value as backend env SMS_HOOK_SECRET
-//
-// Supabase POSTs a JSON payload whenever it wants to deliver an SMS. The
-// payload is signed with the configured secret using the Standard Webhooks
-// scheme (svix-id / svix-timestamp / svix-signature headers). We verify the
-// signature and dispatch via lib/sms.ts.
-//
-// In dev, leave SMS_PROVIDER unset and the OTP just logs to the backend
-// console — the full register/verify/login flow still works because the
-// frontend reads the code from the developer's terminal.
+
 
 import { Hono } from "hono";
 import { createHmac, timingSafeEqual } from "node:crypto";
@@ -48,13 +34,11 @@ function verifySupabaseSignature(
 ): boolean {
   if (!svixId || !svixTs || !svixSig) return false;
 
-  // Reject stale messages (>5 min skew).
   const tsNum = Number(svixTs);
   if (!Number.isFinite(tsNum)) return false;
   const skewMs = Math.abs(Date.now() - tsNum * 1000);
   if (skewMs > 5 * 60 * 1000) return false;
 
-  // Dashboard secret is "v1,whsec_<base64>"; we want just the base64 part.
   const rawSecret = secret.replace(/^v1,whsec_/, "");
   let key: Buffer;
   try {
@@ -64,9 +48,10 @@ function verifySupabaseSignature(
   }
 
   const signedPayload = `${svixId}.${svixTs}.${rawBody}`;
-  const expected = createHmac("sha256", key).update(signedPayload).digest("base64");
+  const expected = createHmac("sha256", key)
+    .update(signedPayload)
+    .digest("base64");
 
-  // svix-signature can carry multiple "v1,<sig>" entries separated by spaces.
   const candidates = svixSig
     .split(/\s+/)
     .map((part) => part.split(",", 2))
@@ -85,7 +70,7 @@ function verifySupabaseSignature(
 hook.post("/sms-hook", async (c) => {
   const secret = process.env.SMS_HOOK_SECRET;
   if (!secret) {
-    // Hook can't be authenticated; refuse rather than blindly trust the body.
+
     return c.json(
       { ok: false, error: "sms_hook_not_configured" } as const,
       503,

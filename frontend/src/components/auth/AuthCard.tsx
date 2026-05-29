@@ -1,15 +1,13 @@
-// AuthCard — the white-glass card that holds the auth form / verification view.
-// Pixel-targeted port of .login-card + .login-eyebrow + .login-title +
-// .login-subtitle from styles.css.
+
 
 import type { ReactNode } from 'react';
 
 type Props = {
-  /** Small uppercased pill above the title, e.g. "Хувийн булан". */
+  
   eyebrow?: ReactNode;
   title: ReactNode;
   subtitle?: ReactNode;
-  /** Card body. */
+  
   children: ReactNode;
   className?: string;
 };
@@ -46,8 +44,6 @@ export function AuthCard({ eyebrow, title, subtitle, children, className }: Prop
   );
 }
 
-// Divider with optional center label, used between card actions.
-// Mirrors .login-divider + its ::before/::after lines.
 type DividerProps = { children?: ReactNode };
 export function Divider({ children }: DividerProps) {
   return (

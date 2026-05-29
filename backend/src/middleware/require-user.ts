@@ -22,10 +22,6 @@ function getBearer(authHeader: string | undefined): string | null {
   return token;
 }
 
-/**
- * Resolves the Bearer JWT to a `users.id` + role and attaches it via c.set.
- * Use as: app.use("*", requireUser).
- */
 export async function requireUser(
   c: Context<AuthEnv>,
   next: Next,
@@ -36,7 +32,10 @@ export async function requireUser(
   }
   const sb = getSupabaseForAccessToken(token);
   if (!sb) {
-    return c.json({ ok: false, error: "supabase_not_configured" } as const, 503);
+    return c.json(
+      { ok: false, error: "supabase_not_configured" } as const,
+      503,
+    );
   }
   const { data, error } = await sb.auth.getUser(token);
   if (error || !data.user) {

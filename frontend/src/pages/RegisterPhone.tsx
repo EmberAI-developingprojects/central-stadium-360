@@ -1,6 +1,41 @@
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth";
+import {
+  BACK_CLS,
+  CARD_CLS,
+  DIVIDER_CLS,
+  EYEBROW_CLS,
+  EYEBROW_DOT_CLS,
+  FIELD_CLS,
+  FORM_CLS,
+  FULL_RESET_BTN_STYLE as RESEND_BTN_STYLE,
+  HEADER_CLS,
+  HOME_CLS,
+  INPUT_CLS,
+  LABEL_CLS,
+  LOGO_CLS,
+  LOGO_IMG_CLS,
+  MAIN_CLS,
+  PAGE_BG,
+  PAGE_CLS,
+  PWD_INPUT_CLS,
+  PWD_TOGGLE_CLS,
+  PWD_WRAP_CLS,
+  REG_ALERT_CLS,
+  REG_ALERT_OK_CLS,
+  REG_CHECKBOX_CLS,
+  REG_FORM_CLS,
+  REG_HINT_CLS,
+  REG_INPUT_PHONE_CLS,
+  REG_PHONE_PREFIX_CLS,
+  REG_PHONE_WRAP_CLS,
+  REG_TERMS_CLS,
+  REGISTER_CLS,
+  SUBMIT_CLS,
+  SUBTITLE_CLS,
+  TITLE_CLS,
+} from "./_authStyles";
 
 type Step = "form" | "verify";
 
@@ -129,22 +164,22 @@ export default function RegisterPhone() {
     setVerifyAlert({ kind: "ok", msg: "Шинэ код илгээгдлээ." });
   };
 
-  // ─────────────────────────────────────────── Verification step
   if (step === "verify") {
     return (
-      <div className="login-page">
-        <header className="login-header">
+      <div className={PAGE_CLS} style={{ background: PAGE_BG }}>
+        <header className={HEADER_CLS}>
           <Link
-            className="login-logo"
+            className={LOGO_CLS}
             to="/"
             aria-label="Төв Цэнгэлдэх Хүрээлэн — Нүүр"
           >
             <img
+              className={LOGO_IMG_CLS}
               src="/assets/images/brand/logo.png"
               alt="Төв Цэнгэлдэх Хүрээлэн"
             />
           </Link>
-          <Link className="login-back" to="/login">
+          <Link className={BACK_CLS} to="/login">
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -161,24 +196,24 @@ export default function RegisterPhone() {
           </Link>
         </header>
 
-        <main className="login-main">
-          <section className="login-card">
-            <span className="login-eyebrow">
-              <span className="login-eyebrow-dot" aria-hidden="true"></span>
+        <main className={MAIN_CLS}>
+          <section className={CARD_CLS}>
+            <span className={EYEBROW_CLS}>
+              <span className={EYEBROW_DOT_CLS} aria-hidden="true"></span>
               Баталгаажуулалт
             </span>
 
-            <h1 className="login-title">Утсаа баталгаажуулах</h1>
-            <p className="login-subtitle">
+            <h1 className={TITLE_CLS}>Утсаа баталгаажуулах</h1>
+            <p className={SUBTITLE_CLS}>
               {pendingPhone} дугаар руу 6 оронтой код илгээлээ. Хүлээж аваад
               доор оруулна уу.
             </p>
 
-            <form className="login-form" onSubmit={onVerifySubmit} noValidate>
-              <label className="login-field">
-                <span className="login-label">Баталгаажуулах код</span>
+            <form className={FORM_CLS} onSubmit={onVerifySubmit} noValidate>
+              <label className={FIELD_CLS}>
+                <span className={LABEL_CLS}>Баталгаажуулах код</span>
                 <input
-                  className="login-input"
+                  className={INPUT_CLS}
                   type="text"
                   inputMode="numeric"
                   autoComplete="one-time-code"
@@ -189,14 +224,14 @@ export default function RegisterPhone() {
                   required
                   autoFocus
                 />
-                <span className="reg-hint">
+                <span className={REG_HINT_CLS}>
                   Кодын хүчинтэй хугацаа: 5 минут
                 </span>
               </label>
 
               {verifyAlert && (
                 <div
-                  className={`reg-alert${verifyAlert.kind === "ok" ? " is-ok" : ""}`}
+                  className={verifyAlert.kind === "ok" ? REG_ALERT_OK_CLS : REG_ALERT_CLS}
                   role="alert"
                 >
                   {verifyAlert.msg}
@@ -205,7 +240,7 @@ export default function RegisterPhone() {
 
               <button
                 type="submit"
-                className="login-submit"
+                className={SUBMIT_CLS}
                 disabled={verifyBusy}
               >
                 {verifyBusy ? "Шалгаж байна…" : "Баталгаажуулах"}
@@ -224,26 +259,20 @@ export default function RegisterPhone() {
               </button>
             </form>
 
-            <div className="login-divider">
+            <div className={DIVIDER_CLS}>
               <span>эсвэл</span>
             </div>
 
             <button
               type="button"
-              className="login-register"
+              className={REGISTER_CLS}
               onClick={onResend}
               disabled={resendBusy}
-              style={{
-                background: "none",
-                border: 0,
-                cursor: "pointer",
-                width: "100%",
-                font: "inherit",
-              }}
+              style={RESEND_BTN_STYLE}
             >
               {resendBusy ? "Илгээж байна…" : "Дахин код илгээх"}
             </button>
-            <Link className="login-home" to="/login">
+            <Link className={HOME_CLS} to="/login">
               Нэвтрэх рүү буцах
             </Link>
           </section>
@@ -252,21 +281,21 @@ export default function RegisterPhone() {
     );
   }
 
-  // ─────────────────────────────────────────── Phone registration form
   return (
-    <div className="login-page">
-      <header className="login-header">
+    <div className={PAGE_CLS} style={{ background: PAGE_BG }}>
+      <header className={HEADER_CLS}>
         <Link
-          className="login-logo"
+          className={LOGO_CLS}
           to="/"
           aria-label="Төв Цэнгэлдэх Хүрээлэн — Нүүр"
         >
           <img
+            className={LOGO_IMG_CLS}
             src="/assets/images/brand/logo.png"
             alt="Төв Цэнгэлдэх Хүрээлэн"
           />
         </Link>
-        <Link className="login-back" to="/register">
+        <Link className={BACK_CLS} to="/register">
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -283,24 +312,24 @@ export default function RegisterPhone() {
         </Link>
       </header>
 
-      <main className="login-main">
-        <section className="login-card">
-          <span className="login-eyebrow">
-            <span className="login-eyebrow-dot" aria-hidden="true"></span>
+      <main className={MAIN_CLS}>
+        <section className={CARD_CLS}>
+          <span className={EYEBROW_CLS}>
+            <span className={EYEBROW_DOT_CLS} aria-hidden="true"></span>
             Хувийн булан
           </span>
 
-          <h1 className="login-title">Утасны дугаараар бүртгүүлэх</h1>
-          <p className="login-subtitle">
+          <h1 className={TITLE_CLS}>Утасны дугаараар бүртгүүлэх</h1>
+          <p className={SUBTITLE_CLS}>
             8 оронтой Монгол утасны дугаараа оруулаад баталгаажуулах SMS код
             хүлээж аваарай.
           </p>
 
-          <form className="login-form reg-form" onSubmit={onSubmit} noValidate>
-            <label className="login-field">
-              <span className="login-label">Бүтэн нэр</span>
+          <form className={REG_FORM_CLS} onSubmit={onSubmit} noValidate>
+            <label className={FIELD_CLS}>
+              <span className={LABEL_CLS}>Бүтэн нэр</span>
               <input
-                className="login-input"
+                className={INPUT_CLS}
                 type="text"
                 name="fullname"
                 placeholder="Жишээ: Б. Болор"
@@ -311,14 +340,14 @@ export default function RegisterPhone() {
               />
             </label>
 
-            <label className="login-field reg-field-phone">
-              <span className="login-label">Утасны дугаар</span>
-              <span className="reg-phone-wrap">
-                <span className="reg-phone-prefix" aria-hidden="true">
+            <label className={FIELD_CLS}>
+              <span className={LABEL_CLS}>Утасны дугаар</span>
+              <span className={REG_PHONE_WRAP_CLS}>
+                <span className={REG_PHONE_PREFIX_CLS} aria-hidden="true">
                   +976
                 </span>
                 <input
-                  className="login-input reg-input-phone"
+                  className={REG_INPUT_PHONE_CLS}
                   type="tel"
                   name="phone"
                   placeholder="8800 0000"
@@ -330,16 +359,16 @@ export default function RegisterPhone() {
                   required
                 />
               </span>
-              <span className="reg-hint">
+              <span className={REG_HINT_CLS}>
                 8 оронтой Монгол утасны дугаар оруулна уу
               </span>
             </label>
 
-            <label className="login-field">
-              <span className="login-label">Нууц үг</span>
-              <span className="login-password-wrap">
+            <label className={FIELD_CLS}>
+              <span className={LABEL_CLS}>Нууц үг</span>
+              <span className={PWD_WRAP_CLS}>
                 <input
-                  className="login-input"
+                  className={PWD_INPUT_CLS}
                   type={showPw ? "text" : "password"}
                   name="password"
                   placeholder="••••••••"
@@ -351,7 +380,7 @@ export default function RegisterPhone() {
                 />
                 <button
                   type="button"
-                  className="login-pass-toggle"
+                  className={PWD_TOGGLE_CLS}
                   aria-label={showPw ? "Нууц үг нуух" : "Нууц үг харах"}
                   onClick={() => setShowPw((s) => !s)}
                 >
@@ -369,13 +398,13 @@ export default function RegisterPhone() {
                   </svg>
                 </button>
               </span>
-              <span className="reg-hint">Хамгийн багадаа 8 тэмдэгт</span>
+              <span className={REG_HINT_CLS}>Хамгийн багадаа 8 тэмдэгт</span>
             </label>
 
-            <label className="login-field">
-              <span className="login-label">Нууц үг давтах</span>
+            <label className={FIELD_CLS}>
+              <span className={LABEL_CLS}>Нууц үг давтах</span>
               <input
-                className="login-input"
+                className={INPUT_CLS}
                 type="password"
                 name="password_confirm"
                 placeholder="••••••••"
@@ -387,12 +416,13 @@ export default function RegisterPhone() {
               />
             </label>
 
-            <label className="reg-terms">
+            <label className={REG_TERMS_CLS}>
               <input
                 type="checkbox"
                 name="agree"
                 checked={agree}
                 onChange={(e) => setAgree(e.target.checked)}
+                className={REG_CHECKBOX_CLS}
                 required
               />
               <span>
@@ -401,11 +431,11 @@ export default function RegisterPhone() {
               </span>
             </label>
 
-            <div className="reg-alert" role="alert" hidden={!alert}>
+            <div className={REG_ALERT_CLS} role="alert" hidden={!alert}>
               {alert}
             </div>
 
-            <button type="submit" className="login-submit" disabled={busy}>
+            <button type="submit" className={SUBMIT_CLS} disabled={busy}>
               {submitLabel}
               <svg
                 viewBox="0 0 24 24"
@@ -422,14 +452,14 @@ export default function RegisterPhone() {
             </button>
           </form>
 
-          <div className="login-divider">
+          <div className={DIVIDER_CLS}>
             <span>эсвэл</span>
           </div>
 
-          <Link className="login-register" to="/register/email">
+          <Link className={REGISTER_CLS} to="/register/email">
             Gmail-аар бүртгүүлэх
           </Link>
-          <Link className="login-home" to="/login">
+          <Link className={HOME_CLS} to="/login">
             Аль хэдийн бүртгэлтэй — Нэвтрэх
           </Link>
         </section>

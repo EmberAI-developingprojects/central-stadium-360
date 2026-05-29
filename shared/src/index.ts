@@ -1,4 +1,4 @@
-// API envelope ---------------------------------------------------------------
+
 export type ApiOk<T> = { ok: true; data: T };
 export type ApiErr = { ok: false; error: string };
 export type ApiResponse<T> = ApiOk<T> | ApiErr;
@@ -9,7 +9,6 @@ export interface HealthResponse {
   uptime: number;
 }
 
-// Domain models — kept in sync with supabase/migrations/0001_init.sql -------
 export type UserRole = "user" | "admin";
 export type EventStatus = "upcoming" | "live" | "ended";
 export type TicketStatus = "pending" | "paid" | "cancelled";
@@ -63,15 +62,14 @@ export interface DbSession {
   last_seen_at: string;
 }
 
-// Payment / QPay --------------------------------------------------------------
 export interface QPayInvoiceLink {
-  /** Display name, e.g. "qPay wallet", "Khan Bank". */
+  
   name: string;
-  /** Friendly description. */
+  
   description?: string;
-  /** Logo URL. */
+  
   logo?: string;
-  /** Deeplink URL — open in mobile to launch the bank app. */
+  
   link: string;
 }
 

@@ -1,13 +1,4 @@
-// Button + ButtonLink primitives.
-//
-// Four variants mirror what styles.css currently provides:
-//   primary  — .login-submit                 (filled brand-blue CTA)
-//   outline  — .login-register               (border + transparent)
-//   ghost    — .login-back                   (white-glass pill, back link)
-//   text     — .login-home                   (plain text link)
-//
-// Both <Button> and <ButtonLink> share styling via `buttonClass(variant)`.
-// Use Button for <button type="submit|button">, ButtonLink for route nav.
+
 
 import { forwardRef, type AnchorHTMLAttributes, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { Link, type LinkProps } from 'react-router-dom';

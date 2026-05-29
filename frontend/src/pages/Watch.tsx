@@ -15,6 +15,146 @@ import UserMenu from '../components/UserMenu';
 import StoryVideo from '../components/StoryVideo';
 import { cancelOrder, createOrder, listEvents, listOrders } from '../data/store';
 import type { EventRecord, OrderRecord } from '../data/store';
+import {
+  VIEWER_ANGLE_ACTIVE_CLS,
+  VIEWER_ANGLE_CLS,
+  VIEWER_ANGLE_LABEL_CLS,
+  VIEWER_ANGLE_LIVE_CLS,
+  VIEWER_ANGLE_THUMB_CLS,
+  VIEWER_ANGLES_CLS,
+  VIEWER_BODY_CLS,
+  VIEWER_CHAT_CLS,
+  VIEWER_CHAT_COUNT_CLS,
+  VIEWER_CHAT_FORM_CLS,
+  VIEWER_CHAT_HEAD_CLS,
+  VIEWER_CHAT_LIST_CLS,
+  VIEWER_CHAT_SEND_CLS,
+  VIEWER_CLOSE_CLS,
+  VIEWER_CLS,
+  VIEWER_CONTROLS_CLS,
+  VIEWER_CONTROLS_LEFT_CLS,
+  VIEWER_CONTROLS_RIGHT_CLS,
+  VIEWER_HEADER_CLS,
+  VIEWER_ICON_BTN_CLS,
+  VIEWER_ICON_BTN_ON_CLS,
+  VIEWER_LIVE_PILL_CLS,
+  VIEWER_LIVE_PULSE_CLS,
+  VIEWER_MAIN_CAM_CLS,
+  VIEWER_MSG_CLS,
+  VIEWER_MSG_MINE_CLS,
+  VIEWER_MSG_NAME_CLS,
+  VIEWER_QUALITY_CLS,
+  VIEWER_REACT_CLS,
+  VIEWER_REACT_FLOAT_CLS,
+  VIEWER_REACTIONS_CLS,
+  VIEWER_STAGE_CLS,
+  VIEWER_STAGE_SHELL_CLS,
+  VIEWER_STAT_CLS,
+  VIEWER_STATS_CLS,
+  VIEWER_TITLE_CLS,
+  VIEWER_TITLE_WRAP_CLS,
+  VIEWER_VOL_CLS,
+  VFX_VIDEO_CLS,
+  TICKET_ALERT_CLS,
+  TICKET_CHECKOUT_CLS,
+  TICKET_FINEPRINT_CLS,
+  TICKET_MODAL_BACKDROP_CLS,
+  TICKET_MODAL_BODY_CLS,
+  TICKET_MODAL_CARD_CLS,
+  TICKET_MODAL_CLOSE_CLS,
+  TICKET_MODAL_CLS,
+  TICKET_MODAL_COVER_CLS,
+  TICKET_MODAL_COVER_META_CLS,
+  TICKET_MODAL_DATE_CLS,
+  TICKET_MODAL_FORM_CLS,
+  TICKET_MODAL_SUCCESS_CLS,
+  TICKET_MODAL_TITLE_CLS,
+  TICKET_MODAL_VENUE_CLS,
+  TICKET_PAY_DESC_CLS,
+  TICKET_PAY_NAME_CLS,
+  TICKET_QTY_BTN_CLS,
+  TICKET_QTY_CLS,
+  TICKET_QTY_VAL_CLS,
+  TICKET_RADIO_CARD_CLS,
+  TICKET_RADIO_GROUP_CLS,
+  TICKET_RADIO_INPUT_CLS,
+  TICKET_RADIO_LABEL_CLS,
+  TICKET_ROW_CLS,
+  TICKET_SECTION_CLS,
+  TICKET_SECTION_LABEL_CLS,
+  TICKET_STUB_ACTIONS_CLS,
+  TICKET_STUB_BARCODE_CLS,
+  TICKET_STUB_BODY_CLS,
+  TICKET_STUB_BTN_CLS,
+  TICKET_STUB_CLS,
+  TICKET_STUB_CODE_CLS,
+  TICKET_STUB_COVER_CLS,
+  TICKET_STUB_DATE_CLS,
+  TICKET_STUB_META_CLS,
+  TICKET_STUB_META_DD_CLS,
+  TICKET_STUB_META_DT_CLS,
+  TICKET_STUB_REMOVE_HOVER_CLS,
+  TICKET_STUB_TIER_CLS,
+  TICKET_STUB_TITLE_CLS,
+  TICKET_SUCCESS_ACTIONS_CLS,
+  TICKET_SUCCESS_CODE_CLS,
+  TICKET_SUCCESS_DESC_CLS,
+  TICKET_SUCCESS_ICON_CLS,
+  TICKET_SUCCESS_TITLE_CLS,
+  TICKET_TIER_DESC_CLS,
+  TICKET_TIER_NAME_CLS,
+  TICKET_TIER_PRICE_CLS,
+  TICKET_TOTAL_CLS,
+  TICKET_TOTAL_WRAP_CLS,
+  TICKETS_EMPTY_CLS,
+  TICKETS_EMPTY_ICON_CLS,
+  TICKETS_LIST_CLS,
+  WATCH_BADGE_CLS,
+  WATCH_BTN_CLS,
+  WATCH_BTN_GHOST_CLS,
+  WATCH_BTN_PRIMARY_CLS,
+  WATCH_CARD_ACTIONS_CLS,
+  WATCH_CARD_BODY_CLS,
+  WATCH_CARD_CLS,
+  WATCH_CARD_DATE_CLS,
+  WATCH_CARD_DESC_CLS,
+  WATCH_CARD_IMG_CLS,
+  WATCH_CARD_PILL_CLS,
+  WATCH_CARD_PRICE_CLS,
+  WATCH_CARD_TITLE_CLS,
+  WATCH_EYEBROW_CLS,
+  WATCH_FEATURE_ACTIONS_CLS,
+  WATCH_FEATURE_CLS,
+  WATCH_FEATURE_DESC_CLS,
+  WATCH_FEATURE_TEXT_CLS,
+  WATCH_FEATURE_TITLE_CLS,
+  WATCH_GRID_CLS,
+  WATCH_HEADER_CLS,
+  WATCH_LIVE_DOT_CLS,
+  WATCH_LIVE_PILL_CLS,
+  WATCH_LIVE_PULSE_CLS,
+  WATCH_LOCKED_CLS,
+  WATCH_LOCKED_ICON_CLS,
+  WATCH_LOCKED_INNER_CLS,
+  WATCH_LOGO_CLS,
+  WATCH_MAIN_CLS,
+  WATCH_META_LIST_CLS,
+  WATCH_PAGE_BG,
+  WATCH_PAGE_CLS,
+  WATCH_PLAY_CLS,
+  WATCH_PLAYER_CLS,
+  WATCH_PLAYER_LOCKED_CLS,
+  WATCH_PLAYER_META_CLS,
+  WATCH_PLAYER_OVERLAY_CLS,
+  WATCH_SECTION_CLS,
+  WATCH_SECTION_HEAD_CLS,
+  WATCH_TAB_ACTIVE_CLS,
+  WATCH_TAB_CLS,
+  WATCH_TAB_COUNT_CLS,
+  WATCH_TABS_CLS,
+  WATCH_TITLE_CLS,
+  WATCH_USER_CLS,
+} from './_watchStyles';
 
 type TabId = 'live' | 'upcoming' | 'tickets';
 type CamKey = 'stage' | 'crowd' | 'drone' | 'band';
@@ -31,7 +171,6 @@ type TicketModalEvent = {
 
 type ChatMessage = { name: string; color: string; text: string; mine: boolean };
 
-// Fallback used if no event is marked featured in the store.
 const FEATURED_FALLBACK: TicketModalEvent = {
   id: 'featured-placeholder',
   title: 'Удахгүй',
@@ -87,10 +226,8 @@ const TAB_IDS: readonly TabId[] = ['live', 'upcoming', 'tickets'] as const;
 const isTabId = (value: string): value is TabId =>
   (TAB_IDS as readonly string[]).includes(value);
 
-// ---------- Helpers ----------
 const money = (n: number): string => n.toLocaleString('en-US') + '₮';
 
-// ---------- Top-level page ----------
 export default function Watch() {
   const session = useRequireAuth();
   const location = useLocation();
@@ -134,22 +271,18 @@ export default function Watch() {
   const openViewer = useCallback(() => setViewerOpen(true), []);
   const closeViewer = useCallback(() => setViewerOpen(false), []);
 
-  // Scroll to a section + activate tab
   const goSection = useCallback((id: TabId) => {
     setActiveTab(id);
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
 
-  // Lock body scroll while modal/viewer is open
   useEffect(() => {
     const open = viewerOpen || !!modalEvent;
     document.body.style.overflow = open ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [viewerOpen, modalEvent]);
 
-  // Scroll to the section named in the URL hash (e.g. /watch#tickets).
-  // Wait a tick so the section has mounted and ticket cards have rendered.
   useEffect(() => {
     const id = location.hash.slice(1);
     if (!id) return;
@@ -163,30 +296,30 @@ export default function Watch() {
     return () => clearTimeout(t);
   }, [location.hash]);
 
-  if (!session) return null; // useRequireAuth will navigate
+  if (!session) return null;
 
   return (
-    <div className="watch-page">
-      <header className="watch-header">
-        <Link className="watch-logo" to="/" aria-label="Төв Цэнгэлдэх Хүрээлэн — Нүүр">
+    <div className={WATCH_PAGE_CLS} style={{ background: WATCH_PAGE_BG }}>
+      <header className={WATCH_HEADER_CLS}>
+        <Link className={WATCH_LOGO_CLS} to="/" aria-label="Төв Цэнгэлдэх Хүрээлэн — Нүүр">
           <img src="/assets/images/brand/logo-white.png" alt="Төв Цэнгэлдэх Хүрээлэн" />
         </Link>
 
-        <nav className="watch-tabs" aria-label="Үзэх төрөл">
-          <a className={`watch-tab${activeTab === 'live' ? ' is-active' : ''}`} href="#live" onClick={(e) => { e.preventDefault(); goSection('live'); }}>Шууд</a>
-          <a className={`watch-tab${activeTab === 'upcoming' ? ' is-active' : ''}`} href="#upcoming" onClick={(e) => { e.preventDefault(); goSection('upcoming'); }}>Удахгүй</a>
-          <a className={`watch-tab${activeTab === 'tickets' ? ' is-active' : ''}`} href="#tickets" onClick={(e) => { e.preventDefault(); goSection('tickets'); }}>
+        <nav className={WATCH_TABS_CLS} aria-label="Үзэх төрөл">
+          <a className={`${WATCH_TAB_CLS}${activeTab === 'live' ? ' ' + WATCH_TAB_ACTIVE_CLS : ''}`} href="#live" onClick={(e) => { e.preventDefault(); goSection('live'); }}>Шууд</a>
+          <a className={`${WATCH_TAB_CLS}${activeTab === 'upcoming' ? ' ' + WATCH_TAB_ACTIVE_CLS : ''}`} href="#upcoming" onClick={(e) => { e.preventDefault(); goSection('upcoming'); }}>Удахгүй</a>
+          <a className={`${WATCH_TAB_CLS}${activeTab === 'tickets' ? ' ' + WATCH_TAB_ACTIVE_CLS : ''}`} href="#tickets" onClick={(e) => { e.preventDefault(); goSection('tickets'); }}>
             Тасалбар
-            <span className="watch-tab-count" hidden={myTickets.length === 0}>{myTickets.length}</span>
+            <span className={WATCH_TAB_COUNT_CLS} hidden={myTickets.length === 0}>{myTickets.length}</span>
           </a>
         </nav>
 
-        <div className="watch-user">
+        <div className={WATCH_USER_CLS}>
           <UserMenu />
         </div>
       </header>
 
-      <main className="watch-main">
+      <main className={WATCH_MAIN_CLS}>
         <LiveSection
           featuredEvent={featuredEvent}
           ownsFeatured={ownsFeatured}
@@ -222,7 +355,7 @@ export default function Watch() {
           }}
           onWatchSuccess={() => {
             closeTicketModal();
-            // Smooth-scroll to tickets section after the modal animation
+
             setTimeout(() => goSection('tickets'), 250);
           }}
         />
@@ -231,7 +364,6 @@ export default function Watch() {
   );
 }
 
-// ---------- Live section ----------
 type LiveSectionProps = {
   featuredEvent: TicketModalEvent;
   ownsFeatured: boolean;
@@ -256,7 +388,6 @@ function LiveSection({ featuredEvent, ownsFeatured, onWatch, viewerOpen }: LiveS
     };
   }, []);
 
-  // Pause the inline player while the multi-cam overlay is open
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
@@ -264,7 +395,6 @@ function LiveSection({ featuredEvent, ownsFeatured, onWatch, viewerOpen }: LiveS
     else v.play().catch(() => {});
   }, [viewerOpen]);
 
-  // Drifting viewer count
   const [viewers, setViewers] = useState(12480);
   useEffect(() => {
     const id = setInterval(() => {
@@ -283,17 +413,17 @@ function LiveSection({ featuredEvent, ownsFeatured, onWatch, viewerOpen }: LiveS
   };
 
   return (
-    <section className="watch-section" id="live">
-      <div className="watch-section-head">
-        <span className="watch-eyebrow">
-          <span className="watch-live-dot" aria-hidden="true"></span>
+    <section className={WATCH_SECTION_CLS} id="live">
+      <div className={WATCH_SECTION_HEAD_CLS}>
+        <span className={WATCH_EYEBROW_CLS}>
+          <span className={WATCH_LIVE_DOT_CLS} aria-hidden="true"></span>
           Шууд дамжуулал
         </span>
-        <h1 className="watch-title">Одоо явагдаж буй</h1>
+        <h1 className={WATCH_TITLE_CLS}>Одоо явагдаж буй</h1>
       </div>
 
-      <article className="watch-feature">
-        <div className={`watch-player${ownsFeatured ? '' : ' is-locked'}`}>
+      <article className={WATCH_FEATURE_CLS}>
+        <div className={`${WATCH_PLAYER_CLS}${ownsFeatured ? '' : ' ' + WATCH_PLAYER_LOCKED_CLS}`}>
           <StoryVideo
             ref={videoRef}
             autoPlay
@@ -304,9 +434,9 @@ function LiveSection({ featuredEvent, ownsFeatured, onWatch, viewerOpen }: LiveS
             poster={featuredEvent.image}
             fallbackAriaLabel={featuredEvent.title}
           />
-          <div className="watch-locked" hidden={ownsFeatured}>
-            <div className="watch-locked-inner">
-              <span className="watch-locked-icon" aria-hidden="true">
+          <div className={WATCH_LOCKED_CLS} hidden={ownsFeatured}>
+            <div className={WATCH_LOCKED_INNER_CLS}>
+              <span className={WATCH_LOCKED_ICON_CLS} aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="11" width="18" height="11" rx="2"/>
                   <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
@@ -316,45 +446,50 @@ function LiveSection({ featuredEvent, ownsFeatured, onWatch, viewerOpen }: LiveS
               <span>«Шууд үзэх» товч дээр дарж тасалбараа авна уу.</span>
             </div>
           </div>
-          <div className="watch-player-overlay">
-            <span className="watch-live-pill">
-              <span className="watch-live-pulse" aria-hidden="true"></span>
+          <div className={WATCH_PLAYER_OVERLAY_CLS}>
+            <span className={WATCH_LIVE_PILL_CLS}>
+              <span className={WATCH_LIVE_PULSE_CLS} aria-hidden="true"></span>
               LIVE · 360°
             </span>
-            <div className="watch-player-meta">
+            <div className={WATCH_PLAYER_META_CLS}>
               <span>{viewers.toLocaleString('en-US')}</span> үзэгчид
             </div>
           </div>
-          <button type="button" className={`watch-play${paused ? ' is-paused' : ''}`} onClick={toggle} aria-label="Тоглуулах/Зогсоох">
-            <svg className="icon-pause" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <button
+            type="button"
+            className={`${WATCH_PLAY_CLS}${paused ? ' is-paused' : ''}`}
+            onClick={toggle}
+            aria-label="Тоглуулах/Зогсоох"
+          >
+            <svg className="block [.is-paused_&]:hidden" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <rect x="6" y="5" width="4" height="14" rx="1"/>
               <rect x="14" y="5" width="4" height="14" rx="1"/>
             </svg>
-            <svg className="icon-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <svg className="hidden [.is-paused_&]:block" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M8 5v14l11-7z"/>
             </svg>
           </button>
         </div>
 
-        <div className="watch-feature-text">
-          <span className="watch-badge">Шууд · 360°</span>
-          <h2 className="watch-feature-title">{featuredEvent.title}</h2>
-          <p className="watch-feature-desc">
+        <div className={WATCH_FEATURE_TEXT_CLS}>
+          <span className={WATCH_BADGE_CLS}>Шууд · 360°</span>
+          <h2 className={WATCH_FEATURE_TITLE_CLS}>{featuredEvent.title}</h2>
+          <p className={WATCH_FEATURE_DESC_CLS}>
             Гэрээсээ, ажлын газраасаа, эсвэл аяллын дунд — хаанаас ч энэ тоглолтыг
             шууд үзээрэй. Төв Цэнгэлдэх Хүрээлэнгээс зөвхөн вэбсайтаар цацагдах 360°
             гранд эфир. Концертын танхимд биш, дэлгэцэн дээрээ суух мэдрэмж.
           </p>
-          <ul className="watch-meta-list">
+          <ul className={WATCH_META_LIST_CLS}>
             <li>📅 2026 / 05 / 20 · 21:00 (UTC+8)</li>
             <li>📡 Шууд дамжуулж байна · ямар ч төхөөрөмжөөс үзнэ</li>
             <li>🎥 360° олон өнцөг · 4K HDR</li>
           </ul>
-          <div className="watch-feature-actions">
-            <button type="button" className="watch-btn watch-btn-primary" onClick={onWatch}>
+          <div className={WATCH_FEATURE_ACTIONS_CLS}>
+            <button type="button" className={`${WATCH_BTN_CLS} ${WATCH_BTN_PRIMARY_CLS}`} onClick={onWatch}>
               <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
               Шууд үзэх
             </button>
-            <button type="button" className="watch-btn watch-btn-ghost">Чанар: 4K</button>
+            <button type="button" className={`${WATCH_BTN_CLS} ${WATCH_BTN_GHOST_CLS}`}>Чанар: 4K</button>
           </div>
         </div>
       </article>
@@ -362,7 +497,6 @@ function LiveSection({ featuredEvent, ownsFeatured, onWatch, viewerOpen }: LiveS
   );
 }
 
-// ---------- Upcoming section ----------
 type UpcomingSectionProps = {
   events: EventRecord[];
   onBuy: (event: TicketModalEvent) => void;
@@ -371,32 +505,32 @@ type UpcomingSectionProps = {
 function UpcomingSection({ events, onBuy }: UpcomingSectionProps) {
   const list = events.filter((e) => !e.featured);
   return (
-    <section className="watch-section" id="upcoming">
-      <div className="watch-section-head">
-        <span className="watch-eyebrow">Удахгүй</span>
-        <h2 className="watch-title">Удахгүй болох арга хэмжээ</h2>
+    <section className={WATCH_SECTION_CLS} id="upcoming">
+      <div className={WATCH_SECTION_HEAD_CLS}>
+        <span className={WATCH_EYEBROW_CLS}>Удахгүй</span>
+        <h2 className={WATCH_TITLE_CLS}>Удахгүй болох арга хэмжээ</h2>
       </div>
 
-      <div className="watch-grid">
+      <div className={WATCH_GRID_CLS}>
         {list.map((ev) => (
-          <article key={ev.id} className="watch-card">
-            <div className="watch-card-img">
+          <article key={ev.id} className={WATCH_CARD_CLS}>
+            <div className={WATCH_CARD_IMG_CLS}>
               <img src={ev.image} alt={ev.title} />
-              <span className="watch-card-pill">{ev.pill}</span>
+              <span className={WATCH_CARD_PILL_CLS}>{ev.pill}</span>
             </div>
-            <div className="watch-card-body">
-              <span className="watch-card-date">{ev.date}</span>
-              <h3 className="watch-card-title">{ev.title}</h3>
-              <p className="watch-card-desc">{ev.desc}</p>
-              <div className="watch-card-actions">
+            <div className={WATCH_CARD_BODY_CLS}>
+              <span className={WATCH_CARD_DATE_CLS}>{ev.date}</span>
+              <h3 className={WATCH_CARD_TITLE_CLS}>{ev.title}</h3>
+              <p className={WATCH_CARD_DESC_CLS}>{ev.desc}</p>
+              <div className={WATCH_CARD_ACTIONS_CLS}>
                 <button
                   type="button"
-                  className="watch-btn watch-btn-primary watch-buy"
+                  className={`${WATCH_BTN_CLS} ${WATCH_BTN_PRIMARY_CLS}`}
                   onClick={() => onBuy({ id: ev.id, title: ev.title, date: ev.when, image: ev.image, base: ev.base })}
                 >
                   Тасалбар авах
                 </button>
-                <span className="watch-card-price">{ev.base.toLocaleString('en-US')}₮-аас</span>
+                <span className={WATCH_CARD_PRICE_CLS}>{ev.base.toLocaleString('en-US')}₮-аас</span>
               </div>
             </div>
           </article>
@@ -406,7 +540,6 @@ function UpcomingSection({ events, onBuy }: UpcomingSectionProps) {
   );
 }
 
-// ---------- Tickets section ----------
 type TicketsSectionProps = {
   tickets: OrderRecord[];
   onCancel: (code: string) => void;
@@ -420,15 +553,15 @@ function TicketsSection({ tickets, onCancel, onWatch }: TicketsSectionProps) {
   );
 
   return (
-    <section className="watch-section" id="tickets">
-      <div className="watch-section-head">
-        <span className="watch-eyebrow">Хувийн булан</span>
-        <h2 className="watch-title">Миний тасалбарууд</h2>
+    <section className={WATCH_SECTION_CLS} id="tickets">
+      <div className={WATCH_SECTION_HEAD_CLS}>
+        <span className={WATCH_EYEBROW_CLS}>Хувийн булан</span>
+        <h2 className={WATCH_TITLE_CLS}>Миний тасалбарууд</h2>
       </div>
-      <div className="tickets-list">
+      <div className={TICKETS_LIST_CLS}>
         {sorted.length === 0 ? (
-          <div className="tickets-empty">
-            <div className="tickets-empty-icon" aria-hidden="true">
+          <div className={TICKETS_EMPTY_CLS}>
+            <div className={TICKETS_EMPTY_ICON_CLS} aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M2 9a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z"/>
                 <line x1="13" y1="5" x2="13" y2="7"/>
@@ -438,31 +571,31 @@ function TicketsSection({ tickets, onCancel, onWatch }: TicketsSectionProps) {
             </div>
             <h3>Танд одоогоор тасалбар алга</h3>
             <p>«Удахгүй болох арга хэмжээ» хэсгээс тасалбар авч, эндээ хадгална уу.</p>
-            <a className="watch-btn watch-btn-primary" href="#upcoming">Арга хэмжээ үзэх</a>
+            <a className={`${WATCH_BTN_CLS} ${WATCH_BTN_PRIMARY_CLS}`} href="#upcoming">Арга хэмжээ үзэх</a>
           </div>
         ) : (
           sorted.map((t) => (
-            <article key={t.code} className="ticket-stub" data-code={t.code}>
-              <div className="ticket-stub-cover">
+            <article key={t.code} className={TICKET_STUB_CLS} data-code={t.code}>
+              <div className={TICKET_STUB_COVER_CLS}>
                 <img src={t.image} alt={t.title} />
-                <span className="ticket-stub-tier">{t.tierName}</span>
+                <span className={TICKET_STUB_TIER_CLS}>{t.tierName}</span>
               </div>
-              <div className="ticket-stub-body">
-                <span className="ticket-stub-date">{t.date}</span>
-                <h3 className="ticket-stub-title">{t.title}</h3>
-                <dl className="ticket-stub-meta">
-                  <div><dt>Захиалгын код</dt><dd className="ticket-stub-code">{t.code}</dd></div>
-                  <div><dt>Үзэх эрх</dt><dd>{t.qty} төхөөрөмж</dd></div>
-                  <div><dt>Нийт төлбөр</dt><dd>{money(t.total)}</dd></div>
-                  <div><dt>Төлбөрийн хэрэгсэл</dt><dd>{t.paymentName || t.payment}</dd></div>
+              <div className={TICKET_STUB_BODY_CLS}>
+                <span className={TICKET_STUB_DATE_CLS}>{t.date}</span>
+                <h3 className={TICKET_STUB_TITLE_CLS}>{t.title}</h3>
+                <dl className={TICKET_STUB_META_CLS}>
+                  <div><dt className={TICKET_STUB_META_DT_CLS}>Захиалгын код</dt><dd className={`${TICKET_STUB_META_DD_CLS} ${TICKET_STUB_CODE_CLS}`}>{t.code}</dd></div>
+                  <div><dt className={TICKET_STUB_META_DT_CLS}>Үзэх эрх</dt><dd className={TICKET_STUB_META_DD_CLS}>{t.qty} төхөөрөмж</dd></div>
+                  <div><dt className={TICKET_STUB_META_DT_CLS}>Нийт төлбөр</dt><dd className={TICKET_STUB_META_DD_CLS}>{money(t.total)}</dd></div>
+                  <div><dt className={TICKET_STUB_META_DT_CLS}>Төлбөрийн хэрэгсэл</dt><dd className={TICKET_STUB_META_DD_CLS}>{t.paymentName || t.payment}</dd></div>
                 </dl>
-                <div className="ticket-stub-barcode" aria-hidden="true"></div>
-                <div className="ticket-stub-actions">
-                  <button type="button" className="watch-btn watch-btn-ghost ticket-stub-remove" onClick={() => onCancel(t.code)}>Цуцлах</button>
-                  <Link to={`/orders/${t.code}`} className="watch-btn watch-btn-ghost">
+                <div className={TICKET_STUB_BARCODE_CLS} aria-hidden="true"></div>
+                <div className={TICKET_STUB_ACTIONS_CLS}>
+                  <button type="button" className={`${WATCH_BTN_CLS} ${WATCH_BTN_GHOST_CLS} ${TICKET_STUB_BTN_CLS} ${TICKET_STUB_REMOVE_HOVER_CLS}`} onClick={() => onCancel(t.code)}>Цуцлах</button>
+                  <Link to={`/orders/${t.code}`} className={`${WATCH_BTN_CLS} ${WATCH_BTN_GHOST_CLS} ${TICKET_STUB_BTN_CLS}`}>
                     Дэлгэрэнгүй
                   </Link>
-                  <button type="button" className="watch-btn watch-btn-primary ticket-stub-watch" onClick={onWatch}>
+                  <button type="button" className={`${WATCH_BTN_CLS} ${WATCH_BTN_PRIMARY_CLS} ${TICKET_STUB_BTN_CLS}`} onClick={onWatch}>
                     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
                     Шууд үзэх
                   </button>
@@ -476,7 +609,6 @@ function TicketsSection({ tickets, onCancel, onWatch }: TicketsSectionProps) {
   );
 }
 
-// ---------- Multi-cam viewer overlay ----------
 type ViewerOverlayProps = {
   session: Session;
   featuredEvent: TicketModalEvent;
@@ -522,7 +654,6 @@ function ViewerOverlay({ session, featuredEvent, onClose }: ViewerOverlayProps) 
     }
   }, []);
 
-  // ESC key to close
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const tgt = e.target as HTMLElement | null;
@@ -534,7 +665,6 @@ function ViewerOverlay({ session, featuredEvent, onClose }: ViewerOverlayProps) 
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose, toggleStageFs]);
 
-  // Sync main video play/pause + mute state
   useEffect(() => {
     const v = mainRef.current;
     if (!v) return;
@@ -558,13 +688,11 @@ function ViewerOverlay({ session, featuredEvent, onClose }: ViewerOverlayProps) 
     v.volume = volume / 100;
   }, [muted, volume]);
 
-  // Elapsed timer
   useEffect(() => {
     const id = setInterval(() => setElapsedSec((s) => s + 1), 1000);
     return () => clearInterval(id);
   }, []);
 
-  // Viewer count drift
   useEffect(() => {
     const id = setInterval(() => {
       setViewerCount((n) => {
@@ -575,7 +703,6 @@ function ViewerOverlay({ session, featuredEvent, onClose }: ViewerOverlayProps) 
     return () => clearInterval(id);
   }, []);
 
-  // Fullscreen change sync
   useEffect(() => {
     const onFs = () => {
       const doc = document as FullscreenDocument;
@@ -590,7 +717,6 @@ function ViewerOverlay({ session, featuredEvent, onClose }: ViewerOverlayProps) 
     };
   }, []);
 
-  // Auto-hide controls when idle in fullscreen
   useEffect(() => {
     if (!isFs) { setIdle(false); return; }
     let t: ReturnType<typeof setTimeout> | null = null;
@@ -610,7 +736,6 @@ function ViewerOverlay({ session, featuredEvent, onClose }: ViewerOverlayProps) 
     };
   }, [isFs]);
 
-  // Seed chat + drip
   useEffect(() => {
     const seed = Array.from({ length: 6 }, () => randomBotMessage());
     setChat(seed);
@@ -624,7 +749,6 @@ function ViewerOverlay({ session, featuredEvent, onClose }: ViewerOverlayProps) 
     return () => clearInterval(id);
   }, []);
 
-  // Auto-scroll chat
   useEffect(() => {
     const list = chatListRef.current;
     if (list) list.scrollTop = list.scrollHeight;
@@ -658,22 +782,20 @@ function ViewerOverlay({ session, featuredEvent, onClose }: ViewerOverlayProps) 
         await mainRef.current.requestPictureInPicture();
       }
     } catch {
-      /* ignore PiP errors */
+      
     }
   };
 
+  const [bubbles, setBubbles] = useState<Array<{ id: number; emoji: string; left: string; duration: string }>>([]);
+  const bubbleIdRef = useRef(0);
   const emitReact = (emoji: string) => {
-    const float = reactFloatRef.current;
-    if (!float) return;
     for (let i = 0; i < 5; i++) {
       setTimeout(() => {
-        const el = document.createElement('span');
-        el.className = 'viewer-react-bubble';
-        el.textContent = emoji;
-        el.style.left = (15 + Math.random() * 70) + '%';
-        el.style.animationDuration = (1.6 + Math.random() * 0.8) + 's';
-        float.appendChild(el);
-        setTimeout(() => el.remove(), 2500);
+        const id = ++bubbleIdRef.current;
+        const left = (15 + Math.random() * 70) + '%';
+        const duration = (1.6 + Math.random() * 0.8) + 's';
+        setBubbles((prev) => [...prev, { id, emoji, left, duration }]);
+        setTimeout(() => setBubbles((prev) => prev.filter((b) => b.id !== id)), 2500);
       }, i * 80);
     }
   };
@@ -684,7 +806,7 @@ function ViewerOverlay({ session, featuredEvent, onClose }: ViewerOverlayProps) 
     const text = chatInput.trim();
     if (!text) return;
     const name = session.fullname || session.identifier || 'Та';
-    setChat((prev) => [...prev, { name, color: 'var(--brand-blue-soft)', text, mine: true }]);
+    setChat((prev) => [...prev, { name, color: '#4451DC', text, mine: true }]);
     setChatInput('');
   };
 
@@ -693,34 +815,34 @@ function ViewerOverlay({ session, featuredEvent, onClose }: ViewerOverlayProps) 
   const subLabel = meta.sub.replace(/·\s*[^·]+$/, `· ${qLabel}`);
 
   return (
-    <div className="viewer" role="dialog" aria-modal="true" aria-label="Шууд дамжуулал">
-      <header className="viewer-header">
-        <button type="button" className="viewer-close" aria-label="Хаах" onClick={onClose}>
+    <div className={VIEWER_CLS} role="dialog" aria-modal="true" aria-label="Шууд дамжуулал">
+      <header className={VIEWER_HEADER_CLS}>
+        <button type="button" className={VIEWER_CLOSE_CLS} aria-label="Хаах" onClick={onClose}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
         </button>
-        <div className="viewer-title-wrap">
-          <h3 className="viewer-title">{featuredEvent.title}</h3>
-          <span className="viewer-live-pill">
-            <span className="viewer-live-pulse" aria-hidden="true"></span>
+        <div className={VIEWER_TITLE_WRAP_CLS}>
+          <h3 className={VIEWER_TITLE_CLS}>{featuredEvent.title}</h3>
+          <span className={VIEWER_LIVE_PILL_CLS}>
+            <span className={VIEWER_LIVE_PULSE_CLS} aria-hidden="true"></span>
             LIVE · <span>{fmtElapsed(elapsedSec)}</span>
           </span>
         </div>
-        <div className="viewer-stats">
-          <span className="viewer-stat" title="Үзэгчид">
+        <div className={VIEWER_STATS_CLS}>
+          <span className={VIEWER_STAT_CLS} title="Үзэгчид">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/>
             </svg>
             <span>{viewerCount.toLocaleString('en-US')}</span>
           </span>
-          <button type="button" className="viewer-icon-btn" onClick={togglePip} aria-label="Жижиг цонх (PiP)" title="Жижиг цонх">
+          <button type="button" className={VIEWER_ICON_BTN_CLS} onClick={togglePip} aria-label="Жижиг цонх (PiP)" title="Жижиг цонх">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <rect x="3" y="5" width="18" height="14" rx="2"/>
               <rect x="13" y="11" width="6" height="5" rx="1" fill="currentColor"/>
             </svg>
           </button>
-          <button type="button" className="viewer-icon-btn" onClick={toggleStageFs} aria-label="Бүтэн дэлгэц" title="Бүтэн дэлгэц">
+          <button type="button" className={VIEWER_ICON_BTN_CLS} onClick={toggleStageFs} aria-label="Бүтэн дэлгэц" title="Бүтэн дэлгэц">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
               <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
@@ -729,11 +851,11 @@ function ViewerOverlay({ session, featuredEvent, onClose }: ViewerOverlayProps) 
         </div>
       </header>
 
-      <div className="viewer-body">
-        <aside className="viewer-angles" aria-label="Камерын өнцөг">
+      <div className={VIEWER_BODY_CLS}>
+        <aside className={VIEWER_ANGLES_CLS} aria-label="Камерын өнцөг">
           {(['crowd', 'drone', 'band'] as const).map((k) => (
-            <button key={k} type="button" className={`viewer-angle${angle === k ? ' is-active' : ''}`} onClick={() => setAngle(k)}>
-              <span className="viewer-angle-thumb" data-vfx={k}>
+            <button key={k} type="button" className={`${VIEWER_ANGLE_CLS}${angle === k ? ' ' + VIEWER_ANGLE_ACTIVE_CLS : ''}`} onClick={() => setAngle(k)}>
+              <span className={`${VIEWER_ANGLE_THUMB_CLS} ${VFX_VIDEO_CLS[k]}`}>
                 <StoryVideo
                   muted
                   autoPlay
@@ -743,9 +865,9 @@ function ViewerOverlay({ session, featuredEvent, onClose }: ViewerOverlayProps) 
                   poster={featuredEvent.image}
                   fallbackAriaLabel={CAMS[k].label}
                 />
-                <span className="viewer-angle-live"></span>
+                <span className={VIEWER_ANGLE_LIVE_CLS}></span>
               </span>
-              <span className="viewer-angle-label">
+              <span className={VIEWER_ANGLE_LABEL_CLS}>
                 <strong>{CAMS[k].label}</strong>
                 <small>{CAMS[k].sub.split(' · ')[0]}{CAMS[k].sub.includes(' · 4K') ? ' · 4K' : ''}</small>
               </span>
@@ -753,8 +875,8 @@ function ViewerOverlay({ session, featuredEvent, onClose }: ViewerOverlayProps) 
           ))}
         </aside>
 
-        <section className={`viewer-stage${isFs ? ' is-fs' : ''}${idle ? ' is-idle' : ''}`} ref={stageRef}>
-          <div className="viewer-stage-shell" data-vfx={angle}>
+        <section className={`${VIEWER_STAGE_CLS}${isFs ? ' is-fs' : ''}${idle ? ' is-idle' : ''}`} ref={stageRef}>
+          <div className={`${VIEWER_STAGE_SHELL_CLS} ${VFX_VIDEO_CLS[angle]}`}>
             <StoryVideo
               ref={mainRef}
               autoPlay
@@ -766,43 +888,53 @@ function ViewerOverlay({ session, featuredEvent, onClose }: ViewerOverlayProps) 
               fallbackAriaLabel={featuredEvent.title}
             />
           </div>
-          <span className="viewer-main-cam">
+          <span className={VIEWER_MAIN_CAM_CLS}>
             <strong>{meta.label}</strong> · <span>{subLabel}</span>
           </span>
 
-          <div className="viewer-react-float" ref={reactFloatRef} aria-hidden="true"></div>
+          <div className={VIEWER_REACT_FLOAT_CLS} ref={reactFloatRef} aria-hidden="true">
+            {bubbles.map((b) => (
+              <span
+                key={b.id}
+                className="absolute bottom-20 text-[26px] opacity-0 [animation:reactRise_2s_ease-out_forwards] [will-change:transform,opacity] [filter:drop-shadow(0_4px_8px_rgba(0,0,0,0.5))]"
+                style={{ left: b.left, animationDuration: b.duration }}
+              >
+                {b.emoji}
+              </span>
+            ))}
+          </div>
 
-          <div className="viewer-controls">
-            <div className="viewer-controls-left">
-              <button type="button" className={`viewer-icon-btn${paused ? ' is-paused' : ''}`} onClick={togglePlay} aria-label="Тоглуулах/Зогсоох">
-                <svg className="icon-pause" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <div className={VIEWER_CONTROLS_CLS}>
+            <div className={VIEWER_CONTROLS_LEFT_CLS}>
+              <button type="button" className={`${VIEWER_ICON_BTN_CLS}${paused ? ' is-paused' : ''}`} onClick={togglePlay} aria-label="Тоглуулах/Зогсоох">
+                <svg className="block [.is-paused_&]:hidden" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                   <rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>
                 </svg>
-                <svg className="icon-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <svg className="hidden [.is-paused_&]:block" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                   <path d="M8 5v14l11-7z"/>
                 </svg>
               </button>
-              <button type="button" className={`viewer-icon-btn${muted || volume === 0 ? ' is-muted' : ''}`} onClick={toggleMute} aria-label="Дуу/Дуугүй">
-                <svg className="icon-vol" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <button type="button" className={`${VIEWER_ICON_BTN_CLS}${muted || volume === 0 ? ' is-muted' : ''}`} onClick={toggleMute} aria-label="Дуу/Дуугүй">
+                <svg className="block [.is-muted_&]:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
                   <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
                 </svg>
-                <svg className="icon-mute" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <svg className="hidden [.is-muted_&]:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
                   <line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>
                 </svg>
               </button>
-              <input type="range" min="0" max="100" value={volume} onChange={onVolume} aria-label="Дуу" />
+              <input className={VIEWER_VOL_CLS} type="range" min="0" max="100" value={volume} onChange={onVolume} aria-label="Дуу" />
             </div>
 
-            <div className="viewer-reactions" role="group" aria-label="Реакц">
+            <div className={VIEWER_REACTIONS_CLS} role="group" aria-label="Реакц">
               {['❤️', '🔥', '👏', '🎉'].map((emoji) => (
-                <button key={emoji} type="button" className="viewer-react" aria-label="Реакц" onClick={() => emitReact(emoji)}>{emoji}</button>
+                <button key={emoji} type="button" className={VIEWER_REACT_CLS} aria-label="Реакц" onClick={() => emitReact(emoji)}>{emoji}</button>
               ))}
             </div>
 
-            <div className="viewer-controls-right">
-              <label className="viewer-quality">
+            <div className={VIEWER_CONTROLS_RIGHT_CLS}>
+              <label className={VIEWER_QUALITY_CLS}>
                 <span>Чанар</span>
                 <select value={quality} onChange={(e) => setQuality(e.target.value)}>
                   <option value="auto">Auto</option>
@@ -812,7 +944,7 @@ function ViewerOverlay({ session, featuredEvent, onClose }: ViewerOverlayProps) 
                   <option value="480">480p</option>
                 </select>
               </label>
-              <button type="button" className={`viewer-icon-btn${cc ? ' is-on' : ''}`} onClick={() => setCc((c) => !c)} aria-label="Хадмал орчуулга" title="Хадмал">
+              <button type="button" className={`${VIEWER_ICON_BTN_CLS}${cc ? ' ' + VIEWER_ICON_BTN_ON_CLS : ''}`} onClick={() => setCc((c) => !c)} aria-label="Хадмал орчуулга" title="Хадмал">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <rect x="3" y="5" width="18" height="14" rx="2"/>
                   <path d="M7 13a2 2 0 1 0 0-2"/><path d="M14 13a2 2 0 1 0 0-2"/>
@@ -822,23 +954,23 @@ function ViewerOverlay({ session, featuredEvent, onClose }: ViewerOverlayProps) 
           </div>
         </section>
 
-        <aside className="viewer-chat" aria-label="Шууд чат">
-          <header className="viewer-chat-head">
+        <aside className={VIEWER_CHAT_CLS} aria-label="Шууд чат">
+          <header className={VIEWER_CHAT_HEAD_CLS}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
             Шууд чат
-            <span className="viewer-chat-count">{chat.length}</span>
+            <span className={VIEWER_CHAT_COUNT_CLS}>{chat.length}</span>
           </header>
-          <div className="viewer-chat-list" ref={chatListRef} aria-live="polite">
+          <div className={VIEWER_CHAT_LIST_CLS} ref={chatListRef} aria-live="polite">
             {chat.map((m, i) => (
-              <div key={i} className={`viewer-msg${m.mine ? ' is-mine' : ''}`}>
-                <span className="viewer-msg-name" style={{ color: m.color }}>{m.name}</span>
-                <span className="viewer-msg-text">{m.text}</span>
+              <div key={i} className={`${VIEWER_MSG_CLS}${m.mine ? ' ' + VIEWER_MSG_MINE_CLS : ''}`}>
+                <span className={VIEWER_MSG_NAME_CLS} style={{ color: m.color }}>{m.name}</span>
+                <span>{m.text}</span>
               </div>
             ))}
           </div>
-          <form className="viewer-chat-form" onSubmit={onChatSubmit} autoComplete="off">
+          <form className={VIEWER_CHAT_FORM_CLS} onSubmit={onChatSubmit} autoComplete="off">
             <input
               type="text"
               placeholder="Мессеж бичих…"
@@ -846,7 +978,7 @@ function ViewerOverlay({ session, featuredEvent, onClose }: ViewerOverlayProps) 
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
             />
-            <button type="submit" className="viewer-chat-send" aria-label="Илгээх">
+            <button type="submit" className={VIEWER_CHAT_SEND_CLS} aria-label="Илгээх">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
               </svg>
@@ -871,7 +1003,6 @@ function randomBotMessage(): ChatMessage {
   return { name: b.name, color: b.color, text: t, mine: false };
 }
 
-// ---------- Ticket purchase modal ----------
 type TicketModalProps = {
   event: TicketModalEvent;
   session: Session;
@@ -910,7 +1041,7 @@ function TicketModal({ event, session, onClose, onPurchased, onWatchSuccess }: T
     );
 
     setTimeout(() => {
-      // Simulate a 5% failure rate so the error path is reachable
+
       if (Math.random() < 0.05) {
         setBusy(false);
         setCheckoutLabel('Дахин оролдох');
@@ -945,108 +1076,108 @@ function TicketModal({ event, session, onClose, onPurchased, onWatchSuccess }: T
   };
 
   return (
-    <div className="ticket-modal" role="dialog" aria-modal="true" aria-labelledby="ticketModalTitle" onClick={onBackdrop}>
-      <div className="ticket-modal-backdrop" data-close=""></div>
-      <div className="ticket-modal-card" role="document" onClick={(e) => e.stopPropagation()}>
-        <button type="button" className="ticket-modal-close" aria-label="Хаах" onClick={onClose}>
+    <div className={TICKET_MODAL_CLS} role="dialog" aria-modal="true" aria-labelledby="ticketModalTitle" onClick={onBackdrop}>
+      <div className={TICKET_MODAL_BACKDROP_CLS} data-close=""></div>
+      <div className={TICKET_MODAL_CARD_CLS} role="document" onClick={(e) => e.stopPropagation()}>
+        <button type="button" className={TICKET_MODAL_CLOSE_CLS} aria-label="Хаах" onClick={onClose}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
         </button>
 
         {!success ? (
-          <div className="ticket-modal-body">
-            <div className="ticket-modal-cover">
+          <div className={TICKET_MODAL_BODY_CLS}>
+            <div className={TICKET_MODAL_COVER_CLS}>
               <img src={event.image} alt={event.title} />
-              <div className="ticket-modal-cover-meta">
-                <span className="ticket-modal-date">{event.date}</span>
-                <h2 id="ticketModalTitle" className="ticket-modal-title">{event.title}</h2>
-                <span className="ticket-modal-venue">📡 Онлайн шууд дамжуулал · энэ вэбсайтаас үзнэ</span>
+              <div className={TICKET_MODAL_COVER_META_CLS}>
+                <span className={TICKET_MODAL_DATE_CLS}>{event.date}</span>
+                <h2 id="ticketModalTitle" className={TICKET_MODAL_TITLE_CLS}>{event.title}</h2>
+                <span className={TICKET_MODAL_VENUE_CLS}>📡 Онлайн шууд дамжуулал · энэ вэбсайтаас үзнэ</span>
               </div>
             </div>
 
-            <div className="ticket-modal-form">
-              <div className="ticket-section">
-                <span className="ticket-section-label">Үзэх багц</span>
-                <div className="ticket-tiers" role="radiogroup">
+            <div className={TICKET_MODAL_FORM_CLS}>
+              <div className={TICKET_SECTION_CLS}>
+                <span className={TICKET_SECTION_LABEL_CLS}>Үзэх багц</span>
+                <div className={TICKET_RADIO_GROUP_CLS} role="radiogroup">
                   {TICKET_TIERS.map((t) => (
-                    <label key={t.value} className="ticket-tier">
-                      <input type="radio" name="tier" value={t.value} checked={tier === t.value} onChange={() => setTier(t.value)} />
-                      <span className="ticket-tier-card">
-                        <span className="ticket-tier-name">{t.name}</span>
-                        <span className="ticket-tier-desc">{t.desc}</span>
-                        <span className="ticket-tier-price">{money(event.base * t.mult)}</span>
+                    <label key={t.value} className={TICKET_RADIO_LABEL_CLS}>
+                      <input className={TICKET_RADIO_INPUT_CLS} type="radio" name="tier" value={t.value} checked={tier === t.value} onChange={() => setTier(t.value)} />
+                      <span className={TICKET_RADIO_CARD_CLS}>
+                        <span className={TICKET_TIER_NAME_CLS}>{t.name}</span>
+                        <span className={TICKET_TIER_DESC_CLS}>{t.desc}</span>
+                        <span className={TICKET_TIER_PRICE_CLS}>{money(event.base * t.mult)}</span>
                       </span>
                     </label>
                   ))}
                 </div>
               </div>
 
-              <div className="ticket-section ticket-row">
+              <div className={`${TICKET_SECTION_CLS} ${TICKET_ROW_CLS}`}>
                 <div>
-                  <span className="ticket-section-label">Үзэх эрхийн тоо</span>
-                  <div className="ticket-qty">
-                    <button type="button" className="ticket-qty-btn" onClick={() => setQty((q) => Math.max(1, q - 1))} aria-label="Хасах">−</button>
-                    <span className="ticket-qty-val">{qty}</span>
-                    <button type="button" className="ticket-qty-btn" onClick={() => setQty((q) => Math.min(10, q + 1))} aria-label="Нэмэх">+</button>
+                  <span className={TICKET_SECTION_LABEL_CLS}>Үзэх эрхийн тоо</span>
+                  <div className={TICKET_QTY_CLS}>
+                    <button type="button" className={TICKET_QTY_BTN_CLS} onClick={() => setQty((q) => Math.max(1, q - 1))} aria-label="Хасах">−</button>
+                    <span className={TICKET_QTY_VAL_CLS}>{qty}</span>
+                    <button type="button" className={TICKET_QTY_BTN_CLS} onClick={() => setQty((q) => Math.min(10, q + 1))} aria-label="Нэмэх">+</button>
                   </div>
                 </div>
-                <div className="ticket-total-wrap">
-                  <span className="ticket-section-label">Нийт төлөх</span>
-                  <span className="ticket-total">{money(total)}</span>
+                <div className={TICKET_TOTAL_WRAP_CLS}>
+                  <span className={TICKET_SECTION_LABEL_CLS}>Нийт төлөх</span>
+                  <span className={TICKET_TOTAL_CLS}>{money(total)}</span>
                 </div>
               </div>
 
-              <div className="ticket-section">
-                <span className="ticket-section-label">Төлбөрийн хэрэгсэл</span>
-                <div className="ticket-pays" role="radiogroup">
+              <div className={TICKET_SECTION_CLS}>
+                <span className={TICKET_SECTION_LABEL_CLS}>Төлбөрийн хэрэгсэл</span>
+                <div className={TICKET_RADIO_GROUP_CLS} role="radiogroup">
                   {PAY_METHODS.map((p) => (
-                    <label key={p.value} className="ticket-pay">
-                      <input type="radio" name="pay" value={p.value} checked={pay === p.value} onChange={() => setPay(p.value)} />
-                      <span className="ticket-pay-card">
-                        <span className="ticket-pay-name">{p.name}</span>
-                        <span className="ticket-pay-desc">{p.desc}</span>
+                    <label key={p.value} className={TICKET_RADIO_LABEL_CLS}>
+                      <input className={TICKET_RADIO_INPUT_CLS} type="radio" name="pay" value={p.value} checked={pay === p.value} onChange={() => setPay(p.value)} />
+                      <span className={TICKET_RADIO_CARD_CLS}>
+                        <span className={TICKET_PAY_NAME_CLS}>{p.name}</span>
+                        <span className={TICKET_PAY_DESC_CLS}>{p.desc}</span>
                       </span>
                     </label>
                   ))}
                 </div>
               </div>
 
-              <div className="ticket-alert" hidden={!alert}>{alert}</div>
+              <div className={TICKET_ALERT_CLS} hidden={!alert}>{alert}</div>
 
-              <button type="button" className="watch-btn watch-btn-primary ticket-checkout" onClick={checkout} disabled={busy}>
-                <span className="ticket-checkout-label">{checkoutLabel}</span>
+              <button type="button" className={`${WATCH_BTN_CLS} ${WATCH_BTN_PRIMARY_CLS} ${TICKET_CHECKOUT_CLS}`} onClick={checkout} disabled={busy}>
+                <span>{checkoutLabel}</span>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <line x1="5" y1="12" x2="19" y2="12"/>
                   <polyline points="12 5 19 12 12 19"/>
                 </svg>
               </button>
-              <p className="ticket-fineprint">
+              <p className={TICKET_FINEPRINT_CLS}>
                 Төлбөр амжилттай болсны дараа таны бүртгэлд үзэх эрх нэмэгдэж, «Миний тасалбарууд»
                 хэсгээс эфирийн цагт шууд үзэх боломжтой болно. Физик тасалбар өгөхгүй.
               </p>
             </div>
           </div>
         ) : (
-          <div className="ticket-modal-success">
-            <div className="ticket-success-icon" aria-hidden="true">
+          <div className={TICKET_MODAL_SUCCESS_CLS}>
+            <div className={TICKET_SUCCESS_ICON_CLS} aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="20 6 9 17 4 12"/>
               </svg>
             </div>
-            <h3 className="ticket-success-title">Худалдан авалт амжилттай!</h3>
-            <p className="ticket-success-desc">
+            <h3 className={TICKET_SUCCESS_TITLE_CLS}>Худалдан авалт амжилттай!</h3>
+            <p className={TICKET_SUCCESS_DESC_CLS}>
               <strong>{success.title}</strong><br/>
               {success.tierName} · {success.qty} төхөөрөмж · {money(success.total)}<br/>
               <small>Эфирийн цагт «Миний тасалбарууд» эсвэл «Шууд» хэсгээс үзэх боломжтой.</small>
             </p>
-            <div className="ticket-success-code">
+            <div className={TICKET_SUCCESS_CODE_CLS}>
               Захиалгын код<br/>
               <strong>{success.code}</strong>
             </div>
-            <div className="ticket-success-actions">
-              <button type="button" className="watch-btn watch-btn-ghost" onClick={onClose}>Хаах</button>
-              <button type="button" className="watch-btn watch-btn-primary" onClick={onWatchSuccess}>Миний тасалбарууд</button>
+            <div className={TICKET_SUCCESS_ACTIONS_CLS}>
+              <button type="button" className={`${WATCH_BTN_CLS} ${WATCH_BTN_GHOST_CLS}`} onClick={onClose}>Хаах</button>
+              <button type="button" className={`${WATCH_BTN_CLS} ${WATCH_BTN_PRIMARY_CLS}`} onClick={onWatchSuccess}>Миний тасалбарууд</button>
             </div>
           </div>
         )}

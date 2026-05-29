@@ -1,6 +1,37 @@
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth";
+import {
+  BACK_CLS,
+  CARD_CLS,
+  DIVIDER_CLS,
+  EYEBROW_CLS,
+  EYEBROW_DOT_CLS,
+  FIELD_CLS,
+  FULL_RESET_BTN_STYLE as RESEND_BTN_STYLE,
+  HEADER_CLS,
+  HOME_CLS,
+  INPUT_CLS,
+  LABEL_CLS,
+  LOGO_CLS,
+  LOGO_IMG_CLS,
+  MAIN_CLS,
+  PAGE_BG,
+  PAGE_CLS,
+  PWD_INPUT_CLS,
+  PWD_TOGGLE_CLS,
+  PWD_WRAP_CLS,
+  REG_ALERT_CLS,
+  REG_ALERT_OK_CLS,
+  REG_CHECKBOX_CLS,
+  REG_FORM_CLS,
+  REG_HINT_CLS,
+  REG_TERMS_CLS,
+  REGISTER_CLS,
+  SUBMIT_CLS,
+  SUBTITLE_CLS,
+  TITLE_CLS,
+} from "./_authStyles";
 
 type Step = "form" | "verify";
 
@@ -92,19 +123,20 @@ export default function RegisterEmail() {
 
   if (step === "verify") {
     return (
-      <div className="login-page">
-        <header className="login-header">
+      <div className={PAGE_CLS} style={{ background: PAGE_BG }}>
+        <header className={HEADER_CLS}>
           <Link
-            className="login-logo"
+            className={LOGO_CLS}
             to="/"
             aria-label="Төв Цэнгэлдэх Хүрээлэн — Нүүр"
           >
             <img
+              className={LOGO_IMG_CLS}
               src="/assets/images/brand/logo.png"
               alt="Төв Цэнгэлдэх Хүрээлэн"
             />
           </Link>
-          <Link className="login-back" to="/login">
+          <Link className={BACK_CLS} to="/login">
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -121,26 +153,26 @@ export default function RegisterEmail() {
           </Link>
         </header>
 
-        <main className="login-main">
-          <section className="login-card">
-            <span className="login-eyebrow">
-              <span className="login-eyebrow-dot" aria-hidden="true"></span>
+        <main className={MAIN_CLS}>
+          <section className={CARD_CLS}>
+            <span className={EYEBROW_CLS}>
+              <span className={EYEBROW_DOT_CLS} aria-hidden="true"></span>
               Баталгаажуулалт
             </span>
 
-            <h1 className="login-title">Гмэйлээ шалгана уу</h1>
-            <p className="login-subtitle">
+            <h1 className={TITLE_CLS}>Гмэйлээ шалгана уу</h1>
+            <p className={SUBTITLE_CLS}>
               Бид {pendingEmail} хаяг руу баталгаажуулах линк илгээлээ. Линк
               дээр дарж бүртгэлээ идэвхжүүлээрэй.
             </p>
 
-            <div className="reg-alert is-ok" role="status">
+            <div className={REG_ALERT_OK_CLS} role="status">
               Дахин харагдахгүй бол спам хавтсаа шалгана уу.
             </div>
 
             {verifyAlert && (
               <div
-                className={`reg-alert${verifyAlert.kind === "ok" ? " is-ok" : ""}`}
+                className={verifyAlert.kind === "ok" ? REG_ALERT_OK_CLS : REG_ALERT_CLS}
                 role="alert"
                 style={{ marginTop: 8 }}
               >
@@ -148,26 +180,20 @@ export default function RegisterEmail() {
               </div>
             )}
 
-            <div className="login-divider">
+            <div className={DIVIDER_CLS}>
               <span>эсвэл</span>
             </div>
 
             <button
               type="button"
-              className="login-register"
+              className={REGISTER_CLS}
               onClick={onResend}
               disabled={resendBusy}
-              style={{
-                background: "none",
-                border: 0,
-                cursor: "pointer",
-                width: "100%",
-                font: "inherit",
-              }}
+              style={RESEND_BTN_STYLE}
             >
               {resendBusy ? "Илгээж байна…" : "Дахин линк илгээх"}
             </button>
-            <Link className="login-home" to="/login">
+            <Link className={HOME_CLS} to="/login">
               Нэвтрэх рүү буцах
             </Link>
           </section>
@@ -176,21 +202,21 @@ export default function RegisterEmail() {
     );
   }
 
-  // ─────────────────────────────────────────── Email registration form
   return (
-    <div className="login-page">
-      <header className="login-header">
+    <div className={PAGE_CLS} style={{ background: PAGE_BG }}>
+      <header className={HEADER_CLS}>
         <Link
-          className="login-logo"
+          className={LOGO_CLS}
           to="/"
           aria-label="Төв Цэнгэлдэх Хүрээлэн — Нүүр"
         >
           <img
+            className={LOGO_IMG_CLS}
             src="/assets/images/brand/logo.png"
             alt="Төв Цэнгэлдэх Хүрээлэн"
           />
         </Link>
-        <Link className="login-back" to="/register">
+        <Link className={BACK_CLS} to="/register">
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -207,24 +233,24 @@ export default function RegisterEmail() {
         </Link>
       </header>
 
-      <main className="login-main">
-        <section className="login-card">
-          <span className="login-eyebrow">
-            <span className="login-eyebrow-dot" aria-hidden="true"></span>
+      <main className={MAIN_CLS}>
+        <section className={CARD_CLS}>
+          <span className={EYEBROW_CLS}>
+            <span className={EYEBROW_DOT_CLS} aria-hidden="true"></span>
             Хувийн булан
           </span>
 
-          <h1 className="login-title">Gmail хаягаар бүртгүүлэх</h1>
-          <p className="login-subtitle">
+          <h1 className={TITLE_CLS}>Gmail хаягаар бүртгүүлэх</h1>
+          <p className={SUBTITLE_CLS}>
             @gmail.com хаягаараа бүртгүүлж, баталгаажуулах линкээ имэйлээрээ
             хүлээж аваарай.
           </p>
 
-          <form className="login-form reg-form" onSubmit={onSubmit} noValidate>
-            <label className="login-field">
-              <span className="login-label">Бүтэн нэр</span>
+          <form className={REG_FORM_CLS} onSubmit={onSubmit} noValidate>
+            <label className={FIELD_CLS}>
+              <span className={LABEL_CLS}>Бүтэн нэр</span>
               <input
-                className="login-input"
+                className={INPUT_CLS}
                 type="text"
                 name="fullname"
                 placeholder="Жишээ: Б. Болор"
@@ -235,10 +261,10 @@ export default function RegisterEmail() {
               />
             </label>
 
-            <label className="login-field reg-field-email">
-              <span className="login-label">Gmail хаяг</span>
+            <label className={FIELD_CLS}>
+              <span className={LABEL_CLS}>Gmail хаяг</span>
               <input
-                className="login-input reg-input-email"
+                className={INPUT_CLS}
                 type="email"
                 name="email"
                 placeholder="name@gmail.com"
@@ -247,16 +273,16 @@ export default function RegisterEmail() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
-              <span className="reg-hint">
+              <span className={REG_HINT_CLS}>
                 Зөвхөн @gmail.com хаяг хүлээн авна
               </span>
             </label>
 
-            <label className="login-field">
-              <span className="login-label">Нууц үг</span>
-              <span className="login-password-wrap">
+            <label className={FIELD_CLS}>
+              <span className={LABEL_CLS}>Нууц үг</span>
+              <span className={PWD_WRAP_CLS}>
                 <input
-                  className="login-input"
+                  className={PWD_INPUT_CLS}
                   type={showPw ? "text" : "password"}
                   name="password"
                   placeholder="••••••••"
@@ -268,7 +294,7 @@ export default function RegisterEmail() {
                 />
                 <button
                   type="button"
-                  className="login-pass-toggle"
+                  className={PWD_TOGGLE_CLS}
                   aria-label={showPw ? "Нууц үг нуух" : "Нууц үг харах"}
                   onClick={() => setShowPw((s) => !s)}
                 >
@@ -286,13 +312,13 @@ export default function RegisterEmail() {
                   </svg>
                 </button>
               </span>
-              <span className="reg-hint">Хамгийн багадаа 8 тэмдэгт</span>
+              <span className={REG_HINT_CLS}>Хамгийн багадаа 8 тэмдэгт</span>
             </label>
 
-            <label className="login-field">
-              <span className="login-label">Нууц үг давтах</span>
+            <label className={FIELD_CLS}>
+              <span className={LABEL_CLS}>Нууц үг давтах</span>
               <input
-                className="login-input"
+                className={INPUT_CLS}
                 type="password"
                 name="password_confirm"
                 placeholder="••••••••"
@@ -304,12 +330,13 @@ export default function RegisterEmail() {
               />
             </label>
 
-            <label className="reg-terms">
+            <label className={REG_TERMS_CLS}>
               <input
                 type="checkbox"
                 name="agree"
                 checked={agree}
                 onChange={(e) => setAgree(e.target.checked)}
+                className={REG_CHECKBOX_CLS}
                 required
               />
               <span>
@@ -318,11 +345,11 @@ export default function RegisterEmail() {
               </span>
             </label>
 
-            <div className="reg-alert" role="alert" hidden={!alert}>
+            <div className={REG_ALERT_CLS} role="alert" hidden={!alert}>
               {alert}
             </div>
 
-            <button type="submit" className="login-submit" disabled={busy}>
+            <button type="submit" className={SUBMIT_CLS} disabled={busy}>
               {submitLabel}
               <svg
                 viewBox="0 0 24 24"
@@ -339,14 +366,14 @@ export default function RegisterEmail() {
             </button>
           </form>
 
-          <div className="login-divider">
+          <div className={DIVIDER_CLS}>
             <span>эсвэл</span>
           </div>
 
-          <Link className="login-register" to="/register/phone">
+          <Link className={REGISTER_CLS} to="/register/phone">
             Утасны дугаараар бүртгүүлэх
           </Link>
-          <Link className="login-home" to="/login">
+          <Link className={HOME_CLS} to="/login">
             Аль хэдийн бүртгэлтэй — Нэвтрэх
           </Link>
         </section>

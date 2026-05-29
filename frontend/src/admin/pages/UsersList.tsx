@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { listOrders, listUsers, setUserDisabled, setUserRole } from '../../data/store';
 import type { UserRecord, UserRole } from '../../data/store';
+import { ADMIN_ACTIONS_CLS, ADMIN_BADGE_CLS, ADMIN_BADGE_DISABLED_CLS, ADMIN_BTN_CLS, ADMIN_BTN_DANGER_CLS, ADMIN_BTN_SM_CLS, ADMIN_EMPTY_CLS, ADMIN_FILTERS_CLS, ADMIN_LINK_CLS, ADMIN_PAGE_HEADER_CLS, ADMIN_TABLE_CLS, ADMIN_TABLE_WRAP_CLS } from '../_adminStyles';
 
 export default function UsersList() {
   const [users, setUsers] = useState<UserRecord[] | null>(null);
@@ -44,14 +45,14 @@ export default function UsersList() {
 
   return (
     <>
-      <div className="admin-page-header">
+      <div className={ADMIN_PAGE_HEADER_CLS}>
         <div>
           <h2>Хэрэглэгч</h2>
           <p>Бүртгэлтэй хэрэглэгчид. Эрх олгох, хандалт хязгаарлах.</p>
         </div>
       </div>
 
-      <div className="admin-filters">
+      <div className={ADMIN_FILTERS_CLS}>
         <input
           type="search"
           placeholder="Нэр / контактаар хайх…"
@@ -60,12 +61,12 @@ export default function UsersList() {
         />
       </div>
 
-      {!users ? <div className="admin-empty">Уншиж байна…</div>
+      {!users ? <div className={ADMIN_EMPTY_CLS}>Уншиж байна…</div>
         : filtered.length === 0 ? (
-          <div className="admin-empty"><strong>Хэрэглэгч алга</strong></div>
+          <div className={ADMIN_EMPTY_CLS}><strong>Хэрэглэгч алга</strong></div>
         ) : (
-          <div className="admin-table-wrap">
-            <table className="admin-table">
+          <div className={ADMIN_TABLE_WRAP_CLS}>
+            <table className={ADMIN_TABLE_CLS}>
               <thead>
                 <tr>
                   <th>Нэр</th>
@@ -80,10 +81,10 @@ export default function UsersList() {
                 {filtered.map((u) => (
                   <tr key={u.identifier}>
                     <td>
-                      <Link to={`/admin/users/${encodeURIComponent(u.identifier)}`} className="admin-link">
+                      <Link to={`/admin/users/${encodeURIComponent(u.identifier)}`} className={ADMIN_LINK_CLS}>
                         {u.fullname || '—'}
                       </Link>
-                      {u.disabled && <> <span className="badge badge-disabled">Disabled</span></>}
+                      {u.disabled && <> <span className={`${ADMIN_BADGE_CLS} ${ADMIN_BADGE_DISABLED_CLS}`}>Disabled</span></>}
                     </td>
                     <td>{u.identifier}</td>
                     <td>
@@ -94,11 +95,11 @@ export default function UsersList() {
                     <td>{orderCounts[u.identifier] || 0}</td>
                     <td>{(u.createdAt || '').slice(0, 10)}</td>
                     <td>
-                      <div className="admin-actions">
-                        <button type="button" className="btn btn-sm" onClick={() => onToggleRole(u)}>
+                      <div className={ADMIN_ACTIONS_CLS}>
+                        <button type="button" className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS}`} onClick={() => onToggleRole(u)}>
                           {u.role === 'admin' ? 'Demote' : 'Promote'}
                         </button>
-                        <button type="button" className="btn btn-sm btn-danger" onClick={() => onToggleDisabled(u)}>
+                        <button type="button" className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS} ${ADMIN_BTN_DANGER_CLS}`} onClick={() => onToggleDisabled(u)}>
                           {u.disabled ? 'Enable' : 'Disable'}
                         </button>
                       </div>

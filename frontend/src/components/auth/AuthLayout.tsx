@@ -1,15 +1,4 @@
-// AuthLayout — full-page shell for /login, /register, /settings, etc.
-// Renders the brand logo at the top-left and an optional back affordance at
-// the top-right; the page-specific card goes in `children`.
-//
-// Pixel-targeted port of:
-//   .login-page  (radial gradients + surface-1 base)
-//   .login-header
-//   .login-main
-// from styles.css. Existing CSS classes remain on the elements so the old
-// rules still apply during the Phase 1 coexistence window — any divergence
-// between the Tailwind utilities and styles.css surfaces as a regression we
-// can spot immediately.
+
 
 import { type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
@@ -48,9 +37,9 @@ export function BackButton({ onClick, children }: BackButtonProps) {
 }
 
 type Props = {
-  /** Right-side affordance in the header. Use <BackLink>/<BackButton> or any custom node. */
+  
   back?: ReactNode;
-  /** Card content. */
+  
   children: ReactNode;
 };
 
