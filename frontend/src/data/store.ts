@@ -2,7 +2,7 @@
 // All methods are async (return Promises) so a real backend can swap in
 // without changing any callers.
 
-import { SEED_EVENTS, SEED_CONTENT, SEED_ADMIN_USER } from './seed';
+import { SEED_EVENTS, SEED_CONTENT, SEED_ADMIN_USER } from "./seed";
 
 export type EventRecord = {
   id: string;
@@ -16,7 +16,7 @@ export type EventRecord = {
   featured: boolean;
 };
 
-export type OrderStatus = 'paid' | 'refunded';
+export type OrderStatus = "paid" | "refunded";
 
 export type OrderRecord = {
   code: string;
@@ -37,7 +37,7 @@ export type OrderRecord = {
   paymentName?: string;
 };
 
-export type UserRole = 'admin' | 'user';
+export type UserRole = "admin" | "user";
 
 export type UserRecord = {
   identifier: string;
@@ -70,7 +70,7 @@ export type RoadmapItem = {
   id: string;
   year: string;
   title: string;
-  position: 'top' | 'bot';
+  position: "top" | "bot";
 };
 
 export type MemberItem = {
@@ -91,7 +91,7 @@ export type HomeContent = {
 
 export type OrderFilter = {
   q?: string;
-  status?: OrderStatus | 'all';
+  status?: OrderStatus | "all";
   eventId?: string;
   from?: string;
   to?: string;
@@ -108,18 +108,20 @@ export type OrdersStats = {
 };
 
 const KEYS = {
-  events: 'tsengeldekh_events',
-  content: 'tsengeldekh_content',
-  orders: 'tsengeldekh_tickets',
-  users: 'tsengeldekh_users',
-  seeded: 'tsengeldekh_seeded_v1',
+  events: "tsengeldekh_events",
+  content: "tsengeldekh_content",
+  orders: "tsengeldekh_tickets",
+  users: "tsengeldekh_users",
+  seeded: "tsengeldekh_seeded_v1",
 } as const;
 
 const ok = <T>(v: T): Promise<T> => Promise.resolve(v);
 
 function readJSON<T>(key: string, fallback: T): T {
   try {
-    return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)) as T;
+    return JSON.parse(
+      localStorage.getItem(key) || JSON.stringify(fallback),
+    ) as T;
   } catch {
     return fallback;
   }
@@ -135,18 +137,22 @@ function writeJSON(key: string, value: unknown): void {
 // Backfill `status: 'paid'` only on legacy records that don't have one.
 // Equivalent to the original `{ status: 'paid', ...o }` spread, written so
 // TypeScript doesn't flag it as an overwritten literal.
-const withDefaultStatus = <T extends { status?: OrderStatus }>(o: T): T & { status: OrderStatus } =>
-  (o.status ? (o as T & { status: OrderStatus }) : { ...o, status: 'paid' as OrderStatus });
+const withDefaultStatus = <T extends { status?: OrderStatus }>(
+  o: T,
+): T & { status: OrderStatus } =>
+  o.status
+    ? (o as T & { status: OrderStatus })
+    : { ...o, status: "paid" as OrderStatus };
 
 function slugify(s: string): string {
   return (
-    String(s || '')
+    String(s || "")
       .toLowerCase()
-      .normalize('NFKD')
-      .replace(/[̀-ͯ]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .slice(0, 60) || 'event-' + Math.random().toString(36).slice(2, 7)
+      .normalize("NFKD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 60) || "event-" + Math.random().toString(36).slice(2, 7)
   );
 }
 
@@ -163,22 +169,25 @@ export function getEvent(id: string): Promise<EventRecord | null> {
   return ok(all.find((e) => e.id === id) || null);
 }
 
-export type EventInput = Partial<EventRecord> & { title?: string; base?: number | string };
+export type EventInput = Partial<EventRecord> & {
+  title?: string;
+  base?: number | string;
+};
 
 export function createEvent(input: EventInput): Promise<EventRecord> {
   const all = readJSON<EventRecord[]>(KEYS.events, []);
-  const id = input.id?.trim() || slugify(input.title || '');
+  const id = input.id?.trim() || slugify(input.title || "");
   if (all.some((e) => e.id === id)) {
-    return Promise.reject(new Error('Энэ ID-тай арга хэмжээ аль хэдийн бий.'));
+    return Promise.reject(new Error("Энэ ID-тай арга хэмжээ аль хэдийн бий."));
   }
   const next: EventRecord = {
     id,
-    title: input.title || '',
-    desc: input.desc || '',
-    date: input.date || '',
-    when: input.when || '',
-    pill: input.pill || '',
-    image: input.image || '',
+    title: input.title || "",
+    desc: input.desc || "",
+    date: input.date || "",
+    when: input.when || "",
+    pill: input.pill || "",
+    image: input.image || "",
     base: Number(input.base) || 0,
     featured: !!input.featured,
   };
@@ -194,7 +203,7 @@ export function updateEvent(
 ): Promise<EventRecord> {
   const all = readJSON<EventRecord[]>(KEYS.events, []);
   const i = all.findIndex((e) => e.id === id);
-  if (i < 0) return Promise.reject(new Error('Арга хэмжээ олдсонгүй.'));
+  if (i < 0) return Promise.reject(new Error("Арга хэмжээ олдсонгүй."));
   const willFeature = patch.featured === true;
   if (willFeature) all.forEach((e) => (e.featured = false));
   all[i] = {
@@ -208,7 +217,9 @@ export function updateEvent(
 }
 
 export function deleteEvent(id: string): Promise<void> {
-  const all = readJSON<EventRecord[]>(KEYS.events, []).filter((e) => e.id !== id);
+  const all = readJSON<EventRecord[]>(KEYS.events, []).filter(
+    (e) => e.id !== id,
+  );
   writeJSON(KEYS.events, all);
   return ok(undefined);
 }
@@ -233,17 +244,17 @@ export function listOrders(filter: OrderFilter = {}): Promise<OrderRecord[]> {
     const needle = q.toLowerCase();
     all = all.filter(
       (o) =>
-        (o.code || '').toLowerCase().includes(needle) ||
-        (o.user || '').toLowerCase().includes(needle) ||
-        (o.title || '').toLowerCase().includes(needle),
+        (o.code || "").toLowerCase().includes(needle) ||
+        (o.user || "").toLowerCase().includes(needle) ||
+        (o.title || "").toLowerCase().includes(needle),
     );
   }
-  if (status && status !== 'all') all = all.filter((o) => o.status === status);
+  if (status && status !== "all") all = all.filter((o) => o.status === status);
   if (eventId) all = all.filter((o) => o.eventId === eventId);
   if (user) all = all.filter((o) => o.user === user);
-  if (from) all = all.filter((o) => (o.purchasedAt || '') >= from);
-  if (to) all = all.filter((o) => (o.purchasedAt || '') <= to);
-  all.sort((a, b) => (b.purchasedAt || '').localeCompare(a.purchasedAt || ''));
+  if (from) all = all.filter((o) => (o.purchasedAt || "") >= from);
+  if (to) all = all.filter((o) => (o.purchasedAt || "") <= to);
+  all.sort((a, b) => (b.purchasedAt || "").localeCompare(a.purchasedAt || ""));
   return ok(all);
 }
 
@@ -263,21 +274,27 @@ export function createOrder(order: OrderRecord): Promise<OrderRecord> {
 export function refundOrder(code: string): Promise<OrderRecord> {
   const all = readJSON<OrderRecord[]>(KEYS.orders, []);
   const i = all.findIndex((o) => o.code === code);
-  if (i < 0) return Promise.reject(new Error('Захиалга олдсонгүй.'));
-  all[i] = { ...all[i], status: 'refunded', refundedAt: new Date().toISOString() };
+  if (i < 0) return Promise.reject(new Error("Захиалга олдсонгүй."));
+  all[i] = {
+    ...all[i],
+    status: "refunded",
+    refundedAt: new Date().toISOString(),
+  };
   writeJSON(KEYS.orders, all);
   return ok(all[i]);
 }
 
 export function cancelOrder(code: string): Promise<void> {
-  const all = readJSON<OrderRecord[]>(KEYS.orders, []).filter((o) => o.code !== code);
+  const all = readJSON<OrderRecord[]>(KEYS.orders, []).filter(
+    (o) => o.code !== code,
+  );
   writeJSON(KEYS.orders, all);
   return ok(undefined);
 }
 
 export function ordersStats(): Promise<OrdersStats> {
   const all = readJSON<OrderRecord[]>(KEYS.orders, []).map(withDefaultStatus);
-  const paid = all.filter((o) => o.status === 'paid');
+  const paid = all.filter((o) => o.status === "paid");
   const revenue = paid.reduce((s, o) => s + (Number(o.total) || 0), 0);
   const byTier: Record<string, number> = {};
   const byEvent: Record<string, number> = {};
@@ -293,11 +310,18 @@ export function ordersStats(): Promise<OrdersStats> {
     d.setDate(today.getDate() - i);
     const key = d.toISOString().slice(0, 10);
     const sum = paid
-      .filter((o) => (o.purchasedAt || '').slice(0, 10) === key)
+      .filter((o) => (o.purchasedAt || "").slice(0, 10) === key)
       .reduce((s, o) => s + (Number(o.total) || 0), 0);
     last30d.push({ date: key, total: sum });
   }
-  return ok({ revenue, count: all.length, paidCount: paid.length, byTier, byEvent, last30d });
+  return ok({
+    revenue,
+    count: all.length,
+    paidCount: paid.length,
+    byTier,
+    byEvent,
+    last30d,
+  });
 }
 
 // ============================================================================
@@ -313,26 +337,34 @@ export function getUser(identifier: string): Promise<UserRecord | null> {
   return ok(all.find((u) => u.identifier === identifier) || null);
 }
 
-export function setUserRole(identifier: string, role: UserRole): Promise<UserRecord> {
+export function setUserRole(
+  identifier: string,
+  role: UserRole,
+): Promise<UserRecord> {
   const all = readJSON<UserRecord[]>(KEYS.users, []);
   const i = all.findIndex((u) => u.identifier === identifier);
-  if (i < 0) return Promise.reject(new Error('Хэрэглэгч олдсонгүй.'));
+  if (i < 0) return Promise.reject(new Error("Хэрэглэгч олдсонгүй."));
   all[i] = { ...all[i], role };
   writeJSON(KEYS.users, all);
   return ok(all[i]);
 }
 
-export function setUserDisabled(identifier: string, disabled: boolean): Promise<UserRecord> {
+export function setUserDisabled(
+  identifier: string,
+  disabled: boolean,
+): Promise<UserRecord> {
   const all = readJSON<UserRecord[]>(KEYS.users, []);
   const i = all.findIndex((u) => u.identifier === identifier);
-  if (i < 0) return Promise.reject(new Error('Хэрэглэгч олдсонгүй.'));
+  if (i < 0) return Promise.reject(new Error("Хэрэглэгч олдсонгүй."));
   all[i] = { ...all[i], disabled: !!disabled };
   writeJSON(KEYS.users, all);
   return ok(all[i]);
 }
 
 export function deleteUser(identifier: string): Promise<void> {
-  const all = readJSON<UserRecord[]>(KEYS.users, []).filter((u) => u.identifier !== identifier);
+  const all = readJSON<UserRecord[]>(KEYS.users, []).filter(
+    (u) => u.identifier !== identifier,
+  );
   writeJSON(KEYS.users, all);
   return ok(undefined);
 }
@@ -341,13 +373,20 @@ export function deleteUser(identifier: string): Promise<void> {
 // Home content (News, Partners, Roadmap, Members)
 // ============================================================================
 
-const EMPTY_CONTENT: HomeContent = { news: [], partners: [], roadmap: [], members: [] };
+const EMPTY_CONTENT: HomeContent = {
+  news: [],
+  partners: [],
+  roadmap: [],
+  members: [],
+};
 
 export function getHomeContent(): Promise<HomeContent> {
   return ok(readJSON<HomeContent>(KEYS.content, EMPTY_CONTENT));
 }
 
-export function updateHomeContent(patch: Partial<HomeContent>): Promise<HomeContent> {
+export function updateHomeContent(
+  patch: Partial<HomeContent>,
+): Promise<HomeContent> {
   const cur = readJSON<HomeContent>(KEYS.content, EMPTY_CONTENT);
   const next = { ...cur, ...patch };
   writeJSON(KEYS.content, next);
@@ -377,10 +416,10 @@ export function seedIfEmpty(): Promise<void> {
   // Migration: ensure every user has a role
   users.forEach((u) => {
     if (!u.role) {
-      u.role = u.identifier === 'admin' ? 'admin' : 'user';
+      u.role = u.identifier === "admin" ? "admin" : "user";
       mutated = true;
     }
-    if (typeof u.disabled === 'undefined') {
+    if (typeof u.disabled === "undefined") {
       u.disabled = false;
       mutated = true;
     }
@@ -392,12 +431,12 @@ export function seedIfEmpty(): Promise<void> {
   let ordersMutated = false;
   orders.forEach((o) => {
     if (!o.status) {
-      o.status = 'paid';
+      o.status = "paid";
       ordersMutated = true;
     }
   });
   if (ordersMutated) writeJSON(KEYS.orders, orders);
 
-  localStorage.setItem(KEYS.seeded, '1');
+  localStorage.setItem(KEYS.seeded, "1");
   return ok(undefined);
 }
