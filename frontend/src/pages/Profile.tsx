@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { readUsers, useAuth, useRequireAuth } from '../auth';
+import { useAuth, useRequireAuth } from '../auth';
+import { api } from '../lib/api';
 
 const TICKETS_KEY = 'tsengeldekh_tickets';
 const MAX_AVATAR_DIM = 256;       // resize uploaded image to this on the longer edge
@@ -56,10 +57,14 @@ export default function Profile() {
     setAvatar(session.avatar || null);
   }, [session]);
 
-  const account = useMemo(
-    () => readUsers().find((u) => u.identifier === session?.identifier),
-    [session],
-  );
+  const [createdAt, setCreatedAt] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    api.me().then((res) => {
+      if (alive && res.ok) setCreatedAt(res.data.created_at);
+    });
+    return () => { alive = false; };
+  }, []);
 
   const tickets: Ticket[] = useMemo(() => {
     if (!session) return [];
@@ -72,7 +77,7 @@ export default function Profile() {
   }, [session]);
 
   const totalSpent = tickets.reduce((sum, t) => sum + (t.total || 0), 0);
-  const memberSince = account?.createdAt ? new Date(account.createdAt).toLocaleDateString('mn-MN') : '—';
+  const memberSince = createdAt ? new Date(createdAt).toLocaleDateString('mn-MN') : '—';
 
   if (!session) return null;
 

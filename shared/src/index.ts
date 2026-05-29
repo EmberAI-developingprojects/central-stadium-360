@@ -17,8 +17,11 @@ export type TicketStatus = "pending" | "paid" | "cancelled";
 export interface DbUser {
   id: string;
   phone: string | null;
+  email: string | null;
+  full_name: string;
   role: UserRole;
   created_at: string;
+  deleted_at: string | null;
 }
 
 export interface DbEvent {

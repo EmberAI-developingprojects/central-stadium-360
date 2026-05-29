@@ -6,6 +6,7 @@ import events from "./routes/events";
 import auth from "./routes/auth";
 import tickets from "./routes/tickets";
 import payments from "./routes/payments";
+import smsHook from "./routes/sms-hook";
 
 const startedAt = Date.now();
 
@@ -24,6 +25,7 @@ app.route("/events", events);
 app.route("/auth", auth);
 app.route("/tickets", tickets);
 app.route("/payments", payments);
+app.route("/internal", smsHook);
 
 app.get("/health", (c) => {
   const payload: HealthResponse = {

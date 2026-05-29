@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
   /* ============================================================
      BRAND TOKENS — only blue allowed is #2230C6 (no navy)
      Gold accent kept from stadium.mn palette

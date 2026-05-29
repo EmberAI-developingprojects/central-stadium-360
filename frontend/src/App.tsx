@@ -4,6 +4,8 @@ import { useAuth, RequireAdmin } from './auth';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import RegisterPhone from './pages/RegisterPhone';
+import RegisterEmail from './pages/RegisterEmail';
 import Watch from './pages/Watch';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
@@ -45,6 +47,8 @@ export default function App() {
         <Route path="/" element={<GuestOnly><Home /></GuestOnly>} />
         <Route path="/login" element={<GuestOnly><Login /></GuestOnly>} />
         <Route path="/register" element={<GuestOnly><Register /></GuestOnly>} />
+        <Route path="/register/phone" element={<GuestOnly><RegisterPhone /></GuestOnly>} />
+        <Route path="/register/email" element={<GuestOnly><RegisterEmail /></GuestOnly>} />
         <Route path="/watch" element={<Watch />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/settings" element={<Settings />} />

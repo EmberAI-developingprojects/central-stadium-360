@@ -1,51 +1,42 @@
-import { useState, type FormEvent } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useState, type ChangeEvent, type FormEvent } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth";
 
-// Restrict ?next= to local SPA routes so we can't be used as an open redirect.
-// Default to /watch so freshly-signed-in users land in their dashboard.
-function safeNext(next: string | null): string {
-  if (!next) return "/watch";
-  if (!next.startsWith("/")) return "/watch";
-  if (next.startsWith("//")) return "/watch";
-  return next;
-}
+type Step = "form" | "verify";
 
 function explainError(code: string, fallback: string): string {
   switch (code) {
-    case "invalid_credentials":
-      return "И-мэйл/утас эсвэл нууц үг буруу байна.";
-    case "not_verified":
-      return "Та бүртгэлээ хараахан баталгаажуулаагүй байна.";
-    case "account_deleted":
-      return "Энэ бүртгэл устгагдсан байна.";
-    case "invalid_input":
-      return "Оруулсан мэдээллийг шалгана уу.";
+    case "already_registered":
+      return "Энэ дугаар аль хэдийн бүртгэлтэй байна.";
     case "rate_limited":
       return "Хэт олон оролдлого. Хэдэн минутын дараа дахин оролдоно уу.";
+    case "invalid_input":
+      return "Оруулсан мэдээллийг шалгана уу.";
     case "supabase_not_configured":
       return "Сервер тохиргоо дутуу байна. Админд хандана уу.";
+    case "otp_invalid":
+      return "Код буруу эсвэл хугацаа дууссан байна.";
     default:
       return fallback;
   }
 }
 
-type Step = "form" | "verify-phone" | "verify-email";
-
-export default function Login() {
+export default function RegisterPhone() {
   const navigate = useNavigate();
-  const [params] = useSearchParams();
-  const { login, verifyPhone, resendCode } = useAuth();
+  const { registerPhone, verifyPhone, resendCode } = useAuth();
 
-  const [identifier, setIdentifier] = useState("");
+  const [fullname, setFullname] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [agree, setAgree] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [alert, setAlert] = useState("");
+  const [submitLabel, setSubmitLabel] = useState("Бүртгүүлэх");
   const [busy, setBusy] = useState(false);
-  const [submitLabel, setSubmitLabel] = useState("Нэвтрэх");
 
   const [step, setStep] = useState<Step>("form");
-  const [pendingIdentifier, setPendingIdentifier] = useState("");
+  const [pendingPhone, setPendingPhone] = useState("");
   const [code, setCode] = useState("");
   const [verifyBusy, setVerifyBusy] = useState(false);
   const [resendBusy, setResendBusy] = useState(false);
@@ -54,38 +45,51 @@ export default function Login() {
     msg: string;
   } | null>(null);
 
+  const onPhoneChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const digits = e.target.value.replace(/\D/g, "").slice(0, 8);
+    setPhone(
+      digits.length > 4 ? digits.slice(0, 4) + " " + digits.slice(4) : digits,
+    );
+  };
+
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setAlert("");
-    const rawId = identifier.trim();
-    if (!rawId) return setAlert("И-мэйл эсвэл утасны дугаараа оруулна уу.");
-    if (!password) return setAlert("Нууц үгээ оруулна уу.");
 
+    if (fullname.trim().length < 2) return setAlert("Бүтэн нэрээ оруулна уу.");
+    const digits = phone.replace(/\D/g, "");
+    if (digits.length !== 8)
+      return setAlert("Утасны дугаар 8 оронтой байх ёстой.");
+    if (!/^[6789]/.test(digits)) {
+      return setAlert(
+        "Зөвхөн Монгол утасны дугаар хүлээн авна (6, 7, 8, 9-өөр эхэлсэн).",
+      );
+    }
+    if (password.length < 8)
+      return setAlert("Нууц үг хамгийн багадаа 8 тэмдэгт байх ёстой.");
+    if (password !== confirmPw) return setAlert("Нууц үг таарахгүй байна.");
+    if (!agree) return setAlert("Үйлчилгээний нөхцөлийг зөвшөөрнө үү.");
+
+    const identifier = "+976" + digits;
     setBusy(true);
-    setSubmitLabel("Нэвтэрч байна…");
-    const res = await login({ identifier: rawId, password });
-
-    if (res.ok) {
-      setSubmitLabel("Тавтай морилно уу ✓");
-      const next = safeNext(params.get("next"));
-      setTimeout(() => navigate(next, { replace: true }), 600);
+    setSubmitLabel("Илгээж байна…");
+    const res = await registerPhone({
+      fullName: fullname.trim(),
+      phone: identifier,
+      password,
+    });
+    if (!res.ok) {
+      setBusy(false);
+      setSubmitLabel("Бүртгүүлэх");
+      setAlert(
+        explainError(res.error, "Бүртгэхэд алдаа гарлаа. Дахин оролдоно уу."),
+      );
       return;
     }
-
+    setPendingPhone(identifier);
+    setStep("verify");
     setBusy(false);
-    setSubmitLabel("Нэвтрэх");
-
-    if (res.error === "not_verified") {
-      setPendingIdentifier(res.identifier ?? rawId);
-      setStep(res.kind === "email" ? "verify-email" : "verify-phone");
-      setVerifyAlert({
-        kind: "error",
-        msg: "Бүртгэлээ баталгаажуулаагүй байна. Кодоо илгээж дуусгана уу.",
-      });
-      return;
-    }
-
-    setAlert(explainError(res.error, "Нэвтрэхэд алдаа гарлаа."));
+    setSubmitLabel("Бүртгүүлэх");
   };
 
   const onVerifySubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -97,7 +101,7 @@ export default function Login() {
       return;
     }
     setVerifyBusy(true);
-    const res = await verifyPhone({ phone: pendingIdentifier, code: clean });
+    const res = await verifyPhone({ phone: pendingPhone, code: clean });
     setVerifyBusy(false);
     if (!res.ok) {
       setVerifyAlert({
@@ -107,16 +111,13 @@ export default function Login() {
       return;
     }
     setVerifyAlert({ kind: "ok", msg: "Баталгаажлаа ✓" });
-    setTimeout(
-      () => navigate(safeNext(params.get("next")), { replace: true }),
-      600,
-    );
+    setTimeout(() => navigate("/watch", { replace: true }), 700);
   };
 
   const onResend = async () => {
     setVerifyAlert(null);
     setResendBusy(true);
-    const res = await resendCode(pendingIdentifier);
+    const res = await resendCode(pendingPhone);
     setResendBusy(false);
     if (!res.ok) {
       setVerifyAlert({
@@ -125,17 +126,11 @@ export default function Login() {
       });
       return;
     }
-    setVerifyAlert({
-      kind: "ok",
-      msg:
-        step === "verify-phone"
-          ? "Шинэ код илгээгдлээ."
-          : "Шинэ имэйл илгээгдлээ.",
-    });
+    setVerifyAlert({ kind: "ok", msg: "Шинэ код илгээгдлээ." });
   };
 
-  // ─────────────────────────────────────────── Verification: phone
-  if (step === "verify-phone") {
+  // ─────────────────────────────────────────── Verification step
+  if (step === "verify") {
     return (
       <div className="login-page">
         <header className="login-header">
@@ -149,21 +144,7 @@ export default function Login() {
               alt="Төв Цэнгэлдэх Хүрээлэн"
             />
           </Link>
-          <button
-            type="button"
-            className="login-back"
-            onClick={() => {
-              setStep("form");
-              setCode("");
-              setVerifyAlert(null);
-            }}
-            style={{
-              background: "none",
-              border: 0,
-              cursor: "pointer",
-              font: "inherit",
-            }}
-          >
+          <Link className="login-back" to="/login">
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -177,7 +158,7 @@ export default function Login() {
               <polyline points="12 19 5 12 12 5" />
             </svg>
             Нэвтрэх рүү буцах
-          </button>
+          </Link>
         </header>
 
         <main className="login-main">
@@ -189,8 +170,8 @@ export default function Login() {
 
             <h1 className="login-title">Утсаа баталгаажуулах</h1>
             <p className="login-subtitle">
-              {pendingIdentifier} дугаар руу 6 оронтой код илгээлээ. Хүлээж
-              аваад доор оруулна уу.
+              {pendingPhone} дугаар руу 6 оронтой код илгээлээ. Хүлээж аваад
+              доор оруулна уу.
             </p>
 
             <form className="login-form" onSubmit={onVerifySubmit} noValidate>
@@ -262,8 +243,8 @@ export default function Login() {
             >
               {resendBusy ? "Илгээж байна…" : "Дахин код илгээх"}
             </button>
-            <Link className="login-home" to="/">
-              Нүүр хуудас руу буцах
+            <Link className="login-home" to="/login">
+              Нэвтрэх рүү буцах
             </Link>
           </section>
         </main>
@@ -271,107 +252,7 @@ export default function Login() {
     );
   }
 
-  // ─────────────────────────────────────────── Verification: email
-  if (step === "verify-email") {
-    return (
-      <div className="login-page">
-        <header className="login-header">
-          <Link
-            className="login-logo"
-            to="/"
-            aria-label="Төв Цэнгэлдэх Хүрээлэн — Нүүр"
-          >
-            <img
-              src="/assets/images/brand/logo.png"
-              alt="Төв Цэнгэлдэх Хүрээлэн"
-            />
-          </Link>
-          <button
-            type="button"
-            className="login-back"
-            onClick={() => {
-              setStep("form");
-              setVerifyAlert(null);
-            }}
-            style={{
-              background: "none",
-              border: 0,
-              cursor: "pointer",
-              font: "inherit",
-            }}
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <line x1="19" y1="12" x2="5" y2="12" />
-              <polyline points="12 19 5 12 12 5" />
-            </svg>
-            Нэвтрэх рүү буцах
-          </button>
-        </header>
-
-        <main className="login-main">
-          <section className="login-card">
-            <span className="login-eyebrow">
-              <span className="login-eyebrow-dot" aria-hidden="true"></span>
-              Баталгаажуулалт
-            </span>
-
-            <h1 className="login-title">Гмэйлээ шалгана уу</h1>
-            <p className="login-subtitle">
-              Бид {pendingIdentifier} хаяг руу баталгаажуулах линк илгээлээ.
-              Линк дээр дарж бүртгэлээ идэвхжүүлээрэй.
-            </p>
-
-            <div className="reg-alert is-ok" role="status">
-              Дахин харагдахгүй бол спам хавтсаа шалгана уу.
-            </div>
-
-            {verifyAlert && (
-              <div
-                className={`reg-alert${verifyAlert.kind === "ok" ? " is-ok" : ""}`}
-                role="alert"
-                style={{ marginTop: 8 }}
-              >
-                {verifyAlert.msg}
-              </div>
-            )}
-
-            <div className="login-divider">
-              <span>эсвэл</span>
-            </div>
-
-            <button
-              type="button"
-              className="login-register"
-              onClick={onResend}
-              disabled={resendBusy}
-              style={{
-                background: "none",
-                border: 0,
-                cursor: "pointer",
-                width: "100%",
-                font: "inherit",
-              }}
-            >
-              {resendBusy ? "Илгээж байна…" : "Дахин линк илгээх"}
-            </button>
-            <Link className="login-home" to="/">
-              Нүүр хуудас руу буцах
-            </Link>
-          </section>
-        </main>
-      </div>
-    );
-  }
-
-  // ─────────────────────────────────────────── Login form (unchanged design)
+  // ─────────────────────────────────────────── Phone registration form
   return (
     <div className="login-page">
       <header className="login-header">
@@ -385,7 +266,7 @@ export default function Login() {
             alt="Төв Цэнгэлдэх Хүрээлэн"
           />
         </Link>
-        <Link className="login-back" to="/">
+        <Link className="login-back" to="/register">
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -398,7 +279,7 @@ export default function Login() {
             <line x1="19" y1="12" x2="5" y2="12" />
             <polyline points="12 19 5 12 12 5" />
           </svg>
-          Нүүр буцах
+          Сонголт руу буцах
         </Link>
       </header>
 
@@ -409,25 +290,49 @@ export default function Login() {
             Хувийн булан
           </span>
 
-          <h1 className="login-title">Нэвтрэх</h1>
+          <h1 className="login-title">Утасны дугаараар бүртгүүлэх</h1>
           <p className="login-subtitle">
-            Тасалбар, шууд дамжуулал, гишүүнчлэлдээ хандахын тулд бүртгэлээрээ
-            нэвтэрнэ үү.
+            8 оронтой Монгол утасны дугаараа оруулаад баталгаажуулах SMS код
+            хүлээж аваарай.
           </p>
 
-          <form className="login-form" onSubmit={onSubmit} noValidate>
+          <form className="login-form reg-form" onSubmit={onSubmit} noValidate>
             <label className="login-field">
-              <span className="login-label">И-мэйл эсвэл утасны дугаар</span>
+              <span className="login-label">Бүтэн нэр</span>
               <input
                 className="login-input"
                 type="text"
-                name="identifier"
-                placeholder="name@gmail.com эсвэл 8800 0000"
-                autoComplete="username"
-                value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
+                name="fullname"
+                placeholder="Жишээ: Б. Болор"
+                autoComplete="name"
+                value={fullname}
+                onChange={(e) => setFullname(e.target.value)}
                 required
               />
+            </label>
+
+            <label className="login-field reg-field-phone">
+              <span className="login-label">Утасны дугаар</span>
+              <span className="reg-phone-wrap">
+                <span className="reg-phone-prefix" aria-hidden="true">
+                  +976
+                </span>
+                <input
+                  className="login-input reg-input-phone"
+                  type="tel"
+                  name="phone"
+                  placeholder="8800 0000"
+                  inputMode="numeric"
+                  maxLength={9}
+                  autoComplete="tel-national"
+                  value={phone}
+                  onChange={onPhoneChange}
+                  required
+                />
+              </span>
+              <span className="reg-hint">
+                8 оронтой Монгол утасны дугаар оруулна уу
+              </span>
             </label>
 
             <label className="login-field">
@@ -438,7 +343,8 @@ export default function Login() {
                   type={showPw ? "text" : "password"}
                   name="password"
                   placeholder="••••••••"
-                  autoComplete="current-password"
+                  autoComplete="new-password"
+                  minLength={8}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -462,6 +368,36 @@ export default function Login() {
                     <circle cx="12" cy="12" r="3" />
                   </svg>
                 </button>
+              </span>
+              <span className="reg-hint">Хамгийн багадаа 8 тэмдэгт</span>
+            </label>
+
+            <label className="login-field">
+              <span className="login-label">Нууц үг давтах</span>
+              <input
+                className="login-input"
+                type="password"
+                name="password_confirm"
+                placeholder="••••••••"
+                autoComplete="new-password"
+                minLength={8}
+                value={confirmPw}
+                onChange={(e) => setConfirmPw(e.target.value)}
+                required
+              />
+            </label>
+
+            <label className="reg-terms">
+              <input
+                type="checkbox"
+                name="agree"
+                checked={agree}
+                onChange={(e) => setAgree(e.target.checked)}
+                required
+              />
+              <span>
+                Үйлчилгээний нөхцөл болон нууцлалын бодлогыг хүлээн зөвшөөрч
+                байна.
               </span>
             </label>
 
@@ -490,11 +426,11 @@ export default function Login() {
             <span>эсвэл</span>
           </div>
 
-          <Link className="login-register" to="/register">
-            Шинээр бүртгүүлэх
+          <Link className="login-register" to="/register/email">
+            Gmail-аар бүртгүүлэх
           </Link>
-          <Link className="login-home" to="/">
-            Нүүр хуудас руу буцах
+          <Link className="login-home" to="/login">
+            Аль хэдийн бүртгэлтэй — Нэвтрэх
           </Link>
         </section>
       </main>

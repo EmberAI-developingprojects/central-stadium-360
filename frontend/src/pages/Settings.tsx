@@ -1,53 +1,70 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { readUsers, useAuth, useRequireAuth, writeUsers } from '../auth';
+import { useAuth, useRequireAuth } from '../auth';
+import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 
 type AlertState = { kind: 'error' | 'ok'; msg: string } | null;
 
 export default function Settings() {
   const session = useRequireAuth();
-  const { logout } = useAuth();
+  const { deleteAccount } = useAuth();
   const navigate = useNavigate();
 
   const [currentPw, setCurrentPw] = useState('');
   const [newPw, setNewPw] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
   const [alert, setAlert] = useState<AlertState>(null);
+  const [busy, setBusy] = useState(false);
 
   if (!session) return null;
 
-  const users = readUsers();
-  const account = users.find((u) => u.identifier === session.identifier);
-  const createdAt = account?.createdAt ? new Date(account.createdAt).toLocaleString('mn-MN') : '—';
-
-  const onChangePassword = (e: FormEvent<HTMLFormElement>) => {
+  const onChangePassword = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setAlert(null);
 
-    if (!account) {
-      // Test users (e.g. admin/admin) are not in localStorage and can't change passwords here.
-      return setAlert({ kind: 'error', msg: 'Энэ бүртгэлийн нууц үгийг өөрчилж чадахгүй (туршилтын хэрэглэгч).' });
+    if (newPw.length < 8) {
+      return setAlert({ kind: 'error', msg: 'Шинэ нууц үг хамгийн багадаа 8 тэмдэгт байх ёстой.' });
     }
-    if (account.password !== currentPw) return setAlert({ kind: 'error', msg: 'Одоогийн нууц үг буруу байна.' });
-    if (newPw.length < 8) return setAlert({ kind: 'error', msg: 'Шинэ нууц үг хамгийн багадаа 8 тэмдэгт байх ёстой.' });
-    if (newPw !== confirmPw) return setAlert({ kind: 'error', msg: 'Шинэ нууц үг таарахгүй байна.' });
+    if (newPw !== confirmPw) {
+      return setAlert({ kind: 'error', msg: 'Шинэ нууц үг таарахгүй байна.' });
+    }
+    if (!supabase) {
+      return setAlert({ kind: 'error', msg: 'Сервер тохиргоо дутуу байна.' });
+    }
 
-    const next = users.map((u) => (u.identifier === account.identifier ? { ...u, password: newPw } : u));
-    writeUsers(next);
+    setBusy(true);
+    // Re-verify the current password by hitting our login endpoint with the
+    // session's identifier (phone or email). Supabase's updateUser doesn't
+    // check the old password on its own.
+    const check = await api.login({ identifier: session.identifier, password: currentPw });
+    if (!check.ok) {
+      setBusy(false);
+      return setAlert({ kind: 'error', msg: 'Одоогийн нууц үг буруу байна.' });
+    }
+
+    const { error } = await supabase.auth.updateUser({ password: newPw });
+    setBusy(false);
+    if (error) {
+      return setAlert({ kind: 'error', msg: error.message || 'Шинэчлэхэд алдаа гарлаа.' });
+    }
     setCurrentPw('');
     setNewPw('');
     setConfirmPw('');
     setAlert({ kind: 'ok', msg: 'Нууц үг шинэчлэгдлээ.' });
   };
 
-  const onDeleteAccount = () => {
-    if (!account) {
-      return setAlert({ kind: 'error', msg: 'Туршилтын хэрэглэгчийг устгах боломжгүй.' });
+  const onDeleteAccount = async () => {
+    if (!confirm('Бүртгэлээ устгах уу? Худалдан авсан тасалбарууд тань хадгалагдана, харин нэвтрэх боломжгүй болно.')) return;
+    setBusy(true);
+    const res = await deleteAccount();
+    setBusy(false);
+    if (!res.ok) {
+      return setAlert({
+        kind: 'error',
+        msg: 'Устгахад алдаа гарлаа. Дахин оролдоно уу.',
+      });
     }
-    if (!confirm('Бүртгэлээ устгах уу? Үүнийг буцаах боломжгүй.')) return;
-    const next = users.filter((u) => u.identifier !== account.identifier);
-    writeUsers(next);
-    logout();
     navigate('/', { replace: true });
   };
 
@@ -79,7 +96,6 @@ export default function Settings() {
           <dl className="settings-grid">
             <div><dt>Бүтэн нэр</dt><dd>{session.fullname || '—'}</dd></div>
             <div><dt>Холбоо барих</dt><dd>{session.identifier}</dd></div>
-            <div><dt>Бүртгэгдсэн</dt><dd>{createdAt}</dd></div>
           </dl>
 
           <h2 className="settings-section-title">Нууц үг солих</h2>
@@ -127,8 +143,8 @@ export default function Settings() {
               </div>
             )}
 
-            <button type="submit" className="login-submit">
-              Хадгалах
+            <button type="submit" className="login-submit" disabled={busy}>
+              {busy ? 'Хадгалж байна…' : 'Хадгалах'}
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <line x1="5" y1="12" x2="19" y2="12"/>
                 <polyline points="12 5 19 12 12 19"/>
@@ -138,7 +154,10 @@ export default function Settings() {
 
           <div className="login-divider"><span>аюултай бүс</span></div>
 
-          <button type="button" className="settings-danger" onClick={onDeleteAccount}>
+          <p className="reg-hint" style={{ textAlign: 'center', marginTop: 4 }}>
+            Бүртгэл устгасны дараа худалдан авсан тасалбарууд тань хадгалагдсаар үлдэх боловч нэвтрэх боломжгүй болно.
+          </p>
+          <button type="button" className="settings-danger" onClick={onDeleteAccount} disabled={busy}>
             Бүртгэл устгах
           </button>
 

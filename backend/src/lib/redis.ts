@@ -12,24 +12,27 @@ function getRedis(): Redis | null {
   return redis;
 }
 
-let phoneLimiter: Ratelimit | null = null;
+let identifierLimiter: Ratelimit | null = null;
 let ipLimiter: Ratelimit | null = null;
 
-/** 3 OTP requests per phone per 10 minutes. */
-export function getPhoneLimiter(): Ratelimit | null {
-  if (phoneLimiter) return phoneLimiter;
+/**
+ * 3 register/resend attempts per identifier (phone or email) per 10 minutes.
+ * Protects a single number/inbox from being pinned with a flood of OTPs.
+ */
+export function getIdentifierLimiter(): Ratelimit | null {
+  if (identifierLimiter) return identifierLimiter;
   const r = getRedis();
   if (!r) return null;
-  phoneLimiter = new Ratelimit({
+  identifierLimiter = new Ratelimit({
     redis: r,
     limiter: Ratelimit.slidingWindow(3, "10 m"),
-    prefix: "cs360:otp:phone",
+    prefix: "cs360:auth:id",
     analytics: false,
   });
-  return phoneLimiter;
+  return identifierLimiter;
 }
 
-/** 5 OTP requests per IP per 10 minutes (a second floor against abuse). */
+/** 5 OTP/verification requests per IP per 10 minutes (a second floor against abuse). */
 export function getIpLimiter(): Ratelimit | null {
   if (ipLimiter) return ipLimiter;
   const r = getRedis();
@@ -37,7 +40,7 @@ export function getIpLimiter(): Ratelimit | null {
   ipLimiter = new Ratelimit({
     redis: r,
     limiter: Ratelimit.slidingWindow(5, "10 m"),
-    prefix: "cs360:otp:ip",
+    prefix: "cs360:auth:ip",
     analytics: false,
   });
   return ipLimiter;
