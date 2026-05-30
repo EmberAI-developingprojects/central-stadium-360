@@ -59,7 +59,7 @@ export default function App() {
           <Route path="orders" element={<OrdersList />} />
           <Route path="orders/:code" element={<OrderView />} />
           <Route path="users" element={<UsersList />} />
-          <Route path="users/:identifier" element={<UserView />} />
+          <Route path="users/:id" element={<UserView />} />
           <Route path="content" element={<Content />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

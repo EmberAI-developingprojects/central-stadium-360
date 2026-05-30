@@ -1,25 +1,51 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { deleteEvent, listEvents, listOrders, setFeaturedEvent } from '../../data/store';
-import type { EventRecord } from '../../data/store';
-import { ADMIN_ACTIONS_CLS, ADMIN_BADGE_CLS, ADMIN_BADGE_FEATURED_CLS, ADMIN_BTN_CLS, ADMIN_BTN_DANGER_CLS, ADMIN_BTN_GHOST_CLS, ADMIN_BTN_PRIMARY_CLS, ADMIN_BTN_SM_CLS, ADMIN_EMPTY_CLS, ADMIN_PAGE_HEADER_CLS, ADMIN_TABLE_CLS, ADMIN_TABLE_THUMB_CLS, ADMIN_TABLE_WRAP_CLS } from '../_adminStyles';
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import {
+  deleteEvent,
+  listEvents,
+  listOrders,
+  setFeaturedEvent,
+} from "../../data/store";
+import type { EventRecord } from "../../data/store";
+import {
+  ADMIN_ACTIONS_CLS,
+  ADMIN_BADGE_CLS,
+  ADMIN_BADGE_FEATURED_CLS,
+  ADMIN_BTN_CLS,
+  ADMIN_BTN_DANGER_CLS,
+  ADMIN_BTN_GHOST_CLS,
+  ADMIN_BTN_PRIMARY_CLS,
+  ADMIN_BTN_SM_CLS,
+  ADMIN_EMPTY_CLS,
+  ADMIN_PAGE_HEADER_CLS,
+  ADMIN_TABLE_CLS,
+  ADMIN_TABLE_THUMB_CLS,
+  ADMIN_TABLE_WRAP_CLS,
+} from "../_adminStyles";
 
-const money = (n: number | undefined): string => (n || 0).toLocaleString('en-US') + '₮';
+const money = (n: number | undefined): string =>
+  (n || 0).toLocaleString("en-US") + "₮";
 
 export default function EventsList() {
   const [events, setEvents] = useState<EventRecord[] | null>(null);
   const [salesByEvent, setSalesByEvent] = useState<Record<string, number>>({});
 
   const load = () => {
-    Promise.all([listEvents(), listOrders({ status: 'paid' })]).then(([evts, orders]) => {
-      setEvents(evts);
-      const map: Record<string, number> = {};
-      orders.forEach((o) => { map[o.eventId] = (map[o.eventId] || 0) + (Number(o.qty) || 0); });
-      setSalesByEvent(map);
-    });
+    Promise.all([listEvents(), listOrders({ status: "paid" })]).then(
+      ([evts, orders]) => {
+        setEvents(evts);
+        const map: Record<string, number> = {};
+        orders.forEach((o) => {
+          map[o.eventId] = (map[o.eventId] || 0) + (Number(o.qty) || 0);
+        });
+        setSalesByEvent(map);
+      },
+    );
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   const onDelete = async (id: string, title: string) => {
     if (!window.confirm(`«${title}» арга хэмжээг устгах уу?`)) return;
@@ -41,7 +67,12 @@ export default function EventsList() {
           <h2>Арга хэмжээ</h2>
           <p>Удахгүй болох тоглолтуудыг үүсгэх, засах, устгах.</p>
         </div>
-        <Link to="/admin/events/new" className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_PRIMARY_CLS}`}>+ Шинэ арга хэмжээ</Link>
+        <Link
+          to="/admin/events/new"
+          className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_PRIMARY_CLS}`}
+        >
+          + Шинэ арга хэмжээ
+        </Link>
       </div>
 
       {events.length === 0 ? (
@@ -69,16 +100,26 @@ export default function EventsList() {
                   <td>
                     <span
                       className={ADMIN_TABLE_THUMB_CLS}
-                      style={{ backgroundImage: e.image ? `url('${e.image}')` : undefined }}
+                      style={{
+                        backgroundImage: e.image
+                          ? `url('${e.image}')`
+                          : undefined,
+                      }}
                       aria-hidden="true"
                     />
                   </td>
                   <td>
                     <div style={{ fontWeight: 500 }}>
-                      {e.title}{' '}
-                      {e.featured && <span className={`${ADMIN_BADGE_CLS} ${ADMIN_BADGE_FEATURED_CLS}`}>Featured</span>}
+                      {e.title}{" "}
+                      {e.featured && (
+                        <span
+                          className={`${ADMIN_BADGE_CLS} ${ADMIN_BADGE_FEATURED_CLS}`}
+                        >
+                          Featured
+                        </span>
+                      )}
                     </div>
-                    <div style={{ fontSize: 12, color: '#64748b' }}>{e.id}</div>
+                    <div style={{ fontSize: 12, color: "#64748b" }}>{e.id}</div>
                   </td>
                   <td>{e.date}</td>
                   <td>{money(e.base)}</td>
@@ -89,15 +130,28 @@ export default function EventsList() {
                       className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS} ${ADMIN_BTN_GHOST_CLS}`}
                       onClick={() => onFeature(e.id)}
                       disabled={e.featured}
-                      title={e.featured ? 'Аль хэдийн featured' : 'Featured болгох'}
+                      title={
+                        e.featured ? "Аль хэдийн featured" : "Featured болгох"
+                      }
                     >
                       ★
                     </button>
                   </td>
                   <td>
                     <div className={ADMIN_ACTIONS_CLS}>
-                      <Link to={`/admin/events/${e.id}`} className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS}`}>Засах</Link>
-                      <button type="button" className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS} ${ADMIN_BTN_DANGER_CLS}`} onClick={() => onDelete(e.id, e.title)}>Устгах</button>
+                      <Link
+                        to={`/admin/events/${e.id}`}
+                        className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS}`}
+                      >
+                        Засах
+                      </Link>
+                      <button
+                        type="button"
+                        className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS} ${ADMIN_BTN_DANGER_CLS}`}
+                        onClick={() => onDelete(e.id, e.title)}
+                      >
+                        Устгах
+                      </button>
                     </div>
                   </td>
                 </tr>

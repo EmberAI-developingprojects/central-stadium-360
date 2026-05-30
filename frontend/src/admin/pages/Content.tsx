@@ -166,7 +166,7 @@ export default function Content() {
               Хадгалагдсан
             </span>
           )}
-          <button type="button" className="btn" onClick={addItem}>
+          <button type="button" className={ADMIN_BTN_CLS} onClick={addItem}>
             + Шинэ мөр
           </button>
           <button

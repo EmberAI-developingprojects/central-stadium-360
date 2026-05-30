@@ -67,7 +67,6 @@ payments.post("/qpay-callback", async (c) => {
     return c.json({ ok: false, error: "not_paid" } as const, 409);
   }
   if (check.paid_amount < ticket.price) {
-
     console.warn("[payments] underpayment", {
       ticketId,
       expected: ticket.price,
@@ -88,7 +87,6 @@ payments.post("/qpay-callback", async (c) => {
     return c.json({ ok: false, error: "internal_error" } as const, 500);
   }
   if (!updated) {
-
     return c.json({ ok: true, data: { idempotent: true } } as const);
   }
 
@@ -128,7 +126,6 @@ statusRoute.get("/:invoiceId", async (c) => {
     >();
 
   if (!ticket || ticket.user_id !== user.id || !ticket.qpay_invoice_id) {
-
     return c.json({ ok: false, error: "not_found" } as const, 404);
   }
 

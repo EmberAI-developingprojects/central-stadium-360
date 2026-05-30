@@ -1,5 +1,3 @@
-
-
 export type SmsProvider = "dev" | "twilio" | "mobicom" | "skytel";
 
 export interface SmsMessage {
@@ -25,7 +23,6 @@ function resolveProvider(): SmsProvider {
 }
 
 function defaultText(otp: string): string {
-
   return `Төв Цэнгэлдэх — баталгаажуулах код: ${otp}`;
 }
 
@@ -85,7 +82,6 @@ async function sendViaTwilio(msg: SmsMessage): Promise<SmsResult> {
 }
 
 async function sendViaMobicom(_msg: SmsMessage): Promise<SmsResult> {
-
   throw new Error(
     "SMS_PROVIDER=mobicom is not implemented. Add the HTTP integration in " +
       "backend/src/lib/sms.ts (sendViaMobicom) when the carrier is finalized.",
@@ -93,7 +89,6 @@ async function sendViaMobicom(_msg: SmsMessage): Promise<SmsResult> {
 }
 
 async function sendViaSkytel(_msg: SmsMessage): Promise<SmsResult> {
-
   throw new Error(
     "SMS_PROVIDER=skytel is not implemented. Add the HTTP integration in " +
       "backend/src/lib/sms.ts (sendViaSkytel) when the carrier is finalized.",

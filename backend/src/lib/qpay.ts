@@ -1,5 +1,3 @@
-
-
 import type { QPayInvoiceLink } from "@cs360/shared";
 
 interface TokenResponse {
@@ -18,9 +16,8 @@ interface CachedToken {
 }
 
 export interface CreateInvoiceInput {
-  
   senderInvoiceNo: string;
-  
+
   receiverCode: string;
   amountMnt: number;
   description: string;

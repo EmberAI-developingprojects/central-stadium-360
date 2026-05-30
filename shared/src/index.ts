@@ -23,6 +23,10 @@ export interface DbUser {
   deleted_at: string | null;
 }
 
+export interface AdminUserRow extends DbUser {
+  banned: boolean;
+}
+
 export interface DbEvent {
   id: string;
   title: string;
@@ -30,7 +34,73 @@ export interface DbEvent {
   status: EventStatus;
   start_time: string;
   price: number;
+  image: string | null;
+  pill: string | null;
+  featured: boolean;
   created_at: string;
+}
+
+export type EventInput = {
+  title: string;
+  description?: string | null;
+  status?: EventStatus;
+  start_time: string;
+  price: number;
+  image?: string | null;
+  pill?: string | null;
+  featured?: boolean;
+};
+
+export type EventPatch = Partial<EventInput>;
+
+export interface DbHomeNews {
+  id: string;
+  label: string;
+  title: string;
+  body: string;
+  image: string | null;
+  featured: boolean;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface DbHomePartner {
+  id: string;
+  image: string;
+  alt: string;
+  sort_order: number;
+  created_at: string;
+}
+
+export type RoadmapPosition = "top" | "bot";
+
+export interface DbHomeRoadmap {
+  id: string;
+  year: string;
+  title: string;
+  position: RoadmapPosition;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface DbHomeService {
+  id: string;
+  title: string;
+  description: string;
+  icon_key: string;
+  href: string;
+  badge: string | null;
+  sort_order: number;
+  created_at: string;
+}
+
+export type HomeContentSection = "news" | "partners" | "roadmap" | "services";
+
+export interface HomeContentResponse {
+  news: DbHomeNews[];
+  partners: DbHomePartner[];
+  roadmap: DbHomeRoadmap[];
+  services: DbHomeService[];
 }
 
 export interface DbChannel {
