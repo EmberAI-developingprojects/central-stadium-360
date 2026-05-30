@@ -115,7 +115,6 @@ tickets.post("/create", async (c) => {
     .eq("id", ticketId);
   if (updErr) {
     console.error("[tickets] qpay_invoice_id update failed:", updErr);
-
   }
 
   const response: TicketCreateResponse = {

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth";
 import {
@@ -63,7 +63,7 @@ type Step = "form" | "verify-phone" | "verify-email";
 export default function Login() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const { login, verifyPhone, resendCode } = useAuth();
+  const { login, verifyPhone, resendCode, session, loading } = useAuth();
 
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -71,6 +71,13 @@ export default function Login() {
   const [alert, setAlert] = useState("");
   const [busy, setBusy] = useState(false);
   const [submitLabel, setSubmitLabel] = useState("Нэвтрэх");
+  // After a successful login or OTP verification we don't navigate
+  // immediately — the AuthProvider populates `session` asynchronously
+  // (it awaits an /api/auth/me round-trip). Jumping to /watch before
+  // that resolves causes useRequireAuth to bounce the user back to
+  // /login. Instead we mark the flow as awaiting session and let the
+  // effect below fire the navigate once `session` is real.
+  const [awaitingSession, setAwaitingSession] = useState(false);
 
   const [step, setStep] = useState<Step>("form");
   const [pendingIdentifier, setPendingIdentifier] = useState("");
@@ -81,6 +88,18 @@ export default function Login() {
     kind: "error" | "ok";
     msg: string;
   } | null>(null);
+
+  useEffect(() => {
+    if (!awaitingSession) return;
+    if (loading || !session) return;
+    const nextParam = params.get("next");
+    const dest = nextParam
+      ? safeNext(nextParam)
+      : session.role === "admin"
+        ? "/admin"
+        : "/watch";
+    navigate(dest, { replace: true });
+  }, [awaitingSession, session, loading, params, navigate]);
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -95,8 +114,7 @@ export default function Login() {
 
     if (res.ok) {
       setSubmitLabel("Тавтай морилно уу ✓");
-      const next = safeNext(params.get("next"));
-      setTimeout(() => navigate(next, { replace: true }), 600);
+      setAwaitingSession(true);
       return;
     }
 
@@ -135,10 +153,7 @@ export default function Login() {
       return;
     }
     setVerifyAlert({ kind: "ok", msg: "Баталгаажлаа ✓" });
-    setTimeout(
-      () => navigate(safeNext(params.get("next")), { replace: true }),
-      600,
-    );
+    setAwaitingSession(true);
   };
 
   const onResend = async () => {

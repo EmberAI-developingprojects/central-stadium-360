@@ -1,5 +1,3 @@
-
-
 import { Hono, type Context } from "hono";
 import { z } from "zod";
 import type { DbUser } from "@cs360/shared";
@@ -160,7 +158,6 @@ auth.post("/register/phone", async (c) => {
     options: { data: { full_name: fullName } },
   });
   if (error) {
-
     if (/already.*registered|already.*exists/i.test(error.message ?? "")) {
       return c.json({ ok: false, error: "already_registered" } as const, 409);
     }
@@ -322,7 +319,6 @@ auth.post("/login", async (c) => {
       .eq("id", data.user.id)
       .maybeSingle<Pick<DbUser, "role" | "deleted_at">>();
     if (row?.deleted_at) {
-
       await supabase.auth.signOut().catch(() => undefined);
       return c.json({ ok: false, error: "account_deleted" } as const, 403);
     }
@@ -508,7 +504,6 @@ auth.delete("/account", async (c) => {
   });
   if (banErr) {
     console.error("[auth] delete account ban:", banErr);
-
   }
 
   await sb.auth.signOut().catch(() => undefined);

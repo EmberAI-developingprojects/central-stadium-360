@@ -1,5 +1,3 @@
-
-
 import { Hono } from "hono";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { sendSms } from "../lib/sms";
@@ -70,7 +68,6 @@ function verifySupabaseSignature(
 hook.post("/sms-hook", async (c) => {
   const secret = process.env.SMS_HOOK_SECRET;
   if (!secret) {
-
     return c.json(
       { ok: false, error: "sms_hook_not_configured" } as const,
       503,

@@ -1,4 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import WebSocket from "ws";
+
+const realtime = { transport: WebSocket as never };
 
 let cached: SupabaseClient | null = null;
 
@@ -11,6 +14,7 @@ export function getSupabaseAnon(): SupabaseClient | null {
 
   cached = createClient(url, anon, {
     auth: { autoRefreshToken: false, persistSession: false },
+    realtime,
   });
   return cached;
 }
@@ -24,6 +28,7 @@ export function getSupabaseForAccessToken(
 
   return createClient(url, anon, {
     auth: { autoRefreshToken: false, persistSession: false },
+    realtime,
     global: { headers: { Authorization: `Bearer ${accessToken}` } },
   });
 }

@@ -7,6 +7,9 @@ import auth from "./routes/auth";
 import tickets from "./routes/tickets";
 import payments from "./routes/payments";
 import smsHook from "./routes/sms-hook";
+import adminEvents from "./routes/admin-events";
+import adminContent, { publicContent } from "./routes/admin-content";
+import adminUsers from "./routes/admin-users";
 
 const startedAt = Date.now();
 
@@ -26,6 +29,10 @@ app.route("/auth", auth);
 app.route("/tickets", tickets);
 app.route("/payments", payments);
 app.route("/internal", smsHook);
+app.route("/admin/events", adminEvents);
+app.route("/admin/content", adminContent);
+app.route("/admin/users", adminUsers);
+app.route("/content", publicContent);
 
 app.get("/health", (c) => {
   const payload: HealthResponse = {

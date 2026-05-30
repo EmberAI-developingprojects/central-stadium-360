@@ -1,6 +1,22 @@
+import type {
+  AdminUserRow,
+  DbEvent,
+  DbHomeNews,
+  DbHomePartner,
+  DbHomeRoadmap,
+  DbHomeService,
+  HomeContentResponse,
+} from "@cs360/shared";
+import { api } from "../lib/api";
 
-
-import { SEED_EVENTS, SEED_CONTENT, SEED_ADMIN_USER } from "./seed";
+// -----------------------------------------------------------------------------
+// View-model types
+//
+// The public/admin pages were built against these shapes when the data lived
+// in localStorage. They are kept stable so the components don't need to
+// change as we move events + home content onto Supabase. Orders and users
+// still live in localStorage until their migrations land.
+// -----------------------------------------------------------------------------
 
 export type EventRecord = {
   id: string;
@@ -12,6 +28,7 @@ export type EventRecord = {
   image: string;
   base: number;
   featured: boolean;
+  start_time: string;
 };
 
 export type OrderStatus = "paid" | "refunded";
@@ -38,6 +55,7 @@ export type OrderRecord = {
 export type UserRole = "admin" | "user";
 
 export type UserRecord = {
+  id: string;
   identifier: string;
   password: string;
   fullname: string;
@@ -106,14 +124,9 @@ export type OrdersStats = {
 };
 
 const KEYS = {
-  events: "tsengeldekh_events",
-  content: "tsengeldekh_content",
   orders: "tsengeldekh_tickets",
-  users: "tsengeldekh_users",
   seeded: "tsengeldekh_seeded_v1",
 } as const;
-
-const ok = <T>(v: T): Promise<T> => Promise.resolve(v);
 
 function readJSON<T>(key: string, fallback: T): T {
   try {
@@ -128,7 +141,7 @@ function writeJSON(key: string, value: unknown): void {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch {
-    
+    /* ignore quota errors */
   }
 }
 
@@ -139,89 +152,233 @@ const withDefaultStatus = <T extends { status?: OrderStatus }>(
     ? (o as T & { status: OrderStatus })
     : { ...o, status: "paid" as OrderStatus };
 
-function slugify(s: string): string {
+// -----------------------------------------------------------------------------
+// Date formatters
+//
+// Events store a single timestamptz; the cards/watch page expect two display
+// strings. We derive them here so the rest of the UI doesn't have to think
+// about timestamps.
+// -----------------------------------------------------------------------------
+
+function pad2(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+function fmtDateShort(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return `${pad2(d.getMonth() + 1)} / ${pad2(d.getDate())} · ${d.getFullYear()}`;
+}
+
+function fmtDateLong(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
   return (
-    String(s || "")
-      .toLowerCase()
-      .normalize("NFKD")
-      .replace(/[̀-ͯ]/g, "")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .slice(0, 60) || "event-" + Math.random().toString(36).slice(2, 7)
+    `${d.getFullYear()} / ${pad2(d.getMonth() + 1)} / ${pad2(d.getDate())} ` +
+    `· ${pad2(d.getHours())}:${pad2(d.getMinutes())}`
   );
 }
 
-export function listEvents(): Promise<EventRecord[]> {
-  return ok(readJSON<EventRecord[]>(KEYS.events, []));
+function dbToEvent(row: DbEvent): EventRecord {
+  return {
+    id: row.id,
+    title: row.title,
+    desc: row.description ?? "",
+    date: fmtDateShort(row.start_time),
+    when: fmtDateLong(row.start_time),
+    pill: row.pill ?? "",
+    image: row.image ?? "",
+    base: row.price,
+    featured: row.featured,
+    start_time: row.start_time,
+  };
 }
 
-export function getEvent(id: string): Promise<EventRecord | null> {
-  const all = readJSON<EventRecord[]>(KEYS.events, []);
-  return ok(all.find((e) => e.id === id) || null);
+function unwrap<T>(
+  res: { ok: true; data: T } | { ok: false; error: string },
+): T {
+  if (!res.ok) throw new Error(res.error);
+  return res.data;
 }
 
 export type EventInput = Partial<EventRecord> & {
   title?: string;
   base?: number | string;
+  start_time?: string;
 };
 
-export function createEvent(input: EventInput): Promise<EventRecord> {
-  const all = readJSON<EventRecord[]>(KEYS.events, []);
-  const id = input.id?.trim() || slugify(input.title || "");
-  if (all.some((e) => e.id === id)) {
-    return Promise.reject(new Error("Энэ ID-тай арга хэмжээ аль хэдийн бий."));
-  }
-  const next: EventRecord = {
-    id,
-    title: input.title || "",
-    desc: input.desc || "",
-    date: input.date || "",
-    when: input.when || "",
-    pill: input.pill || "",
-    image: input.image || "",
-    base: Number(input.base) || 0,
-    featured: !!input.featured,
-  };
-  if (next.featured) all.forEach((e) => (e.featured = false));
-  all.push(next);
-  writeJSON(KEYS.events, all);
-  return ok(next);
+export async function listEvents(): Promise<EventRecord[]> {
+  const rows = unwrap(await api.listEvents());
+  return rows.map(dbToEvent);
 }
 
-export function updateEvent(
+export async function getEvent(id: string): Promise<EventRecord | null> {
+  const pub = await api.listEvents();
+  if (!pub.ok) return null;
+  const found = pub.data.find((e) => e.id === id);
+  return found ? dbToEvent(found) : null;
+}
+
+function toEventInput(input: EventInput) {
+  return {
+    title: (input.title ?? "").trim(),
+    description: input.desc ?? null,
+    start_time:
+      input.start_time ??
+      (input.when
+        ? new Date(input.when).toISOString()
+        : new Date().toISOString()),
+    price: Number(input.base) || 0,
+    image: input.image ?? null,
+    pill: input.pill ?? null,
+    featured: !!input.featured,
+  };
+}
+
+export async function createEvent(input: EventInput): Promise<EventRecord> {
+  const payload = toEventInput(input);
+  if (!payload.title) throw new Error("Гарчиг шаардлагатай.");
+  const row = unwrap(await api.admin.createEvent(payload));
+  return dbToEvent(row);
+}
+
+export async function updateEvent(
   id: string,
   patch: Partial<EventRecord> & { base?: number | string },
 ): Promise<EventRecord> {
-  const all = readJSON<EventRecord[]>(KEYS.events, []);
-  const i = all.findIndex((e) => e.id === id);
-  if (i < 0) return Promise.reject(new Error("Арга хэмжээ олдсонгүй."));
-  const willFeature = patch.featured === true;
-  if (willFeature) all.forEach((e) => (e.featured = false));
-  all[i] = {
-    ...all[i],
-    ...patch,
-    id: all[i].id,
-    base: Number(patch.base ?? all[i].base) || 0,
+  const body: Record<string, unknown> = {};
+  if (patch.title !== undefined) body.title = patch.title;
+  if (patch.desc !== undefined) body.description = patch.desc;
+  if (patch.pill !== undefined) body.pill = patch.pill;
+  if (patch.image !== undefined) body.image = patch.image;
+  if (patch.featured !== undefined) body.featured = !!patch.featured;
+  if (patch.base !== undefined) body.price = Number(patch.base) || 0;
+  if (patch.start_time !== undefined) body.start_time = patch.start_time;
+  const row = unwrap(await api.admin.updateEvent(id, body));
+  return dbToEvent(row);
+}
+
+export async function deleteEvent(id: string): Promise<void> {
+  unwrap(await api.admin.deleteEvent(id));
+}
+
+export async function setFeaturedEvent(id: string): Promise<void> {
+  unwrap(await api.admin.featureEvent(id));
+}
+
+function dbToNews(row: DbHomeNews): NewsItem {
+  return {
+    id: row.id,
+    label: row.label,
+    title: row.title,
+    body: row.body,
+    image: row.image ?? "",
+    featured: row.featured,
   };
-  writeJSON(KEYS.events, all);
-  return ok(all[i]);
+}
+function dbToPartner(row: DbHomePartner): Partner {
+  return { id: row.id, image: row.image, alt: row.alt };
+}
+function dbToRoadmap(row: DbHomeRoadmap): RoadmapItem {
+  return {
+    id: row.id,
+    year: row.year,
+    title: row.title,
+    position: row.position,
+  };
+}
+function dbToService(row: DbHomeService): MemberItem {
+  return {
+    id: row.id,
+    title: row.title,
+    desc: row.description,
+    iconKey: row.icon_key,
+    href: row.href,
+    badge: row.badge ?? "",
+  };
 }
 
-export function deleteEvent(id: string): Promise<void> {
-  const all = readJSON<EventRecord[]>(KEYS.events, []).filter(
-    (e) => e.id !== id,
-  );
-  writeJSON(KEYS.events, all);
-  return ok(undefined);
-}
-
-export function setFeaturedEvent(id: string): Promise<void> {
-  const all = readJSON<EventRecord[]>(KEYS.events, []).map((e) => ({
-    ...e,
-    featured: e.id === id,
+function toNewsPayload(items: NewsItem[]): Partial<DbHomeNews>[] {
+  return items.map((it) => ({
+    label: it.label,
+    title: it.title,
+    body: it.body,
+    image: it.image || null,
+    featured: !!it.featured,
   }));
-  writeJSON(KEYS.events, all);
-  return ok(undefined);
+}
+function toPartnerPayload(items: Partner[]): Partial<DbHomePartner>[] {
+  return items.map((it) => ({ image: it.image, alt: it.alt }));
+}
+function toRoadmapPayload(items: RoadmapItem[]): Partial<DbHomeRoadmap>[] {
+  return items.map((it) => ({
+    year: it.year,
+    title: it.title,
+    position: it.position,
+  }));
+}
+function toServicePayload(items: MemberItem[]): Partial<DbHomeService>[] {
+  return items.map((it) => ({
+    title: it.title,
+    description: it.desc,
+    icon_key: it.iconKey,
+    href: it.href,
+    badge: it.badge || null,
+  }));
+}
+
+const EMPTY_CONTENT: HomeContent = {
+  news: [],
+  partners: [],
+  roadmap: [],
+  members: [],
+};
+
+export async function getHomeContent(): Promise<HomeContent> {
+  const res = await api.getHomeContent();
+  if (!res.ok) return EMPTY_CONTENT;
+  const data: HomeContentResponse = res.data;
+  return {
+    news: data.news.map(dbToNews),
+    partners: data.partners.map(dbToPartner),
+    roadmap: data.roadmap.map(dbToRoadmap),
+    members: data.services.map(dbToService),
+  };
+}
+
+export async function updateHomeContent(
+  patch: Partial<HomeContent>,
+): Promise<HomeContent> {
+  if (patch.news !== undefined) {
+    unwrap(
+      await api.admin.replaceContentSection("news", toNewsPayload(patch.news)),
+    );
+  }
+  if (patch.partners !== undefined) {
+    unwrap(
+      await api.admin.replaceContentSection(
+        "partners",
+        toPartnerPayload(patch.partners),
+      ),
+    );
+  }
+  if (patch.roadmap !== undefined) {
+    unwrap(
+      await api.admin.replaceContentSection(
+        "roadmap",
+        toRoadmapPayload(patch.roadmap),
+      ),
+    );
+  }
+  if (patch.members !== undefined) {
+    unwrap(
+      await api.admin.replaceContentSection(
+        "services",
+        toServicePayload(patch.members),
+      ),
+    );
+  }
+  return getHomeContent();
 }
 
 export function listOrders(filter: OrderFilter = {}): Promise<OrderRecord[]> {
@@ -242,20 +399,20 @@ export function listOrders(filter: OrderFilter = {}): Promise<OrderRecord[]> {
   if (from) all = all.filter((o) => (o.purchasedAt || "") >= from);
   if (to) all = all.filter((o) => (o.purchasedAt || "") <= to);
   all.sort((a, b) => (b.purchasedAt || "").localeCompare(a.purchasedAt || ""));
-  return ok(all);
+  return Promise.resolve(all);
 }
 
 export function getOrder(code: string): Promise<OrderRecord | null> {
   const all = readJSON<OrderRecord[]>(KEYS.orders, []);
   const found = all.find((o) => o.code === code);
-  return ok(found ? withDefaultStatus(found) : null);
+  return Promise.resolve(found ? withDefaultStatus(found) : null);
 }
 
 export function createOrder(order: OrderRecord): Promise<OrderRecord> {
   const all = readJSON<OrderRecord[]>(KEYS.orders, []);
   all.push(withDefaultStatus(order));
   writeJSON(KEYS.orders, all);
-  return ok(order);
+  return Promise.resolve(order);
 }
 
 export function refundOrder(code: string): Promise<OrderRecord> {
@@ -268,7 +425,7 @@ export function refundOrder(code: string): Promise<OrderRecord> {
     refundedAt: new Date().toISOString(),
   };
   writeJSON(KEYS.orders, all);
-  return ok(all[i]);
+  return Promise.resolve(all[i]);
 }
 
 export function cancelOrder(code: string): Promise<void> {
@@ -276,7 +433,7 @@ export function cancelOrder(code: string): Promise<void> {
     (o) => o.code !== code,
   );
   writeJSON(KEYS.orders, all);
-  return ok(undefined);
+  return Promise.resolve();
 }
 
 export function ordersStats(): Promise<OrdersStats> {
@@ -301,7 +458,7 @@ export function ordersStats(): Promise<OrdersStats> {
       .reduce((s, o) => s + (Number(o.total) || 0), 0);
     last30d.push({ date: key, total: sum });
   }
-  return ok({
+  return Promise.resolve({
     revenue,
     count: all.length,
     paidCount: paid.length,
@@ -311,96 +468,58 @@ export function ordersStats(): Promise<OrdersStats> {
   });
 }
 
-export function listUsers(): Promise<UserRecord[]> {
-  return ok(readJSON<UserRecord[]>(KEYS.users, []));
+// -----------------------------------------------------------------------------
+// Users (Supabase via /api/admin/users)
+// -----------------------------------------------------------------------------
+
+function dbToUser(row: AdminUserRow): UserRecord {
+  return {
+    id: row.id,
+    identifier: row.phone ?? row.email ?? row.id,
+    password: "",
+    fullname: row.full_name,
+    avatar: null,
+    bio: "",
+    method: row.phone ? "phone" : row.email ? "email" : "",
+    role: row.role,
+    disabled: row.banned,
+    createdAt: row.created_at,
+  };
 }
 
-export function getUser(identifier: string): Promise<UserRecord | null> {
-  const all = readJSON<UserRecord[]>(KEYS.users, []);
-  return ok(all.find((u) => u.identifier === identifier) || null);
+export async function listUsers(): Promise<UserRecord[]> {
+  const res = await api.admin.listUsers();
+  if (!res.ok) return [];
+  return res.data.map(dbToUser);
 }
 
-export function setUserRole(
-  identifier: string,
+export async function getUser(id: string): Promise<UserRecord | null> {
+  const res = await api.admin.getUser(id);
+  if (!res.ok) return null;
+  return dbToUser(res.data);
+}
+
+export async function setUserRole(
+  id: string,
   role: UserRole,
 ): Promise<UserRecord> {
-  const all = readJSON<UserRecord[]>(KEYS.users, []);
-  const i = all.findIndex((u) => u.identifier === identifier);
-  if (i < 0) return Promise.reject(new Error("Хэрэглэгч олдсонгүй."));
-  all[i] = { ...all[i], role };
-  writeJSON(KEYS.users, all);
-  return ok(all[i]);
+  const row = unwrap(await api.admin.setUserRole(id, role));
+  return dbToUser(row);
 }
 
-export function setUserDisabled(
-  identifier: string,
+export async function setUserDisabled(
+  id: string,
   disabled: boolean,
 ): Promise<UserRecord> {
-  const all = readJSON<UserRecord[]>(KEYS.users, []);
-  const i = all.findIndex((u) => u.identifier === identifier);
-  if (i < 0) return Promise.reject(new Error("Хэрэглэгч олдсонгүй."));
-  all[i] = { ...all[i], disabled: !!disabled };
-  writeJSON(KEYS.users, all);
-  return ok(all[i]);
+  const row = unwrap(await api.admin.setUserDisabled(id, disabled));
+  return dbToUser(row);
 }
 
-export function deleteUser(identifier: string): Promise<void> {
-  const all = readJSON<UserRecord[]>(KEYS.users, []).filter(
-    (u) => u.identifier !== identifier,
-  );
-  writeJSON(KEYS.users, all);
-  return ok(undefined);
-}
-
-const EMPTY_CONTENT: HomeContent = {
-  news: [],
-  partners: [],
-  roadmap: [],
-  members: [],
-};
-
-export function getHomeContent(): Promise<HomeContent> {
-  return ok(readJSON<HomeContent>(KEYS.content, EMPTY_CONTENT));
-}
-
-export function updateHomeContent(
-  patch: Partial<HomeContent>,
-): Promise<HomeContent> {
-  const cur = readJSON<HomeContent>(KEYS.content, EMPTY_CONTENT);
-  const next = { ...cur, ...patch };
-  writeJSON(KEYS.content, next);
-  return ok(next);
+export async function deleteUser(id: string): Promise<void> {
+  unwrap(await api.admin.deleteUser(id));
 }
 
 export function seedIfEmpty(): Promise<void> {
-
-  if (!localStorage.getItem(KEYS.events)) {
-    writeJSON(KEYS.events, SEED_EVENTS);
-  }
-
-  if (!localStorage.getItem(KEYS.content)) {
-    writeJSON(KEYS.content, SEED_CONTENT);
-  }
-
-  const users = readJSON<UserRecord[]>(KEYS.users, []);
-  let mutated = false;
-  if (!users.some((u) => u.identifier === SEED_ADMIN_USER.identifier)) {
-    users.push(SEED_ADMIN_USER);
-    mutated = true;
-  }
-
-  users.forEach((u) => {
-    if (!u.role) {
-      u.role = u.identifier === "admin" ? "admin" : "user";
-      mutated = true;
-    }
-    if (typeof u.disabled === "undefined") {
-      u.disabled = false;
-      mutated = true;
-    }
-  });
-  if (mutated) writeJSON(KEYS.users, users);
-
   const orders = readJSON<OrderRecord[]>(KEYS.orders, []);
   let ordersMutated = false;
   orders.forEach((o) => {
@@ -412,5 +531,5 @@ export function seedIfEmpty(): Promise<void> {
   if (ordersMutated) writeJSON(KEYS.orders, orders);
 
   localStorage.setItem(KEYS.seeded, "1");
-  return ok(undefined);
+  return Promise.resolve();
 }

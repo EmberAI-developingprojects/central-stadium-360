@@ -1,8 +1,20 @@
+import type {
+  AdminUserRow,
+  DbEvent,
+  DbHomeNews,
+  DbHomePartner,
+  DbHomeRoadmap,
+  DbHomeService,
+  EventInput,
+  EventPatch,
+  HomeContentResponse,
+  HomeContentSection,
+  UserRole,
+} from "@cs360/shared";
+import { supabase } from "./supabase";
 
-
-import { supabase } from './supabase';
-
-const BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '';
+const BASE_URL =
+  (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "";
 
 export type ApiResult<T> =
   | { ok: true; data: T }
@@ -16,7 +28,7 @@ async function authHeader(): Promise<Record<string, string>> {
 }
 
 async function request<T>(
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE",
   path: string,
   body?: unknown,
 ): Promise<ApiResult<T>> {
@@ -26,13 +38,18 @@ async function request<T>(
     res = await fetch(url, {
       method,
       headers: {
-        ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+        ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
         ...(await authHeader()),
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
   } catch (err) {
-    return { ok: false, error: 'network_error', status: 0, details: (err as Error).message };
+    return {
+      ok: false,
+      error: "network_error",
+      status: 0,
+      details: (err as Error).message,
+    };
   }
   let json: Record<string, unknown> = {};
   try {
@@ -58,7 +75,12 @@ export type AuthSessionPayload = {
     expires_at: number | null;
     expires_in: number | null;
   };
-  user: { id: string; phone: string | null; email?: string | null; role: 'user' | 'admin' };
+  user: {
+    id: string;
+    phone: string | null;
+    email?: string | null;
+    role: "user" | "admin";
+  };
 };
 
 export type MeResponse = {
@@ -66,35 +88,77 @@ export type MeResponse = {
   phone: string | null;
   email: string | null;
   full_name: string;
-  role: 'user' | 'admin';
+  role: "user" | "admin";
   created_at: string | null;
   phone_confirmed_at: string | null;
   email_confirmed_at: string | null;
 };
 
 export const api = {
-  registerPhone: (input: { fullName: string; phone: string; password: string }) =>
-    request<{ phone: string }>('POST', '/api/auth/register/phone', input),
+  registerPhone: (input: {
+    fullName: string;
+    phone: string;
+    password: string;
+  }) => request<{ phone: string }>("POST", "/api/auth/register/phone", input),
 
-  registerEmail: (input: { fullName: string; email: string; password: string }) =>
-    request<{ email: string }>('POST', '/api/auth/register/email', input),
+  registerEmail: (input: {
+    fullName: string;
+    email: string;
+    password: string;
+  }) => request<{ email: string }>("POST", "/api/auth/register/email", input),
 
   verifyPhone: (input: { phone: string; code: string }) =>
-    request<AuthSessionPayload>('POST', '/api/auth/verify-phone', input),
+    request<AuthSessionPayload>("POST", "/api/auth/verify-phone", input),
 
   login: (input: { identifier: string; password: string }) =>
-    request<AuthSessionPayload>('POST', '/api/auth/login', input),
+    request<AuthSessionPayload>("POST", "/api/auth/login", input),
 
   resendCode: (input: { identifier: string }) =>
-    request<{ kind: 'phone' | 'email'; identifier: string }>(
-      'POST',
-      '/api/auth/resend-code',
+    request<{ kind: "phone" | "email"; identifier: string }>(
+      "POST",
+      "/api/auth/resend-code",
       input,
     ),
 
-  logout: () => request<void>('POST', '/api/auth/logout'),
+  logout: () => request<void>("POST", "/api/auth/logout"),
 
-  me: () => request<MeResponse>('GET', '/api/auth/me'),
+  me: () => request<MeResponse>("GET", "/api/auth/me"),
 
-  deleteAccount: () => request<void>('DELETE', '/api/auth/account'),
+  deleteAccount: () => request<void>("DELETE", "/api/auth/account"),
+
+  listEvents: () => request<DbEvent[]>("GET", "/api/events"),
+
+  getHomeContent: () => request<HomeContentResponse>("GET", "/api/content"),
+
+  admin: {
+    listEvents: () => request<DbEvent[]>("GET", "/api/admin/events"),
+    getEvent: (id: string) =>
+      request<DbEvent>("GET", `/api/admin/events/${id}`),
+    createEvent: (input: EventInput) =>
+      request<DbEvent>("POST", "/api/admin/events", input),
+    updateEvent: (id: string, patch: EventPatch) =>
+      request<DbEvent>("PATCH", `/api/admin/events/${id}`, patch),
+    deleteEvent: (id: string) =>
+      request<{ id: string }>("DELETE", `/api/admin/events/${id}`),
+    featureEvent: (id: string) =>
+      request<DbEvent>("POST", `/api/admin/events/${id}/feature`),
+
+    replaceContentSection: (
+      section: HomeContentSection,
+      items:
+        | Partial<DbHomeNews>[]
+        | Partial<DbHomePartner>[]
+        | Partial<DbHomeRoadmap>[]
+        | Partial<DbHomeService>[],
+    ) => request<unknown[]>("PUT", `/api/admin/content/${section}`, items),
+
+    listUsers: () => request<AdminUserRow[]>("GET", "/api/admin/users"),
+    getUser: (id: string) => request<AdminUserRow>("GET", `/api/admin/users/${id}`),
+    setUserRole: (id: string, role: UserRole) =>
+      request<AdminUserRow>("PATCH", `/api/admin/users/${id}/role`, { role }),
+    setUserDisabled: (id: string, disabled: boolean) =>
+      request<AdminUserRow>("PATCH", `/api/admin/users/${id}/disabled`, { disabled }),
+    deleteUser: (id: string) =>
+      request<{ id: string }>("DELETE", `/api/admin/users/${id}`),
+  },
 };
