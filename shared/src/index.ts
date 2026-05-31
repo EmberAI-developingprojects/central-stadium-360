@@ -53,6 +53,13 @@ export type EventInput = {
 
 export type EventPatch = Partial<EventInput>;
 
+export type NewsBlockKind = "text" | "image";
+
+export interface NewsBlock {
+  type: NewsBlockKind;
+  value: string;
+}
+
 export interface DbHomeNews {
   id: string;
   label: string;
@@ -60,6 +67,7 @@ export interface DbHomeNews {
   body: string;
   image: string | null;
   featured: boolean;
+  blocks: NewsBlock[];
   sort_order: number;
   created_at: string;
 }

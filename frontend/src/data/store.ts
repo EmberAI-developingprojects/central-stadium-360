@@ -67,6 +67,13 @@ export type UserRecord = {
   createdAt: string;
 };
 
+export type NewsBlockKind = "text" | "image";
+
+export type NewsBlock = {
+  type: NewsBlockKind;
+  value: string;
+};
+
 export type NewsItem = {
   id: string;
   label: string;
@@ -74,6 +81,8 @@ export type NewsItem = {
   body: string;
   image: string;
   featured: boolean;
+  blocks: NewsBlock[];
+  createdAt: string;
 };
 
 export type Partner = {
@@ -274,6 +283,15 @@ function dbToNews(row: DbHomeNews): NewsItem {
     body: row.body,
     image: row.image ?? "",
     featured: row.featured,
+    blocks: Array.isArray(row.blocks)
+      ? row.blocks.filter(
+          (b): b is NewsBlock =>
+            !!b &&
+            (b.type === "text" || b.type === "image") &&
+            typeof b.value === "string",
+        )
+      : [],
+    createdAt: row.created_at,
   };
 }
 function dbToPartner(row: DbHomePartner): Partner {
@@ -305,6 +323,7 @@ function toNewsPayload(items: NewsItem[]): Partial<DbHomeNews>[] {
     body: it.body,
     image: it.image || null,
     featured: !!it.featured,
+    blocks: it.blocks ?? [],
   }));
 }
 function toPartnerPayload(items: Partner[]): Partial<DbHomePartner>[] {

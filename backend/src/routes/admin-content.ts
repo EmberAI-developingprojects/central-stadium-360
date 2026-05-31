@@ -23,11 +23,32 @@ const adminContent = new Hono<AuthEnv>();
 adminContent.use("*", requireUser);
 adminContent.use("*", async (c, next) => requireAdmin(c, next));
 
-const NEWS_COLS = "id,label,title,body,image,featured,sort_order,created_at";
+const NEWS_COLS_WITH_BLOCKS =
+  "id,label,title,body,image,featured,blocks,sort_order,created_at";
+const NEWS_COLS_NO_BLOCKS =
+  "id,label,title,body,image,featured,sort_order,created_at";
+
+// Track whether the `blocks` column exists. We discover this lazily so the API
+// works on databases where the 0006 migration has not been applied yet.
+let blocksColumnAvailable: boolean | null = null;
+
+function isMissingColumnError(err: unknown, column: string): boolean {
+  if (!err || typeof err !== "object") return false;
+  const e = err as { code?: string; message?: string };
+  return (
+    e.code === "42703" ||
+    (typeof e.message === "string" && e.message.includes(column))
+  );
+}
 const PARTNER_COLS = "id,image,alt,sort_order,created_at";
 const ROADMAP_COLS = "id,year,title,position,sort_order,created_at";
 const SERVICE_COLS =
   "id,title,description,icon_key,href,badge,sort_order,created_at";
+
+const newsBlockSchema = z.object({
+  type: z.enum(["text", "image"]),
+  value: z.string().default(""),
+});
 
 const newsItemSchema = z.object({
   id: z.string().uuid().optional(),
@@ -36,6 +57,7 @@ const newsItemSchema = z.object({
   body: z.string().default(""),
   image: z.string().nullable().optional(),
   featured: z.boolean().default(false),
+  blocks: z.array(newsBlockSchema).default([]),
 });
 
 const partnerItemSchema = z.object({
@@ -126,10 +148,35 @@ adminContent.put("/:section", async (c) => {
     return { ...rest, sort_order: i };
   });
 
-  const { data, error: insErr } = await admin
+  let { data, error: insErr } = await admin
     .from(table)
     .insert(rows)
     .select("*");
+
+  // If the news.blocks column hasn't been migrated yet, retry without it so
+  // the rest of the content editor keeps working. Block content is lost in
+  // that case but the user is told via the section's load path.
+  if (
+    insErr &&
+    section === "news" &&
+    isMissingColumnError(insErr, "blocks")
+  ) {
+    blocksColumnAvailable = false;
+    const rowsNoBlocks = rows.map((r) => {
+      const { blocks: _b, ...rest } = r as { blocks?: unknown } & Record<
+        string,
+        unknown
+      >;
+      return rest;
+    });
+    const retry = await admin
+      .from(table)
+      .insert(rowsNoBlocks)
+      .select("*");
+    data = retry.data;
+    insErr = retry.error;
+  }
+
   if (insErr) {
     console.error(`[admin-content] insert ${table} failed:`, insErr);
     return c.json({ ok: false, error: insErr.message } as const, 500);
@@ -153,11 +200,31 @@ publicContent.get("/", async (c) => {
       503,
     );
   }
-  const [news, partners, roadmap, services] = await Promise.all([
-    admin
+  type NewsQueryResult = {
+    data: Array<DbHomeNews & { blocks?: unknown }> | null;
+    error: { code?: string; message?: string } | null;
+  };
+
+  const queryNews = async (cols: string): Promise<NewsQueryResult> => {
+    const res = await admin
       .from("home_news")
-      .select(NEWS_COLS)
-      .order("sort_order", { ascending: true }),
+      .select(cols)
+      .order("sort_order", { ascending: true });
+    return res as unknown as NewsQueryResult;
+  };
+
+  let news = await queryNews(
+    blocksColumnAvailable === false ? NEWS_COLS_NO_BLOCKS : NEWS_COLS_WITH_BLOCKS,
+  );
+
+  if (news.error && isMissingColumnError(news.error, "blocks")) {
+    blocksColumnAvailable = false;
+    news = await queryNews(NEWS_COLS_NO_BLOCKS);
+  } else if (!news.error && blocksColumnAvailable === null) {
+    blocksColumnAvailable = true;
+  }
+
+  const [partners, roadmap, services] = await Promise.all([
     admin
       .from("home_partners")
       .select(PARTNER_COLS)
@@ -179,8 +246,15 @@ publicContent.get("/", async (c) => {
     }
   }
 
+  // Normalize blocks: ensure each row has a `blocks: []` field even when the
+  // column doesn't exist yet, so the frontend converter has a stable shape.
+  const newsNormalized: DbHomeNews[] = (news.data ?? []).map((r) => ({
+    ...(r as DbHomeNews),
+    blocks: Array.isArray(r.blocks) ? (r.blocks as DbHomeNews["blocks"]) : [],
+  }));
+
   const payload: HomeContentResponse = {
-    news: (news.data ?? []) as DbHomeNews[],
+    news: newsNormalized,
     partners: (partners.data ?? []) as DbHomePartner[],
     roadmap: (roadmap.data ?? []) as DbHomeRoadmap[],
     services: (services.data ?? []) as DbHomeService[],

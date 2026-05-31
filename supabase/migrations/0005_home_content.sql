@@ -1,15 +1,3 @@
--- Home page CMS tables.
---
--- The admin Content editor (/admin/content) manages four independent sections
--- on the public home page: news, partners, roadmap milestones, and services.
--- Each section is a flat ordered list — order is controlled by sort_order so
--- the admin UI can drag-reorder without touching IDs.
---
--- RLS: anyone (anon + authenticated) can read; only admins can write.
-
-------------------------------------------------------------
--- enums
-------------------------------------------------------------
 do $$ begin
   create type public.roadmap_position as enum ('top', 'bot');
 exception when duplicate_object then null; end $$;

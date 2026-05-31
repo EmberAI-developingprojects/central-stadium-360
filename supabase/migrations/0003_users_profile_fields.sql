@@ -1,20 +1,8 @@
--- Add profile + soft-delete fields to public.users.
---
--- - full_name + email: captured at signup so the admin views and profile
---   page have something stable to show without round-tripping to auth.users.
--- - deleted_at: soft-delete marker. We never hard-delete users because
---   tickets/payments reference user_id; deleting the row would orphan or
---   destroy records. Instead the row stays (with PII wiped) and the
---   matching auth.users entry is banned so the user can't log back in.
--- - tickets.user_id FK is switched from cascade to restrict so an
---   accidental hard-delete on public.users blocks rather than nukes orders.
-
 alter table public.users
   add column if not exists full_name  text not null default '',
   add column if not exists email      text,
   add column if not exists deleted_at timestamptz;
 
--- email is unique when present; multiple NULLs are allowed by the index.
 create unique index if not exists users_email_unique_idx
   on public.users(email)
   where email is not null;
@@ -29,10 +17,6 @@ comment on column public.users.email is
 comment on column public.users.deleted_at is
   'Soft-delete marker. Row stays so tickets/payments FKs remain valid.';
 
-------------------------------------------------------------
--- Update the new-user trigger to also copy email + full_name.
--- raw_user_meta_data is the JSONB blob we set when calling signUp.
-------------------------------------------------------------
 create or replace function public.handle_new_auth_user()
 returns trigger
 language plpgsql
@@ -58,12 +42,7 @@ begin
 end;
 $$;
 
-------------------------------------------------------------
--- Switch tickets.user_id FK from cascade to restrict.
--- Cascade would delete tickets when a user row is removed; we never want
--- that — the soft-delete path leaves the row in place anyway, but a
--- restrict FK is the right belt-and-braces guard.
-------------------------------------------------------------
+
 do $$
 declare
   cons_name text;

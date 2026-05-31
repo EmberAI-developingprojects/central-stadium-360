@@ -8,7 +8,7 @@ Users register on the frontend's existing Register page either with:
 - a **Gmail address** — confirmed via an email link that Supabase sends.
 
 After confirmation the account is active and the user signs in with their
-password from the Login page (identifier = phone *or* email).
+password from the Login page (identifier = phone _or_ email).
 
 This document covers the one-time configuration in Supabase + the env vars
 on the backend and frontend, and explains how to switch from the current
@@ -26,7 +26,7 @@ login flow can be tested end-to-end locally.
 How it works:
 
 1. The frontend calls `POST /api/auth/register/phone` with `{ fullName, phone,
-   password }`.
+password }`.
 2. The backend calls `supabase.auth.signUp({ phone, password })`. Supabase
    generates an OTP and (because the **Send SMS Hook** is configured —
    see step 2 below) calls back to our backend at
@@ -53,7 +53,7 @@ If you'd rather not configure the Send SMS Hook (or you're on Supabase's
 free tier where Auth Hooks aren't available), you can register a "test
 phone number" in the dashboard:
 
-  Authentication → Phone Auth → Test OTP
+Authentication → Phone Auth → Test OTP
 
 Add a phone number plus a fixed OTP (e.g. `+97699112233` → `123456`). When
 that phone signs up, Supabase skips the real SMS dispatch and accepts only
@@ -67,14 +67,14 @@ In the Supabase dashboard for your project:
 
 ### 2a. Enable phone + email auth providers
 
-  Authentication → Providers → Phone   — toggle ON
-  Authentication → Providers → Email   — toggle ON
+Authentication → Providers → Phone — toggle ON
+Authentication → Providers → Email — toggle ON
 
 For email, set **Confirm email** to ON (default) so accounts must verify.
 
 ### 2b. Configure the Send SMS Hook (paid plans)
 
-  Authentication → Hooks → Send SMS Hook
+Authentication → Hooks → Send SMS Hook
 
 - **URL:** `{PUBLIC_BACKEND_URL}/api/internal/sms-hook`
 - **Secret:** click "Generate secret" and copy the value (it looks like
@@ -93,9 +93,9 @@ This is what routes the OTP to our `lib/sms.ts` dispatcher.
 
 ### 2c. Customize OTP/expiry (optional)
 
-  Authentication → Email Templates  — branding for the email link
-  Authentication → Phone Auth → OTP length / expiry  — default 6 / 60s.
-  Raise expiry to 300s if Mongolian carrier latency is a problem.
+Authentication → Email Templates — branding for the email link
+Authentication → Phone Auth → OTP length / expiry — default 6 / 60s.
+Raise expiry to 300s if Mongolian carrier latency is a problem.
 
 ---
 
@@ -151,12 +151,12 @@ Everything is wired so swapping providers is a **config change**, never a
 code change. The provider-agnostic dispatcher lives in
 `backend/src/lib/sms.ts` and switches on `SMS_PROVIDER`:
 
-| `SMS_PROVIDER` | Effect | Extra env vars |
-|---|---|---|
-| _unset_ / `dev` | Log OTP to backend console — useful for local dev. | none |
-| `twilio` | Send via Twilio REST. Implemented. | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` (E.164 number or `MG…` Messaging Service SID). |
-| `mobicom` | Stubbed — implement in `sendViaMobicom`. | `MOBICOM_API_KEY`, `MOBICOM_SENDER`. |
-| `skytel`  | Stubbed — implement in `sendViaSkytel`. | `SKYTEL_API_KEY`, `SKYTEL_SENDER`. |
+| `SMS_PROVIDER`  | Effect                                             | Extra env vars                                                                                          |
+| --------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| _unset_ / `dev` | Log OTP to backend console — useful for local dev. | none                                                                                                    |
+| `twilio`        | Send via Twilio REST. Implemented.                 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` (E.164 number or `MG…` Messaging Service SID). |
+| `mobicom`       | Stubbed — implement in `sendViaMobicom`.           | `MOBICOM_API_KEY`, `MOBICOM_SENDER`.                                                                    |
+| `skytel`        | Stubbed — implement in `sendViaSkytel`.            | `SKYTEL_API_KEY`, `SKYTEL_SENDER`.                                                                      |
 
 ### Steps to enable Twilio for production
 
@@ -166,7 +166,7 @@ code change. The provider-agnostic dispatcher lives in
    - `SMS_PROVIDER=twilio`
    - `TWILIO_ACCOUNT_SID=AC...`
    - `TWILIO_AUTH_TOKEN=...`
-   - `TWILIO_FROM=+1...` *(or `MGxxxx...` for a Messaging Service)*
+   - `TWILIO_FROM=+1...` _(or `MGxxxx...` for a Messaging Service)_
 3. Restart the backend.
 
 ### Steps to enable a Mongolian aggregator (Mobicom or SkyTel)
@@ -178,7 +178,7 @@ code change. The provider-agnostic dispatcher lives in
    - Throw on failure (so the hook returns 502 and Supabase will retry).
    - Return `{ ok: true, provider, messageId? }` on success.
 3. Set `SMS_PROVIDER=mobicom` (or `skytel`) plus the corresponding API key
-   + sender env vars and restart the backend.
+   - sender env vars and restart the backend.
 
 No frontend, schema, or auth-route changes are ever needed to swap
 providers — only `lib/sms.ts` and the env vars touch the change.
@@ -190,10 +190,10 @@ providers — only `lib/sms.ts` and the env vars touch the change.
 `POST /api/auth/register/phone`, `/register/email`, and `/resend-code` are
 rate-limited via `@upstash/ratelimit` sliding-window counters:
 
-| Scope | Limit | Reason |
-|---|---|---|
+| Scope                           | Limit          | Reason                                                   |
+| ------------------------------- | -------------- | -------------------------------------------------------- |
 | Per identifier (phone or email) | **3 / 10 min** | Stops a single number/inbox from being pinned with OTPs. |
-| Per IP | **5 / 10 min** | Second floor against scripted abuse across identifiers. |
+| Per IP                          | **5 / 10 min** | Second floor against scripted abuse across identifiers.  |
 
 If `UPSTASH_REDIS_URL` / `UPSTASH_REDIS_TOKEN` are unset, rate-limiting is
 **silently skipped** so local dev isn't blocked. Set them in production.
@@ -207,8 +207,8 @@ Exceeded limits return `429` with a `Retry-After` header and
 
 Accepted user inputs (server validation in `backend/src/routes/auth.ts`):
 
-- `+97699112233`  — preferred (E.164).
-- `99112233`      — also accepted; auto-prefixed with `+976`.
+- `+97699112233` — preferred (E.164).
+- `99112233` — also accepted; auto-prefixed with `+976`.
 
 Mongolian mobile numbers are 8 digits starting with `6`, `7`, `8`, or `9`.
 
@@ -216,17 +216,17 @@ Mongolian mobile numbers are 8 digits starting with `6`, `7`, `8`, or `9`.
 
 ## 7. Endpoints
 
-| Method | Path | Body | Notes |
-|---|---|---|---|
-| POST | `/api/auth/register/phone` | `{ fullName, phone, password }` | Rate-limited. Triggers SMS OTP. |
-| POST | `/api/auth/register/email` | `{ fullName, email, password }` | Rate-limited. Triggers Supabase verification email. |
-| POST | `/api/auth/verify-phone`   | `{ phone, code }` | Returns `{ session, user }`; frontend hydrates `supabase-js` session. |
-| POST | `/api/auth/login`          | `{ identifier, password }` | `identifier` is phone or email. Returns 403 `not_verified` if account isn't confirmed yet, 403 `account_deleted` for soft-deleted accounts. |
-| POST | `/api/auth/resend-code`    | `{ identifier }` | Re-sends OTP (phone) or verification email (gmail). Rate-limited. |
-| POST | `/api/auth/logout`         | _(uses Bearer)_ | Best-effort server signout. |
-| GET  | `/api/auth/me`             | _(uses Bearer)_ | Returns the current user + role + confirmation timestamps. |
-| DELETE | `/api/auth/account`      | _(uses Bearer)_ | Soft-deletes: bans the auth user, anonymizes `public.users`, leaves tickets + payments intact. |
-| POST | `/api/internal/sms-hook`   | Supabase hook payload | Authenticated by Supabase's standard-webhooks signature using `SMS_HOOK_SECRET`. |
+| Method | Path                       | Body                            | Notes                                                                                                                                       |
+| ------ | -------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST   | `/api/auth/register/phone` | `{ fullName, phone, password }` | Rate-limited. Triggers SMS OTP.                                                                                                             |
+| POST   | `/api/auth/register/email` | `{ fullName, email, password }` | Rate-limited. Triggers Supabase verification email.                                                                                         |
+| POST   | `/api/auth/verify-phone`   | `{ phone, code }`               | Returns `{ session, user }`; frontend hydrates `supabase-js` session.                                                                       |
+| POST   | `/api/auth/login`          | `{ identifier, password }`      | `identifier` is phone or email. Returns 403 `not_verified` if account isn't confirmed yet, 403 `account_deleted` for soft-deleted accounts. |
+| POST   | `/api/auth/resend-code`    | `{ identifier }`                | Re-sends OTP (phone) or verification email (gmail). Rate-limited.                                                                           |
+| POST   | `/api/auth/logout`         | _(uses Bearer)_                 | Best-effort server signout.                                                                                                                 |
+| GET    | `/api/auth/me`             | _(uses Bearer)_                 | Returns the current user + role + confirmation timestamps.                                                                                  |
+| DELETE | `/api/auth/account`        | _(uses Bearer)_                 | Soft-deletes: bans the auth user, anonymizes `public.users`, leaves tickets + payments intact.                                              |
+| POST   | `/api/internal/sms-hook`   | Supabase hook payload           | Authenticated by Supabase's standard-webhooks signature using `SMS_HOOK_SECRET`.                                                            |
 
 ---
 
@@ -288,12 +288,12 @@ gets a fresh purchase history.
 
 ## 11. Troubleshooting
 
-| Symptom | Likely cause |
-|---|---|
-| `503 supabase_not_configured` on register/login | `SUPABASE_URL` / `SUPABASE_ANON_KEY` missing on backend. |
-| `429 rate_limited` immediately | Already hit 3 attempts on this number/email — wait 10 min or use a different identifier. |
-| `403 not_verified` on login | Account exists but the OTP / email link was never confirmed. The frontend automatically swaps to the verification step + offers resend. |
-| `401 otp_invalid` after entering code | OTP expired (default 60 s) or the wrong code. Use "Дахин код илгээх". |
-| Backend logs OTP but Supabase says SMS was sent | Send SMS Hook is correctly intercepting — the "sent" status from Supabase just means "handed off to hook"; the hook decides what to actually do. |
-| SMS never arrives in production | Confirm `SMS_PROVIDER` is set and the provider's API responded `2xx`. Twilio errors appear in their dashboard logs. |
-| `401 invalid_signature` on `/api/internal/sms-hook` | The dashboard secret doesn't match `SMS_HOOK_SECRET`. Re-copy the secret verbatim (include the `v1,whsec_` prefix). |
+| Symptom                                             | Likely cause                                                                                                                                     |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `503 supabase_not_configured` on register/login     | `SUPABASE_URL` / `SUPABASE_ANON_KEY` missing on backend.                                                                                         |
+| `429 rate_limited` immediately                      | Already hit 3 attempts on this number/email — wait 10 min or use a different identifier.                                                         |
+| `403 not_verified` on login                         | Account exists but the OTP / email link was never confirmed. The frontend automatically swaps to the verification step + offers resend.          |
+| `401 otp_invalid` after entering code               | OTP expired (default 60 s) or the wrong code. Use "Дахин код илгээх".                                                                            |
+| Backend logs OTP but Supabase says SMS was sent     | Send SMS Hook is correctly intercepting — the "sent" status from Supabase just means "handed off to hook"; the hook decides what to actually do. |
+| SMS never arrives in production                     | Confirm `SMS_PROVIDER` is set and the provider's API responded `2xx`. Twilio errors appear in their dashboard logs.                              |
+| `401 invalid_signature` on `/api/internal/sms-hook` | The dashboard secret doesn't match `SMS_HOOK_SECRET`. Re-copy the secret verbatim (include the `v1,whsec_` prefix).                              |
