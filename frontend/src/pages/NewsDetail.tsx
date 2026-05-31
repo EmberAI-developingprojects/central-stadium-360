@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import SiteHeader from '../components/SiteHeader';
-import SiteFooter from '../components/SiteFooter';
-import { getHomeContent } from '../data/store';
-import type { NewsBlock, NewsItem } from '../data/store';
+import { useEffect, useMemo, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import SiteHeader from "../components/SiteHeader";
+import SiteFooter from "../components/SiteFooter";
+import { getHomeContent } from "../data/store";
+import type { NewsBlock, NewsItem } from "../data/store";
 
 const PAGE_CLS = "min-h-screen bg-white";
 const SECTION_CLS =
@@ -50,14 +50,16 @@ const TEXT_BLOCK_CLS =
 const IMG_BLOCK_CLS =
   "block w-full m-0 rounded-2xl overflow-hidden bg-surface-1 [&_img]:w-full [&_img]:h-auto [&_img]:block";
 
-const EMPTY_CLS =
-  "max-w-[640px] mx-auto px-6 py-20 text-center text-ink-soft";
+const EMPTY_CLS = "max-w-[640px] mx-auto px-6 py-20 text-center text-ink-soft";
 
 const KEY_VIEWS = "tsengeldekh_news_views_v1";
 
 function readViews(): Record<string, number> {
   try {
-    return JSON.parse(localStorage.getItem(KEY_VIEWS) || "{}") as Record<string, number>;
+    return JSON.parse(localStorage.getItem(KEY_VIEWS) || "{}") as Record<
+      string,
+      number
+    >;
   } catch {
     return {};
   }
@@ -75,23 +77,17 @@ function bumpView(id: string): number {
 }
 
 function fmtDate(iso: string): string {
-  if (!iso) return '';
+  if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
   const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const da = String(d.getDate()).padStart(2, '0');
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const da = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${da}`;
 }
 
-function NewsBlockRender({
-  block,
-  alt,
-}: {
-  block: NewsBlock;
-  alt: string;
-}) {
-  if (block.type === 'image') {
+function NewsBlockRender({ block, alt }: { block: NewsBlock; alt: string }) {
+  if (block.type === "image") {
     if (!block.value) return null;
     return (
       <figure className={IMG_BLOCK_CLS}>
@@ -114,7 +110,7 @@ export default function NewsDetail() {
   }, []);
 
   const item = useMemo(
-    () => (items && id ? items.find((n) => n.id === id) ?? null : null),
+    () => (items && id ? (items.find((n) => n.id === id) ?? null) : null),
     [items, id],
   );
 
@@ -126,28 +122,32 @@ export default function NewsDetail() {
     if (!item) return [];
     if (item.blocks && item.blocks.length > 0) return item.blocks;
     const fallback: NewsBlock[] = [];
-    if (item.image) fallback.push({ type: 'image', value: item.image });
-    if (item.body) fallback.push({ type: 'text', value: item.body });
+    if (item.image) fallback.push({ type: "image", value: item.image });
+    if (item.body) fallback.push({ type: "text", value: item.body });
     return fallback;
   }, [item]);
 
-  const onShare = (kind: 'fb' | 'tw' | 'pin' | 'in' | 'copy') => {
-    if (typeof window === 'undefined' || !item) return;
+  const onShare = (kind: "fb" | "tw" | "pin" | "in" | "copy") => {
+    if (typeof window === "undefined" || !item) return;
     const url = `${window.location.origin}/news/${item.id}`;
-    const text = item.title ?? '';
-    if (kind === 'copy') {
+    const text = item.title ?? "";
+    if (kind === "copy") {
       navigator.clipboard?.writeText(url);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1500);
       return;
     }
-    const targets: Record<'fb' | 'tw' | 'pin' | 'in', string> = {
+    const targets: Record<"fb" | "tw" | "pin" | "in", string> = {
       fb: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
       tw: `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`,
       pin: `https://www.pinterest.com/pin/create/button/?url=${encodeURIComponent(url)}&description=${encodeURIComponent(text)}`,
       in: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
     };
-    window.open(targets[kind], '_blank', 'noopener,noreferrer,width=720,height=540');
+    window.open(
+      targets[kind],
+      "_blank",
+      "noopener,noreferrer,width=720,height=540",
+    );
   };
 
   return (
@@ -163,71 +163,150 @@ export default function NewsDetail() {
         <section className={SECTION_CLS}>
           <div className={OUTER_CLS}>
             <header className={ARTICLE_HEAD_CLS}>
-            <div className={TOP_BAR_CLS}>
-              <Link to="/#news" className={BACK_LINK_CLS}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <line x1="19" y1="12" x2="5" y2="12"/>
-                  <polyline points="12 19 5 12 12 19"/>
-                </svg>
-                Бүх мэдээ рүү буцах
-              </Link>
-              {item.label && item.label.toLowerCase() !== item.title.toLowerCase() && (
-                <span className={LABEL_CLS}>{item.label}</span>
-              )}
-            </div>
-            <h1 className={TITLE_CLS}>{item.title}</h1>
-
-            <div className={META_ROW_CLS}>
-              <span className={META_ITEM_CLS}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/>
-                  <circle cx="12" cy="12" r="3"/>
-                </svg>
-                Уншсан {views}
-              </span>
-              {item.createdAt && (
-                <span className={META_ITEM_CLS}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <rect x="3" y="4" width="18" height="18" rx="2"/>
-                    <line x1="16" y1="2" x2="16" y2="6"/>
-                    <line x1="8" y1="2" x2="8" y2="6"/>
-                    <line x1="3" y1="10" x2="21" y2="10"/>
+              <div className={TOP_BAR_CLS}>
+                <Link to="/#news" className={BACK_LINK_CLS}>
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <line x1="19" y1="12" x2="5" y2="12" />
+                    <polyline points="12 19 5 12 12 19" />
                   </svg>
-                  {fmtDate(item.createdAt)}
-                </span>
-              )}
-            </div>
+                  Бүх мэдээ рүү буцах
+                </Link>
+                {item.label &&
+                  item.label.toLowerCase() !== item.title.toLowerCase() && (
+                    <span className={LABEL_CLS}>{item.label}</span>
+                  )}
+              </div>
+              <h1 className={TITLE_CLS}>{item.title}</h1>
 
-            <div className={SHARE_ROW_CLS}>
-              <span className={SHARE_LABEL_CLS}>Түгээх</span>
-              <button type="button" aria-label="Facebook-д түгээх" title="Facebook" className={`${SHARE_BTN_CLS} ${SHARE_BTN_FB_CLS}`} onClick={() => onShare('fb')}>
-                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                  <path d="M13 22v-8h3l1-4h-4V7c0-1 .3-1.7 1.8-1.7H17V1.9c-.3 0-1.3-.1-2.4-.1-2.4 0-4 1.4-4 4.1V10H7v4h3.6v8z"/>
-                </svg>
-              </button>
-              <button type="button" aria-label="Twitter-д түгээх" title="Twitter" className={`${SHARE_BTN_CLS} ${SHARE_BTN_TW_CLS}`} onClick={() => onShare('tw')}>
-                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                  <path d="M22 5.8c-.7.3-1.5.6-2.4.7.9-.5 1.5-1.3 1.8-2.3-.8.5-1.7.8-2.6 1A4.1 4.1 0 0 0 12 9c0 .3 0 .6.1.9A11.6 11.6 0 0 1 3.4 5a4.1 4.1 0 0 0 1.3 5.5c-.7 0-1.3-.2-1.9-.5v.1c0 2 1.4 3.6 3.3 4a4 4 0 0 1-1.9.1c.5 1.6 2 2.8 3.8 2.9A8.2 8.2 0 0 1 2 18.6 11.6 11.6 0 0 0 8.3 20.5c7.5 0 11.6-6.2 11.6-11.6v-.5c.8-.6 1.5-1.3 2.1-2.1z"/>
-                </svg>
-              </button>
-              <button type="button" aria-label="Pinterest-д түгээх" title="Pinterest" className={`${SHARE_BTN_CLS} ${SHARE_BTN_PIN_CLS}`} onClick={() => onShare('pin')}>
-                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                  <path d="M12 2C6.5 2 2 6.5 2 12c0 4.2 2.6 7.8 6.2 9.3-.1-.8-.2-2 0-2.8.2-.7 1.1-4.6 1.1-4.6s-.3-.6-.3-1.4c0-1.3.8-2.3 1.7-2.3.8 0 1.2.6 1.2 1.4 0 .8-.5 2.1-.8 3.2-.2.9.5 1.7 1.4 1.7 1.7 0 3-1.8 3-4.4 0-2.3-1.6-3.9-4-3.9-2.7 0-4.3 2-4.3 4.1 0 .8.3 1.7.7 2.1.1.1.1.2.1.3-.1.3-.2 1-.3 1.1-.1.2-.2.2-.4.1-1.3-.6-2-2.5-2-4 0-3.3 2.4-6.3 6.9-6.3 3.6 0 6.4 2.6 6.4 6 0 3.6-2.2 6.5-5.4 6.5-1 0-2-.5-2.4-1.2l-.7 2.5c-.2.9-.9 2-1.4 2.7C9.8 21.8 10.9 22 12 22c5.5 0 10-4.5 10-10S17.5 2 12 2z"/>
-                </svg>
-              </button>
-              <button type="button" aria-label="LinkedIn-д түгээх" title="LinkedIn" className={`${SHARE_BTN_CLS} ${SHARE_BTN_IN_CLS}`} onClick={() => onShare('in')}>
-                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                  <path d="M20.5 2h-17A1.5 1.5 0 0 0 2 3.5v17A1.5 1.5 0 0 0 3.5 22h17a1.5 1.5 0 0 0 1.5-1.5v-17A1.5 1.5 0 0 0 20.5 2zM8 19H5v-9h3zM6.5 8.3a1.7 1.7 0 1 1 0-3.4 1.7 1.7 0 0 1 0 3.4zM19 19h-3v-4.7c0-1.1 0-2.6-1.6-2.6S12.6 13 12.6 14.2V19h-3v-9h2.9v1.2h.1A3.2 3.2 0 0 1 15.5 10c3.1 0 3.7 2 3.7 4.7z"/>
-                </svg>
-              </button>
-              <button type="button" aria-label="Холбоосыг хуулах" title="Холбоос хуулах" className={`${SHARE_BTN_CLS} ${SHARE_BTN_COPY_CLS}`} onClick={() => onShare('copy')}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <rect x="9" y="9" width="13" height="13" rx="2"/>
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                </svg>
-              </button>
-              {copied && <span className={SHARE_COPIED_CLS}>Хуулагдсан</span>}
-            </div>
+              <div className={META_ROW_CLS}>
+                <span className={META_ITEM_CLS}>
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                  Уншсан {views}
+                </span>
+                {item.createdAt && (
+                  <span className={META_ITEM_CLS}>
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <rect x="3" y="4" width="18" height="18" rx="2" />
+                      <line x1="16" y1="2" x2="16" y2="6" />
+                      <line x1="8" y1="2" x2="8" y2="6" />
+                      <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                    {fmtDate(item.createdAt)}
+                  </span>
+                )}
+              </div>
+
+              <div className={SHARE_ROW_CLS}>
+                <span className={SHARE_LABEL_CLS}>Хуваалцах</span>
+                <button
+                  type="button"
+                  aria-label="Facebook-д түгээх"
+                  title="Facebook"
+                  className={`${SHARE_BTN_CLS} ${SHARE_BTN_FB_CLS}`}
+                  onClick={() => onShare("fb")}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path d="M13 22v-8h3l1-4h-4V7c0-1 .3-1.7 1.8-1.7H17V1.9c-.3 0-1.3-.1-2.4-.1-2.4 0-4 1.4-4 4.1V10H7v4h3.6v8z" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  aria-label="Twitter-д түгээх"
+                  title="Twitter"
+                  className={`${SHARE_BTN_CLS} ${SHARE_BTN_TW_CLS}`}
+                  onClick={() => onShare("tw")}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path d="M22 5.8c-.7.3-1.5.6-2.4.7.9-.5 1.5-1.3 1.8-2.3-.8.5-1.7.8-2.6 1A4.1 4.1 0 0 0 12 9c0 .3 0 .6.1.9A11.6 11.6 0 0 1 3.4 5a4.1 4.1 0 0 0 1.3 5.5c-.7 0-1.3-.2-1.9-.5v.1c0 2 1.4 3.6 3.3 4a4 4 0 0 1-1.9.1c.5 1.6 2 2.8 3.8 2.9A8.2 8.2 0 0 1 2 18.6 11.6 11.6 0 0 0 8.3 20.5c7.5 0 11.6-6.2 11.6-11.6v-.5c.8-.6 1.5-1.3 2.1-2.1z" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  aria-label="Pinterest-д түгээх"
+                  title="Pinterest"
+                  className={`${SHARE_BTN_CLS} ${SHARE_BTN_PIN_CLS}`}
+                  onClick={() => onShare("pin")}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 2C6.5 2 2 6.5 2 12c0 4.2 2.6 7.8 6.2 9.3-.1-.8-.2-2 0-2.8.2-.7 1.1-4.6 1.1-4.6s-.3-.6-.3-1.4c0-1.3.8-2.3 1.7-2.3.8 0 1.2.6 1.2 1.4 0 .8-.5 2.1-.8 3.2-.2.9.5 1.7 1.4 1.7 1.7 0 3-1.8 3-4.4 0-2.3-1.6-3.9-4-3.9-2.7 0-4.3 2-4.3 4.1 0 .8.3 1.7.7 2.1.1.1.1.2.1.3-.1.3-.2 1-.3 1.1-.1.2-.2.2-.4.1-1.3-.6-2-2.5-2-4 0-3.3 2.4-6.3 6.9-6.3 3.6 0 6.4 2.6 6.4 6 0 3.6-2.2 6.5-5.4 6.5-1 0-2-.5-2.4-1.2l-.7 2.5c-.2.9-.9 2-1.4 2.7C9.8 21.8 10.9 22 12 22c5.5 0 10-4.5 10-10S17.5 2 12 2z" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  aria-label="LinkedIn-д түгээх"
+                  title="LinkedIn"
+                  className={`${SHARE_BTN_CLS} ${SHARE_BTN_IN_CLS}`}
+                  onClick={() => onShare("in")}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path d="M20.5 2h-17A1.5 1.5 0 0 0 2 3.5v17A1.5 1.5 0 0 0 3.5 22h17a1.5 1.5 0 0 0 1.5-1.5v-17A1.5 1.5 0 0 0 20.5 2zM8 19H5v-9h3zM6.5 8.3a1.7 1.7 0 1 1 0-3.4 1.7 1.7 0 0 1 0 3.4zM19 19h-3v-4.7c0-1.1 0-2.6-1.6-2.6S12.6 13 12.6 14.2V19h-3v-9h2.9v1.2h.1A3.2 3.2 0 0 1 15.5 10c3.1 0 3.7 2 3.7 4.7z" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  aria-label="Холбоосыг хуулах"
+                  title="Холбоос хуулах"
+                  className={`${SHARE_BTN_CLS} ${SHARE_BTN_COPY_CLS}`}
+                  onClick={() => onShare("copy")}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <rect x="9" y="9" width="13" height="13" rx="2" />
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                  </svg>
+                </button>
+                {copied && <span className={SHARE_COPIED_CLS}>Хуулагдсан</span>}
+              </div>
             </header>
 
             <div className={BODY_WRAP_CLS}>

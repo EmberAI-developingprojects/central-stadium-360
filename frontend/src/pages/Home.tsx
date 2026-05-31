@@ -1017,32 +1017,57 @@ function Roadmap(_props: { items?: RoadmapItem[] }) {
               strokeLinecap="round"
               strokeLinejoin="round"
             />
-            {botDots.map((d, i) => (
-              <line
-                key={`bl-${i}`}
-                x1={d.x}
-                y1={d.y}
-                x2={d.x}
-                y2={288}
-                stroke="#4D5670"
-                strokeWidth="1"
-              />
-            ))}
-            {topDots.map((d, i) => (
-              <line
-                key={`tl-${i}`}
-                x1={d.x}
-                y1={d.y}
-                x2={d.x}
-                y2={42}
-                stroke="#4D5670"
-                strokeWidth="1"
-              />
-            ))}
-            {[...botDots, ...topDots].map((d, i) => (
-              <circle key={`c-${i}`} cx={d.x} cy={d.y} r="5" fill="#A89968" />
-            ))}
           </svg>
+
+          {/* Connector lines + dots + labels all share the SAME CSS
+              percentage positioning so they line up exactly, regardless of
+              how the SVG curve underneath is stretched. */}
+          {botDots.map((d, i) => (
+            <span
+              key={`bl-${i}`}
+              aria-hidden="true"
+              className="absolute w-px bg-[#4D5670] -translate-x-1/2"
+              style={{
+                left: `${dotPct(d.x)}%`,
+                top: `${(d.y / 320) * 100}%`,
+                height: `${((288 - d.y) / 320) * 100}%`,
+              }}
+            />
+          ))}
+          {topDots.map((d, i) => (
+            <span
+              key={`tl-${i}`}
+              aria-hidden="true"
+              className="absolute w-px bg-[#4D5670] -translate-x-1/2"
+              style={{
+                left: `${dotPct(d.x)}%`,
+                top: `${(42 / 320) * 100}%`,
+                height: `${((d.y - 42) / 320) * 100}%`,
+              }}
+            />
+          ))}
+          {botDots.map((d, i) => (
+            <span
+              key={`bd-${i}`}
+              aria-hidden="true"
+              className="absolute w-2.5 h-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#A89968]"
+              style={{
+                left: `${dotPct(d.x)}%`,
+                top: `${(d.y / 320) * 100}%`,
+              }}
+            />
+          ))}
+          {topDots.map((d, i) => (
+            <span
+              key={`td-${i}`}
+              aria-hidden="true"
+              className="absolute w-2.5 h-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#A89968]"
+              style={{
+                left: `${dotPct(d.x)}%`,
+                top: `${(d.y / 320) * 100}%`,
+              }}
+            />
+          ))}
 
           {bot.map((m, i) => (
             <div
