@@ -2,6 +2,9 @@ import { useEffect, type ReactNode } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth, RequireAdmin } from './auth';
 import Home from './pages/Home';
+import Events from './pages/Events';
+import EventDetail from './pages/EventDetail';
+import NewsDetail from './pages/NewsDetail';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import RegisterPhone from './pages/RegisterPhone';
@@ -43,6 +46,9 @@ export default function App() {
       <ScrollToTop />
       <Routes>
         <Route path="/" element={<GuestOnly><Home /></GuestOnly>} />
+        <Route path="/events" element={<Events />} />
+        <Route path="/events/:id" element={<EventDetail />} />
+        <Route path="/news/:id" element={<NewsDetail />} />
         <Route path="/login" element={<GuestOnly><Login /></GuestOnly>} />
         <Route path="/register" element={<GuestOnly><Register /></GuestOnly>} />
         <Route path="/register/phone" element={<GuestOnly><RegisterPhone /></GuestOnly>} />

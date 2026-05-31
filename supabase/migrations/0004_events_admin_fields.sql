@@ -1,12 +1,3 @@
--- Add admin-managed presentation fields to events.
---
--- - image: cover image URL displayed on the catalog cards and the watch page.
--- - pill: short category label ("Концерт", "Live Concert", ...). Free-form text
---   so marketing can introduce new categories without a schema change.
--- - featured: marks the single event that gets the hero treatment on the home
---   page. Enforced as "at most one featured" via a partial unique index — the
---   admin UI already assumes only one can be featured at a time.
-
 alter table public.events
   add column if not exists image    text,
   add column if not exists pill     text,

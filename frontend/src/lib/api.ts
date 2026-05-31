@@ -160,5 +160,46 @@ export const api = {
       request<AdminUserRow>("PATCH", `/api/admin/users/${id}/disabled`, { disabled }),
     deleteUser: (id: string) =>
       request<{ id: string }>("DELETE", `/api/admin/users/${id}`),
+
+    uploadImage: async (
+      file: File,
+    ): Promise<ApiResult<{ url: string; key: string }>> => {
+      const form = new FormData();
+      form.append("file", file);
+      const url = `${BASE_URL}/api/admin/uploads/image`;
+      let res: Response;
+      try {
+        res = await fetch(url, {
+          method: "POST",
+          headers: { ...(await authHeader()) },
+          body: form,
+        });
+      } catch (err) {
+        return {
+          ok: false,
+          error: "network_error",
+          status: 0,
+          details: (err as Error).message,
+        };
+      }
+      let json: Record<string, unknown> = {};
+      try {
+        json = (await res.json()) as Record<string, unknown>;
+      } catch {
+        /* empty body */
+      }
+      if (!res.ok || json.ok === false) {
+        return {
+          ok: false,
+          error: (json.error as string) ?? `http_${res.status}`,
+          status: res.status,
+          details: json,
+        };
+      }
+      return {
+        ok: true,
+        data: json.data as { url: string; key: string },
+      };
+    },
   },
 };

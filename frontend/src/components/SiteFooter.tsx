@@ -1,28 +1,26 @@
 import { Link } from 'react-router-dom';
 
 export default function SiteFooter() {
-  const colTitleCls = "text-white text-sm font-bold m-0 mb-[18px] tracking-[0.02em]";
-  const ulCls = "list-none p-0 m-0 flex flex-col gap-[11px]";
-  const liCls = "text-[13.5px] text-[rgba(255,255,255,0.7)]";
-  const linkCls = "text-[13.5px] no-underline text-[rgba(255,255,255,0.7)] [transition:color_0.15s_ease] hover:text-brand-blue-tint";
-  const socialLinkCls = "w-[34px] h-[34px] rounded-full inline-flex items-center justify-center text-brand-blue-tint no-underline bg-[rgba(255,255,255,0.08)] [transition:background_0.2s_ease] hover:bg-[rgba(34,48,198,.22)] hover:text-brand-blue-soft [&_svg]:w-[14px] [&_svg]:h-[14px]";
+  const colTitleCls = "text-white text-[13px] font-bold uppercase tracking-[0.12em] m-0 mb-5";
+  const ulCls = "list-none p-0 m-0 flex flex-col gap-2.5";
+  const liCls = "text-[13.5px] text-[rgba(255,255,255,0.7)] leading-[1.55]";
+  const linkCls = "text-[13.5px] no-underline text-[rgba(255,255,255,0.7)] [transition:color_0.15s_ease] hover:text-white";
+  const socialLinkCls = "w-9 h-9 rounded-full inline-flex items-center justify-center text-white/70 no-underline [transition:color_0.18s_ease,background_0.18s_ease] hover:text-white hover:bg-white/10 [&_svg]:w-[16px] [&_svg]:h-[16px]";
 
   return (
-    <footer className="bg-ink pt-16 px-6 pb-6 mt-6 text-[rgba(255,255,255,0.78)]">
+    <footer className="bg-ink pt-14 px-6 pb-6 text-[rgba(255,255,255,0.78)]">
       <div className="max-w-screen-page mx-auto">
-        <div className="grid gap-10 pb-10 [grid-template-columns:1.5fr_1fr_1fr_1fr] border-b border-solid border-[rgba(255,255,255,0.1)] max-[900px]:[grid-template-columns:1fr_1fr] max-[900px]:gap-8 max-[560px]:[grid-template-columns:1fr]">
+        <div className="grid gap-10 pb-12 [grid-template-columns:1.5fr_1fr_1fr_1fr] max-[900px]:[grid-template-columns:1fr_1fr] max-[900px]:gap-8 max-[560px]:[grid-template-columns:1fr]">
 
           <div>
-            <Link className="inline-flex items-center gap-3 mb-[18px] no-underline" to="/">
-              <span className="w-auto h-14 rounded-none p-0 inline-block bg-transparent border-none" aria-hidden="true">
-                <img className="block h-full w-auto" src="/assets/images/brand/logo-white.png" alt="Төв Цэнгэлдэх Хүрээлэн" />
-              </span>
+            <Link className="inline-flex items-center gap-3 mb-5 no-underline" to="/">
+              <img className="block h-12 w-auto" src="/assets/images/brand/logo-white.png" alt="Төв Цэнгэлдэх Хүрээлэн" />
             </Link>
-            <p className="text-[13.5px] leading-[1.65] m-0 mb-[22px] max-w-[320px] text-[rgba(255,255,255,0.7)]">
-              Монгол улсын спорт, соёл, баяр ёслолын төв &mdash;
-              аваргууд төрж, мөч бүр дурсамж болдог газар.
+            <p className="text-[13.5px] leading-[1.65] m-0 mb-6 max-w-[320px] text-[rgba(255,255,255,0.7)]">
+              Монгол улсын спорт, соёл, баяр ёслолын төв &mdash; аваргууд төрж,
+              мөч бүр дурсамж болдог газар.
             </p>
-            <div className="flex gap-2.5">
+            <div className="flex gap-1.5 -ml-2">
               <a href="#" aria-label="Facebook" className={socialLinkCls}><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 22v-8h3l1-4h-4V7c0-1 .3-1.7 1.8-1.7H17V1.9c-.3 0-1.3-.1-2.4-.1-2.4 0-4 1.4-4 4.1V10H7v4h3.6v8z"/></svg></a>
               <a href="#" aria-label="Instagram" className={socialLinkCls}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg></a>
               <a href="#" aria-label="Twitter" className={socialLinkCls}><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22 5.8c-.7.3-1.5.6-2.4.7.9-.5 1.5-1.3 1.8-2.3-.8.5-1.7.8-2.6 1A4.1 4.1 0 0 0 12 9c0 .3 0 .6.1.9A11.6 11.6 0 0 1 3.4 5a4.1 4.1 0 0 0 1.3 5.5c-.7 0-1.3-.2-1.9-.5v.1c0 2 1.4 3.6 3.3 4a4 4 0 0 1-1.9.1c.5 1.6 2 2.8 3.8 2.9A8.2 8.2 0 0 1 2 18.6 11.6 11.6 0 0 0 8.3 20.5c7.5 0 11.6-6.2 11.6-11.6v-.5c.8-.6 1.5-1.3 2.1-2.1z"/></svg></a>
@@ -64,12 +62,12 @@ export default function SiteFooter() {
 
         </div>
 
-        <div className="flex justify-between items-center pt-6 text-[12.5px] text-[rgba(255,255,255,0.5)] max-[560px]:flex-col max-[560px]:gap-3 max-[560px]:text-center">
-          <p>&copy; 2026 Төв Цэнгэлдэх Хүрээлэн. Бүх эрх хуулиар хамгаалагдсан.</p>
-          <ul className="list-none p-0 m-0 flex gap-[22px]">
-            <li><a className="no-underline text-[rgba(255,255,255,0.5)] [transition:color_0.15s_ease] hover:text-brand-blue-tint" href="#">Нууцлалын бодлого</a></li>
-            <li><a className="no-underline text-[rgba(255,255,255,0.5)] [transition:color_0.15s_ease] hover:text-brand-blue-tint" href="#">Үйлчилгээний нөхцөл</a></li>
-            <li><a className="no-underline text-[rgba(255,255,255,0.5)] [transition:color_0.15s_ease] hover:text-brand-blue-tint" href="#">Күүки</a></li>
+        <div className="flex justify-between items-center pt-6 text-[12.5px] text-[rgba(255,255,255,0.45)] max-[560px]:flex-col max-[560px]:gap-3 max-[560px]:text-center">
+          <p className="m-0">&copy; 2026 Төв Цэнгэлдэх Хүрээлэн. Бүх эрх хуулиар хамгаалагдсан.</p>
+          <ul className="list-none p-0 m-0 flex gap-6">
+            <li><a className="no-underline text-[rgba(255,255,255,0.45)] [transition:color_0.15s_ease] hover:text-white" href="#">Нууцлалын бодлого</a></li>
+            <li><a className="no-underline text-[rgba(255,255,255,0.45)] [transition:color_0.15s_ease] hover:text-white" href="#">Үйлчилгээний нөхцөл</a></li>
+            <li><a className="no-underline text-[rgba(255,255,255,0.45)] [transition:color_0.15s_ease] hover:text-white" href="#">Күүки</a></li>
           </ul>
         </div>
       </div>

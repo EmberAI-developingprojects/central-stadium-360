@@ -5,11 +5,14 @@ export default function useRevealOnScroll(): void {
     const prefersReduced = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
-    const els = document.querySelectorAll<HTMLElement>(".reveal-up");
+
     if (!("IntersectionObserver" in window) || prefersReduced) {
-      els.forEach((el) => el.classList.add("is-in"));
+      document
+        .querySelectorAll<HTMLElement>(".reveal-up")
+        .forEach((el) => el.classList.add("is-in"));
       return;
     }
+
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -21,7 +24,36 @@ export default function useRevealOnScroll(): void {
       },
       { threshold: 0.1, rootMargin: "0px 0px -8% 0px" },
     );
-    els.forEach((el) => io.observe(el));
-    return () => io.disconnect();
+
+    const observed = new WeakSet<Element>();
+    const observeAll = (root: ParentNode) => {
+      root.querySelectorAll<HTMLElement>(".reveal-up").forEach((el) => {
+        if (observed.has(el)) return;
+        observed.add(el);
+        io.observe(el);
+      });
+    };
+    observeAll(document);
+
+    // Catch .reveal-up nodes that get inserted *after* this effect runs —
+    // e.g. cards rendered once async data (news, events) resolves.
+    const mo = new MutationObserver((mutations) => {
+      for (const m of mutations) {
+        m.addedNodes.forEach((node) => {
+          if (!(node instanceof Element)) return;
+          if (node.classList?.contains("reveal-up") && !observed.has(node)) {
+            observed.add(node);
+            io.observe(node);
+          }
+          observeAll(node);
+        });
+      }
+    });
+    mo.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      io.disconnect();
+      mo.disconnect();
+    };
   }, []);
 }

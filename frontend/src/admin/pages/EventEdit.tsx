@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   createEvent,
@@ -7,6 +7,7 @@ import {
   updateEvent,
 } from "../../data/store";
 import type { EventRecord } from "../../data/store";
+import { api } from "../../lib/api";
 import {
   ADMIN_ALERT_CLS,
   ADMIN_BTN_CLS,
@@ -61,6 +62,8 @@ export default function EventEdit() {
   const [loaded, setLoaded] = useState(isNew);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isNew || !id) return;
@@ -111,6 +114,23 @@ export default function EventEdit() {
     if (!window.confirm(`«${form.title}» арга хэмжээг устгах уу?`)) return;
     await deleteEvent(id);
     navigate("/admin/events");
+  };
+
+  const onPickFile = () => fileInputRef.current?.click();
+
+  const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setError("");
+    setUploading(true);
+    const res = await api.admin.uploadImage(file);
+    setUploading(false);
+    if (!res.ok) {
+      setError(`Зураг ачаалах боломжгүй: ${res.error}`);
+      return;
+    }
+    update({ image: res.data.url });
   };
 
   return (
@@ -200,12 +220,50 @@ export default function EventEdit() {
         </div>
 
         <div className={ADMIN_FIELD_CLS}>
-          <label>Зургийн URL</label>
+          <label>Зураг</label>
           <input
             value={form.image}
             onChange={(e) => update({ image: e.target.value })}
-            placeholder="/assets/images/events/..."
+            placeholder="https://… эсвэл /assets/images/events/…"
           />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            onChange={onFileChange}
+            style={{ display: "none" }}
+          />
+          <div
+            style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}
+          >
+            <button
+              type="button"
+              className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_GHOST_CLS}`}
+              onClick={onPickFile}
+              disabled={uploading || busy}
+            >
+              {uploading ? "Ачаалж байна…" : "Зураг оруулах"}
+            </button>
+            {form.image && (
+              <button
+                type="button"
+                className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_GHOST_CLS}`}
+                onClick={() => update({ image: "" })}
+                disabled={uploading || busy}
+              >
+                Зураг арилгах
+              </button>
+            )}
+          </div>
+          <div
+            style={{
+              fontSize: 12,
+              color: "#64748b",
+              marginTop: 6,
+            }}
+          >
+            JPG / PNG / WEBP / GIF, дээд тал нь 5 MB.
+          </div>
           {form.image && (
             <div
               className={ADMIN_IMAGE_PREVIEW_CLS}

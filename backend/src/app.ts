@@ -10,6 +10,7 @@ import smsHook from "./routes/sms-hook";
 import adminEvents from "./routes/admin-events";
 import adminContent, { publicContent } from "./routes/admin-content";
 import adminUsers from "./routes/admin-users";
+import adminUploads from "./routes/admin-uploads";
 
 const startedAt = Date.now();
 
@@ -32,6 +33,7 @@ app.route("/internal", smsHook);
 app.route("/admin/events", adminEvents);
 app.route("/admin/content", adminContent);
 app.route("/admin/users", adminUsers);
+app.route("/admin/uploads", adminUploads);
 app.route("/content", publicContent);
 
 app.get("/health", (c) => {

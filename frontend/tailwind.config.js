@@ -98,6 +98,10 @@ export default {
           from: { opacity: "0", transform: "translateY(24px)" },
           to: { opacity: "1", transform: "none" },
         },
+        "partners-marquee": {
+          from: { transform: "translateX(0)" },
+          to: { transform: "translateX(-50%)" },
+        },
       },
       animation: {
         "login-pop": "loginPop .55s cubic-bezier(.34, 1.56, .64, 1) both",
@@ -110,6 +114,7 @@ export default {
         "chat-in": "chatIn .25s ease-out",
         "react-rise": "reactRise 2s ease-out forwards",
         "reveal-up": "revealUp 600ms cubic-bezier(.2,.8,.2,1) both",
+        "partners-marquee": "partners-marquee 40s linear infinite",
       },
       maxWidth: {
         "screen-page": "1300px",

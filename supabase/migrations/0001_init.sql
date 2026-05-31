@@ -52,9 +52,6 @@ create table if not exists public.events (
 create index if not exists events_status_idx     on public.events(status);
 create index if not exists events_start_time_idx on public.events(start_time);
 
-------------------------------------------------------------
--- channels (per-event camera angles, IVS-backed)
-------------------------------------------------------------
 create table if not exists public.channels (
   id                 uuid primary key default gen_random_uuid(),
   event_id           uuid not null references public.events(id) on delete cascade,
@@ -68,9 +65,7 @@ create table if not exists public.channels (
 
 create index if not exists channels_event_idx on public.channels(event_id);
 
-------------------------------------------------------------
--- tickets
-------------------------------------------------------------
+
 create table if not exists public.tickets (
   id                uuid primary key default gen_random_uuid(),
   user_id           uuid not null references public.users(id) on delete cascade,

@@ -1,8 +1,10 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { getHomeContent, updateHomeContent } from "../../data/store";
+import { api } from "../../lib/api";
 import type {
   HomeContent,
   MemberItem,
+  NewsBlock,
   NewsItem,
   Partner,
   RoadmapItem,
@@ -56,6 +58,8 @@ const NEW_ITEM: {
     body: "",
     image: "",
     featured: false,
+    blocks: [],
+    createdAt: new Date().toISOString(),
   }),
   partners: () => ({
     id: "partner-" + Math.random().toString(36).slice(2, 7),
@@ -286,6 +290,25 @@ function NewsRow({
   onChange: (p: Partial<NewsItem>) => void;
   onRemove: () => void;
 }) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+
+  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setError("");
+    setUploading(true);
+    const res = await api.admin.uploadImage(file);
+    setUploading(false);
+    if (!res.ok) {
+      setError(`Ачаалах боломжгүй: ${res.error}`);
+      return;
+    }
+    onChange({ image: res.data.url });
+  };
+
   return (
     <>
       <RowHeader onRemove={onRemove}>{item.title || "Шинэ мэдээ"}</RowHeader>
@@ -302,8 +325,56 @@ function NewsRow({
           <input
             value={item.image || ""}
             onChange={(e) => onChange({ image: e.target.value })}
+            placeholder="https://… эсвэл доороос файл оруулна уу"
           />
         </div>
+      </div>
+      <div className={ADMIN_FIELD_CLS}>
+        <label>Зураг</label>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          onChange={onFile}
+          style={{ display: "none" }}
+        />
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button
+            type="button"
+            className={ADMIN_BTN_CLS}
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+          >
+            {uploading ? "Ачаалж байна…" : "Зураг оруулах"}
+          </button>
+          {item.image && (
+            <button
+              type="button"
+              className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_DANGER_CLS}`}
+              onClick={() => onChange({ image: "" })}
+              disabled={uploading}
+            >
+              Зураг арилгах
+            </button>
+          )}
+        </div>
+        {error && (
+          <div style={{ fontSize: 12, color: "#dc2626", marginTop: 6 }}>
+            {error}
+          </div>
+        )}
+        <div style={{ fontSize: 12, color: "#64748b", marginTop: 6 }}>
+          JPG / PNG / WEBP / GIF, дээд тал нь 5 MB.
+        </div>
+        {item.image && (
+          <div
+            className={ADMIN_IMAGE_PREVIEW_CLS}
+            style={{
+              aspectRatio: "4 / 3",
+              backgroundImage: `url('${item.image}')`,
+            }}
+          />
+        )}
       </div>
       <div className={ADMIN_FIELD_CLS}>
         <label>Гарчиг</label>
@@ -325,9 +396,272 @@ function NewsRow({
           checked={!!item.featured}
           onChange={(e) => onChange({ featured: e.target.checked })}
         />
-        <span>Featured (том картаар харуулах)</span>
+        <span>Featured (онцлох картаар харуулах)</span>
       </label>
+
+      <NewsBlocksEditor
+        blocks={item.blocks ?? []}
+        onChange={(blocks) => onChange({ blocks })}
+      />
     </>
+  );
+}
+
+function NewsBlocksEditor({
+  blocks,
+  onChange,
+}: {
+  blocks: NewsBlock[];
+  onChange: (next: NewsBlock[]) => void;
+}) {
+  const fileRefs = useRef<Record<number, HTMLInputElement | null>>({});
+  const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
+  const [error, setError] = useState("");
+
+  const addText = () =>
+    onChange([...blocks, { type: "text", value: "" }]);
+  const addImage = () =>
+    onChange([...blocks, { type: "image", value: "" }]);
+
+  const update = (idx: number, patch: Partial<NewsBlock>) =>
+    onChange(
+      blocks.map((b, i) => (i === idx ? ({ ...b, ...patch } as NewsBlock) : b)),
+    );
+
+  const remove = (idx: number) =>
+    onChange(blocks.filter((_, i) => i !== idx));
+
+  const move = (idx: number, dir: -1 | 1) => {
+    const j = idx + dir;
+    if (j < 0 || j >= blocks.length) return;
+    const next = blocks.slice();
+    [next[idx], next[j]] = [next[j], next[idx]];
+    onChange(next);
+  };
+
+  const onFile = async (idx: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setError("");
+    setUploadingIdx(idx);
+    const res = await api.admin.uploadImage(file);
+    setUploadingIdx(null);
+    if (!res.ok) {
+      setError(`Ачаалах боломжгүй: ${res.error}`);
+      return;
+    }
+    update(idx, { value: res.data.url });
+  };
+
+  return (
+    <div
+      style={{
+        marginTop: 18,
+        padding: 16,
+        borderRadius: 12,
+        border: "1px solid #e5e7eb",
+        background: "#f9fafb",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 12,
+          gap: 12,
+          flexWrap: "wrap",
+        }}
+      >
+        <div>
+          <strong style={{ fontSize: 13, display: "block" }}>
+            Дэлгэрэнгүй мэдээлэл
+          </strong>
+          <span style={{ fontSize: 12, color: "#64748b" }}>
+            Дээрээс доош дарааллаар харагдана. Эхний нэмсэн нь эхэнд орно.
+          </span>
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            type="button"
+            className={ADMIN_BTN_CLS}
+            onClick={addText}
+          >
+            + Текст нэмэх
+          </button>
+          <button
+            type="button"
+            className={ADMIN_BTN_CLS}
+            onClick={addImage}
+          >
+            + Зураг нэмэх
+          </button>
+        </div>
+      </div>
+
+      {error && (
+        <div style={{ fontSize: 12, color: "#dc2626", marginBottom: 8 }}>
+          {error}
+        </div>
+      )}
+
+      {blocks.length === 0 ? (
+        <div
+          style={{
+            padding: 16,
+            textAlign: "center",
+            color: "#64748b",
+            fontSize: 13,
+            border: "1px dashed #cbd5e1",
+            borderRadius: 8,
+            background: "#fff",
+          }}
+        >
+          Блок хоосон. Текстээр эхлэх үү, эсвэл зургаар? Дээрх товчоор сонгоно
+          уу.
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {blocks.map((b, idx) => (
+            <div
+              key={idx}
+              style={{
+                background: "#fff",
+                border: "1px solid #e5e7eb",
+                borderRadius: 10,
+                padding: 12,
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: 8,
+                  gap: 8,
+                }}
+              >
+                <strong style={{ fontSize: 12, color: "#334155" }}>
+                  #{idx + 1} ·{" "}
+                  {b.type === "text" ? "Текст блок" : "Зураг блок"}
+                </strong>
+                <div style={{ display: "flex", gap: 4 }}>
+                  <button
+                    type="button"
+                    className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS}`}
+                    onClick={() => move(idx, -1)}
+                    disabled={idx === 0}
+                    title="Дээш"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS}`}
+                    onClick={() => move(idx, 1)}
+                    disabled={idx === blocks.length - 1}
+                    title="Доош"
+                  >
+                    ↓
+                  </button>
+                  <button
+                    type="button"
+                    className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS} ${ADMIN_BTN_DANGER_CLS}`}
+                    onClick={() => remove(idx)}
+                    title="Устгах"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+
+              {b.type === "text" ? (
+                <textarea
+                  value={b.value}
+                  onChange={(e) => update(idx, { value: e.target.value })}
+                  placeholder="Параграф текстийг энд бичнэ үү…"
+                  style={{
+                    width: "100%",
+                    minHeight: 110,
+                    padding: 10,
+                    borderRadius: 8,
+                    border: "1px solid #d1d5db",
+                    fontFamily: "inherit",
+                    fontSize: 14,
+                    resize: "vertical",
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 8,
+                  }}
+                >
+                  <input
+                    value={b.value}
+                    onChange={(e) => update(idx, { value: e.target.value })}
+                    placeholder="https://… эсвэл доороос файл оруулна уу"
+                    style={{
+                      padding: 10,
+                      borderRadius: 8,
+                      border: "1px solid #d1d5db",
+                      fontFamily: "inherit",
+                      fontSize: 14,
+                    }}
+                  />
+                  <input
+                    ref={(el) => {
+                      fileRefs.current[idx] = el;
+                    }}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    onChange={(e) => onFile(idx, e)}
+                    style={{ display: "none" }}
+                  />
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      type="button"
+                      className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS}`}
+                      onClick={() => fileRefs.current[idx]?.click()}
+                      disabled={uploadingIdx === idx}
+                    >
+                      {uploadingIdx === idx
+                        ? "Ачаалж байна…"
+                        : "Файл сонгож upload"}
+                    </button>
+                    {b.value && (
+                      <button
+                        type="button"
+                        className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS} ${ADMIN_BTN_DANGER_CLS}`}
+                        onClick={() => update(idx, { value: "" })}
+                        disabled={uploadingIdx === idx}
+                      >
+                        Зураг арилгах
+                      </button>
+                    )}
+                  </div>
+                  {b.value && (
+                    <div
+                      style={{
+                        aspectRatio: "16 / 9",
+                        borderRadius: 8,
+                        backgroundImage: `url('${b.value}')`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                        backgroundColor: "#f1f5f9",
+                      }}
+                    />
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -340,6 +674,23 @@ function PartnerRow({
   onChange: (p: Partial<Partner>) => void;
   onRemove: () => void;
 }) {
+  const onPickFile = (file: File | null) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      window.alert("Зөвхөн зургийн файл сонгоно уу.");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      window.alert("Зурагны хэмжээ 2MB-аас бага байх ёстой.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = typeof reader.result === "string" ? reader.result : "";
+      if (dataUrl) onChange({ image: dataUrl });
+    };
+    reader.readAsDataURL(file);
+  };
   return (
     <>
       <RowHeader onRemove={onRemove}>{item.alt || "Хамтрагч"}</RowHeader>
@@ -349,6 +700,7 @@ function PartnerRow({
           <input
             value={item.image || ""}
             onChange={(e) => onChange({ image: e.target.value })}
+            placeholder="https://… эсвэл доороос файл сонгоно уу"
           />
         </div>
         <div className={ADMIN_FIELD_CLS}>
@@ -357,6 +709,32 @@ function PartnerRow({
             value={item.alt || ""}
             onChange={(e) => onChange({ alt: e.target.value })}
           />
+        </div>
+      </div>
+      <div className={ADMIN_FIELD_CLS}>
+        <label>Зураг оруулах</label>
+        <div className="flex items-center gap-2">
+          <label className={`${ADMIN_BTN_CLS} cursor-pointer`}>
+            Файл сонгох
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                onPickFile(e.target.files?.[0] || null);
+                e.currentTarget.value = "";
+              }}
+            />
+          </label>
+          {item.image && (
+            <button
+              type="button"
+              className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_DANGER_CLS}`}
+              onClick={() => onChange({ image: "" })}
+            >
+              Зураг устгах
+            </button>
+          )}
         </div>
       </div>
       {item.image && (
