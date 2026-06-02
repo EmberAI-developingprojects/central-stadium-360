@@ -135,7 +135,11 @@ adminContent.put("/:section", async (c) => {
 
   // Hero uses slot as PK — upsert in place instead of delete+insert.
   if (section === "hero") {
-    const rows = parsed.data as { slot: string; image_url: string; alt: string }[];
+    const rows = parsed.data as {
+      slot: string;
+      image_url: string;
+      alt: string;
+    }[];
     const { data, error } = await admin
       .from("home_hero")
       .upsert(rows, { onConflict: "slot" })
@@ -179,11 +183,7 @@ adminContent.put("/:section", async (c) => {
   // If the news.blocks column hasn't been migrated yet, retry without it so
   // the rest of the content editor keeps working. Block content is lost in
   // that case but the user is told via the section's load path.
-  if (
-    insErr &&
-    section === "news" &&
-    isMissingColumnError(insErr, "blocks")
-  ) {
+  if (insErr && section === "news" && isMissingColumnError(insErr, "blocks")) {
     blocksColumnAvailable = false;
     const rowsNoBlocks = rows.map((r) => {
       const { blocks: _b, ...rest } = r as { blocks?: unknown } & Record<
@@ -192,10 +192,7 @@ adminContent.put("/:section", async (c) => {
       >;
       return rest;
     });
-    const retry = await admin
-      .from(table)
-      .insert(rowsNoBlocks)
-      .select("*");
+    const retry = await admin.from(table).insert(rowsNoBlocks).select("*");
     data = retry.data;
     insErr = retry.error;
   }
@@ -237,7 +234,9 @@ publicContent.get("/", async (c) => {
   };
 
   let news = await queryNews(
-    blocksColumnAvailable === false ? NEWS_COLS_NO_BLOCKS : NEWS_COLS_WITH_BLOCKS,
+    blocksColumnAvailable === false
+      ? NEWS_COLS_NO_BLOCKS
+      : NEWS_COLS_WITH_BLOCKS,
   );
 
   if (news.error && isMissingColumnError(news.error, "blocks")) {
@@ -274,7 +273,10 @@ publicContent.get("/", async (c) => {
   }
   // hero table may not exist yet (migration pending) — degrade gracefully
   if (hero.error) {
-    console.warn("[content] home_hero query failed (migration pending?):", hero.error.message);
+    console.warn(
+      "[content] home_hero query failed (migration pending?):",
+      hero.error.message,
+    );
   }
 
   // Normalize blocks: ensure each row has a `blocks: []` field even when the
@@ -289,7 +291,7 @@ publicContent.get("/", async (c) => {
     partners: (partners.data ?? []) as DbHomePartner[],
     roadmap: (roadmap.data ?? []) as DbHomeRoadmap[],
     services: (services.data ?? []) as DbHomeService[],
-    hero: hero.error ? [] : (hero.data ?? []) as DbHomeHero[],
+    hero: hero.error ? [] : ((hero.data ?? []) as DbHomeHero[]),
   };
   return c.json({ ok: true, data: payload } as const);
 });
