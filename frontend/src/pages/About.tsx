@@ -88,7 +88,7 @@ export default function About() {
 
       {/* Тоон мэдээлэл */}
       <section className="w-full bg-white pt-8 px-6 pb-14 max-[920px]:pb-16 max-[920px]:px-5">
-        <div className="max-w-screen-page mx-auto pb-10 border-b border-solid border-[#e0e0e0]">
+        <div className="max-w-screen-page mx-auto pb-10">
           <div className="grid items-center [grid-template-columns:1fr_auto_1fr_auto_1fr_auto_1fr] gap-[18px] max-[920px]:[grid-template-columns:1fr_1fr] max-[920px]:gap-x-[18px] max-[920px]:gap-y-8 max-[480px]:[grid-template-columns:1fr]">
             {STATS.map((s, i) => (
               <span key={s.num} style={{ display: "contents" }}>
