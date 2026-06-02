@@ -164,22 +164,36 @@ const createUserSchema = z.object({
 adminUsers.post("/", async (c) => {
   const supaAdmin = getSupabaseAdmin();
   if (!supaAdmin) {
-    return c.json({ ok: false, error: "supabase_not_configured" } as const, 503);
+    return c.json(
+      { ok: false, error: "supabase_not_configured" } as const,
+      503,
+    );
   }
   const body = await c.req.json().catch(() => ({}));
   const parsed = createUserSchema.safeParse(body);
   if (!parsed.success) {
-    return c.json({ ok: false, error: "invalid_input", details: parsed.error.flatten() } as const, 400);
+    return c.json(
+      {
+        ok: false,
+        error: "invalid_input",
+        details: parsed.error.flatten(),
+      } as const,
+      400,
+    );
   }
   const { email, password, full_name, role } = parsed.data;
 
-  const { data: authData, error: authErr } = await supaAdmin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-  });
+  const { data: authData, error: authErr } =
+    await supaAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+    });
   if (authErr || !authData?.user) {
-    return c.json({ ok: false, error: authErr?.message ?? "auth_create_failed" } as const, 500);
+    return c.json(
+      { ok: false, error: authErr?.message ?? "auth_create_failed" } as const,
+      500,
+    );
   }
 
   const { error: profileErr } = await supaAdmin.from("users").insert({
