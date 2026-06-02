@@ -71,8 +71,6 @@ import {
   TICKET_MODAL_SUCCESS_CLS,
   TICKET_MODAL_TITLE_CLS,
   TICKET_MODAL_VENUE_CLS,
-  TICKET_PAY_DESC_CLS,
-  TICKET_PAY_NAME_CLS,
   TICKET_QTY_BTN_CLS,
   TICKET_QTY_CLS,
   TICKET_QTY_VAL_CLS,
@@ -158,8 +156,8 @@ import {
 
 type TabId = 'live' | 'upcoming' | 'tickets';
 type CamKey = string;
-type TierValue = 'standard' | 'vip' | 'platinum';
-type PayValue = 'qpay' | 'socialpay' | 'card';
+type TierValue = 'standard';
+type PayValue = 'qpay';
 
 type TicketModalEvent = {
   id: string;
@@ -177,22 +175,15 @@ const FEATURED_FALLBACK: TicketModalEvent = {
   id: 'featured-placeholder',
   title: 'Удахгүй',
   date: '',
-  image: '/assets/images/stadium/exterior.jpg',
+  image: '',
   base: 0,
 };
 
 
 const TICKET_TIERS: { value: TierValue; name: string; desc: string; mult: number }[] = [
-  { value: 'standard', name: 'Стандарт',   desc: 'HD 1080p шууд дамжуулал · нэг төхөөрөмж',         mult: 1 },
-  { value: 'vip',      name: 'VIP 360°',   desc: '4K · 360° форматаар · хоёр төхөөрөмж зэрэг үзэх',  mult: 2 },
-  { value: 'platinum', name: 'Платинум',   desc: '4K · 360° · олон өнцөг · 30 хоног дахин үзэх',     mult: 3 },
+  { value: 'standard', name: 'Стандарт', desc: 'HD 1080p шууд дамжуулал · нэг төхөөрөмж', mult: 1 },
 ];
 
-const PAY_METHODS: { value: PayValue; name: string; desc: string }[] = [
-  { value: 'qpay',      name: 'QPay',      desc: 'Банкны апп-аар' },
-  { value: 'socialpay', name: 'SocialPay', desc: 'Хаан банкны хэтэвч' },
-  { value: 'card',      name: 'Карт',      desc: 'Visa · Mastercard' },
-];
 
 
 const TAB_IDS: readonly TabId[] = ['live', 'upcoming', 'tickets'] as const;
@@ -243,11 +234,6 @@ export default function Watch() {
     () => myTickets.some((t) => t.eventId === featuredEvent.id),
     [myTickets, featuredEvent.id],
   );
-
-  const isLive = useMemo(() => {
-    if (!featuredEvent.start_time) return false;
-    return new Date(featuredEvent.start_time).getTime() <= Date.now();
-  }, [featuredEvent.start_time]);
 
   const openTicketModal = useCallback((event: TicketModalEvent) => setModalEvent(event), []);
   const closeTicketModal = useCallback(() => setModalEvent(null), []);
@@ -307,15 +293,14 @@ export default function Watch() {
         <LiveSection
           featuredEvent={featuredEvent}
           ownsFeatured={ownsFeatured}
-          isLive={isLive}
           onWatch={() => ownsFeatured ? openViewer() : openTicketModal(featuredEvent)}
-          viewerOpen={viewerOpen}
         />
 
-        <UpcomingSection events={events} onBuy={openTicketModal} />
+        <UpcomingSection events={events} myTickets={myTickets} onBuy={openTicketModal} onWatch={openViewer} />
 
         <TicketsSection
           tickets={myTickets}
+          events={events}
           onWatch={openViewer}
         />
       </main>
@@ -347,14 +332,33 @@ export default function Watch() {
 type LiveSectionProps = {
   featuredEvent: TicketModalEvent;
   ownsFeatured: boolean;
-  isLive: boolean;
   onWatch: () => void;
-  viewerOpen: boolean;
 };
 
 const MONTHS_ABBR_EN = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+const pad2 = (n: number) => String(n).padStart(2, '0');
 
-function LiveSection({ featuredEvent, ownsFeatured, isLive, onWatch }: LiveSectionProps) {
+function useCountdown(startTime: string | undefined) {
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const startMs = startTime ? new Date(startTime).getTime() : null;
+  const isLive = startMs !== null ? now >= startMs : false;
+  const totalSec = startMs !== null ? Math.max(0, Math.floor((startMs - now) / 1000)) : 0;
+  return {
+    isLive,
+    hasTime: startMs !== null,
+    days: Math.floor(totalSec / 86400),
+    hours: Math.floor((totalSec % 86400) / 3600),
+    minutes: Math.floor((totalSec % 3600) / 60),
+    seconds: totalSec % 60,
+  };
+}
+
+function LiveSection({ featuredEvent, ownsFeatured, onWatch }: LiveSectionProps) {
+  const { isLive, hasTime, days, hours, minutes, seconds } = useCountdown(featuredEvent.start_time);
   const d = featuredEvent.start_time ? new Date(featuredEvent.start_time) : null;
   const valid = d && !Number.isNaN(d.getTime());
   const dateStr = valid
@@ -397,32 +401,51 @@ function LiveSection({ featuredEvent, ownsFeatured, isLive, onWatch }: LiveSecti
               {featuredEvent.desc}
             </p>
           )}
-          <div className="mt-8 flex items-center gap-3 flex-wrap">
+          <div className="mt-8 flex items-center gap-3">
             <Link
-              to={`/events/${featuredEvent.id}`}
-              className="inline-flex items-center justify-center h-12 px-7 rounded-sm bg-white text-[#071526] text-[13px] font-bold uppercase tracking-[0.1em] no-underline [transition:background_.15s_ease,transform_.15s_ease] hover:bg-[rgba(255,255,255,0.88)] hover:-translate-y-px"
+              to={`/watch/events/${featuredEvent.id}`}
+              className="inline-flex items-center justify-center h-11 px-5 rounded-sm bg-white text-[#071526] text-[12px] font-bold uppercase tracking-[0.1em] no-underline [transition:background_.15s_ease,transform_.15s_ease] hover:bg-[rgba(255,255,255,0.88)] hover:-translate-y-px whitespace-nowrap"
             >
               Дэлгэрэнгүй
             </Link>
-            <button
-              type="button"
-              onClick={onWatch}
-              className="inline-flex items-center justify-center gap-2 h-12 px-7 rounded-sm bg-transparent border-2 border-solid border-white text-white text-[13px] font-bold uppercase tracking-[0.1em] cursor-pointer font-[inherit] [transition:background_.15s_ease,transform_.15s_ease] hover:bg-[rgba(255,255,255,0.1)] hover:-translate-y-px"
-            >
-              {isLive && ownsFeatured ? (
-                <>
-                  <span className="w-2 h-2 rounded-full bg-[#e53935] animate-live-blink" aria-hidden="true" />
-                  Шууд үзэх
-                </>
-              ) : (
-                <>
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M2 9a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z"/>
-                  </svg>
-                  Тасалбар авах
-                </>
-              )}
-            </button>
+
+            {/* No ticket: buy button */}
+            {!ownsFeatured && (
+              <button
+                type="button"
+                onClick={onWatch}
+                className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-sm bg-transparent border-2 border-solid border-white text-white text-[12px] font-bold uppercase tracking-[0.1em] cursor-pointer font-[inherit] [transition:background_.15s_ease,transform_.15s_ease] hover:bg-[rgba(255,255,255,0.1)] hover:-translate-y-px whitespace-nowrap"
+              >
+                <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M2 9a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z"/>
+                </svg>
+                Тасалбар авах
+              </button>
+            )}
+
+            {/* Has ticket, not live: countdown */}
+            {ownsFeatured && !isLive && hasTime && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'rgba(255,255,255,0.4)' }}>
+                  Эхлэх хүртэл
+                </span>
+                <span style={{ fontSize: 28, fontWeight: 900, color: '#fff', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', lineHeight: 1 }}>
+                  {days > 0 ? `${days}ш ` : ''}{pad2(hours)}:{pad2(minutes)}:{pad2(seconds)}
+                </span>
+              </div>
+            )}
+
+            {/* Has ticket, live: watch button */}
+            {ownsFeatured && isLive && (
+              <button
+                type="button"
+                onClick={onWatch}
+                className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-sm bg-transparent border-2 border-solid border-white text-white text-[12px] font-bold uppercase tracking-[0.1em] cursor-pointer font-[inherit] [transition:background_.15s_ease,transform_.15s_ease] hover:bg-[rgba(255,255,255,0.1)] hover:-translate-y-px whitespace-nowrap"
+              >
+                <span className="w-2 h-2 rounded-full bg-[#e53935] animate-live-blink shrink-0" aria-hidden="true" />
+                Шууд үзэх
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -442,10 +465,12 @@ function fmtEventTime(iso: string): string {
 
 type UpcomingSectionProps = {
   events: EventRecord[];
+  myTickets: OrderRecord[];
   onBuy: (event: TicketModalEvent) => void;
+  onWatch: () => void;
 };
 
-function UpcomingSection({ events, onBuy }: UpcomingSectionProps) {
+function UpcomingSection({ events, myTickets, onBuy, onWatch }: UpcomingSectionProps) {
   if (events.length === 0) return null;
   return (
     <section className="w-full px-6 py-10 max-[920px]:px-5" id="upcoming">
@@ -466,11 +491,12 @@ function UpcomingSection({ events, onBuy }: UpcomingSectionProps) {
             const monthAbbr = valid ? MONTHS_ABBR_MN[d.getMonth()] : "";
             const time = valid ? fmtEventTime(ev.start_time) : "";
             const evLive = valid && d.getTime() <= Date.now();
+            const owned = myTickets.some((t) => t.eventId === ev.id);
             return (
               <article
                 key={ev.id}
                 className="flex flex-col rounded-[14px] overflow-hidden bg-[#0d2044] group [transition:transform_.2s_ease,box-shadow_.2s_ease] hover:-translate-y-1 hover:shadow-[0_24px_48px_-14px_rgba(0,0,0,0.7)] cursor-pointer"
-                onClick={() => onBuy({ id: ev.id, title: ev.title, date: ev.when, image: ev.image, base: ev.base, start_time: ev.start_time, desc: ev.desc })}
+                onClick={() => owned ? onWatch() : onBuy({ id: ev.id, title: ev.title, date: ev.when, image: ev.image, base: ev.base, start_time: ev.start_time, desc: ev.desc })}
               >
                 <div className="relative w-full aspect-[16/9] overflow-hidden bg-[#071a35] flex-none">
                   {ev.image ? (
@@ -485,6 +511,12 @@ function UpcomingSection({ events, onBuy }: UpcomingSectionProps) {
                   {evLive && (
                     <span className="absolute top-2 left-2 inline-flex items-center gap-1.5 bg-[#e53935] text-white text-[10px] font-bold uppercase tracking-[0.12em] rounded-full px-2.5 py-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-white animate-live-blink" aria-hidden="true"/>LIVE
+                    </span>
+                  )}
+                  {owned && (
+                    <span className="absolute top-2 right-2 inline-flex items-center gap-1 bg-[rgba(16,185,129,0.85)] text-white text-[10px] font-bold uppercase tracking-[0.1em] rounded-full px-2.5 py-1">
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                      Тасалбартай
                     </span>
                   )}
                 </div>
@@ -513,12 +545,63 @@ function UpcomingSection({ events, onBuy }: UpcomingSectionProps) {
 
 type TicketsSectionProps = {
   tickets: OrderRecord[];
+  events: EventRecord[];
   onWatch: () => void;
 };
 
-function TicketsSection({ tickets, onWatch }: TicketsSectionProps) {
+type TicketCardProps = {
+  ticket: OrderRecord;
+  startTime: string | undefined;
+  onWatch: () => void;
+};
+
+function TicketCard({ ticket: t, startTime, onWatch }: TicketCardProps) {
+  const { isLive, hasTime, days, hours, minutes, seconds } = useCountdown(startTime);
+  return (
+    <article className={TICKET_STUB_CLS} data-code={t.code}>
+      <div className={TICKET_STUB_COVER_CLS}>
+        <img src={t.image} alt={t.title} />
+        <span className={TICKET_STUB_TIER_CLS}>{t.tierName}</span>
+      </div>
+      <div className={TICKET_STUB_BODY_CLS}>
+        <span className={TICKET_STUB_DATE_CLS}>{t.date}</span>
+        <h3 className={TICKET_STUB_TITLE_CLS}>{t.title}</h3>
+        <dl className={TICKET_STUB_META_CLS}>
+          <div><dt className={TICKET_STUB_META_DT_CLS}>Захиалгын код</dt><dd className={`${TICKET_STUB_META_DD_CLS} ${TICKET_STUB_CODE_CLS}`}>{t.code}</dd></div>
+          <div><dt className={TICKET_STUB_META_DT_CLS}>Үзэх эрх</dt><dd className={TICKET_STUB_META_DD_CLS}>{t.qty} төхөөрөмж</dd></div>
+          <div><dt className={TICKET_STUB_META_DT_CLS}>Нийт төлбөр</dt><dd className={TICKET_STUB_META_DD_CLS}>{money(t.total)}</dd></div>
+          <div><dt className={TICKET_STUB_META_DT_CLS}>Төлбөрийн хэрэгсэл</dt><dd className={TICKET_STUB_META_DD_CLS}>{t.paymentName || t.payment}</dd></div>
+        </dl>
+        <div className={TICKET_STUB_BARCODE_CLS} aria-hidden="true"></div>
+        <div className={TICKET_STUB_ACTIONS_CLS}>
+          <Link to={`/watch/events/${t.eventId}`} className={`${WATCH_BTN_CLS} ${WATCH_BTN_GHOST_CLS} ${TICKET_STUB_BTN_CLS}`}>
+            Дэлгэрэнгүй
+          </Link>
+          {isLive && (
+            <button type="button" className={`${WATCH_BTN_CLS} ${WATCH_BTN_PRIMARY_CLS} ${TICKET_STUB_BTN_CLS}`} onClick={onWatch}>
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-live-blink flex-none" aria-hidden="true" />
+              Шууд үзэх
+            </button>
+          )}
+          {!isLive && hasTime && (
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2, justifyContent: "center" }}>
+              <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "rgba(255,255,255,0.4)" }}>
+                Эхлэх хүртэл
+              </span>
+              <span style={{ fontSize: 18, fontWeight: 900, color: "#fff", fontVariantNumeric: "tabular-nums", letterSpacing: "-0.01em", lineHeight: 1 }}>
+                {days > 0 ? `${days} өдөр ` : ""}{pad2(hours)}:{pad2(minutes)}:{pad2(seconds)}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function TicketsSection({ tickets, events, onWatch }: TicketsSectionProps) {
   const sorted = useMemo(
-    () => [...tickets].sort((a, b) => (b.purchasedAt || '').localeCompare(a.purchasedAt || '')),
+    () => [...tickets].sort((a, b) => (b.purchasedAt || "").localeCompare(a.purchasedAt || "")),
     [tickets],
   );
 
@@ -544,34 +627,17 @@ function TicketsSection({ tickets, onWatch }: TicketsSectionProps) {
             <a className={`${WATCH_BTN_CLS} ${WATCH_BTN_PRIMARY_CLS}`} href="#upcoming">Арга хэмжээ үзэх</a>
           </div>
         ) : (
-          sorted.map((t) => (
-            <article key={t.code} className={TICKET_STUB_CLS} data-code={t.code}>
-              <div className={TICKET_STUB_COVER_CLS}>
-                <img src={t.image} alt={t.title} />
-                <span className={TICKET_STUB_TIER_CLS}>{t.tierName}</span>
-              </div>
-              <div className={TICKET_STUB_BODY_CLS}>
-                <span className={TICKET_STUB_DATE_CLS}>{t.date}</span>
-                <h3 className={TICKET_STUB_TITLE_CLS}>{t.title}</h3>
-                <dl className={TICKET_STUB_META_CLS}>
-                  <div><dt className={TICKET_STUB_META_DT_CLS}>Захиалгын код</dt><dd className={`${TICKET_STUB_META_DD_CLS} ${TICKET_STUB_CODE_CLS}`}>{t.code}</dd></div>
-                  <div><dt className={TICKET_STUB_META_DT_CLS}>Үзэх эрх</dt><dd className={TICKET_STUB_META_DD_CLS}>{t.qty} төхөөрөмж</dd></div>
-                  <div><dt className={TICKET_STUB_META_DT_CLS}>Нийт төлбөр</dt><dd className={TICKET_STUB_META_DD_CLS}>{money(t.total)}</dd></div>
-                  <div><dt className={TICKET_STUB_META_DT_CLS}>Төлбөрийн хэрэгсэл</dt><dd className={TICKET_STUB_META_DD_CLS}>{t.paymentName || t.payment}</dd></div>
-                </dl>
-                <div className={TICKET_STUB_BARCODE_CLS} aria-hidden="true"></div>
-                <div className={TICKET_STUB_ACTIONS_CLS}>
-                  <Link to={`/orders/${t.code}`} className={`${WATCH_BTN_CLS} ${WATCH_BTN_GHOST_CLS} ${TICKET_STUB_BTN_CLS}`}>
-                    Дэлгэрэнгүй
-                  </Link>
-                  <button type="button" className={`${WATCH_BTN_CLS} ${WATCH_BTN_PRIMARY_CLS} ${TICKET_STUB_BTN_CLS}`} onClick={onWatch}>
-                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
-                    Шууд үзэх
-                  </button>
-                </div>
-              </div>
-            </article>
-          ))
+          sorted.map((t) => {
+            const ev = events.find((e) => e.id === t.eventId);
+            return (
+              <TicketCard
+                key={t.code}
+                ticket={t}
+                startTime={ev?.start_time}
+                onWatch={onWatch}
+              />
+            );
+          })
         )}
       </div>
     </section>
@@ -1075,7 +1141,6 @@ type TicketModalProps = {
 
 function TicketModal({ event, session, onClose, onPurchased, onWatchSuccess }: TicketModalProps) {
   const [tier, setTier] = useState<TierValue>('standard');
-  const [pay, setPay] = useState<PayValue>('qpay');
   const [qty, setQty] = useState(1);
   const [busy, setBusy] = useState(false);
   const [alert, setAlert] = useState('');
@@ -1083,7 +1148,6 @@ function TicketModal({ event, session, onClose, onPurchased, onWatchSuccess }: T
   const [success, setSuccess] = useState<OrderRecord | null>(null);
 
   const selectedTier = TICKET_TIERS.find((t) => t.value === tier);
-  const selectedPay = PAY_METHODS.find((p) => p.value === pay);
 
   const total = event.base * (selectedTier?.mult || 1) * qty;
 
@@ -1096,11 +1160,7 @@ function TicketModal({ event, session, onClose, onPurchased, onWatchSuccess }: T
   const checkout = () => {
     setAlert('');
     setBusy(true);
-    setCheckoutLabel(
-      pay === 'qpay' || pay === 'socialpay'
-        ? `${selectedPay?.name ?? ''} рүү шилжиж байна…`
-        : 'Картаар төлж байна…',
-    );
+    setCheckoutLabel('QPay рүү шилжиж байна…');
 
     setTimeout(() => {
 
@@ -1122,8 +1182,8 @@ function TicketModal({ event, session, onClose, onPurchased, onWatchSuccess }: T
         qty,
         unitPrice: event.base * (selectedTier?.mult ?? 1),
         total,
-        payment: pay,
-        paymentName: selectedPay?.name,
+        payment: 'qpay',
+        paymentName: 'QPay',
         purchasedAt: new Date().toISOString(),
         status: 'paid',
       };
@@ -1190,19 +1250,9 @@ function TicketModal({ event, session, onClose, onPurchased, onWatchSuccess }: T
                 </div>
               </div>
 
-              <div className={TICKET_SECTION_CLS}>
-                <span className={TICKET_SECTION_LABEL_CLS}>Төлбөрийн хэрэгсэл</span>
-                <div className={TICKET_RADIO_GROUP_CLS} role="radiogroup">
-                  {PAY_METHODS.map((p) => (
-                    <label key={p.value} className={TICKET_RADIO_LABEL_CLS}>
-                      <input className={TICKET_RADIO_INPUT_CLS} type="radio" name="pay" value={p.value} checked={pay === p.value} onChange={() => setPay(p.value)} />
-                      <span className={TICKET_RADIO_CARD_CLS}>
-                        <span className={TICKET_PAY_NAME_CLS}>{p.name}</span>
-                        <span className={TICKET_PAY_DESC_CLS}>{p.desc}</span>
-                      </span>
-                    </label>
-                  ))}
-                </div>
+              <div className={TICKET_SECTION_CLS} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                <span className={TICKET_SECTION_LABEL_CLS} style={{ marginBottom: 0 }}>Төлбөрийн хэрэгсэл</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>QPay — Банкны апп-аар</span>
               </div>
 
               <div className={TICKET_ALERT_CLS} hidden={!alert}>{alert}</div>

@@ -83,7 +83,7 @@ export const REG_TAB_ACTIVE_CLS =
 
 export const REG_PHONE_WRAP_CLS = "relative block";
 export const REG_PHONE_PREFIX_CLS =
-  "absolute left-[14px] top-1/2 -translate-y-1/2 text-sm font-semibold text-ink pr-2.5 border-r border-solid border-[rgba(31,41,55,0.14)] pointer-events-none";
+  "absolute left-[14px] top-1/2 -translate-y-1/2 text-sm font-semibold text-ink pointer-events-none";
 export const REG_INPUT_PHONE_CLS = `${INPUT_CLS} pl-[66px] tracking-[.04em]`;
 
 export const BTN_RESET_STYLE = {

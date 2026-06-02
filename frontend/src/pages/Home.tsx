@@ -62,27 +62,11 @@ export default function Home() {
   );
 }
 
-const DEFAULT_HERO_IMAGES: HeroImage[] = [
-  {
-    slot: "tile1",
-    image_url: "/assets/images/hero/featured.jpg",
-    alt: "Онцлох үйл явдал",
-  },
-  {
-    slot: "tile2",
-    image_url: "/assets/images/hero/stadium-aerial.png",
-    alt: "Төв цэнгэлдэх хүрээлэн",
-  },
-  {
-    slot: "tile3",
-    image_url: "/assets/images/hero/event-tengri.png",
-    alt: "THUNDERZ — TENGRI",
-  },
-  {
-    slot: "tile4",
-    image_url: "/assets/images/hero/live-360.png",
-    alt: "Live streaming · 360°",
-  },
+const EMPTY_HERO_TILES: HeroImage[] = [
+  { slot: "tile1", image_url: "", alt: "" },
+  { slot: "tile2", image_url: "", alt: "" },
+  { slot: "tile3", image_url: "", alt: "" },
+  { slot: "tile4", image_url: "", alt: "" },
 ];
 
 const DEFAULT_MEMBERS: MemberItem[] = [
@@ -138,13 +122,13 @@ function Hero({
   gatedGo: (to: string) => void;
   images: HeroImage[];
 }) {
-  const tiles = images.length === 4 ? images : DEFAULT_HERO_IMAGES;
+  const tiles = [...images, ...EMPTY_HERO_TILES].slice(0, 4);
   return (
     <section
       className="w-full bg-surface-1 py-14 px-6 max-[920px]:px-5"
       id="top"
     >
-      <div className="max-w-screen-page mx-auto grid items-center gap-12 max-[920px]:gap-9 [grid-template-columns:55%_45%] max-[920px]:[grid-template-columns:1fr]">
+      <div className="max-w-screen-page mx-auto grid items-center gap-8 max-[920px]:gap-9 [grid-template-columns:50%_50%] max-[920px]:[grid-template-columns:1fr]">
         <div className={`flex flex-col items-start ${REVEAL_UP_CLS}`}>
           <span className="inline-flex items-center gap-2 bg-brand-blue-tint rounded-full text-[13px] font-medium tracking-[0.01em] text-[#1a1a1a] py-1.5 pl-2.5 pr-[14px]">
             <span
@@ -208,7 +192,7 @@ function Hero({
             <>
               {/* Desktop: fancy collage */}
               <main
-                className="relative w-full max-w-[500px] mx-auto [aspect-ratio:1/1] [container-type:inline-size] overflow-hidden max-[720px]:max-w-[420px] max-[920px]:hidden"
+                className="relative w-full max-w-[580px] mx-auto [aspect-ratio:1/1] [container-type:inline-size] overflow-hidden max-[720px]:max-w-[460px] max-[920px]:hidden"
                 aria-label="Four card layout"
               >
                 <svg
@@ -223,26 +207,26 @@ function Hero({
                     </clipPath>
                   </defs>
                 </svg>
-                <section
-                  className={`${TILE_BASE} left-[-14.1%] top-[6.8%] w-[53.2%] h-[87.9%] [border-radius:4cqw] [clip-path:url(#tile1-shape)] hover:[&_img]:[transform:scale(1.04)]`}
-                >
-                  <img src={tiles[0].image_url} alt={tiles[0].alt} loading="eager" />
-                </section>
-                <section
-                  className={`${TILE_BASE} left-[42.2%] top-[6.8%] w-[51.8%] h-[28%] [border-radius:4.44cqw] [transform:skewX(18deg)] [transform-origin:center] [&_img]:[transform:skewX(-18deg)_scale(1.18)] [&_img]:[transform-origin:center] hover:[&_img]:[transform:skewX(-18deg)_scale(1.22)]`}
-                >
-                  <img src={tiles[1].image_url} alt={tiles[1].alt} loading="lazy" />
-                </section>
-                <section
-                  className={`${TILE_BASE} left-[45.1%] top-[36.6%] w-[53.2%] h-[28%] [border-radius:3.89cqw] hover:[&_img]:[transform:scale(1.04)]`}
-                >
-                  <img src={tiles[2].image_url} alt={tiles[2].alt} loading="lazy" />
-                </section>
-                <section
-                  className={`${TILE_BASE} left-[42.1%] top-[66.4%] w-[51.8%] h-[28.3%] [border-radius:4.44cqw] [transform:skewX(-18deg)] [transform-origin:center] [&_img]:[transform:skewX(18deg)_scale(1.18)] [&_img]:[transform-origin:center] hover:[&_img]:[transform:skewX(18deg)_scale(1.22)]`}
-                >
-                  <img src={tiles[3].image_url} alt={tiles[3].alt} loading="lazy" />
-                </section>
+                {tiles[0].image_url && (
+                  <section className={`${TILE_BASE} left-[-14.1%] top-[6.8%] w-[53.2%] h-[87.9%] [border-radius:4cqw] [clip-path:url(#tile1-shape)] hover:[&_img]:[transform:scale(1.04)]`}>
+                    <img src={tiles[0].image_url} alt={tiles[0].alt} loading="eager" />
+                  </section>
+                )}
+                {tiles[1].image_url && (
+                  <section className={`${TILE_BASE} left-[42.2%] top-[6.8%] w-[51.8%] h-[28%] [border-radius:4.44cqw] [transform:skewX(18deg)] [transform-origin:center] [&_img]:[transform:skewX(-18deg)_scale(1.18)] [&_img]:[transform-origin:center] hover:[&_img]:[transform:skewX(-18deg)_scale(1.22)]`}>
+                    <img src={tiles[1].image_url} alt={tiles[1].alt} loading="lazy" />
+                  </section>
+                )}
+                {tiles[2].image_url && (
+                  <section className={`${TILE_BASE} left-[45.1%] top-[36.6%] w-[53.2%] h-[28%] [border-radius:3.89cqw] hover:[&_img]:[transform:scale(1.04)]`}>
+                    <img src={tiles[2].image_url} alt={tiles[2].alt} loading="lazy" />
+                  </section>
+                )}
+                {tiles[3].image_url && (
+                  <section className={`${TILE_BASE} left-[42.1%] top-[66.4%] w-[51.8%] h-[28.3%] [border-radius:4.44cqw] [transform:skewX(-18deg)] [transform-origin:center] [&_img]:[transform:skewX(18deg)_scale(1.18)] [&_img]:[transform-origin:center] hover:[&_img]:[transform:skewX(18deg)_scale(1.22)]`}>
+                    <img src={tiles[3].image_url} alt={tiles[3].alt} loading="lazy" />
+                  </section>
+                )}
               </main>
 
               {/* Mobile: simple 2×2 grid */}
@@ -250,11 +234,8 @@ function Hero({
                 className="hidden max-[920px]:grid grid-cols-2 gap-3 w-full max-w-[460px] mx-auto"
                 aria-label="Зургийн цомог"
               >
-                {tiles.map((t, i) => (
-                  <div
-                    key={t.slot}
-                    className={`overflow-hidden bg-[#e9e9e9] ${i === 0 ? "rounded-[20px]" : i === 1 ? "rounded-[20px]" : i === 2 ? "rounded-[20px]" : "rounded-[20px]"} aspect-[4/3]`}
-                  >
+                {tiles.filter(t => t.image_url).map((t, i) => (
+                  <div key={t.slot} className="overflow-hidden rounded-[20px] aspect-[4/3]">
                     <img
                       src={t.image_url}
                       alt={t.alt}
@@ -368,7 +349,7 @@ function Stats() {
   ];
   return (
     <section className="w-full bg-white pt-8 px-6 pb-6 max-[920px]:py-16 max-[920px]:px-5">
-      <div className="max-w-screen-page mx-auto pb-10 border-b border-solid border-[#e0e0e0]">
+      <div className="max-w-screen-page mx-auto pb-10">
         <div className="grid items-center [grid-template-columns:1fr_auto_1fr_auto_1fr_auto_1fr] gap-[18px] max-[920px]:[grid-template-columns:1fr_1fr] max-[920px]:gap-x-[18px] max-[920px]:gap-y-8 max-[480px]:[grid-template-columns:1fr]">
           {items.map((s, i) => (
             <span key={s.num} style={{ display: "contents" }}>
@@ -1044,7 +1025,7 @@ function Roadmap(_props: { items?: RoadmapItem[] }) {
   const dotPct = (x: number) => (x / 1200) * 100;
 
   const phaseBase =
-    "flex-1 flex flex-col justify-center min-h-[64px] py-3 pr-[44px] font-[inherit] max-[640px]:[clip-path:none] max-[640px]:m-0 max-[640px]:rounded max-[640px]:py-3 max-[640px]:px-4";
+    "flex flex-col justify-center min-h-[64px] py-3 pr-[44px] font-[inherit] max-[640px]:[clip-path:none] max-[640px]:m-0 max-[640px]:rounded max-[640px]:py-3 max-[640px]:px-4";
 
   return (
     <section
@@ -1061,6 +1042,7 @@ function Roadmap(_props: { items?: RoadmapItem[] }) {
         <div className="flex items-stretch gap-0 mb-10 max-[640px]:flex-col max-[640px]:gap-1.5">
           <div
             className={`${phaseBase} pl-9 bg-brand-blue-tint text-ink [clip-path:polygon(0_0,calc(100%_-_22px)_0,100%_50%,calc(100%_-_22px)_100%,0_100%)] -mr-3 ${REVEAL_UP_CLS}`}
+            style={{ flex: "47 1 0%" }}
             data-stagger="1"
           >
             <strong className="text-[14px] font-extrabold block tracking-[0.02em] max-[900px]:text-[13px]">
@@ -1072,6 +1054,7 @@ function Roadmap(_props: { items?: RoadmapItem[] }) {
           </div>
           <div
             className={`${phaseBase} pl-12 bg-ink text-brand-blue-tint [clip-path:polygon(0_0,calc(100%_-_22px)_0,100%_50%,calc(100%_-_22px)_100%,0_100%,22px_50%)] -mr-3 ${REVEAL_UP_CLS}`}
+            style={{ flex: "27 1 0%" }}
             data-stagger="2"
           >
             <strong className="text-[14px] font-extrabold block tracking-[0.02em] max-[900px]:text-[13px]">
@@ -1083,6 +1066,7 @@ function Roadmap(_props: { items?: RoadmapItem[] }) {
           </div>
           <div
             className={`${phaseBase} pl-12 bg-ink text-brand-blue-tint [clip-path:polygon(0_0,calc(100%_-_22px)_0,100%_50%,calc(100%_-_22px)_100%,0_100%,22px_50%)] ${REVEAL_UP_CLS}`}
+            style={{ flex: "26 1 0%" }}
             data-stagger="3"
           >
             <strong className="text-[14px] font-extrabold block tracking-[0.02em] max-[900px]:text-[13px]">

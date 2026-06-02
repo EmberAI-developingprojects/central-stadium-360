@@ -212,9 +212,9 @@ export default function SiteHeader() {
                   <a className={DROPDOWN_A_CLS} href="#events">
                     Түүхэн замнал
                   </a>
-                  <a className={DROPDOWN_A_CLS} href="#about">
+                  {/* <a className={DROPDOWN_A_CLS} href="#about">
                     Байгууллагын бүтэц
-                  </a>
+                  </a> */}
                   <a className={DROPDOWN_A_CLS} href="#about">
                     Эрхэм зорилго
                   </a>

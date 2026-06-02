@@ -5,6 +5,7 @@ import Home from './pages/Home';
 import About from './pages/About';
 import Events from './pages/Events';
 import EventDetail from './pages/EventDetail';
+import WatchEventDetail from './pages/WatchEventDetail';
 import NewsDetail from './pages/NewsDetail';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -56,6 +57,7 @@ export default function App() {
         <Route path="/register/phone" element={<GuestOnly><RegisterPhone /></GuestOnly>} />
         <Route path="/register/email" element={<GuestOnly><RegisterEmail /></GuestOnly>} />
         <Route path="/watch" element={<Watch />} />
+        <Route path="/watch/events/:id" element={<WatchEventDetail />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/orders/:code" element={<OrderDetail />} />
