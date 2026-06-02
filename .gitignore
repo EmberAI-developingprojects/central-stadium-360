@@ -28,6 +28,9 @@ Thumbs.db
 # Local agent state
 .claude/
 
+# TinyMCE self-hosted assets (generated from tinymce npm package via postinstall)
+frontend/public/tinymce/
+
 # Local archives accidentally created in the repo (e.g. backups, rar/zip exports)
 frontend.rar
 *.rar

@@ -50,13 +50,13 @@ const DRAWER_BASE_CLS =
   "fixed left-0 top-0 h-[100dvh] w-[300px] max-w-[85vw] bg-brand-blue-darker z-[210] flex flex-col p-5 gap-3 shadow-[0_0_40px_rgba(0,0,0,0.35)] overflow-y-auto [transition:transform_.3s_cubic-bezier(.4,0,.2,1)]";
 
 const DRAWER_HEADER_CLS =
-  "flex items-center justify-between pb-4 border-b border-solid border-[rgba(255,255,255,0.12)]";
+  "flex items-center justify-between pb-4 [border-bottom:1px_solid_rgba(255,255,255,0.1)]";
 
 const DRAWER_LOGO_CLS =
-  "inline-flex items-center gap-2 no-underline text-white [&_img]:block [&_img]:h-10 [&_img]:w-auto";
+  "inline-flex items-center gap-2 no-underline text-white outline-none [-webkit-tap-highlight-color:transparent] [&_img]:block [&_img]:h-10 [&_img]:w-auto [&_img]:border-0 [&_img]:outline-none";
 
 const DRAWER_CLOSE_CLS =
-  "inline-flex items-center justify-center w-9 h-9 rounded-full bg-transparent border border-solid border-[rgba(255,255,255,0.22)] text-white [transition:background_.15s_ease,border-color_.15s_ease] hover:bg-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.4)] [&_svg]:w-[18px] [&_svg]:h-[18px]";
+  "inline-flex items-center justify-center w-9 h-9 rounded-full bg-transparent border border-solid border-[rgba(255,255,255,0.22)] text-white outline-none [-webkit-tap-highlight-color:transparent] [transition:background_.15s_ease,border-color_.15s_ease] hover:bg-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.4)] [&_svg]:w-[18px] [&_svg]:h-[18px]";
 
 const DRAWER_NAV_CLS = "flex flex-col list-none m-0 p-0 mt-1";
 
@@ -68,13 +68,13 @@ const DRAWER_CARET_CLS =
 const DRAWER_CARET_OPEN_CLS = "[transform:rotate(180deg)]";
 
 const DRAWER_SUBLIST_CLS =
-  "overflow-hidden [transition:max-height_.25s_ease] flex flex-col pl-3 border-b border-solid border-[rgba(255,255,255,0.08)]";
+  "overflow-hidden [transition:max-height_.25s_ease] flex flex-col pl-3";
 
 const DRAWER_SUBLINK_CLS =
   "block text-[13px] font-medium text-white/75 no-underline py-2.5 hover:text-white";
 
 const DRAWER_FOOTER_CLS =
-  "mt-auto pt-5 border-t border-solid border-[rgba(255,255,255,0.12)] flex flex-col gap-3";
+  "mt-auto pt-5 [border-top:1px_solid_rgba(255,255,255,0.1)] flex flex-col gap-3";
 
 const DRAWER_CONTACT_CLS =
   "inline-flex items-center gap-2.5 text-[13px] font-medium text-white/85 no-underline [&_svg]:w-4 [&_svg]:h-4 [&_svg]:flex-none [&_svg]:text-white/70";
@@ -354,7 +354,7 @@ export default function SiteHeader() {
         <div className={DRAWER_HEADER_CLS}>
           <Link to="/" className={DRAWER_LOGO_CLS} onClick={closeDrawer}>
             <img
-              src="/assets/images/brand/logo.png"
+              src="/assets/images/brand/logo-white.png"
               alt="Төв Цэнгэлдэх Хүрээлэн"
             />
           </Link>

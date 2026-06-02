@@ -118,14 +118,20 @@ export default function NewsDetail() {
     if (item) setViews(bumpView(item.id));
   }, [item]);
 
+  const isHtmlBody = useMemo(
+    () => !!item?.body && /<[a-z][\s\S]*>/i.test(item.body),
+    [item],
+  );
+
   const blocks: NewsBlock[] = useMemo(() => {
     if (!item) return [];
+    if (isHtmlBody) return [];
     if (item.blocks && item.blocks.length > 0) return item.blocks;
     const fallback: NewsBlock[] = [];
     if (item.image) fallback.push({ type: "image", value: item.image });
     if (item.body) fallback.push({ type: "text", value: item.body });
     return fallback;
-  }, [item]);
+  }, [item, isHtmlBody]);
 
   const onShare = (kind: "fb" | "tw" | "pin" | "in" | "copy") => {
     if (typeof window === "undefined" || !item) return;
@@ -309,16 +315,29 @@ export default function NewsDetail() {
               </div>
             </header>
 
-            <div className={BODY_WRAP_CLS}>
-              {blocks.map((b, i) => (
-                <NewsBlockRender key={i} block={b} alt={item.title} />
-              ))}
-              {blocks.length === 0 && (
-                <p className={TEXT_BLOCK_CLS}>
-                  Энэ мэдээний дэлгэрэнгүй мэдээлэл одоогоор алга.
-                </p>
-              )}
-            </div>
+            {isHtmlBody ? (
+              <div
+                className="news-body"
+                dangerouslySetInnerHTML={{ __html: item.body }}
+                style={{
+                  fontSize: 16,
+                  lineHeight: 1.75,
+                  color: "#3a3d4a",
+                  overflowWrap: "break-word",
+                }}
+              />
+            ) : (
+              <div className={BODY_WRAP_CLS}>
+                {blocks.map((b, i) => (
+                  <NewsBlockRender key={i} block={b} alt={item.title} />
+                ))}
+                {blocks.length === 0 && (
+                  <p className={TEXT_BLOCK_CLS}>
+                    Энэ мэдээний дэлгэрэнгүй мэдээлэл одоогоор алга.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </section>
       )}

@@ -154,6 +154,54 @@ adminUsers.patch("/:id/role", async (c) => {
   return c.json({ ok: true, data: enriched } as const);
 });
 
+const createUserSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
+  full_name: z.string().optional(),
+  role: z.enum(["user", "admin"]).optional().default("user"),
+});
+
+adminUsers.post("/", async (c) => {
+  const supaAdmin = getSupabaseAdmin();
+  if (!supaAdmin) {
+    return c.json({ ok: false, error: "supabase_not_configured" } as const, 503);
+  }
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = createUserSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ ok: false, error: "invalid_input", details: parsed.error.flatten() } as const, 400);
+  }
+  const { email, password, full_name, role } = parsed.data;
+
+  const { data: authData, error: authErr } = await supaAdmin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+  });
+  if (authErr || !authData?.user) {
+    return c.json({ ok: false, error: authErr?.message ?? "auth_create_failed" } as const, 500);
+  }
+
+  const { error: profileErr } = await supaAdmin.from("users").insert({
+    id: authData.user.id,
+    email,
+    full_name: full_name ?? "",
+    role,
+  });
+  if (profileErr) {
+    // Roll back auth user if profile insert fails
+    await supaAdmin.auth.admin.deleteUser(authData.user.id);
+    return c.json({ ok: false, error: profileErr.message } as const, 500);
+  }
+
+  const { data: row } = await supaAdmin
+    .from("users")
+    .select(SELECT_COLS)
+    .eq("id", authData.user.id)
+    .maybeSingle<DbUser>();
+  return c.json({ ok: true, data: { ...row, banned: false } } as const, 201);
+});
+
 const disabledSchema = z.object({ disabled: z.boolean() });
 
 adminUsers.patch("/:id/disabled", async (c) => {

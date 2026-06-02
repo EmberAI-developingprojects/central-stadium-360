@@ -8,12 +8,15 @@ import {
   type FormEvent,
   type MouseEvent as ReactMouseEvent,
 } from 'react';
+import Hls from 'hls.js';
+import * as THREE from 'three';
 import { Link, useLocation } from 'react-router-dom';
 import { useRequireAuth } from '../auth';
 import type { Session } from '../auth';
 import UserMenu from '../components/UserMenu';
-import StoryVideo from '../components/StoryVideo';
-import { cancelOrder, createOrder, listEvents, listOrders } from '../data/store';
+import { api } from '../lib/api';
+import type { WatchCam } from '../lib/api';
+import { createOrder, listEvents, listOrders } from '../data/store';
 import type { EventRecord, OrderRecord } from '../data/store';
 import {
   VIEWER_ANGLE_ACTIVE_CLS,
@@ -49,12 +52,10 @@ import {
   VIEWER_REACTIONS_CLS,
   VIEWER_STAGE_CLS,
   VIEWER_STAGE_SHELL_CLS,
-  VIEWER_STAT_CLS,
   VIEWER_STATS_CLS,
   VIEWER_TITLE_CLS,
   VIEWER_TITLE_WRAP_CLS,
   VIEWER_VOL_CLS,
-  VFX_VIDEO_CLS,
   TICKET_ALERT_CLS,
   TICKET_CHECKOUT_CLS,
   TICKET_FINEPRINT_CLS,
@@ -93,7 +94,6 @@ import {
   TICKET_STUB_META_CLS,
   TICKET_STUB_META_DD_CLS,
   TICKET_STUB_META_DT_CLS,
-  TICKET_STUB_REMOVE_HOVER_CLS,
   TICKET_STUB_TIER_CLS,
   TICKET_STUB_TITLE_CLS,
   TICKET_SUCCESS_ACTIONS_CLS,
@@ -157,7 +157,7 @@ import {
 } from './_watchStyles';
 
 type TabId = 'live' | 'upcoming' | 'tickets';
-type CamKey = 'stage' | 'crowd' | 'drone' | 'band';
+type CamKey = string;
 type TierValue = 'standard' | 'vip' | 'platinum';
 type PayValue = 'qpay' | 'socialpay' | 'card';
 
@@ -167,6 +167,8 @@ type TicketModalEvent = {
   date: string;
   image: string;
   base: number;
+  start_time?: string;
+  desc?: string;
 };
 
 type ChatMessage = { name: string; color: string; text: string; mine: boolean };
@@ -179,12 +181,6 @@ const FEATURED_FALLBACK: TicketModalEvent = {
   base: 0,
 };
 
-const CAMS: Record<CamKey, { label: string; sub: string }> = {
-  stage: { label: 'Тайз',      sub: 'Cam 01 · 4K HDR' },
-  crowd: { label: 'Үзэгчид',   sub: 'Cam 02 · 1080p' },
-  drone: { label: 'Панорама',  sub: 'Cam 03 · 4K' },
-  band:  { label: 'Хөгжимчид', sub: 'Cam 04 · 1080p' },
-};
 
 const TICKET_TIERS: { value: TierValue; name: string; desc: string; mult: number }[] = [
   { value: 'standard', name: 'Стандарт',   desc: 'HD 1080p шууд дамжуулал · нэг төхөөрөмж',         mult: 1 },
@@ -198,29 +194,6 @@ const PAY_METHODS: { value: PayValue; name: string; desc: string }[] = [
   { value: 'card',      name: 'Карт',      desc: 'Visa · Mastercard' },
 ];
 
-const BOTS = [
-  { name: 'Болормаа',   color: '#F87171' },
-  { name: 'Нямсүрэн',   color: '#34D399' },
-  { name: 'Цэцэгмаа',   color: '#FBBF24' },
-  { name: 'Энхбаяр',    color: '#60A5FA' },
-  { name: 'Дөлгөөн',    color: '#C084FC' },
-  { name: 'Алтанзул',   color: '#F472B6' },
-  { name: 'Баяржаргал', color: '#22D3EE' },
-];
-
-const CHAT_SAMPLES = [
-  'Хөөх ямар үзэсгэлэнтэй юм бэ 🔥',
-  '360° формат супер!',
-  'Тайзны цахилгаан тоног төхөөрөмж дэвшилттэй болсон',
-  'Хөгжмийн зохиолын чанар маш сайн байна',
-  'Дроне cam-ийн өнцөг үнэхээр гоё',
-  'Алгаа ташсаар ❤️',
-  'Энэ дууг хүлээж байсан',
-  'Гар утаснаасаа үзэж байна, чанар нь хүчтэй',
-  'Тайзны гэрэлтүүлэг шилдэг',
-  'Live chat-д хүн их байна 👏',
-  '4K чанартай үзэхэд талбай дээр байгаа мэт',
-];
 
 const TAB_IDS: readonly TabId[] = ['live', 'upcoming', 'tickets'] as const;
 const isTabId = (value: string): value is TabId =>
@@ -250,9 +223,15 @@ export default function Watch() {
   }, [refreshTickets]);
 
   const featuredEvent = useMemo<TicketModalEvent>(() => {
-    const found = events.find((e) => e.featured);
-    if (!found) return FEATURED_FALLBACK;
-    return { id: found.id, title: found.title, date: found.date, image: found.image, base: found.base };
+    if (events.length === 0) return FEATURED_FALLBACK;
+    const now = Date.now();
+    const sorted = [...events].sort((a, b) => {
+      const da = Math.abs(new Date(a.start_time).getTime() - now);
+      const db = Math.abs(new Date(b.start_time).getTime() - now);
+      return da - db;
+    });
+    const ev = sorted[0];
+    return { id: ev.id, title: ev.title, date: ev.date, image: ev.image, base: ev.base, start_time: ev.start_time, desc: ev.desc };
   }, [events]);
 
   const myTickets = useMemo(
@@ -264,6 +243,11 @@ export default function Watch() {
     () => myTickets.some((t) => t.eventId === featuredEvent.id),
     [myTickets, featuredEvent.id],
   );
+
+  const isLive = useMemo(() => {
+    if (!featuredEvent.start_time) return false;
+    return new Date(featuredEvent.start_time).getTime() <= Date.now();
+  }, [featuredEvent.start_time]);
 
   const openTicketModal = useCallback((event: TicketModalEvent) => setModalEvent(event), []);
   const closeTicketModal = useCallback(() => setModalEvent(null), []);
@@ -323,6 +307,7 @@ export default function Watch() {
         <LiveSection
           featuredEvent={featuredEvent}
           ownsFeatured={ownsFeatured}
+          isLive={isLive}
           onWatch={() => ownsFeatured ? openViewer() : openTicketModal(featuredEvent)}
           viewerOpen={viewerOpen}
         />
@@ -331,11 +316,6 @@ export default function Watch() {
 
         <TicketsSection
           tickets={myTickets}
-          onCancel={async (code) => {
-            if (!confirm('Энэ тасалбарыг цуцлах уу?')) return;
-            await cancelOrder(code);
-            refreshTickets();
-          }}
           onWatch={openViewer}
         />
       </main>
@@ -367,134 +347,97 @@ export default function Watch() {
 type LiveSectionProps = {
   featuredEvent: TicketModalEvent;
   ownsFeatured: boolean;
+  isLive: boolean;
   onWatch: () => void;
   viewerOpen: boolean;
 };
 
-function LiveSection({ featuredEvent, ownsFeatured, onWatch, viewerOpen }: LiveSectionProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [paused, setPaused] = useState(false);
+const MONTHS_ABBR_EN = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
 
-  useEffect(() => {
-    const v = videoRef.current;
-    if (!v) return;
-    const sync = () => setPaused(v.paused);
-    v.addEventListener('play', sync);
-    v.addEventListener('pause', sync);
-    sync();
-    return () => {
-      v.removeEventListener('play', sync);
-      v.removeEventListener('pause', sync);
-    };
-  }, []);
-
-  useEffect(() => {
-    const v = videoRef.current;
-    if (!v) return;
-    if (viewerOpen) v.pause();
-    else v.play().catch(() => {});
-  }, [viewerOpen]);
-
-  const [viewers, setViewers] = useState(12480);
-  useEffect(() => {
-    const id = setInterval(() => {
-      setViewers((n) => {
-        const next = n + Math.round((Math.random() - 0.45) * 18);
-        return next < 9000 ? 9000 : next;
-      });
-    }, 2500);
-    return () => clearInterval(id);
-  }, []);
-
-  const toggle = () => {
-    const v = videoRef.current;
-    if (!v) return;
-    if (v.paused) v.play(); else v.pause();
-  };
+function LiveSection({ featuredEvent, ownsFeatured, isLive, onWatch }: LiveSectionProps) {
+  const d = featuredEvent.start_time ? new Date(featuredEvent.start_time) : null;
+  const valid = d && !Number.isNaN(d.getTime());
+  const dateStr = valid
+    ? `${MONTHS_ABBR_EN[d!.getMonth()]} ${d!.getDate()} / ${d!.getFullYear()}`
+    : featuredEvent.date;
 
   return (
-    <section className={WATCH_SECTION_CLS} id="live">
-      <div className={WATCH_SECTION_HEAD_CLS}>
-        <span className={WATCH_EYEBROW_CLS}>
-          <span className={WATCH_LIVE_DOT_CLS} aria-hidden="true"></span>
-          Шууд дамжуулал
-        </span>
-        <h1 className={WATCH_TITLE_CLS}>Одоо явагдаж буй</h1>
-      </div>
-
-      <article className={WATCH_FEATURE_CLS}>
-        <div className={`${WATCH_PLAYER_CLS}${ownsFeatured ? '' : ' ' + WATCH_PLAYER_LOCKED_CLS}`}>
-          <StoryVideo
-            ref={videoRef}
-            autoPlay
-            loop
-            muted
-            playsInline
-            preload="metadata"
-            poster={featuredEvent.image}
-            fallbackAriaLabel={featuredEvent.title}
-          />
-          <div className={WATCH_LOCKED_CLS} hidden={ownsFeatured}>
-            <div className={WATCH_LOCKED_INNER_CLS}>
-              <span className={WATCH_LOCKED_ICON_CLS} aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="11" width="18" height="11" rx="2"/>
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                </svg>
-              </span>
-              <strong>Энэ эфир төлбөртэй</strong>
-              <span>«Шууд үзэх» товч дээр дарж тасалбараа авна уу.</span>
-            </div>
-          </div>
-          <div className={WATCH_PLAYER_OVERLAY_CLS}>
-            <span className={WATCH_LIVE_PILL_CLS}>
-              <span className={WATCH_LIVE_PULSE_CLS} aria-hidden="true"></span>
-              LIVE · 360°
+    <section className="w-full" id="live">
+      <div className="grid [grid-template-columns:55%_45%] max-[720px]:grid-cols-1 min-h-[460px] max-[720px]:min-h-0">
+        {/* Left: image */}
+        <div className="relative overflow-hidden bg-[#0a1628] max-[720px]:[aspect-ratio:16/9]">
+          {featuredEvent.image ? (
+            <img
+              src={featuredEvent.image}
+              alt={featuredEvent.title}
+              className="w-full h-full object-cover block"
+              loading="eager"
+            />
+          ) : (
+            <div className="w-full h-full min-h-[300px] bg-[#0a1628]" />
+          )}
+          {isLive && (
+            <span className="absolute top-4 left-4 inline-flex items-center gap-2 bg-[#e53935] text-white text-[11px] font-bold uppercase tracking-[0.14em] rounded-full px-3 py-1.5">
+              <span className="w-2 h-2 rounded-full bg-white animate-live-blink" aria-hidden="true" />
+              LIVE
             </span>
-            <div className={WATCH_PLAYER_META_CLS}>
-              <span>{viewers.toLocaleString('en-US')}</span> үзэгчид
-            </div>
-          </div>
-          <button
-            type="button"
-            className={`${WATCH_PLAY_CLS}${paused ? ' is-paused' : ''}`}
-            onClick={toggle}
-            aria-label="Тоглуулах/Зогсоох"
-          >
-            <svg className="block [.is-paused_&]:hidden" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <rect x="6" y="5" width="4" height="14" rx="1"/>
-              <rect x="14" y="5" width="4" height="14" rx="1"/>
-            </svg>
-            <svg className="hidden [.is-paused_&]:block" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M8 5v14l11-7z"/>
-            </svg>
-          </button>
+          )}
         </div>
 
-        <div className={WATCH_FEATURE_TEXT_CLS}>
-          <span className={WATCH_BADGE_CLS}>Шууд · 360°</span>
-          <h2 className={WATCH_FEATURE_TITLE_CLS}>{featuredEvent.title}</h2>
-          <p className={WATCH_FEATURE_DESC_CLS}>
-            Гэрээсээ, ажлын газраасаа, эсвэл аяллын дунд — хаанаас ч энэ тоглолтыг
-            шууд үзээрэй. Төв Цэнгэлдэх Хүрээлэнгээс зөвхөн вэбсайтаар цацагдах 360°
-            гранд эфир. Концертын танхимд биш, дэлгэцэн дээрээ суух мэдрэмж.
+        {/* Right: info */}
+        <div className="bg-[#071526] flex flex-col justify-center px-10 py-14 max-[920px]:px-7 max-[920px]:py-10 max-[720px]:px-6 max-[720px]:py-8">
+          <p className="text-[rgba(255,255,255,0.5)] text-[13px] font-bold uppercase tracking-[0.2em] m-0 mb-5">
+            {dateStr}
           </p>
-          <ul className={WATCH_META_LIST_CLS}>
-            <li>📅 2026 / 05 / 20 · 21:00 (UTC+8)</li>
-            <li>📡 Шууд дамжуулж байна · ямар ч төхөөрөмжөөс үзнэ</li>
-            <li>🎥 360° олон өнцөг · 4K HDR</li>
-          </ul>
-          <div className={WATCH_FEATURE_ACTIONS_CLS}>
-            <button type="button" className={`${WATCH_BTN_CLS} ${WATCH_BTN_PRIMARY_CLS}`} onClick={onWatch}>
-              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
-              Шууд үзэх
+          <h1 className="text-white text-[40px] font-extrabold uppercase tracking-[-0.01em] leading-[1.1] m-0 max-[920px]:text-[30px] max-[720px]:text-[24px]">
+            {featuredEvent.title}
+          </h1>
+          {featuredEvent.desc && (
+            <p className="text-[rgba(255,255,255,0.5)] text-[14px] mt-3 m-0 uppercase tracking-[0.06em] font-medium">
+              {featuredEvent.desc}
+            </p>
+          )}
+          <div className="mt-8 flex items-center gap-3 flex-wrap">
+            <Link
+              to={`/events/${featuredEvent.id}`}
+              className="inline-flex items-center justify-center h-12 px-7 rounded-sm bg-white text-[#071526] text-[13px] font-bold uppercase tracking-[0.1em] no-underline [transition:background_.15s_ease,transform_.15s_ease] hover:bg-[rgba(255,255,255,0.88)] hover:-translate-y-px"
+            >
+              Дэлгэрэнгүй
+            </Link>
+            <button
+              type="button"
+              onClick={onWatch}
+              className="inline-flex items-center justify-center gap-2 h-12 px-7 rounded-sm bg-transparent border-2 border-solid border-white text-white text-[13px] font-bold uppercase tracking-[0.1em] cursor-pointer font-[inherit] [transition:background_.15s_ease,transform_.15s_ease] hover:bg-[rgba(255,255,255,0.1)] hover:-translate-y-px"
+            >
+              {isLive && ownsFeatured ? (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-[#e53935] animate-live-blink" aria-hidden="true" />
+                  Шууд үзэх
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M2 9a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z"/>
+                  </svg>
+                  Тасалбар авах
+                </>
+              )}
             </button>
-            <button type="button" className={`${WATCH_BTN_CLS} ${WATCH_BTN_GHOST_CLS}`}>Чанар: 4K</button>
           </div>
         </div>
-      </article>
+      </div>
     </section>
   );
+}
+
+const MONTHS_ABBR_MN = ["1-р","2-р","3-р","4-р","5-р","6-р","7-р","8-р","9-р","10-р","11-р","12-р"];
+
+function fmtEventTime(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const h = d.getHours(), m = d.getMinutes();
+  const ampm = h >= 12 ? "PM" : "AM";
+  return `${h % 12 || 12}:${m.toString().padStart(2,"0")} ${ampm}`;
 }
 
 type UpcomingSectionProps = {
@@ -503,38 +446,66 @@ type UpcomingSectionProps = {
 };
 
 function UpcomingSection({ events, onBuy }: UpcomingSectionProps) {
-  const list = events.filter((e) => !e.featured);
+  if (events.length === 0) return null;
   return (
-    <section className={WATCH_SECTION_CLS} id="upcoming">
-      <div className={WATCH_SECTION_HEAD_CLS}>
-        <span className={WATCH_EYEBROW_CLS}>Удахгүй</span>
-        <h2 className={WATCH_TITLE_CLS}>Удахгүй болох арга хэмжээ</h2>
-      </div>
-
-      <div className={WATCH_GRID_CLS}>
-        {list.map((ev) => (
-          <article key={ev.id} className={WATCH_CARD_CLS}>
-            <div className={WATCH_CARD_IMG_CLS}>
-              <img src={ev.image} alt={ev.title} />
-              <span className={WATCH_CARD_PILL_CLS}>{ev.pill}</span>
-            </div>
-            <div className={WATCH_CARD_BODY_CLS}>
-              <span className={WATCH_CARD_DATE_CLS}>{ev.date}</span>
-              <h3 className={WATCH_CARD_TITLE_CLS}>{ev.title}</h3>
-              <p className={WATCH_CARD_DESC_CLS}>{ev.desc}</p>
-              <div className={WATCH_CARD_ACTIONS_CLS}>
-                <button
-                  type="button"
-                  className={`${WATCH_BTN_CLS} ${WATCH_BTN_PRIMARY_CLS}`}
-                  onClick={() => onBuy({ id: ev.id, title: ev.title, date: ev.when, image: ev.image, base: ev.base })}
-                >
-                  Тасалбар авах
-                </button>
-                <span className={WATCH_CARD_PRICE_CLS}>{ev.base.toLocaleString('en-US')}₮-аас</span>
-              </div>
-            </div>
-          </article>
-        ))}
+    <section className="w-full px-6 py-10 max-[920px]:px-5" id="upcoming">
+      <div className="max-w-screen-page mx-auto">
+        <div className="flex items-center gap-2 mb-8">
+          <svg className="w-[18px] h-[18px] text-[rgba(255,255,255,0.5)] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
+          </svg>
+          <span className="text-[12px] font-bold uppercase tracking-[0.2em] text-[rgba(255,255,255,0.5)]">
+            Арга хэмжээнүүд
+          </span>
+        </div>
+        <div className="grid grid-cols-3 gap-5 max-[920px]:grid-cols-2 max-[560px]:grid-cols-1">
+          {events.map((ev) => {
+            const d = new Date(ev.start_time);
+            const valid = !Number.isNaN(d.getTime());
+            const day = valid ? d.getDate() : "";
+            const monthAbbr = valid ? MONTHS_ABBR_MN[d.getMonth()] : "";
+            const time = valid ? fmtEventTime(ev.start_time) : "";
+            const evLive = valid && d.getTime() <= Date.now();
+            return (
+              <article
+                key={ev.id}
+                className="flex flex-col rounded-[14px] overflow-hidden bg-[#0d2044] group [transition:transform_.2s_ease,box-shadow_.2s_ease] hover:-translate-y-1 hover:shadow-[0_24px_48px_-14px_rgba(0,0,0,0.7)] cursor-pointer"
+                onClick={() => onBuy({ id: ev.id, title: ev.title, date: ev.when, image: ev.image, base: ev.base, start_time: ev.start_time, desc: ev.desc })}
+              >
+                <div className="relative w-full aspect-[16/9] overflow-hidden bg-[#071a35] flex-none">
+                  {ev.image ? (
+                    <img src={ev.image} alt={ev.title} className="w-full h-full object-cover block [transition:transform_.45s_ease] group-hover:scale-[1.04]" loading="lazy" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <svg className="w-12 h-12 text-[rgba(255,255,255,0.12)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
+                      </svg>
+                    </div>
+                  )}
+                  {evLive && (
+                    <span className="absolute top-2 left-2 inline-flex items-center gap-1.5 bg-[#e53935] text-white text-[10px] font-bold uppercase tracking-[0.12em] rounded-full px-2.5 py-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-white animate-live-blink" aria-hidden="true"/>LIVE
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-start gap-4 p-4 flex-1">
+                  <div className="flex flex-col items-center min-w-[44px] shrink-0 pt-0.5">
+                    <span className="text-[11px] font-bold text-[rgba(255,255,255,0.5)] uppercase tracking-[0.07em] leading-none">{monthAbbr}</span>
+                    <span className="text-[34px] font-extrabold text-white leading-[1.05] tracking-[-0.02em]">{day}</span>
+                    <span className="text-[11px] text-[rgba(255,255,255,0.45)] leading-none mt-0.5">{time}</span>
+                  </div>
+                  <div className="flex-1 min-w-0 pt-0.5">
+                    {ev.pill && (
+                      <span className="inline-block text-[10px] font-extrabold uppercase tracking-[0.14em] bg-[rgba(255,255,255,0.08)] text-[#6fa8dc] border border-solid border-[rgba(111,168,220,0.3)] rounded px-2 py-0.5 mb-2">{ev.pill}</span>
+                    )}
+                    <h3 className="text-white font-extrabold text-[16px] leading-[1.25] m-0 tracking-[-0.01em] uppercase">{ev.title}</h3>
+                    {ev.desc && <p className="text-[rgba(255,255,255,0.5)] text-[12px] mt-1.5 m-0 leading-[1.45]">{ev.desc}</p>}
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
       </div>
     </section>
   );
@@ -542,11 +513,10 @@ function UpcomingSection({ events, onBuy }: UpcomingSectionProps) {
 
 type TicketsSectionProps = {
   tickets: OrderRecord[];
-  onCancel: (code: string) => void;
   onWatch: () => void;
 };
 
-function TicketsSection({ tickets, onCancel, onWatch }: TicketsSectionProps) {
+function TicketsSection({ tickets, onWatch }: TicketsSectionProps) {
   const sorted = useMemo(
     () => [...tickets].sort((a, b) => (b.purchasedAt || '').localeCompare(a.purchasedAt || '')),
     [tickets],
@@ -591,7 +561,6 @@ function TicketsSection({ tickets, onCancel, onWatch }: TicketsSectionProps) {
                 </dl>
                 <div className={TICKET_STUB_BARCODE_CLS} aria-hidden="true"></div>
                 <div className={TICKET_STUB_ACTIONS_CLS}>
-                  <button type="button" className={`${WATCH_BTN_CLS} ${WATCH_BTN_GHOST_CLS} ${TICKET_STUB_BTN_CLS} ${TICKET_STUB_REMOVE_HOVER_CLS}`} onClick={() => onCancel(t.code)}>Цуцлах</button>
                   <Link to={`/orders/${t.code}`} className={`${WATCH_BTN_CLS} ${WATCH_BTN_GHOST_CLS} ${TICKET_STUB_BTN_CLS}`}>
                     Дэлгэрэнгүй
                   </Link>
@@ -624,35 +593,213 @@ type FullscreenElement = HTMLElement & {
   webkitRequestFullscreen?: () => Promise<void> | void;
 };
 
+type QualityLevel = { index: number; height: number; label: string };
+
 function ViewerOverlay({ session, featuredEvent, onClose }: ViewerOverlayProps) {
-  const mainRef = useRef<HTMLVideoElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
   const stageRef = useRef<HTMLElement>(null);
   const chatListRef = useRef<HTMLDivElement>(null);
-  const reactFloatRef = useRef<HTMLDivElement>(null);
 
-  const [angle, setAngle] = useState<CamKey>('stage');
+  const [cams, setCams] = useState<WatchCam[]>([]);
+  const [camIdx, setCamIdx] = useState(0);
   const [paused, setPaused] = useState(false);
   const [muted, setMuted] = useState(true);
   const [volume, setVolume] = useState(60);
-  const [elapsedSec, setElapsedSec] = useState(42 * 60 + 18);
-  const [viewerCount, setViewerCount] = useState(12480);
-  const [quality, setQuality] = useState('1080');
+  const [elapsedSec, setElapsedSec] = useState(0);
+  const [qualityLevels, setQualityLevels] = useState<QualityLevel[]>([]);
+  const [qualityIdx, setQualityIdx] = useState(-1);
   const [cc, setCc] = useState(false);
   const [isFs, setIsFs] = useState(false);
   const [idle, setIdle] = useState(false);
   const [chat, setChat] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [bubbles, setBubbles] = useState<Array<{ id: number; emoji: string; left: string; duration: string }>>([]);
+  const bubbleIdRef = useRef(0);
 
+  const activeCam = cams[camIdx] ?? null;
+  const is360 = activeCam?.type === '360';
+
+  // Load camera stream configs
+  useEffect(() => {
+    api.getWatchToken().then((res) => {
+      if (res.ok) setCams(res.data.cams);
+    });
+  }, []);
+
+  // HLS stream loading — re-runs when active camera changes
+  useEffect(() => {
+    const video = videoRef.current;
+    const url = activeCam?.hlsUrl;
+    if (!video) return;
+
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+    setQualityLevels([]);
+    setQualityIdx(-1);
+
+    if (!url) return;
+
+    if (Hls.isSupported()) {
+      const hls = new Hls({ startLevel: -1, capLevelToPlayerSize: true });
+      hlsRef.current = hls;
+      hls.loadSource(url);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
+        const levels: QualityLevel[] = data.levels.map((l, i) => ({
+          index: i,
+          height: l.height,
+          label: l.height >= 1080 ? '1080p' : l.height >= 720 ? '720p' : `${l.height}p`,
+        }));
+        setQualityLevels(levels);
+        video.play().catch(() => {});
+      });
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = url;
+      video.play().catch(() => {});
+    }
+
+    return () => {
+      if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
+    };
+  }, [activeCam?.hlsUrl]);
+
+  // Apply quality level selection
+  useEffect(() => {
+    if (hlsRef.current) hlsRef.current.currentLevel = qualityIdx;
+  }, [qualityIdx]);
+
+  // Sync video state
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.muted = muted;
+    v.volume = volume / 100;
+    const syncPlay = () => setPaused(v.paused);
+    v.addEventListener('play', syncPlay);
+    v.addEventListener('pause', syncPlay);
+    return () => { v.removeEventListener('play', syncPlay); v.removeEventListener('pause', syncPlay); };
+  }, [muted, volume]);
+
+  // 360° Three.js sphere renderer
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+    if (!is360 || !canvas || !video) return;
+
+    const scene = new THREE.Scene();
+    const cam3 = new THREE.PerspectiveCamera(75, canvas.clientWidth / Math.max(canvas.clientHeight, 1), 0.1, 1000);
+    cam3.position.set(0, 0, 0.01);
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
+
+    const texture = new THREE.VideoTexture(video);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    const geometry = new THREE.SphereGeometry(5, 64, 40);
+    geometry.scale(-1, 1, 1);
+    const sphere = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: texture }));
+    scene.add(sphere);
+
+    let isDragging = false;
+    let prevX = 0, prevY = 0;
+    let rotX = 0, rotY = 0;
+
+    const applyRot = () => {
+      cam3.rotation.order = 'YXZ';
+      cam3.rotation.y = THREE.MathUtils.degToRad(rotY);
+      cam3.rotation.x = THREE.MathUtils.degToRad(rotX);
+    };
+
+    const onDown = (x: number, y: number) => { isDragging = true; prevX = x; prevY = y; };
+    const onMove = (x: number, y: number) => {
+      if (!isDragging) return;
+      rotY += (x - prevX) * 0.25;
+      rotX = Math.max(-85, Math.min(85, rotX + (y - prevY) * 0.25));
+      prevX = x; prevY = y;
+      applyRot();
+    };
+    const onUp = () => { isDragging = false; };
+
+    const onMouseDown = (e: MouseEvent) => onDown(e.clientX, e.clientY);
+    const onMouseMove = (e: MouseEvent) => onMove(e.clientX, e.clientY);
+    const onTouchStart = (e: TouchEvent) => { e.preventDefault(); onDown(e.touches[0].clientX, e.touches[0].clientY); };
+    const onTouchMove = (e: TouchEvent) => { e.preventDefault(); onMove(e.touches[0].clientX, e.touches[0].clientY); };
+
+    canvas.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onUp);
+    canvas.addEventListener('touchstart', onTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+    canvas.addEventListener('touchend', onUp);
+
+    const ro = new ResizeObserver(() => {
+      renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
+      cam3.aspect = canvas.clientWidth / Math.max(canvas.clientHeight, 1);
+      cam3.updateProjectionMatrix();
+    });
+    ro.observe(canvas);
+
+    let animId: number;
+    const animate = () => {
+      animId = requestAnimationFrame(animate);
+      texture.needsUpdate = true;
+      renderer.render(scene, cam3);
+    };
+    animate();
+
+    return () => {
+      cancelAnimationFrame(animId);
+      ro.disconnect();
+      renderer.dispose();
+      canvas.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onUp);
+      canvas.removeEventListener('touchstart', onTouchStart);
+      canvas.removeEventListener('touchmove', onTouchMove);
+      canvas.removeEventListener('touchend', onUp);
+    };
+  }, [is360]);
+
+  // Elapsed timer from viewer open
+  useEffect(() => {
+    const id = setInterval(() => setElapsedSec((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Fullscreen state
   const toggleStageFs = useCallback(() => {
     const t = stageRef.current as FullscreenElement | null;
     if (!t) return;
     const doc = document as FullscreenDocument;
     const inFs = doc.fullscreenElement || doc.webkitFullscreenElement;
-    if (!inFs) {
-      (t.requestFullscreen || t.webkitRequestFullscreen)?.call(t);
-    } else {
-      (doc.exitFullscreen || doc.webkitExitFullscreen)?.call(doc);
-    }
+    if (!inFs) (t.requestFullscreen || t.webkitRequestFullscreen)?.call(t);
+    else (doc.exitFullscreen || doc.webkitExitFullscreen)?.call(doc);
   }, []);
+
+  useEffect(() => {
+    const onFs = () => {
+      const doc = document as FullscreenDocument;
+      setIsFs((doc.fullscreenElement || doc.webkitFullscreenElement) === stageRef.current);
+    };
+    document.addEventListener('fullscreenchange', onFs);
+    document.addEventListener('webkitfullscreenchange', onFs);
+    return () => { document.removeEventListener('fullscreenchange', onFs); document.removeEventListener('webkitfullscreenchange', onFs); };
+  }, []);
+
+  useEffect(() => {
+    if (!isFs) { setIdle(false); return; }
+    let t: ReturnType<typeof setTimeout> | null = null;
+    const stage = stageRef.current;
+    if (!stage) return;
+    const onMove = () => { setIdle(false); if (t) clearTimeout(t); t = setTimeout(() => setIdle(true), 2500); };
+    stage.addEventListener('mousemove', onMove);
+    stage.addEventListener('mouseleave', () => setIdle(false));
+    onMove();
+    return () => { if (t) clearTimeout(t); stage.removeEventListener('mousemove', onMove); };
+  }, [isFs]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -666,128 +813,26 @@ function ViewerOverlay({ session, featuredEvent, onClose }: ViewerOverlayProps) 
   }, [onClose, toggleStageFs]);
 
   useEffect(() => {
-    const v = mainRef.current;
-    if (!v) return;
-    v.volume = volume / 100;
-    v.muted = muted;
-    const syncPlay = () => setPaused(v.paused);
-    v.addEventListener('play', syncPlay);
-    v.addEventListener('pause', syncPlay);
-    v.play().catch(() => {});
-    return () => {
-      v.removeEventListener('play', syncPlay);
-      v.removeEventListener('pause', syncPlay);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    const v = mainRef.current;
-    if (!v) return;
-    v.muted = muted;
-    v.volume = volume / 100;
-  }, [muted, volume]);
-
-  useEffect(() => {
-    const id = setInterval(() => setElapsedSec((s) => s + 1), 1000);
-    return () => clearInterval(id);
-  }, []);
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      setViewerCount((n) => {
-        const next = n + Math.round((Math.random() - 0.4) * 22);
-        return next < 9000 ? 9000 : next;
-      });
-    }, 2200);
-    return () => clearInterval(id);
-  }, []);
-
-  useEffect(() => {
-    const onFs = () => {
-      const doc = document as FullscreenDocument;
-      const fsEl = doc.fullscreenElement || doc.webkitFullscreenElement;
-      setIsFs(fsEl === stageRef.current);
-    };
-    document.addEventListener('fullscreenchange', onFs);
-    document.addEventListener('webkitfullscreenchange', onFs);
-    return () => {
-      document.removeEventListener('fullscreenchange', onFs);
-      document.removeEventListener('webkitfullscreenchange', onFs);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!isFs) { setIdle(false); return; }
-    let t: ReturnType<typeof setTimeout> | null = null;
-    const stage = stageRef.current;
-    if (!stage) return;
-    const onMove = () => {
-      setIdle(false);
-      if (t) clearTimeout(t);
-      t = setTimeout(() => setIdle(true), 2500);
-    };
-    stage.addEventListener('mousemove', onMove);
-    stage.addEventListener('mouseleave', () => setIdle(false));
-    onMove();
-    return () => {
-      if (t) clearTimeout(t);
-      stage.removeEventListener('mousemove', onMove);
-    };
-  }, [isFs]);
-
-  useEffect(() => {
-    const seed = Array.from({ length: 6 }, () => randomBotMessage());
-    setChat(seed);
-    const id = setInterval(() => {
-      setChat((prev) => {
-        const next = prev.length > 80 ? prev.slice(1) : prev.slice();
-        next.push(randomBotMessage());
-        return next;
-      });
-    }, 3200);
-    return () => clearInterval(id);
-  }, []);
-
-  useEffect(() => {
     const list = chatListRef.current;
     if (list) list.scrollTop = list.scrollHeight;
   }, [chat]);
 
   const togglePlay = () => {
-    const v = mainRef.current;
+    const v = videoRef.current;
     if (!v) return;
     if (v.paused) v.play(); else v.pause();
   };
 
-  const toggleMute = () => {
-    setMuted((m) => {
-      const next = !m;
-      if (!next && volume === 0) setVolume(60);
-      return next;
-    });
-  };
-
-  const onVolume = (e: ChangeEvent<HTMLInputElement>) => {
-    const v = parseInt(e.target.value, 10);
-    setVolume(v);
-    setMuted(v === 0);
-  };
+  const toggleMute = () => setMuted((m) => { const next = !m; if (!next && volume === 0) setVolume(60); return next; });
+  const onVolume = (e: ChangeEvent<HTMLInputElement>) => { const v = parseInt(e.target.value, 10); setVolume(v); setMuted(v === 0); };
 
   const togglePip = async () => {
     try {
-      if (document.pictureInPictureElement) {
-        await document.exitPictureInPicture();
-      } else if (mainRef.current?.requestPictureInPicture) {
-        await mainRef.current.requestPictureInPicture();
-      }
-    } catch {
-      
-    }
+      if (document.pictureInPictureElement) await document.exitPictureInPicture();
+      else if (videoRef.current?.requestPictureInPicture) await videoRef.current.requestPictureInPicture();
+    } catch { /* pip not supported */ }
   };
 
-  const [bubbles, setBubbles] = useState<Array<{ id: number; emoji: string; left: string; duration: string }>>([]);
-  const bubbleIdRef = useRef(0);
   const emitReact = (emoji: string) => {
     for (let i = 0; i < 5; i++) {
       setTimeout(() => {
@@ -800,7 +845,6 @@ function ViewerOverlay({ session, featuredEvent, onClose }: ViewerOverlayProps) 
     }
   };
 
-  const [chatInput, setChatInput] = useState('');
   const onChatSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const text = chatInput.trim();
@@ -810,9 +854,8 @@ function ViewerOverlay({ session, featuredEvent, onClose }: ViewerOverlayProps) 
     setChatInput('');
   };
 
-  const meta = CAMS[angle] || CAMS.stage;
-  const qLabel = quality === 'auto' ? 'Auto' : (quality === '2160' ? '4K · 2160p' : quality + 'p');
-  const subLabel = meta.sub.replace(/·\s*[^·]+$/, `· ${qLabel}`);
+  const qualityLabel = qualityIdx === -1 ? 'Auto' : (qualityLevels.find(l => l.index === qualityIdx)?.label ?? 'Auto');
+  const subLabel = activeCam ? `${activeCam.sub} · ${qualityLabel}` : '';
 
   return (
     <div className={VIEWER_CLS} role="dialog" aria-modal="true" aria-label="Шууд дамжуулал">
@@ -830,12 +873,6 @@ function ViewerOverlay({ session, featuredEvent, onClose }: ViewerOverlayProps) 
           </span>
         </div>
         <div className={VIEWER_STATS_CLS}>
-          <span className={VIEWER_STAT_CLS} title="Үзэгчид">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/>
-            </svg>
-            <span>{viewerCount.toLocaleString('en-US')}</span>
-          </span>
           <button type="button" className={VIEWER_ICON_BTN_CLS} onClick={togglePip} aria-label="Жижиг цонх (PiP)" title="Жижиг цонх">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <rect x="3" y="5" width="18" height="14" rx="2"/>
@@ -852,47 +889,74 @@ function ViewerOverlay({ session, featuredEvent, onClose }: ViewerOverlayProps) 
       </header>
 
       <div className={VIEWER_BODY_CLS}>
+        {/* Camera sidebar — all 4 selectable */}
         <aside className={VIEWER_ANGLES_CLS} aria-label="Камерын өнцөг">
-          {(['crowd', 'drone', 'band'] as const).map((k) => (
-            <button key={k} type="button" className={`${VIEWER_ANGLE_CLS}${angle === k ? ' ' + VIEWER_ANGLE_ACTIVE_CLS : ''}`} onClick={() => setAngle(k)}>
-              <span className={`${VIEWER_ANGLE_THUMB_CLS} ${VFX_VIDEO_CLS[k]}`}>
-                <StoryVideo
-                  muted
-                  autoPlay
-                  loop
-                  playsInline
-                  preload="metadata"
-                  poster={featuredEvent.image}
-                  fallbackAriaLabel={CAMS[k].label}
-                />
+          {cams.map((cam, i) => (
+            <button
+              key={cam.id}
+              type="button"
+              className={`${VIEWER_ANGLE_CLS}${camIdx === i ? ' ' + VIEWER_ANGLE_ACTIVE_CLS : ''}`}
+              onClick={() => setCamIdx(i)}
+            >
+              <span className={VIEWER_ANGLE_THUMB_CLS} style={{ background: '#0b1929', position: 'relative' }}>
+                {featuredEvent.image && (
+                  <img
+                    src={featuredEvent.image}
+                    alt=""
+                    aria-hidden="true"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: camIdx === i ? 0.5 : 0.35 }}
+                  />
+                )}
                 <span className={VIEWER_ANGLE_LIVE_CLS}></span>
+                {cam.type === '360' && (
+                  <span style={{ position: 'absolute', bottom: 4, right: 4, fontSize: 9, fontWeight: 700, background: 'rgba(0,0,0,0.7)', color: '#60a5fa', padding: '1px 4px', borderRadius: 3, letterSpacing: '0.06em' }}>360°</span>
+                )}
               </span>
               <span className={VIEWER_ANGLE_LABEL_CLS}>
-                <strong>{CAMS[k].label}</strong>
-                <small>{CAMS[k].sub.split(' · ')[0]}{CAMS[k].sub.includes(' · 4K') ? ' · 4K' : ''}</small>
+                <strong>{cam.label}</strong>
+                <small>{cam.sub}</small>
               </span>
             </button>
           ))}
         </aside>
 
+        {/* Main player stage */}
         <section className={`${VIEWER_STAGE_CLS}${isFs ? ' is-fs' : ''}${idle ? ' is-idle' : ''}`} ref={stageRef}>
-          <div className={`${VIEWER_STAGE_SHELL_CLS} ${VFX_VIDEO_CLS[angle]}`}>
-            <StoryVideo
-              ref={mainRef}
+          <div className={VIEWER_STAGE_SHELL_CLS} style={{ background: '#000', position: 'relative', width: '100%', height: '100%' }}>
+            {/* Hidden video element — used for both normal and 360° (as texture source) */}
+            <video
+              ref={videoRef}
               autoPlay
-              loop
               playsInline
-              preload="metadata"
+              muted={muted}
+              style={{ width: '100%', height: '100%', objectFit: 'contain', display: is360 ? 'none' : 'block' }}
               poster={featuredEvent.image}
               onDoubleClick={toggleStageFs}
-              fallbackAriaLabel={featuredEvent.title}
             />
+            {/* Three.js canvas for 360° camera */}
+            <canvas
+              ref={canvasRef}
+              style={{ width: '100%', height: '100%', display: is360 ? 'block' : 'none', cursor: 'grab', touchAction: 'none' }}
+              onDoubleClick={toggleStageFs}
+            />
+            {/* No stream placeholder */}
+            {!activeCam?.hlsUrl && (
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, color: 'rgba(255,255,255,0.4)', pointerEvents: 'none' }}>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/>
+                </svg>
+                <span style={{ fontSize: 13, fontWeight: 600 }}>Урсгал тохируулагдаагүй байна</span>
+              </div>
+            )}
           </div>
-          <span className={VIEWER_MAIN_CAM_CLS}>
-            <strong>{meta.label}</strong> · <span>{subLabel}</span>
-          </span>
 
-          <div className={VIEWER_REACT_FLOAT_CLS} ref={reactFloatRef} aria-hidden="true">
+          {activeCam && (
+            <span className={VIEWER_MAIN_CAM_CLS}>
+              <strong>{activeCam.label}</strong> · <span>{subLabel}</span>
+            </span>
+          )}
+
+          <div className={VIEWER_REACT_FLOAT_CLS} aria-hidden="true">
             {bubbles.map((b) => (
               <span
                 key={b.id}
@@ -936,15 +1000,14 @@ function ViewerOverlay({ session, featuredEvent, onClose }: ViewerOverlayProps) 
             <div className={VIEWER_CONTROLS_RIGHT_CLS}>
               <label className={VIEWER_QUALITY_CLS}>
                 <span>Чанар</span>
-                <select value={quality} onChange={(e) => setQuality(e.target.value)}>
-                  <option value="auto">Auto</option>
-                  <option value="2160">4K · 2160p</option>
-                  <option value="1080">1080p</option>
-                  <option value="720">720p</option>
-                  <option value="480">480p</option>
+                <select value={qualityIdx} onChange={(e) => setQualityIdx(Number(e.target.value))}>
+                  <option value={-1}>Auto</option>
+                  {qualityLevels.filter(l => l.height === 1080 || l.height === 720).map((l) => (
+                    <option key={l.index} value={l.index}>{l.label}</option>
+                  ))}
                 </select>
               </label>
-              <button type="button" className={`${VIEWER_ICON_BTN_CLS}${cc ? ' ' + VIEWER_ICON_BTN_ON_CLS : ''}`} onClick={() => setCc((c) => !c)} aria-label="Хадмал орчуулга" title="Хадмал">
+              <button type="button" className={`${VIEWER_ICON_BTN_CLS}${cc ? ' ' + VIEWER_ICON_BTN_ON_CLS : ''}`} onClick={() => setCc((c) => !c)} aria-label="Хадмал" title="Хадмал">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <rect x="3" y="5" width="18" height="14" rx="2"/>
                   <path d="M7 13a2 2 0 1 0 0-2"/><path d="M14 13a2 2 0 1 0 0-2"/>
@@ -963,6 +1026,11 @@ function ViewerOverlay({ session, featuredEvent, onClose }: ViewerOverlayProps) 
             <span className={VIEWER_CHAT_COUNT_CLS}>{chat.length}</span>
           </header>
           <div className={VIEWER_CHAT_LIST_CLS} ref={chatListRef} aria-live="polite">
+            {chat.length === 0 && (
+              <div style={{ padding: '24px 16px', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>
+                Одоогоор мессеж алга.<br/>Та мессеж бичиж эхлэх боломжтой.
+              </div>
+            )}
             {chat.map((m, i) => (
               <div key={i} className={`${VIEWER_MSG_CLS}${m.mine ? ' ' + VIEWER_MSG_MINE_CLS : ''}`}>
                 <span className={VIEWER_MSG_NAME_CLS} style={{ color: m.color }}>{m.name}</span>
@@ -995,12 +1063,6 @@ function fmtElapsed(s: number): string {
   const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
   const sec = String(s % 60).padStart(2, '0');
   return `${h}:${m}:${sec}`;
-}
-
-function randomBotMessage(): ChatMessage {
-  const b = BOTS[Math.floor(Math.random() * BOTS.length)];
-  const t = CHAT_SAMPLES[Math.floor(Math.random() * CHAT_SAMPLES.length)];
-  return { name: b.name, color: b.color, text: t, mine: false };
 }
 
 type TicketModalProps = {
