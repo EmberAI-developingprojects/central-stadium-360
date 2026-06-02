@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { getHomeContent, updateHomeContent } from "../../data/store";
 import { api } from "../../lib/api";
 import type {
+  HeroImage,
   HomeContent,
   MemberItem,
   NewsBlock,
@@ -27,9 +28,10 @@ import {
   ADMIN_TABS_CLS,
 } from "../_adminStyles";
 
-type SectionKey = "news" | "partners" | "roadmap" | "members";
+type SectionKey = "news" | "partners" | "roadmap" | "members" | "hero";
 
 const TABS: { key: SectionKey; label: string }[] = [
+  { key: "hero", label: "Hero зураг" },
   { key: "news", label: "Мэдээ" },
   { key: "partners", label: "Хамтрагч" },
   { key: "roadmap", label: "Түүхэн замнал" },
@@ -94,7 +96,7 @@ export default function Content() {
 
   if (!content) return <div className={ADMIN_EMPTY_CLS}>Уншиж байна…</div>;
 
-  const section = content[tab] || [];
+  const section = tab === "hero" ? [] : (content[tab] || []);
 
   const updateSectionNews = (next: NewsItem[]) =>
     setContent({ ...content, news: next });
@@ -104,6 +106,11 @@ export default function Content() {
     setContent({ ...content, roadmap: next });
   const updateSectionMembers = (next: MemberItem[]) =>
     setContent({ ...content, members: next });
+  const updateHeroTile = (slot: string, patch: Partial<HeroImage>) =>
+    setContent({
+      ...content,
+      hero: content.hero.map((h) => (h.slot === slot ? { ...h, ...patch } : h)),
+    });
 
   const removeItem = (id: string) => {
     if (tab === "news")
@@ -112,7 +119,8 @@ export default function Content() {
       updateSectionPartners(content.partners.filter((it) => it.id !== id));
     else if (tab === "roadmap")
       updateSectionRoadmap(content.roadmap.filter((it) => it.id !== id));
-    else updateSectionMembers(content.members.filter((it) => it.id !== id));
+    else if (tab === "members")
+      updateSectionMembers(content.members.filter((it) => it.id !== id));
   };
 
   const updateNews = (id: string, patch: Partial<NewsItem>) =>
@@ -138,13 +146,18 @@ export default function Content() {
       updateSectionPartners([...content.partners, NEW_ITEM.partners()]);
     else if (tab === "roadmap")
       updateSectionRoadmap([...content.roadmap, NEW_ITEM.roadmap()]);
-    else updateSectionMembers([...content.members, NEW_ITEM.members()]);
+    else if (tab === "members")
+      updateSectionMembers([...content.members, NEW_ITEM.members()]);
   };
 
   const onSave = async () => {
     setBusy(true);
     try {
-      await updateHomeContent({ [tab]: content[tab] });
+      if (tab === "hero") {
+        await updateHomeContent({ hero: content.hero });
+      } else {
+        await updateHomeContent({ [tab]: content[tab] });
+      }
       setSavedAt(Date.now());
     } finally {
       setBusy(false);
@@ -170,9 +183,11 @@ export default function Content() {
               Хадгалагдсан
             </span>
           )}
-          <button type="button" className={ADMIN_BTN_CLS} onClick={addItem}>
-            + Шинэ мөр
-          </button>
+          {tab !== "hero" && (
+            <button type="button" className={ADMIN_BTN_CLS} onClick={addItem}>
+              + Шинэ мөр
+            </button>
+          )}
           <button
             type="button"
             className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_PRIMARY_CLS}`}
@@ -194,13 +209,23 @@ export default function Content() {
           >
             {t.label}{" "}
             <span style={{ color: "#64748b", marginLeft: 4 }}>
-              {(content[t.key] || []).length}
+              {t.key === "hero"
+                ? content.hero.length
+                : (content[t.key as keyof typeof content] as unknown[])?.length ?? 0}
             </span>
           </button>
         ))}
       </div>
 
-      {section.length === 0 ? (
+      {tab === "hero" ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {content.hero.map((h) => (
+            <div key={h.slot} className={ADMIN_CARD_CLS}>
+              <HeroRow item={h} onChange={(p) => updateHeroTile(h.slot, p)} />
+            </div>
+          ))}
+        </div>
+      ) : section.length === 0 ? (
         <div className={ADMIN_EMPTY_CLS}>
           <strong>Мөр алга</strong>
           «+ Шинэ мөр» товчоор шинээр нэмнэ үү.
@@ -662,6 +687,111 @@ function NewsBlocksEditor({
         </div>
       )}
     </div>
+  );
+}
+
+const HERO_SLOT_LABELS: Record<string, string> = {
+  tile1: "Зураг 1 — Том зүүн tile",
+  tile2: "Зураг 2 — Баруун дээд (налуу)",
+  tile3: "Зураг 3 — Баруун дунд",
+  tile4: "Зураг 4 — Баруун доод (налуу)",
+};
+
+function HeroRow({
+  item,
+  onChange,
+}: {
+  item: HeroImage;
+  onChange: (p: Partial<HeroImage>) => void;
+}) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+
+  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setError("");
+    setUploading(true);
+    const res = await api.admin.uploadImage(file);
+    setUploading(false);
+    if (!res.ok) {
+      setError(`Ачаалах боломжгүй: ${res.error}`);
+      return;
+    }
+    onChange({ image_url: res.data.url });
+  };
+
+  return (
+    <>
+      <div style={{ marginBottom: 10 }}>
+        <strong style={{ fontSize: 13 }}>
+          {HERO_SLOT_LABELS[item.slot] ?? item.slot}
+        </strong>
+      </div>
+      <div className={ADMIN_FORM_ROW_CLS}>
+        <div className={ADMIN_FIELD_CLS}>
+          <label>Зургийн URL</label>
+          <input
+            value={item.image_url || ""}
+            onChange={(e) => onChange({ image_url: e.target.value })}
+            placeholder="https://… эсвэл доороос файл оруулна уу"
+          />
+        </div>
+        <div className={ADMIN_FIELD_CLS}>
+          <label>Alt текст</label>
+          <input
+            value={item.alt || ""}
+            onChange={(e) => onChange({ alt: e.target.value })}
+          />
+        </div>
+      </div>
+      <div className={ADMIN_FIELD_CLS}>
+        <label>Зураг</label>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          onChange={onFile}
+          style={{ display: "none" }}
+        />
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button
+            type="button"
+            className={ADMIN_BTN_CLS}
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+          >
+            {uploading ? "Ачаалж байна…" : "Зураг оруулах"}
+          </button>
+          {item.image_url && (
+            <button
+              type="button"
+              className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_DANGER_CLS}`}
+              onClick={() => onChange({ image_url: "" })}
+              disabled={uploading}
+            >
+              Зураг арилгах
+            </button>
+          )}
+        </div>
+        {error && (
+          <div style={{ fontSize: 12, color: "#dc2626", marginTop: 6 }}>
+            {error}
+          </div>
+        )}
+        {item.image_url && (
+          <div
+            className={ADMIN_IMAGE_PREVIEW_CLS}
+            style={{
+              aspectRatio: "4 / 3",
+              backgroundImage: `url('${item.image_url}')`,
+            }}
+          />
+        )}
+      </div>
+    </>
   );
 }
 

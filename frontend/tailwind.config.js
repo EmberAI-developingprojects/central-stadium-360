@@ -29,7 +29,7 @@ export default {
       },
       fontFamily: {
         sans: [
-          '"TT Commons"',
+          '"Inter"',
           "system-ui",
           "-apple-system",
           '"Segoe UI"',

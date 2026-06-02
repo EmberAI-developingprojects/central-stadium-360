@@ -72,25 +72,24 @@ export default function Dashboard() {
         <div className={`${ADMIN_STAT_CARD_CLS} stat-card`}>
           <div className="stat-label">Нийт орлого</div>
           <div className="stat-value">{money(stats.revenue)}</div>
-          <div className="stat-sub">Төлбөртэй захиалгаас</div>
+          {/* <div className="stat-sub">Төлбөртэй захиалгаас</div> */}
         </div>
         <div className={`${ADMIN_STAT_CARD_CLS} stat-card`}>
-          <div className="stat-label">Захиалга</div>
+          <div className="stat-label">Борлуулалт</div>
           <div className="stat-value">
             {stats.count.toLocaleString("en-US")}
           </div>
-          <div className="stat-sub">{stats.paidCount} төлбөртэй</div>
+          {/* <div className="stat-sub">{stats.paidCount} төлбөртэй</div> */}
         </div>
         <div className={`${ADMIN_STAT_CARD_CLS} stat-card`}>
           <div className="stat-label">Бүртгэлтэй хэрэглэгч</div>
           <div className="stat-value">{userCount.toLocaleString("en-US")}</div>
-          <div className="stat-sub">Бүх дансны тоо</div>
         </div>
-        <div className={`${ADMIN_STAT_CARD_CLS} stat-card`}>
+        {/* <div className={`${ADMIN_STAT_CARD_CLS} stat-card`}>
           <div className="stat-label">Арга хэмжээ</div>
           <div className="stat-value">{upcomingCount}</div>
           <div className="stat-sub">Идэвхтэй жагсаалт</div>
-        </div>
+        </div> */}
       </div>
 
       <div className={ADMIN_CARD_CLS} style={{ marginBottom: 18 }}>
@@ -153,11 +152,11 @@ export default function Dashboard() {
               </thead>
               <tbody>
                 {recentUsers.map((u) => (
-                  <tr key={u.identifier}>
+                  <tr key={u.id}>
                     <td>
                       <Link
                         className={ADMIN_LINK_CLS}
-                        to={`/admin/users/${encodeURIComponent(u.identifier)}`}
+                        to={`/admin/users/${u.id}`}
                       >
                         {u.fullname || "—"}
                       </Link>

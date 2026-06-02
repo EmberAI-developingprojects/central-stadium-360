@@ -1,6 +1,7 @@
 import type {
   AdminUserRow,
   DbEvent,
+  DbHomeHero,
   DbHomeNews,
   DbHomePartner,
   DbHomeRoadmap,
@@ -149,7 +150,8 @@ export const api = {
         | Partial<DbHomeNews>[]
         | Partial<DbHomePartner>[]
         | Partial<DbHomeRoadmap>[]
-        | Partial<DbHomeService>[],
+        | Partial<DbHomeService>[]
+        | DbHomeHero[],
     ) => request<unknown[]>("PUT", `/api/admin/content/${section}`, items),
 
     listUsers: () => request<AdminUserRow[]>("GET", "/api/admin/users"),
