@@ -11,6 +11,7 @@ import adminEvents from "./routes/admin-events";
 import adminContent, { publicContent } from "./routes/admin-content";
 import adminUsers from "./routes/admin-users";
 import adminUploads from "./routes/admin-uploads";
+import watch from "./routes/watch";
 
 const startedAt = Date.now();
 
@@ -35,6 +36,7 @@ app.route("/admin/content", adminContent);
 app.route("/admin/users", adminUsers);
 app.route("/admin/uploads", adminUploads);
 app.route("/content", publicContent);
+app.route("/watch", watch);
 
 app.get("/health", (c) => {
   const payload: HealthResponse = {

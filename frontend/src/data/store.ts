@@ -536,6 +536,16 @@ function dbToUser(row: AdminUserRow): UserRecord {
   };
 }
 
+export async function createUser(input: {
+  email: string;
+  password: string;
+  full_name?: string;
+  role?: UserRole;
+}): Promise<UserRecord> {
+  const row = unwrap(await api.admin.createUser(input));
+  return dbToUser(row);
+}
+
 export async function listUsers(): Promise<UserRecord[]> {
   const res = await api.admin.listUsers();
   if (!res.ok) return [];

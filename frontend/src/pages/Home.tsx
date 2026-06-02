@@ -50,6 +50,8 @@ export default function Home() {
     <>
       <SiteHeader />
       <Hero gatedGo={gatedGo} images={content.hero} />
+      <Highlights />
+      <Stats />
       <Upcoming gatedGo={gatedGo} events={events} />
       <Members items={content.members} />
       <Partners items={content.partners} />
@@ -80,6 +82,52 @@ const DEFAULT_HERO_IMAGES: HeroImage[] = [
     slot: "tile4",
     image_url: "/assets/images/hero/live-360.png",
     alt: "Live streaming · 360°",
+  },
+];
+
+const DEFAULT_MEMBERS: MemberItem[] = [
+  {
+    id: "svc-1",
+    iconKey: "music",
+    title: "Тоглолт, арга хэмжээ, талбайн түрээс",
+    desc: "«Төв Цэнгэлдэх Хүрээлэн» ХХК нь үндэсний болон олон улсын томоохон арга хэмжээ, тоглолт зохион байгуулах, талбай түрээслүүлэх үйлчилгээг иргэд, байгууллагуудад хүргэдэг.",
+    href: "/events",
+  },
+  {
+    id: "svc-2",
+    iconKey: "doc",
+    title: "Хууль, эрх зүй",
+    desc: "Иргэн, байгууллагын эрх зүйн асуудал, манай үйл ажиллагаатай холбоотой хууль, дүрэм, журамтай танилцана уу.",
+    href: "#",
+  },
+  {
+    id: "svc-3",
+    iconKey: "news",
+    title: "Мэдээ, мэдээлэл",
+    desc: "Манай байгууллагын үйл ажиллагаа, удахгүй болох арга хэмжээ, шинэ мэдээллийг эндээс цаг алдалгүй авах боломжтой.",
+    href: "#",
+  },
+  {
+    id: "svc-4",
+    iconKey: "chat",
+    title: "Холбоо барих, санал хүсэлт",
+    desc: "Та санал, шүүмж, талархал болон өрөнхий чиглэлийн асуултаар бидэнд илгээж, шуурхай хариу авах боломжтой.",
+    href: "#",
+  },
+  {
+    id: "svc-5",
+    iconKey: "stream",
+    badge: "Live",
+    title: "360° Шууд дамжуулалт",
+    desc: "Цэнгэлдэх болж буй тоглолт, тэмцээн, арга хэмжээг 360° форматаар манай вэбсайтаас шууд үзэх боломжтой — танхимд байгаа мэт мэдрэж.",
+    href: "/watch",
+  },
+  {
+    id: "svc-6",
+    iconKey: "stadium",
+    title: "Төв Цэнгэлдэх Хүрээлэн",
+    desc: "1958 онд байгуулагдсан, 12,500 суудалтай, 25,000 хүртэлх үзэгчийг хүлээн авах хүчин чадалтай Монгол Улсын анхдагч цогцолбор. Спорт, соёл, олон нийтийн арга хэмжээний голлох тавцан.",
+    href: "/about",
   },
 ];
 
@@ -152,65 +200,196 @@ function Hero({
           </div>
         </div>
 
+        {/* Desktop tile collage */}
         {(() => {
           const TILE_BASE =
             "absolute grid place-items-center overflow-hidden [isolation:isolate] [background:linear-gradient(132deg,rgba(255,255,255,0.10),rgba(255,255,255,0)_36%),#FAF7EE] shadow-[inset_1px_1px_1px_rgba(255,255,255,0.36),0_10px_22px_rgba(0,0,0,0.025)] after:content-[''] after:absolute after:inset-0 after:-z-10 after:[background:radial-gradient(circle_at_22%_20%,rgba(255,255,255,0.2),transparent_34%),radial-gradient(circle_at_88%_88%,rgba(0,0,0,0.04),transparent_42%)] [&_img]:w-full [&_img]:h-full [&_img]:object-cover [&_img]:object-center [&_img]:block [&_img]:[transition:transform_.6s_cubic-bezier(.2,.8,.2,1)]";
           return (
-            <main
-              className="relative w-full max-w-[500px] mx-auto [aspect-ratio:1/1] [container-type:inline-size] max-[720px]:max-w-[420px]"
-              aria-label="Four card layout"
-            >
-              <svg
-                width="0"
-                height="0"
-                style={{ position: "absolute" }}
-                aria-hidden="true"
+            <>
+              {/* Desktop: fancy collage */}
+              <main
+                className="relative w-full max-w-[500px] mx-auto [aspect-ratio:1/1] [container-type:inline-size] overflow-hidden max-[720px]:max-w-[420px] max-[920px]:hidden"
+                aria-label="Four card layout"
               >
-                <defs>
-                  <clipPath id="tile1-shape" clipPathUnits="objectBoundingBox">
-                    <path d="M 0.1016,0 H 0.7898 C 0.8822,0 0.9677,0.0642 0.9769,0.1415 C 1.0046,0.3566 1.0116,0.5962 0.9700,0.8604 C 0.9584,0.9321 0.8799,0.9981 0.7852,0.9981 H 0.1016 C 0.0462,0.9981 0,0.9604 0,0.9151 V 0.0830 C 0,0.0377 0.0462,0 0.1016,0 Z" />
-                  </clipPath>
-                </defs>
-              </svg>
-              <section
-                className={`${TILE_BASE} left-[-14.1%] top-[6.8%] w-[53.2%] h-[87.9%] [border-radius:4cqw] [clip-path:url(#tile1-shape)] hover:[&_img]:[transform:scale(1.04)]`}
+                <svg
+                  width="0"
+                  height="0"
+                  style={{ position: "absolute" }}
+                  aria-hidden="true"
+                >
+                  <defs>
+                    <clipPath id="tile1-shape" clipPathUnits="objectBoundingBox">
+                      <path d="M 0.1016,0 H 0.7898 C 0.8822,0 0.9677,0.0642 0.9769,0.1415 C 1.0046,0.3566 1.0116,0.5962 0.9700,0.8604 C 0.9584,0.9321 0.8799,0.9981 0.7852,0.9981 H 0.1016 C 0.0462,0.9981 0,0.9604 0,0.9151 V 0.0830 C 0,0.0377 0.0462,0 0.1016,0 Z" />
+                    </clipPath>
+                  </defs>
+                </svg>
+                <section
+                  className={`${TILE_BASE} left-[-14.1%] top-[6.8%] w-[53.2%] h-[87.9%] [border-radius:4cqw] [clip-path:url(#tile1-shape)] hover:[&_img]:[transform:scale(1.04)]`}
+                >
+                  <img src={tiles[0].image_url} alt={tiles[0].alt} loading="eager" />
+                </section>
+                <section
+                  className={`${TILE_BASE} left-[42.2%] top-[6.8%] w-[51.8%] h-[28%] [border-radius:4.44cqw] [transform:skewX(18deg)] [transform-origin:center] [&_img]:[transform:skewX(-18deg)_scale(1.18)] [&_img]:[transform-origin:center] hover:[&_img]:[transform:skewX(-18deg)_scale(1.22)]`}
+                >
+                  <img src={tiles[1].image_url} alt={tiles[1].alt} loading="lazy" />
+                </section>
+                <section
+                  className={`${TILE_BASE} left-[45.1%] top-[36.6%] w-[53.2%] h-[28%] [border-radius:3.89cqw] hover:[&_img]:[transform:scale(1.04)]`}
+                >
+                  <img src={tiles[2].image_url} alt={tiles[2].alt} loading="lazy" />
+                </section>
+                <section
+                  className={`${TILE_BASE} left-[42.1%] top-[66.4%] w-[51.8%] h-[28.3%] [border-radius:4.44cqw] [transform:skewX(-18deg)] [transform-origin:center] [&_img]:[transform:skewX(18deg)_scale(1.18)] [&_img]:[transform-origin:center] hover:[&_img]:[transform:skewX(18deg)_scale(1.22)]`}
+                >
+                  <img src={tiles[3].image_url} alt={tiles[3].alt} loading="lazy" />
+                </section>
+              </main>
+
+              {/* Mobile: simple 2×2 grid */}
+              <div
+                className="hidden max-[920px]:grid grid-cols-2 gap-3 w-full max-w-[460px] mx-auto"
+                aria-label="Зургийн цомог"
               >
-                <img
-                  src={tiles[0].image_url}
-                  alt={tiles[0].alt}
-                  loading="eager"
-                />
-              </section>
-              <section
-                className={`${TILE_BASE} left-[42.2%] top-[6.8%] w-[51.8%] h-[28%] [border-radius:4.44cqw] [transform:skewX(18deg)] [transform-origin:center] [&_img]:[transform:skewX(-18deg)_scale(1.18)] [&_img]:[transform-origin:center] hover:[&_img]:[transform:skewX(-18deg)_scale(1.22)]`}
-              >
-                <img
-                  src={tiles[1].image_url}
-                  alt={tiles[1].alt}
-                  loading="lazy"
-                />
-              </section>
-              <section
-                className={`${TILE_BASE} left-[45.1%] top-[36.6%] w-[53.2%] h-[28%] [border-radius:3.89cqw] hover:[&_img]:[transform:scale(1.04)]`}
-              >
-                <img
-                  src={tiles[2].image_url}
-                  alt={tiles[2].alt}
-                  loading="lazy"
-                />
-              </section>
-              <section
-                className={`${TILE_BASE} left-[42.1%] top-[66.4%] w-[51.8%] h-[28.3%] [border-radius:4.44cqw] [transform:skewX(-18deg)] [transform-origin:center] [&_img]:[transform:skewX(18deg)_scale(1.18)] [&_img]:[transform-origin:center] hover:[&_img]:[transform:skewX(18deg)_scale(1.22)]`}
-              >
-                <img
-                  src={tiles[3].image_url}
-                  alt={tiles[3].alt}
-                  loading="lazy"
-                />
-              </section>
-            </main>
+                {tiles.map((t, i) => (
+                  <div
+                    key={t.slot}
+                    className={`overflow-hidden bg-[#e9e9e9] ${i === 0 ? "rounded-[20px]" : i === 1 ? "rounded-[20px]" : i === 2 ? "rounded-[20px]" : "rounded-[20px]"} aspect-[4/3]`}
+                  >
+                    <img
+                      src={t.image_url}
+                      alt={t.alt}
+                      className="w-full h-full object-cover block"
+                      loading={i === 0 ? "eager" : "lazy"}
+                    />
+                  </div>
+                ))}
+              </div>
+            </>
           );
         })()}
+      </div>
+    </section>
+  );
+}
+
+function Highlights() {
+  return (
+    <section
+      className="w-full bg-white py-12 px-6 max-[920px]:py-14 max-[920px]:px-5"
+      id="about"
+    >
+      <div className="max-w-screen-page mx-auto">
+        <h2
+          className={`text-[42px] font-extrabold tracking-[-0.02em] m-0 mb-10 text-[#1a1a1a] max-[920px]:text-[34px] ${REVEAL_UP_CLS}`}
+        >
+          Бидний тухай
+        </h2>
+
+        <div className="grid gap-10 items-start [grid-template-columns:1.05fr_1fr_1fr] max-[920px]:gap-8 max-[920px]:[grid-template-columns:1fr_1fr] max-[600px]:[grid-template-columns:1fr]">
+          <article
+            className={`flex flex-col justify-center max-[920px]:[grid-column:1/-1] max-[600px]:[grid-column:auto] ${REVEAL_UP_CLS}`}
+            data-stagger="1"
+          >
+            <h3 className="text-[28px] leading-[1.3] text-ink m-0 mb-[18px] tracking-[-0.01em] font-bold max-[900px]:text-2xl">
+              Монголын спортын зүрх — 1958 оноос хойш
+            </h3>
+            <p className="text-[17px] leading-[1.75] text-ink-soft m-0 max-[900px]:text-base">
+              Төв Цэнгэлдэх Хүрээлэн нь 1958 онд байгуулагдсан, Монгол Улсын
+              анхны үндэсний хэмжээний цэнгэлдэх. Олон арван жилийн турш
+              үндэсний шигшээ багуудын чухал тоглолт, олон улсын тэмцээн,
+              томоохон соёлын арга хэмжээний голлох тавцан болж ирсэн. Өнөөдөр
+              бид 12,500 суудалтай, 25,000 хүртэлх үзэгчийг хүлээн авах хүчин
+              чадалтай орчин үеийн цогцолбор болон өргөжиж, иргэддээ дэлхийн
+              жишигт нийцсэн үйлчилгээ хүргэхээр зорьж байна.
+            </p>
+          </article>
+
+          <div
+            className={`w-full grid overflow-hidden bg-[#e9e9e9] text-[#b8b8b8] [aspect-ratio:1/1.05] rounded-[56px] place-items-center ${REVEAL_UP_CLS}`}
+            data-stagger="2"
+          >
+            <img
+              src="/assets/images/stadium/exterior.jpg"
+              alt="Төв цэнгэлдэх хүрээлэн — гадна талаас"
+              className="w-full h-full object-cover object-center block [border-radius:inherit]"
+              loading="lazy"
+            />
+          </div>
+
+          <div
+            className={`flex flex-col gap-[14px] [aspect-ratio:1/1.05] ${REVEAL_UP_CLS}`}
+            data-stagger="3"
+          >
+            <div
+              className="flex-1 w-full min-h-0 rounded-[28px] overflow-hidden"
+              style={{
+                backgroundImage:
+                  "url('/assets/images/stadium/huuchin.jpg')",
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }}
+            />
+            <p className="text-[17px] font-bold leading-[1.35] m-0 text-[#1a1a1a]">
+              Манай түүх, эрхэм зорилго, ирээдүйн төлөвлөгөөтэй танилцана уу.
+            </p>
+            <Link
+              to="/about"
+              className="self-start inline-flex items-center gap-2.5 rounded-full bg-transparent text-sm font-semibold no-underline cursor-pointer px-[22px] py-3 border-[1.5px] border-solid border-[#1a1a1a] text-[#1a1a1a] font-[inherit] [transition:background_0.2s_ease,color_0.2s_ease] hover:bg-[#1a1a1a] hover:text-white"
+            >
+              Дэлгэрэнгүй унших
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <line x1="5" y1="12" x2="19" y2="12" />
+                <polyline points="12 5 19 12 12 19" />
+              </svg>
+            </Link>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Stats() {
+  const items = [
+    { num: "1958", label: "Founded · Байгуулагдсан" },
+    { num: "12,500", label: "Seats · Суудал" },
+    { num: "25k+", label: "Capacity · Хүлээн авах" },
+    { num: "105×68", label: "Field (m) · Талбай" },
+  ];
+  return (
+    <section className="w-full bg-white pt-8 px-6 pb-6 max-[920px]:py-16 max-[920px]:px-5">
+      <div className="max-w-screen-page mx-auto pb-10 border-b border-solid border-[#e0e0e0]">
+        <div className="grid items-center [grid-template-columns:1fr_auto_1fr_auto_1fr_auto_1fr] gap-[18px] max-[920px]:[grid-template-columns:1fr_1fr] max-[920px]:gap-x-[18px] max-[920px]:gap-y-8 max-[480px]:[grid-template-columns:1fr]">
+          {items.map((s, i) => (
+            <span key={s.num} style={{ display: "contents" }}>
+              {i > 0 && (
+                <span
+                  className="w-0.5 h-16 bg-brand-blue-tint relative rounded-[1px] justify-self-center max-[920px]:hidden before:content-[''] before:absolute before:left-1/2 before:w-[9px] before:h-[9px] before:rounded-full before:bg-brand-blue-tint before:-translate-x-1/2 before:-top-[5px] after:content-[''] after:absolute after:left-1/2 after:w-[9px] after:h-[9px] after:rounded-full after:bg-brand-blue-tint after:-translate-x-1/2 after:-bottom-[5px]"
+                  aria-hidden="true"
+                ></span>
+              )}
+              <div
+                className={`flex flex-col items-center gap-2.5 text-center ${REVEAL_UP_CLS}`}
+                data-stagger={i + 1}
+              >
+                <div className="text-[42px] font-extrabold tracking-[-0.02em] leading-none text-[#1a1a1a] max-[920px]:text-4xl">
+                  {s.num}
+                </div>
+                <div className="text-sm text-[#888] font-medium">{s.label}</div>
+              </div>
+            </span>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -587,6 +766,7 @@ function MemberIcon({ iconKey }: { iconKey: string }) {
 }
 
 function Members({ items = [] }: { items: MemberItem[] }) {
+  const cards = items.length > 0 ? items : DEFAULT_MEMBERS;
   const memberCardCls = [
     "group bg-white rounded-[18px] flex flex-col items-start gap-4 text-left pt-7 px-[26px] pb-6 relative overflow-hidden",
     "border border-solid border-[rgba(31,41,55,0.06)] shadow-[0_4px_16px_rgba(0,0,0,0.04)]",
@@ -600,8 +780,8 @@ function Members({ items = [] }: { items: MemberItem[] }) {
   ].join(" ");
 
   const cardBadgeCls = [
-    "absolute inline-flex items-center gap-1.5 bg-brand-blue text-white text-[11px] font-bold uppercase rounded-full z-[3]",
-    "top-5 right-5 py-1 px-2.5 tracking-[.08em] [transition:background_.25s_ease,color_.25s_ease]",
+    "self-start inline-flex items-center gap-1.5 bg-brand-blue text-white text-[11px] font-bold uppercase rounded-full",
+    "py-1 px-2.5 tracking-[.08em] [transition:background_.25s_ease,color_.25s_ease]",
     "group-hover:bg-white group-hover:text-brand-blue",
     "before:content-[''] before:w-1.5 before:h-1.5 before:rounded-full before:bg-white before:shadow-[0_0_0_0_rgba(255,255,255,.9)]",
     "before:[animation:live-pulse_1.6s_ease-in-out_infinite] before:[transition:background_.25s_ease]",
@@ -639,16 +819,16 @@ function Members({ items = [] }: { items: MemberItem[] }) {
         </p>
 
         <div className="grid gap-6 mx-auto mb-8 grid-cols-3 max-[900px]:grid-cols-2 max-[540px]:grid-cols-1">
-          {items.map((m, i) => (
+          {cards.map((m, i) => (
             <article key={m.id} className={memberCardCls} data-stagger={i + 1}>
+              <span className={cardIconCls} aria-hidden="true">
+                <MemberIcon iconKey={m.iconKey} />
+              </span>
               {m.badge && (
                 <span className={cardBadgeCls} aria-label={m.badge}>
                   {m.badge}
                 </span>
               )}
-              <span className={cardIconCls} aria-hidden="true">
-                <MemberIcon iconKey={m.iconKey} />
-              </span>
               <h3 className="text-lg font-bold text-ink m-0 leading-[1.35] tracking-[-0.01em] group-hover:text-white">
                 {m.title}
               </h3>

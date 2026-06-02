@@ -95,6 +95,14 @@ export type MeResponse = {
   email_confirmed_at: string | null;
 };
 
+export type WatchCam = {
+  id: string;
+  label: string;
+  sub: string;
+  type: "normal" | "360";
+  hlsUrl: string | null;
+};
+
 export const api = {
   registerPhone: (input: {
     fullName: string;
@@ -131,6 +139,9 @@ export const api = {
 
   getHomeContent: () => request<HomeContentResponse>("GET", "/api/content"),
 
+  getWatchToken: () =>
+    request<{ cams: WatchCam[] }>("GET", "/api/watch/token"),
+
   admin: {
     listEvents: () => request<DbEvent[]>("GET", "/api/admin/events"),
     getEvent: (id: string) =>
@@ -154,6 +165,8 @@ export const api = {
         | DbHomeHero[],
     ) => request<unknown[]>("PUT", `/api/admin/content/${section}`, items),
 
+    createUser: (input: { email: string; password: string; full_name?: string; role?: "user" | "admin" }) =>
+      request<AdminUserRow>("POST", "/api/admin/users", input),
     listUsers: () => request<AdminUserRow[]>("GET", "/api/admin/users"),
     getUser: (id: string) => request<AdminUserRow>("GET", `/api/admin/users/${id}`),
     setUserRole: (id: string, role: UserRole) =>

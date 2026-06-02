@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Editor } from "@tinymce/tinymce-react";
 import { getHomeContent, updateHomeContent } from "../../data/store";
 import { api } from "../../lib/api";
 import type {
   HeroImage,
   HomeContent,
   MemberItem,
-  NewsBlock,
   NewsItem,
   Partner,
   RoadmapItem,
@@ -408,13 +408,6 @@ function NewsRow({
           onChange={(e) => onChange({ title: e.target.value })}
         />
       </div>
-      <div className={ADMIN_FIELD_CLS}>
-        <label>Хураангуй</label>
-        <textarea
-          value={item.body || ""}
-          onChange={(e) => onChange({ body: e.target.value })}
-        />
-      </div>
       <label className={ADMIN_CHECKBOX_CLS}>
         <input
           type="checkbox"
@@ -424,269 +417,75 @@ function NewsRow({
         <span>Featured (онцлох картаар харуулах)</span>
       </label>
 
-      <NewsBlocksEditor
-        blocks={item.blocks ?? []}
-        onChange={(blocks) => onChange({ blocks })}
-      />
+      <div className={ADMIN_FIELD_CLS}>
+        <label>Мэдээний агуулга</label>
+        <TinyEditor
+          value={item.body || ""}
+          onChange={(html) => onChange({ body: html, blocks: [] })}
+        />
+      </div>
     </>
   );
 }
 
-function NewsBlocksEditor({
-  blocks,
+function TinyEditor({
+  value,
   onChange,
 }: {
-  blocks: NewsBlock[];
-  onChange: (next: NewsBlock[]) => void;
+  value: string;
+  onChange: (html: string) => void;
 }) {
-  const fileRefs = useRef<Record<number, HTMLInputElement | null>>({});
-  const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
-  const [error, setError] = useState("");
-
-  const addText = () =>
-    onChange([...blocks, { type: "text", value: "" }]);
-  const addImage = () =>
-    onChange([...blocks, { type: "image", value: "" }]);
-
-  const update = (idx: number, patch: Partial<NewsBlock>) =>
-    onChange(
-      blocks.map((b, i) => (i === idx ? ({ ...b, ...patch } as NewsBlock) : b)),
-    );
-
-  const remove = (idx: number) =>
-    onChange(blocks.filter((_, i) => i !== idx));
-
-  const move = (idx: number, dir: -1 | 1) => {
-    const j = idx + dir;
-    if (j < 0 || j >= blocks.length) return;
-    const next = blocks.slice();
-    [next[idx], next[j]] = [next[j], next[idx]];
-    onChange(next);
-  };
-
-  const onFile = async (idx: number, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    setError("");
-    setUploadingIdx(idx);
-    const res = await api.admin.uploadImage(file);
-    setUploadingIdx(null);
-    if (!res.ok) {
-      setError(`Ачаалах боломжгүй: ${res.error}`);
-      return;
-    }
-    update(idx, { value: res.data.url });
-  };
-
   return (
-    <div
-      style={{
-        marginTop: 18,
-        padding: 16,
-        borderRadius: 12,
-        border: "1px solid #e5e7eb",
-        background: "#f9fafb",
+    <Editor
+      apiKey="o8vpo0yqslg0lwjzh8l8lorslz73hhfiy8he10al8wx9wjat"
+      value={value}
+      onEditorChange={(html) => onChange(html)}
+      init={{
+        height: 500,
+        menubar: "edit insert format table",
+        plugins: [
+          "anchor", "autolink", "charmap", "codesample", "lists", "link",
+          "image", "searchreplace", "table", "visualblocks", "wordcount",
+          "checklist", "mediaembed", "formatpainter", "advtable",
+          "advcode", "typography", "autocorrect",
+        ],
+        toolbar:
+          "undo redo | blocks | bold italic underline strikethrough | " +
+          "alignleft aligncenter alignright | " +
+          "bullist numlist checklist | link image | " +
+          "formatpainter removeformat | advcode",
+        images_upload_handler: async (blobInfo) => {
+          const file = new File(
+            [blobInfo.blob()],
+            blobInfo.filename(),
+            { type: blobInfo.blob().type },
+          );
+          const res = await api.admin.uploadImage(file);
+          if (!res.ok) throw new Error(res.error ?? "Upload failed");
+          return res.data.url;
+        },
+        automatic_uploads: true,
+        file_picker_types: "image",
+        content_style: `
+          body {
+            font-family: Inter, system-ui, sans-serif;
+            font-size: 15px;
+            line-height: 1.7;
+            color: #1f2937;
+            margin: 16px;
+          }
+          img { max-width: 100%; height: auto; border-radius: 8px; }
+          h1 { font-size: 26px; font-weight: 700; margin-bottom: 12px; }
+          h2 { font-size: 22px; font-weight: 700; margin-bottom: 10px; }
+          h3 { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+          p  { margin-bottom: 12px; }
+          ul, ol { padding-left: 22px; margin-bottom: 12px; }
+        `,
+        branding: false,
+        promotion: false,
+        resize: true,
       }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: 12,
-          gap: 12,
-          flexWrap: "wrap",
-        }}
-      >
-        <div>
-          <strong style={{ fontSize: 13, display: "block" }}>
-            Дэлгэрэнгүй мэдээлэл
-          </strong>
-          <span style={{ fontSize: 12, color: "#64748b" }}>
-            Дээрээс доош дарааллаар харагдана. Эхний нэмсэн нь эхэнд орно.
-          </span>
-        </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button
-            type="button"
-            className={ADMIN_BTN_CLS}
-            onClick={addText}
-          >
-            + Текст нэмэх
-          </button>
-          <button
-            type="button"
-            className={ADMIN_BTN_CLS}
-            onClick={addImage}
-          >
-            + Зураг нэмэх
-          </button>
-        </div>
-      </div>
-
-      {error && (
-        <div style={{ fontSize: 12, color: "#dc2626", marginBottom: 8 }}>
-          {error}
-        </div>
-      )}
-
-      {blocks.length === 0 ? (
-        <div
-          style={{
-            padding: 16,
-            textAlign: "center",
-            color: "#64748b",
-            fontSize: 13,
-            border: "1px dashed #cbd5e1",
-            borderRadius: 8,
-            background: "#fff",
-          }}
-        >
-          Блок хоосон. Текстээр эхлэх үү, эсвэл зургаар? Дээрх товчоор сонгоно
-          уу.
-        </div>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {blocks.map((b, idx) => (
-            <div
-              key={idx}
-              style={{
-                background: "#fff",
-                border: "1px solid #e5e7eb",
-                borderRadius: 10,
-                padding: 12,
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  marginBottom: 8,
-                  gap: 8,
-                }}
-              >
-                <strong style={{ fontSize: 12, color: "#334155" }}>
-                  #{idx + 1} ·{" "}
-                  {b.type === "text" ? "Текст блок" : "Зураг блок"}
-                </strong>
-                <div style={{ display: "flex", gap: 4 }}>
-                  <button
-                    type="button"
-                    className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS}`}
-                    onClick={() => move(idx, -1)}
-                    disabled={idx === 0}
-                    title="Дээш"
-                  >
-                    ↑
-                  </button>
-                  <button
-                    type="button"
-                    className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS}`}
-                    onClick={() => move(idx, 1)}
-                    disabled={idx === blocks.length - 1}
-                    title="Доош"
-                  >
-                    ↓
-                  </button>
-                  <button
-                    type="button"
-                    className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS} ${ADMIN_BTN_DANGER_CLS}`}
-                    onClick={() => remove(idx)}
-                    title="Устгах"
-                  >
-                    ×
-                  </button>
-                </div>
-              </div>
-
-              {b.type === "text" ? (
-                <textarea
-                  value={b.value}
-                  onChange={(e) => update(idx, { value: e.target.value })}
-                  placeholder="Параграф текстийг энд бичнэ үү…"
-                  style={{
-                    width: "100%",
-                    minHeight: 110,
-                    padding: 10,
-                    borderRadius: 8,
-                    border: "1px solid #d1d5db",
-                    fontFamily: "inherit",
-                    fontSize: 14,
-                    resize: "vertical",
-                  }}
-                />
-              ) : (
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 8,
-                  }}
-                >
-                  <input
-                    value={b.value}
-                    onChange={(e) => update(idx, { value: e.target.value })}
-                    placeholder="https://… эсвэл доороос файл оруулна уу"
-                    style={{
-                      padding: 10,
-                      borderRadius: 8,
-                      border: "1px solid #d1d5db",
-                      fontFamily: "inherit",
-                      fontSize: 14,
-                    }}
-                  />
-                  <input
-                    ref={(el) => {
-                      fileRefs.current[idx] = el;
-                    }}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp,image/gif"
-                    onChange={(e) => onFile(idx, e)}
-                    style={{ display: "none" }}
-                  />
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button
-                      type="button"
-                      className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS}`}
-                      onClick={() => fileRefs.current[idx]?.click()}
-                      disabled={uploadingIdx === idx}
-                    >
-                      {uploadingIdx === idx
-                        ? "Ачаалж байна…"
-                        : "Файл сонгож upload"}
-                    </button>
-                    {b.value && (
-                      <button
-                        type="button"
-                        className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS} ${ADMIN_BTN_DANGER_CLS}`}
-                        onClick={() => update(idx, { value: "" })}
-                        disabled={uploadingIdx === idx}
-                      >
-                        Зураг арилгах
-                      </button>
-                    )}
-                  </div>
-                  {b.value && (
-                    <div
-                      style={{
-                        aspectRatio: "16 / 9",
-                        borderRadius: 8,
-                        backgroundImage: `url('${b.value}')`,
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
-                        backgroundColor: "#f1f5f9",
-                      }}
-                    />
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+    />
   );
 }
 
