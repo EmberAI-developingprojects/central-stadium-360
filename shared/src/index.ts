@@ -102,13 +102,20 @@ export interface DbHomeService {
   created_at: string;
 }
 
-export type HomeContentSection = "news" | "partners" | "roadmap" | "services";
+export interface DbHomeHero {
+  slot: string;
+  image_url: string;
+  alt: string;
+}
+
+export type HomeContentSection = "news" | "partners" | "roadmap" | "services" | "hero";
 
 export interface HomeContentResponse {
   news: DbHomeNews[];
   partners: DbHomePartner[];
   roadmap: DbHomeRoadmap[];
   services: DbHomeService[];
+  hero: DbHomeHero[];
 }
 
 export interface DbChannel {

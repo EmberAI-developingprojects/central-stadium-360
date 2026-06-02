@@ -1,6 +1,7 @@
 import type {
   AdminUserRow,
   DbEvent,
+  DbHomeHero,
   DbHomeNews,
   DbHomePartner,
   DbHomeRoadmap,
@@ -107,11 +108,18 @@ export type MemberItem = {
   badge?: string;
 };
 
+export type HeroImage = {
+  slot: string;
+  image_url: string;
+  alt: string;
+};
+
 export type HomeContent = {
   news: NewsItem[];
   partners: Partner[];
   roadmap: RoadmapItem[];
   members: MemberItem[];
+  hero: HeroImage[];
 };
 
 export type OrderFilter = {
@@ -346,22 +354,39 @@ function toServicePayload(items: MemberItem[]): Partial<DbHomeService>[] {
   }));
 }
 
+const DEFAULT_HERO: HeroImage[] = [
+  { slot: "tile1", image_url: "/assets/images/hero/featured.jpg",       alt: "Онцлох үйл явдал" },
+  { slot: "tile2", image_url: "/assets/images/hero/stadium-aerial.png", alt: "Төв цэнгэлдэх хүрээлэн" },
+  { slot: "tile3", image_url: "/assets/images/hero/event-tengri.png",   alt: "THUNDERZ — TENGRI" },
+  { slot: "tile4", image_url: "/assets/images/hero/live-360.png",       alt: "Live streaming · 360°" },
+];
+
 const EMPTY_CONTENT: HomeContent = {
   news: [],
   partners: [],
   roadmap: [],
   members: [],
+  hero: DEFAULT_HERO,
 };
 
 export async function getHomeContent(): Promise<HomeContent> {
   const res = await api.getHomeContent();
   if (!res.ok) return EMPTY_CONTENT;
   const data: HomeContentResponse = res.data;
+  const hero: HeroImage[] =
+    data.hero && data.hero.length > 0
+      ? data.hero.map((h: DbHomeHero) => ({
+          slot: h.slot,
+          image_url: h.image_url,
+          alt: h.alt,
+        }))
+      : DEFAULT_HERO;
   return {
     news: data.news.map(dbToNews),
     partners: data.partners.map(dbToPartner),
     roadmap: data.roadmap.map(dbToRoadmap),
     members: data.services.map(dbToService),
+    hero,
   };
 }
 
@@ -395,6 +420,11 @@ export async function updateHomeContent(
         "services",
         toServicePayload(patch.members),
       ),
+    );
+  }
+  if (patch.hero !== undefined) {
+    unwrap(
+      await api.admin.replaceContentSection("hero", patch.hero),
     );
   }
   return getHomeContent();

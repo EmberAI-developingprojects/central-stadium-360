@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import type {
+  DbHomeHero,
   DbHomeNews,
   DbHomePartner,
   DbHomeRoadmap,
@@ -82,11 +83,18 @@ const serviceItemSchema = z.object({
   badge: z.string().nullable().optional(),
 });
 
+const heroItemSchema = z.object({
+  slot: z.string(),
+  image_url: z.string().default(""),
+  alt: z.string().default(""),
+});
+
 const sectionSchemas = {
   news: z.array(newsItemSchema),
   partners: z.array(partnerItemSchema),
   roadmap: z.array(roadmapItemSchema),
   services: z.array(serviceItemSchema),
+  hero: z.array(heroItemSchema),
 } as const;
 
 const TABLE_FOR_SECTION = {
@@ -94,6 +102,7 @@ const TABLE_FOR_SECTION = {
   partners: "home_partners",
   roadmap: "home_roadmap",
   services: "home_services",
+  hero: "home_hero",
 } as const;
 
 adminContent.put("/:section", async (c) => {
@@ -123,6 +132,20 @@ adminContent.put("/:section", async (c) => {
   }
 
   const table = TABLE_FOR_SECTION[section];
+
+  // Hero uses slot as PK — upsert in place instead of delete+insert.
+  if (section === "hero") {
+    const rows = parsed.data as { slot: string; image_url: string; alt: string }[];
+    const { data, error } = await admin
+      .from("home_hero")
+      .upsert(rows, { onConflict: "slot" })
+      .select("slot,image_url,alt");
+    if (error) {
+      console.error("[admin-content] upsert home_hero failed:", error);
+      return c.json({ ok: false, error: error.message } as const, 500);
+    }
+    return c.json({ ok: true, data: data ?? [] } as const);
+  }
 
   // Replace strategy: wipe the section, then insert the supplied rows
   // with their explicit sort_order. The admin UI sends the full list on
@@ -224,7 +247,7 @@ publicContent.get("/", async (c) => {
     blocksColumnAvailable = true;
   }
 
-  const [partners, roadmap, services] = await Promise.all([
+  const [partners, roadmap, services, hero] = await Promise.all([
     admin
       .from("home_partners")
       .select(PARTNER_COLS)
@@ -237,6 +260,10 @@ publicContent.get("/", async (c) => {
       .from("home_services")
       .select(SERVICE_COLS)
       .order("sort_order", { ascending: true }),
+    admin
+      .from("home_hero")
+      .select("slot,image_url,alt")
+      .order("slot", { ascending: true }),
   ]);
 
   for (const r of [news, partners, roadmap, services]) {
@@ -244,6 +271,10 @@ publicContent.get("/", async (c) => {
       console.error("[content] select failed:", r.error);
       return c.json({ ok: false, error: r.error.message } as const, 500);
     }
+  }
+  // hero table may not exist yet (migration pending) — degrade gracefully
+  if (hero.error) {
+    console.warn("[content] home_hero query failed (migration pending?):", hero.error.message);
   }
 
   // Normalize blocks: ensure each row has a `blocks: []` field even when the
@@ -258,6 +289,7 @@ publicContent.get("/", async (c) => {
     partners: (partners.data ?? []) as DbHomePartner[],
     roadmap: (roadmap.data ?? []) as DbHomeRoadmap[],
     services: (services.data ?? []) as DbHomeService[],
+    hero: hero.error ? [] : (hero.data ?? []) as DbHomeHero[],
   };
   return c.json({ ok: true, data: payload } as const);
 });

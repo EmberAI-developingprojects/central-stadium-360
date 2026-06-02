@@ -10,6 +10,7 @@ import { useGatedNavigate } from "../auth";
 import { getHomeContent, listEvents } from "../data/store";
 import type {
   EventRecord,
+  HeroImage,
   HomeContent,
   MemberItem,
   NewsItem,
@@ -22,6 +23,7 @@ const EMPTY_CONTENT: HomeContent = {
   partners: [],
   roadmap: [],
   members: [],
+  hero: [],
 };
 
 export default function Home() {
@@ -47,9 +49,7 @@ export default function Home() {
   return (
     <>
       <SiteHeader />
-      <Hero gatedGo={gatedGo} />
-      <Highlights />
-      <Stats />
+      <Hero gatedGo={gatedGo} images={content.hero} />
       <Upcoming gatedGo={gatedGo} events={events} />
       <Members items={content.members} />
       <Partners items={content.partners} />
@@ -60,7 +60,37 @@ export default function Home() {
   );
 }
 
-function Hero({ gatedGo }: { gatedGo: (to: string) => void }) {
+const DEFAULT_HERO_IMAGES: HeroImage[] = [
+  {
+    slot: "tile1",
+    image_url: "/assets/images/hero/featured.jpg",
+    alt: "Онцлох үйл явдал",
+  },
+  {
+    slot: "tile2",
+    image_url: "/assets/images/hero/stadium-aerial.png",
+    alt: "Төв цэнгэлдэх хүрээлэн",
+  },
+  {
+    slot: "tile3",
+    image_url: "/assets/images/hero/event-tengri.png",
+    alt: "THUNDERZ — TENGRI",
+  },
+  {
+    slot: "tile4",
+    image_url: "/assets/images/hero/live-360.png",
+    alt: "Live streaming · 360°",
+  },
+];
+
+function Hero({
+  gatedGo,
+  images,
+}: {
+  gatedGo: (to: string) => void;
+  images: HeroImage[];
+}) {
+  const tiles = images.length === 4 ? images : DEFAULT_HERO_IMAGES;
   return (
     <section
       className="w-full bg-surface-1 py-14 px-6 max-[920px]:px-5"
@@ -146,8 +176,8 @@ function Hero({ gatedGo }: { gatedGo: (to: string) => void }) {
                 className={`${TILE_BASE} left-[-14.1%] top-[6.8%] w-[53.2%] h-[87.9%] [border-radius:4cqw] [clip-path:url(#tile1-shape)] hover:[&_img]:[transform:scale(1.04)]`}
               >
                 <img
-                  src="/assets/images/hero/featured.jpg"
-                  alt="Онцлох үйл явдал"
+                  src={tiles[0].image_url}
+                  alt={tiles[0].alt}
                   loading="eager"
                 />
               </section>
@@ -155,8 +185,8 @@ function Hero({ gatedGo }: { gatedGo: (to: string) => void }) {
                 className={`${TILE_BASE} left-[42.2%] top-[6.8%] w-[51.8%] h-[28%] [border-radius:4.44cqw] [transform:skewX(18deg)] [transform-origin:center] [&_img]:[transform:skewX(-18deg)_scale(1.18)] [&_img]:[transform-origin:center] hover:[&_img]:[transform:skewX(-18deg)_scale(1.22)]`}
               >
                 <img
-                  src="/assets/images/hero/stadium-aerial.png"
-                  alt="Төв цэнгэлдэх хүрээлэн"
+                  src={tiles[1].image_url}
+                  alt={tiles[1].alt}
                   loading="lazy"
                 />
               </section>
@@ -164,8 +194,8 @@ function Hero({ gatedGo }: { gatedGo: (to: string) => void }) {
                 className={`${TILE_BASE} left-[45.1%] top-[36.6%] w-[53.2%] h-[28%] [border-radius:3.89cqw] hover:[&_img]:[transform:scale(1.04)]`}
               >
                 <img
-                  src="/assets/images/hero/event-tengri.png"
-                  alt="THUNDERZ — TENGRI"
+                  src={tiles[2].image_url}
+                  alt={tiles[2].alt}
                   loading="lazy"
                 />
               </section>
@@ -173,145 +203,14 @@ function Hero({ gatedGo }: { gatedGo: (to: string) => void }) {
                 className={`${TILE_BASE} left-[42.1%] top-[66.4%] w-[51.8%] h-[28.3%] [border-radius:4.44cqw] [transform:skewX(-18deg)] [transform-origin:center] [&_img]:[transform:skewX(18deg)_scale(1.18)] [&_img]:[transform-origin:center] hover:[&_img]:[transform:skewX(18deg)_scale(1.22)]`}
               >
                 <img
-                  src="/assets/images/hero/live-360.png"
-                  alt="Live streaming · 360°"
+                  src={tiles[3].image_url}
+                  alt={tiles[3].alt}
                   loading="lazy"
                 />
               </section>
             </main>
           );
         })()}
-      </div>
-    </section>
-  );
-}
-
-function Highlights() {
-  return (
-    <section
-      className="w-full bg-white py-12 px-6 max-[920px]:py-14 max-[920px]:px-5"
-      id="about"
-    >
-      <div className="max-w-screen-page mx-auto">
-        <h2
-          className={`text-[42px] font-extrabold tracking-[-0.02em] m-0 mb-10 text-[#1a1a1a] max-[920px]:text-[34px] ${REVEAL_UP_CLS}`}
-        >
-          Бидний тухай
-        </h2>
-
-        <div className="grid gap-10 items-start [grid-template-columns:1.05fr_1fr_1fr] max-[920px]:gap-8 max-[920px]:[grid-template-columns:1fr_1fr] max-[600px]:[grid-template-columns:1fr]">
-          <article
-            className={`flex flex-col justify-center max-[920px]:[grid-column:1/-1] max-[600px]:[grid-column:auto] ${REVEAL_UP_CLS}`}
-            data-stagger="1"
-          >
-            <h3 className="text-[28px] leading-[1.3] text-ink m-0 mb-[18px] tracking-[-0.01em] font-bold max-[900px]:text-2xl">
-              Монголын спортын зүрх — 1958 оноос хойш
-            </h3>
-            <p className="text-[17px] leading-[1.75] text-ink-soft m-0 max-[900px]:text-base">
-              Төв Цэнгэлдэх Хүрээлэн нь 1958 онд байгуулагдсан, Монгол Улсын
-              анхны үндэсний хэмжээний цэнгэлдэх. Олон арван жилийн турш
-              үндэсний шигшээ багуудын чухал тоглолт, олон улсын тэмцээн,
-              томоохон соёлын арга хэмжээний голлох тавцан болж ирсэн. Өнөөдөр
-              бид 12,500 суудалтай, 25,000 хүртэлх үзэгчийг хүлээн авах хүчин
-              чадалтай орчин үеийн цогцолбор болон өргөжиж, иргэддээ дэлхийн
-              жишигт нийцсэн үйлчилгээ хүргэхээр зорьж байна.
-            </p>
-          </article>
-
-          <div
-            className={`w-full grid overflow-hidden bg-[#e9e9e9] text-[#b8b8b8] [aspect-ratio:1/1.05] rounded-[56px] place-items-center ${REVEAL_UP_CLS}`}
-            data-stagger="2"
-          >
-            <img
-              src="/assets/images/stadium/exterior.jpg"
-              alt="Төв цэнгэлдэх хүрээлэн — гадна талаас"
-              className="w-full h-full object-cover object-center block [border-radius:inherit]"
-              loading="lazy"
-            />
-          </div>
-
-          <div
-            className={`flex flex-col gap-[14px] [aspect-ratio:1/1.05] ${REVEAL_UP_CLS}`}
-            data-stagger="3"
-          >
-            <div
-              className="flex-1 w-full grid cursor-pointer min-h-0 rounded-[28px] bg-[#e9e9e9] place-items-center transition-[background] duration-200 hover:bg-[#e2e2e2]"
-              role="button"
-              aria-label="Видео тоглуулах"
-              style={{
-                backgroundImage:
-                  "linear-gradient(180deg, rgba(15,23,42,0) 40%, rgba(15,23,42,.55) 100%), url('/assets/images/stadium/huuchin.jpg')",
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }}
-            >
-              <span className="w-14 h-14 rounded-full bg-ink text-white grid place-items-center [&_svg]:w-[22px] [&_svg]:h-[22px] [&_svg]:ml-[3px]">
-                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              </span>
-            </div>
-            <p className="text-[17px] font-bold leading-[1.35] m-0 text-[#1a1a1a]">
-              Манай түүх, эрхэм зорилго, ирээдүйн төлөвлөгөөтэй танилцана уу.
-            </p>
-            <a
-              href="#"
-              className="self-start inline-flex items-center gap-2.5 rounded-full bg-transparent text-sm font-semibold no-underline cursor-pointer px-[22px] py-3 border-[1.5px] border-solid border-[#1a1a1a] text-[#1a1a1a] font-[inherit] [transition:background_0.2s_ease,color_0.2s_ease] hover:bg-[#1a1a1a] hover:text-white"
-            >
-              Дэлгэрэнгүй унших
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <line x1="5" y1="12" x2="19" y2="12" />
-                <polyline points="12 5 19 12 12 19" />
-              </svg>
-            </a>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function Stats() {
-  const items = [
-    { num: "1958", label: "Founded · Байгуулагдсан" },
-    { num: "12,500", label: "Seats · Суудал" },
-    { num: "25k+", label: "Capacity · Хүлээн авах" },
-    { num: "105×68", label: "Field (m) · Талбай" },
-  ];
-  return (
-    <section className="w-full bg-white pt-8 px-6 pb-6 max-[920px]:py-16 max-[920px]:px-5">
-      <div className="max-w-screen-page mx-auto pb-10 border-b border-solid border-[#e0e0e0]">
-        <div className="grid items-center [grid-template-columns:1fr_auto_1fr_auto_1fr_auto_1fr] gap-[18px] max-[920px]:[grid-template-columns:1fr_1fr] max-[920px]:gap-x-[18px] max-[920px]:gap-y-8 max-[480px]:[grid-template-columns:1fr]">
-          {items.map((s, i) => (
-            <span key={s.num} style={{ display: "contents" }}>
-              {i > 0 && (
-                <span
-                  className="w-0.5 h-16 bg-brand-blue-tint relative rounded-[1px] justify-self-center max-[920px]:hidden before:content-[''] before:absolute before:left-1/2 before:w-[9px] before:h-[9px] before:rounded-full before:bg-brand-blue-tint before:-translate-x-1/2 before:-top-[5px] after:content-[''] after:absolute after:left-1/2 after:w-[9px] after:h-[9px] after:rounded-full after:bg-brand-blue-tint after:-translate-x-1/2 after:-bottom-[5px]"
-                  aria-hidden="true"
-                ></span>
-              )}
-              <div
-                className={`flex flex-col items-center gap-2.5 text-center ${REVEAL_UP_CLS}`}
-                data-stagger={i + 1}
-              >
-                <div className="text-[42px] font-extrabold tracking-[-0.02em] leading-none text-[#1a1a1a] max-[920px]:text-4xl">
-                  {s.num}
-                </div>
-                <div className="text-sm text-[#888] font-medium">{s.label}</div>
-              </div>
-            </span>
-          ))}
-        </div>
       </div>
     </section>
   );
@@ -883,10 +782,15 @@ function Partners({ items = [] }: { items: Partner[] }) {
   return (
     <section className="w-full bg-white pt-3 px-6 pb-14" id="partners">
       <div className="max-w-none w-full mx-auto bg-transparent rounded-none text-center py-14 px-12 max-[720px]:py-10 max-[720px]:px-6">
-        <h2 className="text-[44px] font-extrabold text-ink tracking-[-0.02em] m-0 mb-5 leading-[1.15] max-[900px]:text-[34px] max-[540px]:text-[26px]">
+        <h2
+          className={`text-[44px] font-extrabold text-ink tracking-[-0.02em] m-0 mb-5 leading-[1.15] max-[900px]:text-[34px] max-[540px]:text-[26px] ${REVEAL_UP_CLS}`}
+        >
           Манай хамтрагч байгууллагууд
         </h2>
-        <p className="text-[16px] text-[#6b6b6b] max-w-[720px] mx-auto mb-12 leading-[1.65] max-[720px]:text-[14px] max-[720px]:mb-9">
+        <p
+          className={`text-[16px] text-[#6b6b6b] max-w-[720px] mx-auto mb-12 leading-[1.65] max-[720px]:text-[14px] max-[720px]:mb-9 ${REVEAL_UP_CLS}`}
+          data-stagger="1"
+        >
           Төв Цэнгэлдэх Хүрээлэн нь Монголын тэргүүлэх аж ахуйн нэгж, олон улсын
           байгууллагуудтай олон жилийн турш урт хугацаанд хамтран ажиллаж,
           спорт, соёл, олон нийтийн томоохон арга хэмжээг хамтын хүчээр
@@ -895,7 +799,10 @@ function Partners({ items = [] }: { items: Partner[] }) {
         </p>
 
         {items.length > 0 && (
-          <div className="group relative w-full overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]">
+          <div
+            className={`group relative w-full overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)] ${REVEAL_UP_CLS}`}
+            data-stagger="2"
+          >
             <div className="flex w-max items-center gap-14 max-[720px]:gap-5 animate-partners-marquee group-hover:[animation-play-state:paused]">
               {loop.map((p, i) => (
                 <a
@@ -965,13 +872,16 @@ function Roadmap(_props: { items?: RoadmapItem[] }) {
       id="events"
     >
       <div className="max-w-screen-page mx-auto">
-        <h2 className="text-[42px] font-extrabold tracking-[-0.02em] m-0 mb-10 text-[#1a1a1a] max-[900px]:text-[34px] max-[540px]:text-[26px] max-[540px]:mb-7">
+        <h2
+          className={`text-[42px] font-extrabold tracking-[-0.02em] m-0 mb-10 text-[#1a1a1a] max-[900px]:text-[34px] max-[540px]:text-[26px] max-[540px]:mb-7 ${REVEAL_UP_CLS}`}
+        >
           ТҮҮХЭН ЗАМНАЛ
         </h2>
 
         <div className="flex items-stretch gap-0 mb-10 max-[640px]:flex-col max-[640px]:gap-1.5">
           <div
-            className={`${phaseBase} pl-9 bg-brand-blue-tint text-ink [clip-path:polygon(0_0,calc(100%_-_22px)_0,100%_50%,calc(100%_-_22px)_100%,0_100%)] -mr-3`}
+            className={`${phaseBase} pl-9 bg-brand-blue-tint text-ink [clip-path:polygon(0_0,calc(100%_-_22px)_0,100%_50%,calc(100%_-_22px)_100%,0_100%)] -mr-3 ${REVEAL_UP_CLS}`}
+            data-stagger="1"
           >
             <strong className="text-[14px] font-extrabold block tracking-[0.02em] max-[900px]:text-[13px]">
               1958–1993
@@ -981,7 +891,8 @@ function Roadmap(_props: { items?: RoadmapItem[] }) {
             </small>
           </div>
           <div
-            className={`${phaseBase} pl-12 bg-ink text-brand-blue-tint [clip-path:polygon(0_0,calc(100%_-_22px)_0,100%_50%,calc(100%_-_22px)_100%,0_100%,22px_50%)] -mr-3`}
+            className={`${phaseBase} pl-12 bg-ink text-brand-blue-tint [clip-path:polygon(0_0,calc(100%_-_22px)_0,100%_50%,calc(100%_-_22px)_100%,0_100%,22px_50%)] -mr-3 ${REVEAL_UP_CLS}`}
+            data-stagger="2"
           >
             <strong className="text-[14px] font-extrabold block tracking-[0.02em] max-[900px]:text-[13px]">
               2007–2019
@@ -991,7 +902,8 @@ function Roadmap(_props: { items?: RoadmapItem[] }) {
             </small>
           </div>
           <div
-            className={`${phaseBase} pl-12 bg-ink text-brand-blue-tint [clip-path:polygon(0_0,calc(100%_-_22px)_0,100%_50%,calc(100%_-_22px)_100%,0_100%,22px_50%)]`}
+            className={`${phaseBase} pl-12 bg-ink text-brand-blue-tint [clip-path:polygon(0_0,calc(100%_-_22px)_0,100%_50%,calc(100%_-_22px)_100%,0_100%,22px_50%)] ${REVEAL_UP_CLS}`}
+            data-stagger="3"
           >
             <strong className="text-[14px] font-extrabold block tracking-[0.02em] max-[900px]:text-[13px]">
               2024+
@@ -1002,7 +914,10 @@ function Roadmap(_props: { items?: RoadmapItem[] }) {
           </div>
         </div>
 
-        <div className="relative w-full mb-3 h-[380px] max-[1200px]:h-[360px] max-[900px]:h-[340px] max-[640px]:hidden">
+        <div
+          className={`relative w-full mb-3 h-[380px] max-[1200px]:h-[360px] max-[900px]:h-[340px] max-[640px]:hidden ${REVEAL_UP_CLS}`}
+          data-stagger="4"
+        >
           <svg
             className="absolute inset-0 w-full h-full"
             viewBox="0 0 1200 320"
