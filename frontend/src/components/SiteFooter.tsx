@@ -25,6 +25,10 @@ export default function SiteFooter() {
                 className="block h-12 w-auto"
                 src="/assets/images/brand/logo-white.png"
                 alt="Төв Цэнгэлдэх Хүрээлэн"
+                width="240"
+                height="48"
+                loading="lazy"
+                decoding="async"
               />
             </Link>
             <p className="text-[15px] leading-[1.65] m-0 mb-6 max-w-[320px] text-[rgba(255,255,255,0.7)]">
@@ -72,22 +76,22 @@ export default function SiteFooter() {
           <div>
             <h4 className={colTitleCls}>{t("footer_quick_links")}</h4>
             <ul className={ulCls}>
-              <li><a className={linkCls} href="#top">{t("footer_home")}</a></li>
-              <li><a className={linkCls} href="#about">{t("footer_about")}</a></li>
-              <li><a className={linkCls} href="#events">{t("footer_events")}</a></li>
-              <li><a className={linkCls} href="#partners">{t("footer_partners")}</a></li>
-              <li><a className={linkCls} href="#membership">{t("footer_membership")}</a></li>
+              <li><Link className={linkCls} to="/#top">{t("footer_home")}</Link></li>
+              <li><Link className={linkCls} to="/#about">{t("footer_about")}</Link></li>
+              <li><Link className={linkCls} to="/#events">{t("footer_events")}</Link></li>
+              <li><Link className={linkCls} to="/#partners">{t("footer_partners")}</Link></li>
+              <li><Link className={linkCls} to="/#membership">{t("footer_membership")}</Link></li>
             </ul>
           </div>
 
           <div>
             <h4 className={colTitleCls}>{t("footer_info")}</h4>
             <ul className={ulCls}>
-              <li><a className={linkCls} href="#news">{t("footer_news")}</a></li>
-              <li><a className={linkCls} href="#partners">{t("footer_sponsors")}</a></li>
-              <li><a className={linkCls} href="#certificates">{t("footer_certificates")}</a></li>
-              <li><a className={linkCls} href="#contact">{t("footer_help")}</a></li>
-              <li><a className={linkCls} href="#contact">{t("footer_contact")}</a></li>
+              <li><Link className={linkCls} to="/#news">{t("footer_news")}</Link></li>
+              <li><Link className={linkCls} to="/#partners">{t("footer_sponsors")}</Link></li>
+              <li><Link className={linkCls} to="/#certificates">{t("footer_certificates")}</Link></li>
+              <li><Link className={linkCls} to="/#contact">{t("footer_help")}</Link></li>
+              <li><Link className={linkCls} to="/#contact">{t("footer_contact")}</Link></li>
             </ul>
           </div>
 
