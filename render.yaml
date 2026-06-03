@@ -7,10 +7,10 @@ services:
     healthCheckPath: /api/health
     autoDeploy: true
     buildCommand: |
-      corepack enable
+      npm install -g pnpm@9.12.3
       pnpm install --frozen-lockfile
       pnpm --filter @cs360/shared build
-    startCommand: pnpm --filter @cs360/backend exec tsx src/dev.ts
+    startCommand: cd backend && pnpm exec tsx src/dev.ts
     envVars:
       - key: NODE_ENV
         value: production
@@ -96,7 +96,7 @@ services:
     runtime: static
     autoDeploy: true
     buildCommand: |
-      corepack enable
+      npm install -g pnpm@9.12.3
       pnpm install --frozen-lockfile
       pnpm --filter @cs360/shared build
       pnpm --filter @cs360/frontend build
