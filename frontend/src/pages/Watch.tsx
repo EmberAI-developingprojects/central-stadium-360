@@ -380,7 +380,7 @@ export default function Watch() {
           style={{ display: "flex", alignItems: "center", gap: 12 }}
         >
           <LanguageSwitcher dark />
-          <UserMenu />
+          <UserMenu dark />
         </div>
       </header>
 

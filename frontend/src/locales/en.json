@@ -147,7 +147,9 @@
   "auth_register_title": "Create Account",
   "auth_register_subtitle": "Choose your phone number or Gmail to create your account.",
   "auth_register_phone": "Phone Number",
+  "auth_register_phone_sub": "SMS verification code",
   "auth_register_email": "Gmail",
+  "auth_register_email_sub": "Only @gmail.com",
   "auth_already_registered": "Already registered — Sign In",
 
   "auth_logo_alt": "National Stadium of Mongolia",

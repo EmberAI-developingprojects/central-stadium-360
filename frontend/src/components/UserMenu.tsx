@@ -18,10 +18,14 @@ function ticketCountFor(session: Session | null): number {
   }
 }
 
-const TRIGGER_BASE_CLS =
-  "inline-flex items-center gap-2.5 bg-white rounded-full cursor-pointer text-ink pt-[5px] pr-[14px] pb-[5px] pl-[6px] border border-solid border-[rgba(31,41,55,0.10)] font-[inherit] shrink min-w-0 max-[540px]:gap-2 max-[540px]:pr-[10px] max-[420px]:pr-[6px] [transition:border-color_.15s_ease,box-shadow_.2s_ease,transform_.15s_ease] hover:border-[rgba(34,48,198,0.30)] hover:shadow-[0_6px_18px_-10px_rgba(34,48,198,.45)] [.is-scrolled_&]:bg-[rgba(255,255,255,0.92)] [.watch-header_&]:bg-[rgba(255,255,255,0.08)] [.watch-header_&]:border-[rgba(255,255,255,0.14)] [.watch-header_&]:text-[rgba(255,255,255,0.92)] [.watch-header_&]:hover:bg-[rgba(255,255,255,0.14)] [.watch-header_&]:hover:border-[rgba(255,255,255,0.30)]";
-const TRIGGER_OPEN_CLS =
-  "!border-[rgba(34,48,198,0.45)] shadow-[0_8px_22px_-10px_rgba(34,48,198,.55)] [.watch-header_&]:!bg-[rgba(255,255,255,0.16)] [.watch-header_&]:!border-[rgba(255,255,255,0.40)]";
+const TRIGGER_LIGHT_CLS =
+  "inline-flex items-center gap-2.5 bg-white rounded-full cursor-pointer text-ink pt-[5px] pr-[14px] pb-[5px] pl-[6px] border border-solid border-[rgba(31,41,55,0.10)] font-[inherit] shrink min-w-0 max-[540px]:gap-2 max-[540px]:pr-[10px] max-[420px]:pr-[6px] [transition:border-color_.15s_ease,box-shadow_.2s_ease,transform_.15s_ease] hover:border-[rgba(34,48,198,0.30)] hover:shadow-[0_6px_18px_-10px_rgba(34,48,198,.45)] [.is-scrolled_&]:bg-[rgba(255,255,255,0.92)]";
+const TRIGGER_DARK_CLS =
+  "inline-flex items-center gap-2.5 rounded-full cursor-pointer pt-[5px] pr-[14px] pb-[5px] pl-[6px] border border-solid font-[inherit] shrink min-w-0 max-[540px]:gap-2 max-[540px]:pr-[10px] max-[420px]:pr-[6px] [transition:border-color_.15s_ease,box-shadow_.2s_ease,transform_.15s_ease] bg-[rgba(255,255,255,0.08)] border-[rgba(255,255,255,0.14)] text-[rgba(255,255,255,0.92)] hover:bg-[rgba(255,255,255,0.14)] hover:border-[rgba(255,255,255,0.30)]";
+const TRIGGER_OPEN_LIGHT_CLS =
+  "!border-[rgba(34,48,198,0.45)] shadow-[0_8px_22px_-10px_rgba(34,48,198,.55)]";
+const TRIGGER_OPEN_DARK_CLS =
+  "!bg-[rgba(255,255,255,0.16)] !border-[rgba(255,255,255,0.40)]";
 
 const AVATAR_BASE_CLS =
   "w-[30px] h-[30px] rounded-full text-white text-[13px] font-bold inline-flex items-center justify-center uppercase tracking-[0.02em] shrink-0 [background:linear-gradient(135deg,#2230C6_0%,#1A26A0_100%)]";
@@ -33,35 +37,55 @@ const AVATAR_IMG_OVERRIDE =
 const NAME_CLS =
   "text-sm font-semibold max-w-[140px] whitespace-nowrap overflow-hidden text-ellipsis max-[540px]:max-w-[90px] max-[540px]:text-[13px] max-[420px]:hidden";
 
-const CARET_CLS =
-  "w-2.5 h-2.5 text-ink-soft [transition:transform_.2s_ease] [.watch-header_&]:text-[rgba(255,255,255,0.65)]";
+const CARET_LIGHT_CLS = "w-2.5 h-2.5 text-ink-soft [transition:transform_.2s_ease]";
+const CARET_DARK_CLS = "w-2.5 h-2.5 text-[rgba(255,255,255,0.65)] [transition:transform_.2s_ease]";
 const CARET_OPEN_CLS = "[transform:rotate(180deg)]";
 
-const PANEL_CLS =
-  "absolute right-0 min-w-[280px] p-2.5 rounded-[14px] z-[120] top-[calc(100%+10px)] bg-[rgba(255,255,255,0.96)] [backdrop-filter:blur(20px)_saturate(170%)] [-webkit-backdrop-filter:blur(20px)_saturate(170%)] border border-solid border-[rgba(31,41,55,0.08)] shadow-[0_20px_50px_-14px_rgba(31,41,55,0.25)] [animation:userMenuIn_.14s_ease] [.watch-header_&]:bg-[rgba(17,22,36,0.92)] [.watch-header_&]:border-[rgba(255,255,255,0.10)] [.watch-header_&]:shadow-[0_24px_60px_-18px_rgba(0,0,0,0.7)]";
+const PANEL_LIGHT_CLS =
+  "absolute right-0 min-w-[280px] p-2.5 rounded-[14px] z-[120] top-[calc(100%+10px)] bg-[rgba(255,255,255,0.96)] [backdrop-filter:blur(20px)_saturate(170%)] [-webkit-backdrop-filter:blur(20px)_saturate(170%)] border border-solid border-[rgba(31,41,55,0.08)] shadow-[0_20px_50px_-14px_rgba(31,41,55,0.25)] [animation:userMenuIn_.14s_ease]";
+const PANEL_DARK_CLS =
+  "absolute right-0 min-w-[280px] p-2.5 rounded-[14px] z-[120] top-[calc(100%+10px)] bg-[rgba(17,22,36,0.94)] [backdrop-filter:blur(22px)_saturate(170%)] [-webkit-backdrop-filter:blur(22px)_saturate(170%)] border border-solid border-[rgba(255,255,255,0.10)] shadow-[0_24px_60px_-18px_rgba(0,0,0,0.7)] [animation:userMenuIn_.14s_ease]";
 
 const HEAD_CLS = "flex items-center gap-3 pt-2 pr-2.5 pb-3 pl-2.5 [&>div]:flex [&>div]:flex-col [&>div]:min-w-0";
-const FULLNAME_CLS =
-  "text-sm font-bold text-ink leading-[1.2] whitespace-nowrap overflow-hidden text-ellipsis [.watch-header_&]:text-white";
-const ID_CLS =
-  "text-xs text-ink-soft mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis [.watch-header_&]:text-[rgba(255,255,255,0.55)]";
-const SEP_CLS = "h-px my-1 mx-0 bg-[rgba(31,41,55,0.08)] [.watch-header_&]:bg-[rgba(255,255,255,0.10)]";
+const FULLNAME_LIGHT_CLS = "text-sm font-bold text-ink leading-[1.2] whitespace-nowrap overflow-hidden text-ellipsis";
+const FULLNAME_DARK_CLS = "text-sm font-bold text-white leading-[1.2] whitespace-nowrap overflow-hidden text-ellipsis";
+const ID_LIGHT_CLS = "text-xs text-ink-soft mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis";
+const ID_DARK_CLS = "text-xs text-[rgba(255,255,255,0.55)] mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis";
+const SEP_LIGHT_CLS = "h-px my-1 mx-0 bg-[rgba(31,41,55,0.08)]";
+const SEP_DARK_CLS = "h-px my-1 mx-0 bg-[rgba(255,255,255,0.10)]";
 
-const ITEM_CLS =
-  "flex items-center gap-3 w-full bg-transparent border-0 rounded-[9px] cursor-pointer text-sm font-medium text-ink text-left py-2.5 px-3 font-[inherit] [transition:background_.15s_ease,color_.15s_ease] hover:bg-brand-blue-tint hover:text-brand-blue [&_svg]:w-[18px] [&_svg]:h-[18px] [&_svg]:text-ink-soft [&_svg]:shrink-0 hover:[&_svg]:text-brand-blue [.watch-header_&]:text-[rgba(255,255,255,0.88)] [.watch-header_&]:[&_svg]:text-[rgba(255,255,255,0.55)] [.watch-header_&]:hover:bg-[rgba(255,255,255,0.08)] [.watch-header_&]:hover:text-white [.watch-header_&]:hover:[&_svg]:text-white";
-const ITEM_DANGER_CLS =
-  "!text-[#B91C1C] [&_svg]:!text-[#B91C1C] hover:!bg-[rgba(185,28,28,0.08)] hover:!text-[#991B1B] hover:[&_svg]:!text-[#991B1B] [.watch-header_&]:!text-[#FCA5A5] [.watch-header_&]:[&_svg]:!text-[#FCA5A5] [.watch-header_&]:hover:!bg-[rgba(185,28,28,0.18)] [.watch-header_&]:hover:!text-[#FECACA] [.watch-header_&]:hover:[&_svg]:!text-[#FECACA]";
+const ITEM_LIGHT_CLS =
+  "flex items-center gap-3 w-full bg-transparent border-0 rounded-[9px] cursor-pointer text-sm font-medium text-ink text-left py-2.5 px-3 font-[inherit] [transition:background_.15s_ease,color_.15s_ease] hover:bg-brand-blue-tint hover:text-brand-blue [&_svg]:w-[18px] [&_svg]:h-[18px] [&_svg]:text-ink-soft [&_svg]:shrink-0 hover:[&_svg]:text-brand-blue";
+const ITEM_DARK_CLS =
+  "flex items-center gap-3 w-full bg-transparent border-0 rounded-[9px] cursor-pointer text-sm font-medium text-[rgba(255,255,255,0.88)] text-left py-2.5 px-3 font-[inherit] [transition:background_.15s_ease,color_.15s_ease] hover:bg-[rgba(255,255,255,0.08)] hover:text-white [&_svg]:w-[18px] [&_svg]:h-[18px] [&_svg]:text-[rgba(255,255,255,0.55)] [&_svg]:shrink-0 hover:[&_svg]:text-white";
+const ITEM_DANGER_LIGHT_CLS =
+  "!text-[#B91C1C] [&_svg]:!text-[#B91C1C] hover:!bg-[rgba(185,28,28,0.08)] hover:!text-[#991B1B] hover:[&_svg]:!text-[#991B1B]";
+const ITEM_DANGER_DARK_CLS =
+  "!text-[#FCA5A5] [&_svg]:!text-[#FCA5A5] hover:!bg-[rgba(185,28,28,0.18)] hover:!text-[#FECACA] hover:[&_svg]:!text-[#FECACA]";
 
-const BADGE_CLS =
-  "ml-auto min-w-[22px] rounded-full bg-brand-blue text-white text-[11px] font-bold text-center py-0.5 px-[7px] [.watch-header_&]:bg-brand-blue-soft";
+const BADGE_LIGHT_CLS =
+  "ml-auto min-w-[22px] rounded-full bg-brand-blue text-white text-[11px] font-bold text-center py-0.5 px-[7px]";
+const BADGE_DARK_CLS =
+  "ml-auto min-w-[22px] rounded-full bg-brand-blue-soft text-white text-[11px] font-bold text-center py-0.5 px-[7px]";
 
-export default function UserMenu() {
+export default function UserMenu({ dark = false }: { dark?: boolean } = {}) {
   const { t } = useTranslation();
   const { session, logout } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+
+  const TRIGGER_CLS = dark ? TRIGGER_DARK_CLS : TRIGGER_LIGHT_CLS;
+  const TRIGGER_OPEN_CLS = dark ? TRIGGER_OPEN_DARK_CLS : TRIGGER_OPEN_LIGHT_CLS;
+  const CARET_CLS = dark ? CARET_DARK_CLS : CARET_LIGHT_CLS;
+  const PANEL_CLS = dark ? PANEL_DARK_CLS : PANEL_LIGHT_CLS;
+  const FULLNAME_CLS = dark ? FULLNAME_DARK_CLS : FULLNAME_LIGHT_CLS;
+  const ID_CLS = dark ? ID_DARK_CLS : ID_LIGHT_CLS;
+  const SEP_CLS = dark ? SEP_DARK_CLS : SEP_LIGHT_CLS;
+  const ITEM_CLS = dark ? ITEM_DARK_CLS : ITEM_LIGHT_CLS;
+  const ITEM_DANGER_CLS = dark ? ITEM_DANGER_DARK_CLS : ITEM_DANGER_LIGHT_CLS;
+  const BADGE_CLS = dark ? BADGE_DARK_CLS : BADGE_LIGHT_CLS;
 
   useEffect(() => {
     if (!open) return;
@@ -107,7 +131,7 @@ export default function UserMenu() {
       <button
         ref={triggerRef}
         type="button"
-        className={`${TRIGGER_BASE_CLS}${open ? ' ' + TRIGGER_OPEN_CLS : ''}`}
+        className={`${TRIGGER_CLS}${open ? ' ' + TRIGGER_OPEN_CLS : ''}`}
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
