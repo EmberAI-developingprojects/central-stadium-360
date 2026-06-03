@@ -7,6 +7,8 @@ import {
   setFeaturedEvent,
 } from "../../data/store";
 import type { EventRecord } from "../../data/store";
+import { useConfirm } from "../components/ConfirmDialog";
+import { useToast } from "../components/Toast";
 import {
   ADMIN_ACTIONS_CLS,
   ADMIN_BADGE_CLS,
@@ -27,6 +29,8 @@ const money = (n: number | undefined): string =>
   (n || 0).toLocaleString("en-US") + "₮";
 
 export default function EventsList() {
+  const confirm = useConfirm();
+  const toast = useToast();
   const [events, setEvents] = useState<EventRecord[] | null>(null);
   const [salesByEvent, setSalesByEvent] = useState<Record<string, number>>({});
 
@@ -48,14 +52,37 @@ export default function EventsList() {
   }, []);
 
   const onDelete = async (id: string, title: string) => {
-    if (!window.confirm(`«${title}» арга хэмжээг устгах уу?`)) return;
-    await deleteEvent(id);
-    load();
+    const ok = await confirm({
+      title: "Арга хэмжээг устгах уу?",
+      message: (
+        <>
+          <strong className="font-semibold text-zinc-900">«{title}»</strong>{" "}
+          бүх захиалга, тасалбарын хамт устгагдана. Энэ үйлдлийг буцаах
+          боломжгүй.
+        </>
+      ),
+      confirmLabel: "Устгах",
+      cancelLabel: "Болих",
+      variant: "danger",
+    });
+    if (!ok) return;
+    try {
+      await deleteEvent(id);
+      toast.success(`«${title}» устгалаа.`);
+      load();
+    } catch (e) {
+      toast.error((e as Error).message || "Устгах боломжгүй.");
+    }
   };
 
   const onFeature = async (id: string) => {
-    await setFeaturedEvent(id);
-    load();
+    try {
+      await setFeaturedEvent(id);
+      toast.success("Featured болголоо.");
+      load();
+    } catch (e) {
+      toast.error((e as Error).message || "Алдаа гарлаа.");
+    }
   };
 
   if (!events) return <div className={ADMIN_EMPTY_CLS}>Уншиж байна…</div>;

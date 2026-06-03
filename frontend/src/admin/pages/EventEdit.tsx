@@ -8,6 +8,8 @@ import {
 } from "../../data/store";
 import type { EventRecord } from "../../data/store";
 import { api } from "../../lib/api";
+import { useConfirm } from "../components/ConfirmDialog";
+import { useToast } from "../components/Toast";
 import {
   ADMIN_ALERT_CLS,
   ADMIN_BTN_CLS,
@@ -56,6 +58,8 @@ function localInputToIso(local: string): string {
 export default function EventEdit() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const confirm = useConfirm();
+  const toast = useToast();
   const isNew = !id;
 
   const [form, setForm] = useState<EventRecord>(EMPTY);
@@ -98,8 +102,10 @@ export default function EventEdit() {
     try {
       if (isNew) {
         await createEvent(form);
+        toast.success("Арга хэмжээ үүсгэгдлээ.");
       } else if (id) {
         await updateEvent(id, form);
+        toast.success("Өөрчлөлт хадгалагдлаа.");
       }
       navigate("/admin/events");
     } catch (err) {
@@ -111,9 +117,27 @@ export default function EventEdit() {
 
   const onDelete = async () => {
     if (!id) return;
-    if (!window.confirm(`«${form.title}» арга хэмжээг устгах уу?`)) return;
-    await deleteEvent(id);
-    navigate("/admin/events");
+    const ok = await confirm({
+      title: "Арга хэмжээг устгах уу?",
+      message: (
+        <>
+          <strong className="font-semibold text-zinc-900">«{form.title}»</strong>{" "}
+          бүх захиалга, тасалбарын хамт устгагдана. Энэ үйлдлийг буцаах
+          боломжгүй.
+        </>
+      ),
+      confirmLabel: "Устгах",
+      cancelLabel: "Болих",
+      variant: "danger",
+    });
+    if (!ok) return;
+    try {
+      await deleteEvent(id);
+      toast.success(`«${form.title}» устгалаа.`);
+      navigate("/admin/events");
+    } catch (e) {
+      toast.error((e as Error).message || "Устгах боломжгүй.");
+    }
   };
 
   const onPickFile = () => fileInputRef.current?.click();

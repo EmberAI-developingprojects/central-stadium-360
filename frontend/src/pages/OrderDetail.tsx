@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useRequireAuth } from "../auth";
 import UserMenu from "../components/UserMenu";
+import LanguageSwitcher from "../components/LanguageSwitcher";
 import { getOrder, type OrderRecord } from "../data/store";
 import {
   WATCH_BTN_CLS,
@@ -89,6 +91,7 @@ const ACTIONS_CLS =
   "flex flex-wrap gap-3 items-center justify-end py-[22px] px-7 bg-[rgba(255,255,255,0.02)] border-t border-solid border-[rgba(255,255,255,0.06)] max-[720px]:justify-stretch [&>a]:no-underline [&>button]:no-underline max-[720px]:[&>a]:flex-1 max-[720px]:[&>a]:justify-center max-[720px]:[&>button]:flex-1 max-[720px]:[&>button]:justify-center print:hidden";
 
 export default function OrderDetail() {
+  const { t } = useTranslation();
   const session = useRequireAuth();
   const { code } = useParams<{ code: string }>();
   const [order, setOrder] = useState<OrderRecord | null | undefined>(undefined);
@@ -120,21 +123,22 @@ export default function OrderDetail() {
             alt="Төв Цэнгэлдэх Хүрээлэн"
           />
         </Link>
-        <nav className={WATCH_TABS_CLS} aria-label="Үзэх төрөл">
+        <nav className={WATCH_TABS_CLS} aria-label={t("watch_tab_live")}>
           <Link className={WATCH_TAB_CLS} to="/watch">
-            Шууд
+            {t("watch_tab_live")}
           </Link>
           <Link className={WATCH_TAB_CLS} to="/watch#upcoming">
-            Удахгүй
+            {t("watch_tab_upcoming")}
           </Link>
           <Link
             className={`${WATCH_TAB_CLS} ${WATCH_TAB_ACTIVE_CLS}`}
             to="/watch#tickets"
           >
-            Тасалбар
+            {t("watch_tab_tickets")}
           </Link>
         </nav>
-        <div className={WATCH_USER_CLS}>
+        <div className={WATCH_USER_CLS} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <LanguageSwitcher dark />
           <UserMenu />
         </div>
       </header>
@@ -154,36 +158,36 @@ export default function OrderDetail() {
               <line x1="19" y1="12" x2="5" y2="12" />
               <polyline points="12 19 5 12 12 5" />
             </svg>
-            Худалдан авалтын түүх
+            {t("order_back")}
           </Link>
         </div>
 
         {order === undefined ? (
           <section className={EMPTY_CLS}>
-            <h1 className={EMPTY_H1_CLS}>Уншиж байна…</h1>
+            <h1 className={EMPTY_H1_CLS}>{t("order_loading")}</h1>
           </section>
         ) : !order ? (
           <section className={EMPTY_CLS}>
-            <h1 className={EMPTY_H1_CLS}>Захиалга олдсонгүй</h1>
+            <h1 className={EMPTY_H1_CLS}>{t("order_not_found")}</h1>
             <p className={EMPTY_P_CLS}>
-              Энэ кодтой захиалга байхгүй эсвэл устгагдсан байна.
+              {t("order_not_found_desc")}
             </p>
             <Link
               to="/watch#tickets"
               className={`${WATCH_BTN_CLS} ${WATCH_BTN_PRIMARY_CLS}`}
             >
-              Миний тасалбарууд
+              {t("order_my_tickets")}
             </Link>
           </section>
         ) : !owned ? (
           <section className={EMPTY_CLS}>
-            <h1 className={EMPTY_H1_CLS}>Хандах эрхгүй</h1>
-            <p className={EMPTY_P_CLS}>Энэ захиалга өөр хэрэглэгчийнх байна.</p>
+            <h1 className={EMPTY_H1_CLS}>{t("order_no_access")}</h1>
+            <p className={EMPTY_P_CLS}>{t("order_no_access_desc")}</p>
             <Link
               to="/watch#tickets"
               className={`${WATCH_BTN_CLS} ${WATCH_BTN_PRIMARY_CLS}`}
             >
-              Миний тасалбарууд
+              {t("order_my_tickets")}
             </Link>
           </section>
         ) : (
@@ -197,70 +201,70 @@ export default function OrderDetail() {
               <div className={HERO_META_CLS}>
                 <span className={STATUS_CLS}>
                   <span className={STATUS_DOT_CLS} aria-hidden="true"></span>
-                  Баталгаажсан
+                  {t("order_active")}
                 </span>
                 <h1 className={TITLE_CLS}>{order.title}</h1>
                 <span className={EVENT_DATE_CLS}>{order.date}</span>
                 <span className={VENUE_CLS}>
-                  📡 Онлайн шууд дамжуулал · энэ вэбсайтаас үзнэ
+                  📡 {t("order_online_stream")}
                 </span>
               </div>
             </header>
 
             <div className={GRID_CLS}>
               <section className={SECTION_CLS}>
-                <h2 className={SECTION_TITLE_CLS}>Захиалгын мэдээлэл</h2>
+                <h2 className={SECTION_TITLE_CLS}>{t("order_info_title")}</h2>
                 <dl className={META_CLS}>
                   <div>
-                    <dt className={META_DT_CLS}>Захиалгын код</dt>
+                    <dt className={META_DT_CLS}>{t("order_code")}</dt>
                     <dd className={CODE_CLS}>{order.code}</dd>
                   </div>
                   <div>
-                    <dt className={META_DT_CLS}>Худалдаж авсан</dt>
+                    <dt className={META_DT_CLS}>{t("order_purchased_at")}</dt>
                     <dd className={META_DD_CLS}>
                       {fmtDateTime(order.purchasedAt)}
                     </dd>
                   </div>
                   <div>
-                    <dt className={META_DT_CLS}>Хэрэглэгч</dt>
+                    <dt className={META_DT_CLS}>{t("order_user")}</dt>
                     <dd className={META_DD_CLS}>
                       {session.fullname || session.identifier}
                     </dd>
                   </div>
                   <div>
-                    <dt className={META_DT_CLS}>Төлөв</dt>
-                    <dd className={META_DD_CLS}>Төлбөр төлөгдсөн</dd>
+                    <dt className={META_DT_CLS}>{t("order_status")}</dt>
+                    <dd className={META_DD_CLS}>{t("order_paid")}</dd>
                   </div>
                 </dl>
               </section>
 
               <section className={SECTION_CLS}>
-                <h2 className={SECTION_TITLE_CLS}>Үзэх багц</h2>
+                <h2 className={SECTION_TITLE_CLS}>{t("order_package_title")}</h2>
                 <dl className={META_CLS}>
                   <div>
-                    <dt className={META_DT_CLS}>Багц</dt>
+                    <dt className={META_DT_CLS}>{t("order_package")}</dt>
                     <dd className={META_DD_CLS}>{order.tierName}</dd>
                   </div>
                   <div>
-                    <dt className={META_DT_CLS}>Үзэх эрх</dt>
-                    <dd className={META_DD_CLS}>{order.qty} төхөөрөмж</dd>
+                    <dt className={META_DT_CLS}>{t("order_access")}</dt>
+                    <dd className={META_DD_CLS}>{order.qty} {t("order_devices")}</dd>
                   </div>
                   <div>
-                    <dt className={META_DT_CLS}>Чанар</dt>
-                    <dd className={META_DD_CLS}>HD 1080p</dd>
+                    <dt className={META_DT_CLS}>{t("order_quality")}</dt>
+                    <dd className={META_DD_CLS}>{t("order_quality_hd")}</dd>
                   </div>
                 </dl>
               </section>
 
               <section className={SECTION_WIDE_CLS}>
-                <h2 className={SECTION_TITLE_CLS}>Төлбөр</h2>
+                <h2 className={SECTION_TITLE_CLS}>{t("order_payment_title")}</h2>
                 <table className={LINE_ITEMS_TABLE_CLS}>
                   <thead>
                     <tr>
-                      <th>Зүйл</th>
-                      <th>Нэгж үнэ</th>
-                      <th>Тоо</th>
-                      <th>Дүн</th>
+                      <th>{t("order_item")}</th>
+                      <th>{t("order_unit_price")}</th>
+                      <th>{t("order_qty")}</th>
+                      <th>{t("order_amount")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -277,25 +281,25 @@ export default function OrderDetail() {
                   </tbody>
                   <tfoot>
                     <tr>
-                      <th colSpan={3}>Дэд дүн</th>
+                      <th colSpan={3}>{t("order_subtotal")}</th>
                       <td>
                         {money((order.unitPrice ?? 0) * (order.qty ?? 0))}
                       </td>
                     </tr>
                     <tr>
-                      <th colSpan={3}>НӨАТ (багтсан)</th>
+                      <th colSpan={3}>{t("order_vat")}</th>
                       <td>
                         {money(Math.round(order.total - order.total / 1.1))}
                       </td>
                     </tr>
                     <tr className={TOTAL_ROW_CLS}>
-                      <th colSpan={3}>Нийт төлсөн</th>
+                      <th colSpan={3}>{t("order_total_paid")}</th>
                       <td>{money(order.total)}</td>
                     </tr>
                   </tfoot>
                 </table>
                 <p className={PAY_METHOD_CLS}>
-                  <span>Төлбөрийн хэрэгсэл:</span>
+                  <span>{t("order_payment_method")}</span>
                   <strong className={PAY_METHOD_STRONG_CLS}>
                     {order.paymentName ||
                       (order.payment ? PAY_LABEL[order.payment] : "") ||
@@ -313,7 +317,7 @@ export default function OrderDetail() {
                 <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                   <path d="M8 5v14l11-7z" />
                 </svg>
-                Шууд үзэх
+                {t("order_watch_live")}
               </Link>
               <button
                 type="button"
@@ -333,7 +337,7 @@ export default function OrderDetail() {
                   <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
                   <rect x="6" y="14" width="12" height="8" />
                 </svg>
-                Хэвлэх
+                {t("order_print")}
               </button>
             </footer>
           </article>

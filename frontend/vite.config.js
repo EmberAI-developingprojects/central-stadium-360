@@ -18,6 +18,7 @@ const tailwindEntry = () => ({
 export default defineConfig({
   plugins: [tailwindEntry(), react()],
   server: {
+    host: true,
     port: 5173,
     open: false,
   },

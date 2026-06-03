@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { cancelOrder, getOrder, refundOrder } from "../../data/store";
 import type { OrderRecord } from "../../data/store";
+import { useConfirm } from "../components/ConfirmDialog";
+import { useToast } from "../components/Toast";
 import {
   ADMIN_ACTIONS_CLS,
   ADMIN_BTN_CLS,
@@ -24,6 +26,8 @@ type LoadState = OrderRecord | null | undefined;
 export default function OrderView() {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
+  const confirm = useConfirm();
+  const toast = useToast();
   const [order, setOrder] = useState<LoadState>(undefined);
   const [busy, setBusy] = useState(false);
 
@@ -50,23 +54,54 @@ export default function OrderView() {
   }
 
   const onRefund = async () => {
-    if (!window.confirm(`«${order.code}» захиалгыг буцаах уу?`)) return;
+    const ok = await confirm({
+      title: "Захиалгыг буцаах уу?",
+      message: (
+        <>
+          Захиалгын код:{" "}
+          <strong className="font-semibold text-zinc-900">«{order.code}»</strong>.
+          Төлбөрийг буцааж, тасалбарын эрхийг хүчингүй болгоно.
+        </>
+      ),
+      confirmLabel: "Буцаалт хийх",
+      cancelLabel: "Болих",
+      variant: "warning",
+    });
+    if (!ok) return;
     setBusy(true);
     try {
       const next = await refundOrder(order.code);
       setOrder(next);
+      toast.success(`«${order.code}» захиалгын төлбөрийг буцаалаа.`);
+    } catch (e) {
+      toast.error((e as Error).message || "Буцаах боломжгүй.");
     } finally {
       setBusy(false);
     }
   };
 
   const onCancel = async () => {
-    if (!window.confirm(`«${order.code}» захиалгыг бүрмөсөн устгах уу?`))
-      return;
+    const ok = await confirm({
+      title: "Захиалгыг бүрмөсөн устгах уу?",
+      message: (
+        <>
+          Захиалгын код:{" "}
+          <strong className="font-semibold text-zinc-900">«{order.code}»</strong>.
+          Энэ үйлдлийг буцаах боломжгүй.
+        </>
+      ),
+      confirmLabel: "Бүрмөсөн устгах",
+      cancelLabel: "Болих",
+      variant: "danger",
+    });
+    if (!ok) return;
     setBusy(true);
     try {
       await cancelOrder(order.code);
+      toast.success(`«${order.code}» захиалга устгагдлаа.`);
       navigate("/admin/orders");
+    } catch (e) {
+      toast.error((e as Error).message || "Устгах боломжгүй.");
     } finally {
       setBusy(false);
     }

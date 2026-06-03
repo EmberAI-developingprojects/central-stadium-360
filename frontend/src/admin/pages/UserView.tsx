@@ -8,6 +8,8 @@ import {
   setUserRole,
 } from "../../data/store";
 import type { OrderRecord, UserRecord, UserRole } from "../../data/store";
+import { useConfirm } from "../components/ConfirmDialog";
+import { useToast } from "../components/Toast";
 import {
   ADMIN_ACTIONS_CLS,
   ADMIN_BADGE_ADMIN_CLS,
@@ -35,6 +37,12 @@ const ORDER_STATUS_BADGE: Record<string, string> = {
   cancelled: `${ADMIN_BADGE_CLS} ${ADMIN_BADGE_CANCELLED_CLS}`,
 };
 
+const ORDER_STATUS_LABEL: Record<string, string> = {
+  paid: "Төлсөн",
+  refunded: "Буцаагдсан",
+  cancelled: "Цуцлагдсан",
+};
+
 const money = (n: number | undefined): string =>
   (n || 0).toLocaleString("en-US") + "₮";
 
@@ -43,6 +51,8 @@ type LoadState = UserRecord | null | undefined;
 export default function UserView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const confirm = useConfirm();
+  const toast = useToast();
   const [user, setUser] = useState<LoadState>(undefined);
   const [orders, setOrders] = useState<OrderRecord[]>([]);
 
@@ -79,38 +89,83 @@ export default function UserView() {
     );
   }
 
+  const who = user.fullname || user.identifier;
+
   const toggleRole = async () => {
     const next: UserRole = user.role === "admin" ? "user" : "admin";
-    if (!window.confirm(`Эрхийг «${next}» болгох уу?`)) return;
+    const nextLabel = next === "admin" ? "Админ" : "Хэрэглэгч";
+    const ok = await confirm({
+      title: next === "admin" ? "Хэрэглэгчийг админ болгох уу?" : "Админ эрхийг хасах уу?",
+      message: (
+        <>
+          Энэ хэрэглэгчийн эрхийг{" "}
+          <strong className="font-semibold text-zinc-900">«{nextLabel}»</strong>{" "}
+          болгоно.
+        </>
+      ),
+      confirmLabel: next === "admin" ? "Админ болгох" : "Эрх хасах",
+      cancelLabel: "Болих",
+      variant: next === "admin" ? "default" : "warning",
+    });
+    if (!ok) return;
     try {
       await setUserRole(user.id, next);
+      toast.success(
+        next === "admin"
+          ? "Хэрэглэгчийг админ болголоо."
+          : "Админ эрхийг хаслаа.",
+      );
       load();
     } catch (e) {
-      window.alert((e as Error).message || "Эрх солих боломжгүй.");
+      toast.error((e as Error).message || "Эрх солих боломжгүй.");
     }
   };
 
   const toggleDisabled = async () => {
+    const next = !user.disabled;
+    if (next) {
+      const ok = await confirm({
+        title: "Хандалтыг хязгаарлах уу?",
+        message:
+          "Хэрэглэгч системд нэвтэрч чадахгүй болно. Та дараа нь буцааж нээж болно.",
+        confirmLabel: "Хязгаарлах",
+        cancelLabel: "Болих",
+        variant: "danger",
+      });
+      if (!ok) return;
+    }
     try {
-      await setUserDisabled(user.id, !user.disabled);
+      await setUserDisabled(user.id, next);
+      toast.success(
+        next ? "Хандалтыг хязгаарласан." : "Хэрэглэгчийг дахин идэвхжүүлсэн.",
+      );
       load();
     } catch (e) {
-      window.alert((e as Error).message || "Үйлдэл амжилтгүй.");
+      toast.error((e as Error).message || "Үйлдэл амжилтгүй.");
     }
   };
 
   const onDelete = async () => {
-    if (
-      !window.confirm(
-        `«${user.fullname || user.identifier}»-ийг устгах уу? Энэ үйлдлийг буцаах боломжгүй.`,
-      )
-    )
-      return;
+    const ok = await confirm({
+      title: "Хэрэглэгчийг устгах уу?",
+      message: (
+        <>
+          <strong className="font-semibold text-zinc-900">«{who}»</strong>{" "}
+          бүх захиалга, өгөгдлийн хамт устгагдана. Энэ үйлдлийг буцаах
+          боломжгүй.
+        </>
+      ),
+      confirmLabel: "Бүрмөсөн устгах",
+      cancelLabel: "Болих",
+      variant: "danger",
+    });
+    if (!ok) return;
     try {
       await deleteUser(user.id);
+      toast.success(`«${who}» устгалаа.`);
       navigate("/admin/users");
     } catch (e) {
-      window.alert((e as Error).message || "Устгах боломжгүй.");
+      toast.error((e as Error).message || "Устгах боломжгүй.");
     }
   };
 
@@ -155,7 +210,7 @@ export default function UserView() {
                         : ADMIN_BADGE_CLS
                     }
                   >
-                    {user.role || "user"}
+                    {user.role === "admin" ? "Админ" : "Хэрэглэгч"}
                   </span>
                 </td>
               </tr>
@@ -166,13 +221,13 @@ export default function UserView() {
                     <span
                       className={`${ADMIN_BADGE_CLS} ${ADMIN_BADGE_DISABLED_CLS}`}
                     >
-                      Disabled
+                      Хязгаарлагдсан
                     </span>
                   ) : (
                     <span
                       className={`${ADMIN_BADGE_CLS} ${ADMIN_BADGE_PAID_CLS}`}
                     >
-                      Active
+                      Идэвхтэй
                     </span>
                   )}
                 </td>
@@ -201,8 +256,8 @@ export default function UserView() {
               onClick={toggleRole}
             >
               {user.role === "admin"
-                ? "Эрх хасах (Demote)"
-                : "Админ болгох (Promote)"}
+                ? "Эрх хасах"
+                : "Админ болгох"}
             </button>
             <button type="button" className={ADMIN_BTN_CLS} onClick={toggleDisabled}>
               {user.disabled ? "Дахин идэвхжүүлэх" : "Хандалт хязгаарлах"}
@@ -248,7 +303,7 @@ export default function UserView() {
                   <td style={{ textAlign: "right" }}>{money(o.total)}</td>
                   <td>
                     <span className={ORDER_STATUS_BADGE[o.status] || ADMIN_BADGE_CLS}>
-                      {o.status}
+                      {ORDER_STATUS_LABEL[o.status] || o.status}
                     </span>
                   </td>
                   <td>

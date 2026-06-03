@@ -8,6 +8,8 @@ import {
   setUserRole,
 } from "../../data/store";
 import type { UserRecord, UserRole } from "../../data/store";
+import { useConfirm } from "../components/ConfirmDialog";
+import { useToast } from "../components/Toast";
 import {
   ADMIN_ACTIONS_CLS,
   ADMIN_BADGE_ADMIN_CLS,
@@ -27,6 +29,8 @@ import {
 } from "../_adminStyles";
 
 export default function UsersList() {
+  const confirm = useConfirm();
+  const toast = useToast();
   const [users, setUsers] = useState<UserRecord[] | null>(null);
   const [orderCounts, setOrderCounts] = useState<Record<string, number>>({});
   const [q, setQ] = useState("");
@@ -47,23 +51,62 @@ export default function UsersList() {
 
   const onToggleRole = async (u: UserRecord) => {
     const next: UserRole = u.role === "admin" ? "user" : "admin";
-    if (!window.confirm(`«${u.fullname || u.identifier}»-ийн эрхийг «${next}» болгох уу?`)) return;
+    const who = u.fullname || u.identifier;
+    const nextLabel = next === "admin" ? "Админ" : "Хэрэглэгч";
+    const ok = await confirm({
+      title: next === "admin" ? "Хэрэглэгчийг админ болгох уу?" : "Админ эрхийг хасах уу?",
+      message: (
+        <>
+          <strong className="font-semibold text-zinc-900">«{who}»</strong>
+          {" "}-ийн эрхийг <strong className="font-semibold text-zinc-900">«{nextLabel}»</strong> болгоно.
+        </>
+      ),
+      confirmLabel: next === "admin" ? "Админ болгох" : "Эрх хасах",
+      cancelLabel: "Болих",
+      variant: next === "admin" ? "default" : "warning",
+    });
+    if (!ok) return;
     try {
       await setUserRole(u.id, next);
+      toast.success(
+        next === "admin"
+          ? `«${who}» админ болсон.`
+          : `«${who}»-ийн админ эрхийг хассан.`,
+      );
       load();
     } catch (e) {
-      window.alert((e as Error).message || "Эрх солих боломжгүй.");
+      toast.error((e as Error).message || "Эрх солих боломжгүй.");
     }
   };
 
   const onToggleDisabled = async (u: UserRecord) => {
     const next = !u.disabled;
-    if (next && !window.confirm(`«${u.fullname || u.identifier}»-ийн хандалтыг хязгаарлах уу?`)) return;
+    const who = u.fullname || u.identifier;
+    if (next) {
+      const ok = await confirm({
+        title: "Хандалтыг хязгаарлах уу?",
+        message: (
+          <>
+            <strong className="font-semibold text-zinc-900">«{who}»</strong>
+            {" "}хэрэглэгч системд нэвтэрч чадахгүй болно. Та дараа нь буцааж нээж болно.
+          </>
+        ),
+        confirmLabel: "Хязгаарлах",
+        cancelLabel: "Болих",
+        variant: "danger",
+      });
+      if (!ok) return;
+    }
     try {
       await setUserDisabled(u.id, next);
+      toast.success(
+        next
+          ? `«${who}»-ийн хандалтыг хязгаарласан.`
+          : `«${who}»-ийг дахин идэвхжүүлсэн.`,
+      );
       load();
     } catch (e) {
-      window.alert((e as Error).message || "Үйлдэл амжилтгүй.");
+      toast.error((e as Error).message || "Үйлдэл амжилтгүй.");
     }
   };
 
@@ -97,12 +140,36 @@ export default function UsersList() {
       </div>
 
       <div className={ADMIN_FILTERS_CLS}>
-        <input
-          type="search"
-          placeholder="Нэр / контактаар хайх…"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-        />
+        <div className="relative">
+          <svg
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            type="search"
+            placeholder="Нэр / контактаар хайх…"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            className="!pl-9"
+          />
+        </div>
+        {users && users.length > 0 && (
+          <span className="text-[12px] text-zinc-500 ml-auto">
+            Нийт <strong className="font-semibold text-zinc-900">{filtered.length}</strong>
+            {q && ` / ${users.length}`} хэрэглэгч
+          </span>
+        )}
       </div>
 
       {!users ? (
@@ -123,36 +190,60 @@ export default function UsersList() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((u) => (
-                <tr key={u.id}>
-                  <td>
-                    <Link to={`/admin/users/${u.id}`} className={ADMIN_LINK_CLS}>
-                      {u.fullname || "—"}
-                    </Link>
-                    {u.disabled && (
-                      <>{" "}<span className={`${ADMIN_BADGE_CLS} ${ADMIN_BADGE_DISABLED_CLS}`}>Disabled</span></>
-                    )}
-                  </td>
-                  <td>{u.identifier}</td>
-                  <td>
-                    <span className={u.role === "admin" ? `${ADMIN_BADGE_CLS} ${ADMIN_BADGE_ADMIN_CLS}` : ADMIN_BADGE_CLS}>
-                      {u.role || "user"}
-                    </span>
-                  </td>
-                  <td>{orderCounts[u.identifier] || 0}</td>
-                  <td>{(u.createdAt || "").slice(0, 10)}</td>
-                  <td>
-                    <div className={ADMIN_ACTIONS_CLS}>
-                      <button type="button" className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS}`} onClick={() => onToggleRole(u)}>
-                        {u.role === "admin" ? "Demote" : "Promote"}
-                      </button>
-                      <button type="button" className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS} ${ADMIN_BTN_DANGER_CLS}`} onClick={() => onToggleDisabled(u)}>
-                        {u.disabled ? "Enable" : "Disable"}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {filtered.map((u) => {
+                const display = u.fullname || u.identifier;
+                const initial = (u.fullname || u.identifier || "?")
+                  .trim()
+                  .charAt(0)
+                  .toUpperCase();
+                return (
+                  <tr key={u.id}>
+                    <td>
+                      <div className="flex items-center gap-2.5">
+                        <span
+                          className="shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-zinc-200 to-zinc-100 text-zinc-700 text-[12px] font-semibold ring-1 ring-inset ring-zinc-200"
+                          aria-hidden="true"
+                        >
+                          {initial}
+                        </span>
+                        <div className="min-w-0">
+                          <Link to={`/admin/users/${u.id}`} className={ADMIN_LINK_CLS}>
+                            {display}
+                          </Link>
+                          {u.disabled && (
+                            <>
+                              {" "}
+                              <span className={`${ADMIN_BADGE_CLS} ${ADMIN_BADGE_DISABLED_CLS}`}>
+                                Хязгаарлагдсан
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="text-zinc-600">{u.identifier}</td>
+                    <td>
+                      <span className={u.role === "admin" ? `${ADMIN_BADGE_CLS} ${ADMIN_BADGE_ADMIN_CLS}` : ADMIN_BADGE_CLS}>
+                        {u.role === "admin" ? "Админ" : "Хэрэглэгч"}
+                      </span>
+                    </td>
+                    <td className="tabular-nums">{orderCounts[u.identifier] || 0}</td>
+                    <td className="text-zinc-500 tabular-nums">
+                      {(u.createdAt || "").slice(0, 10) || "—"}
+                    </td>
+                    <td>
+                      <div className={`${ADMIN_ACTIONS_CLS} justify-end`}>
+                        <button type="button" className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS}`} onClick={() => onToggleRole(u)}>
+                          {u.role === "admin" ? "Эрх хасах" : "Админ болгох"}
+                        </button>
+                        <button type="button" className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS} ${ADMIN_BTN_DANGER_CLS}`} onClick={() => onToggleDisabled(u)}>
+                          {u.disabled ? "Идэвхжүүлэх" : "Хязгаарлах"}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -161,7 +252,11 @@ export default function UsersList() {
       {showModal && (
         <AddUserModal
           onClose={() => setShowModal(false)}
-          onCreated={() => { setShowModal(false); load(); }}
+          onCreated={(name) => {
+            setShowModal(false);
+            toast.success(`«${name}» хэрэглэгч амжилттай нэмэгдлээ.`);
+            load();
+          }}
         />
       )}
     </>
@@ -169,7 +264,7 @@ export default function UsersList() {
 }
 
 /* ── Add User Modal ── */
-function AddUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+function AddUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: (name: string) => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -177,13 +272,21 @@ function AddUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !saving) onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [saving, onClose]);
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     setErr(null);
     try {
       await createUser({ email, password, full_name: fullName, role });
-      onCreated();
+      onCreated(fullName || email);
     } catch (ex) {
       setErr((ex as Error).message || "Алдаа гарлаа");
       setSaving(false);
@@ -191,32 +294,23 @@ function AddUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
   };
 
   return (
-    <>
-      {/* Backdrop */}
+    <div className="fixed inset-0 z-[400] flex items-center justify-center px-4 animate-admin-fade-in" role="dialog" aria-modal="true" aria-labelledby="add-user-title">
       <div
-        onClick={onClose}
-        style={{
-          position: "fixed", inset: 0, background: "rgba(0,0,0,.45)",
-          backdropFilter: "blur(3px)", zIndex: 400,
-        }}
+        onClick={saving ? undefined : onClose}
+        className="absolute inset-0 bg-black/45 backdrop-blur-[3px]"
+        aria-hidden="true"
       />
-      {/* Dialog */}
-      <div style={{
-        position: "fixed", top: "50%", left: "50%",
-        transform: "translate(-50%,-50%)",
-        background: "#fff", borderRadius: 16, padding: "28px 32px",
-        width: 420, maxWidth: "calc(100vw - 32px)",
-        boxShadow: "0 24px 64px rgba(0,0,0,.18)",
-        zIndex: 401,
-      }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#111" }}>
+      <div className="relative w-full max-w-[440px] rounded-2xl bg-white shadow-[0_24px_64px_rgba(0,0,0,0.18)] p-6 animate-admin-scale-in">
+        <div className="flex items-center justify-between mb-5">
+          <h3 id="add-user-title" className="m-0 text-[15px] font-semibold tracking-[-0.01em] text-zinc-900">
             Шинэ хэрэглэгч нэмэх
           </h3>
           <button
             type="button"
             onClick={onClose}
-            style={{ background: "none", border: "none", cursor: "pointer", color: "#71717a", padding: 4 }}
+            disabled={saving}
+            className="p-1 -m-1 text-zinc-500 hover:text-zinc-900 transition-colors disabled:opacity-50"
+            aria-label="Хаах"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -224,7 +318,7 @@ function AddUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
           </button>
         </div>
 
-        <form onSubmit={onSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <form onSubmit={onSubmit} className="flex flex-col gap-3.5">
           <div className={ADMIN_FIELD_CLS}>
             <label>И-мэйл *</label>
             <input
@@ -259,18 +353,18 @@ function AddUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
           <div className={ADMIN_FIELD_CLS}>
             <label>Эрх</label>
             <select value={role} onChange={(e) => setRole(e.target.value as UserRole)}>
-              <option value="user">User</option>
-              <option value="admin">Admin</option>
+              <option value="user">Хэрэглэгч</option>
+              <option value="admin">Админ</option>
             </select>
           </div>
 
           {err && (
-            <div style={{ padding: "10px 14px", borderRadius: 8, background: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c", fontSize: 13 }}>
+            <div className="py-2.5 px-3.5 rounded-md bg-red-50 border border-red-200 text-red-700 text-[13px] leading-[1.5]">
               {err}
             </div>
           )}
 
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
+          <div className="flex gap-2 justify-end mt-1">
             <button type="button" className={ADMIN_BTN_CLS} onClick={onClose} disabled={saving}>
               Болих
             </button>
@@ -280,6 +374,6 @@ function AddUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
           </div>
         </form>
       </div>
-    </>
+    </div>
   );
 }

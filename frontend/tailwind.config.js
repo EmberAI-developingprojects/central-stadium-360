@@ -74,6 +74,10 @@ export default {
           from: { opacity: "0", transform: "translateY(14px) scale(.97)" },
           to: { opacity: "1", transform: "none" },
         },
+        tmSlideUp: {
+          from: { opacity: "0", transform: "translateY(100%)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
         userMenuIn: {
           from: { opacity: "0", transform: "translateY(-6px)" },
           to: { opacity: "1", transform: "translateY(0)" },
@@ -102,6 +106,18 @@ export default {
           from: { transform: "translateX(0)" },
           to: { transform: "translateX(-50%)" },
         },
+        adminFadeIn: {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
+        adminScaleIn: {
+          from: { opacity: "0", transform: "translateY(6px) scale(.98)" },
+          to: { opacity: "1", transform: "none" },
+        },
+        adminSlideInRight: {
+          from: { opacity: "0", transform: "translateX(16px)" },
+          to: { opacity: "1", transform: "translateX(0)" },
+        },
       },
       animation: {
         "login-pop": "loginPop .55s cubic-bezier(.34, 1.56, .64, 1) both",
@@ -115,6 +131,9 @@ export default {
         "react-rise": "reactRise 2s ease-out forwards",
         "reveal-up": "revealUp 600ms cubic-bezier(.2,.8,.2,1) both",
         "partners-marquee": "partners-marquee 40s linear infinite",
+        "admin-fade-in": "adminFadeIn 140ms ease-out",
+        "admin-scale-in": "adminScaleIn 160ms cubic-bezier(.34,1.56,.64,1) both",
+        "admin-slide-in-right": "adminSlideInRight 200ms cubic-bezier(.2,.8,.2,1) both",
       },
       maxWidth: {
         "screen-page": "1300px",

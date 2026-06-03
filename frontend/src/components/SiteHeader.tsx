@@ -1,7 +1,9 @@
 import { Fragment, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../auth";
 import UserMenu from "./UserMenu";
+import LanguageSwitcher from "./LanguageSwitcher";
 
 const HEADER_BASE_CLS =
   "w-full px-4 pb-0 sticky top-0 z-[100] [backdrop-filter:blur(18px)_saturate(160%)] [-webkit-backdrop-filter:blur(18px)_saturate(160%)] border-b border-solid border-[rgba(31,41,55,0.08)] [transition:background_0.25s_ease,box-shadow_0.25s_ease] max-[920px]:px-3";
@@ -89,43 +91,44 @@ type NavGroup = {
   children?: { label: string; href: string }[];
 };
 
-const NAV_GROUPS: NavGroup[] = [
+const buildNavGroups = (t: (k: string) => string): NavGroup[] => [
   {
-    label: "Бидний тухай",
+    label: t("nav_about"),
     href: "#about",
     children: [
-      { label: "Танилцуулга", href: "#about" },
-      { label: "Түүхэн замнал", href: "#events" },
-      { label: "Байгууллагын бүтэц", href: "#about" },
-      { label: "Эрхэм зорилго", href: "#about" },
+      { label: t("nav_about_intro"), href: "#about" },
+      { label: t("nav_about_history"), href: "#events" },
+      { label: t("nav_about_mission"), href: "#about" },
     ],
   },
-  { label: "Үйл ажиллагаа & Арга хэмжээ", href: "/events" },
+  { label: t("nav_events"), href: "/events" },
   {
-    label: "Ил тод байдал",
+    label: t("nav_transparency"),
     href: "#certificates",
     children: [
-      { label: "Гүйцэтгэлийн тайлан", href: "#certificates" },
-      { label: "НИТХ-ын тогтоол", href: "#certificates" },
-      { label: "Өргөдөл хүсэлт", href: "#contact" },
-      { label: "Хүний нөөцийн бодлого", href: "#certificates" },
-      { label: "Сонгон шалгаруулах журам", href: "#certificates" },
-      { label: "Гүйцэтгэлийг үнэлэх журам", href: "#certificates" },
-      { label: "Ёс зүйн дүрэм", href: "#certificates" },
-      { label: "Зөвлөмжийн хэрэгжилт", href: "#certificates" },
+      { label: t("nav_transparency_report"), href: "#certificates" },
+      { label: t("nav_transparency_resolution"), href: "#certificates" },
+      { label: t("nav_transparency_petition"), href: "#contact" },
+      { label: t("nav_transparency_hr"), href: "#certificates" },
+      { label: t("nav_transparency_selection"), href: "#certificates" },
+      { label: t("nav_transparency_evaluation"), href: "#certificates" },
+      { label: t("nav_transparency_ethics"), href: "#certificates" },
+      { label: t("nav_transparency_recommendations"), href: "#certificates" },
     ],
   },
-  { label: "Хууль, эрх зүй", href: "#certificates" },
-  { label: "Шилэн", href: "#certificates" },
-  { label: "Мэдээ мэдээлэл", href: "#news" },
-  { label: "Холбоо барих", href: "#contact" },
+  { label: t("nav_legal"), href: "#certificates" },
+  { label: t("nav_shilen"), href: "#certificates" },
+  { label: t("nav_news"), href: "#news" },
+  { label: t("nav_contact"), href: "#contact" },
 ];
 
 export default function SiteHeader() {
+  const { t } = useTranslation();
   const { session } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const NAV_GROUPS = buildNavGroups(t);
 
   useEffect(() => {
     let frame = 0;
@@ -174,7 +177,7 @@ export default function SiteHeader() {
         className={`${HEADER_BASE_CLS} ${scrolled ? HEADER_SCROLLED_CLS : HEADER_BG_CLS} ${scrolled ? "is-scrolled" : ""}`}
       >
         <div className={HEADER_INNER_CLS}>
-          <nav className={MAINNAV_CLS} aria-label="Үндсэн цэс">
+          <nav className={MAINNAV_CLS} aria-label={t("nav_main_menu")}>
             <Link
               className={LOGO_CLS}
               to="/"
@@ -191,7 +194,7 @@ export default function SiteHeader() {
             <ul className={NAV_LINKS_CLS}>
               <li className={HAS_DROPDOWN_LI_CLS}>
                 <a href="#about" className={NAV_LINK_DROPDOWN_TRIGGER_CLS}>
-                  Бидний тухай
+                  {t("nav_about")}
                   <svg
                     className={CARET_CLS}
                     viewBox="0 0 10 6"
@@ -207,22 +210,19 @@ export default function SiteHeader() {
                 </a>
                 <div className={DROPDOWN_CLS} role="menu">
                   <a className={DROPDOWN_A_CLS} href="#about">
-                    Танилцуулга
+                    {t("nav_about_intro")}
                   </a>
                   <a className={DROPDOWN_A_CLS} href="#events">
-                    Түүхэн замнал
+                    {t("nav_about_history")}
                   </a>
-                  {/* <a className={DROPDOWN_A_CLS} href="#about">
-                    Байгууллагын бүтэц
-                  </a> */}
                   <a className={DROPDOWN_A_CLS} href="#about">
-                    Эрхэм зорилго
+                    {t("nav_about_mission")}
                   </a>
                 </div>
               </li>
               <li>
                 <Link to="/events" className={NAV_LINK_A_CLS}>
-                  Үйл ажиллагаа &amp; Арга хэмжээ
+                  {t("nav_events")}
                 </Link>
               </li>
               <li className={HAS_DROPDOWN_LI_CLS}>
@@ -230,7 +230,7 @@ export default function SiteHeader() {
                   href="#certificates"
                   className={NAV_LINK_DROPDOWN_TRIGGER_CLS}
                 >
-                  Ил тод байдал
+                  {t("nav_transparency")}
                   <svg
                     className={CARET_CLS}
                     viewBox="0 0 10 6"
@@ -246,58 +246,59 @@ export default function SiteHeader() {
                 </a>
                 <div className={DROPDOWN_CLS} role="menu">
                   <a className={DROPDOWN_A_CLS} href="#certificates">
-                    Гүйцэтгэлийн тайлан
+                    {t("nav_transparency_report")}
                   </a>
                   <a className={DROPDOWN_A_CLS} href="#certificates">
-                    НИТХ-ын тогтоол
+                    {t("nav_transparency_resolution")}
                   </a>
                   <a className={DROPDOWN_A_CLS} href="#contact">
-                    Өргөдөл хүсэлт
+                    {t("nav_transparency_petition")}
                   </a>
                   <a className={DROPDOWN_A_CLS} href="#certificates">
-                    Хүний нөөцийн бодлого
+                    {t("nav_transparency_hr")}
                   </a>
                   <a className={DROPDOWN_A_CLS} href="#certificates">
-                    Сонгон шалгаруулах журам
+                    {t("nav_transparency_selection")}
                   </a>
                   <a className={DROPDOWN_A_CLS} href="#certificates">
-                    Гүйцэтгэлийг үнэлэх журам
+                    {t("nav_transparency_evaluation")}
                   </a>
                   <a className={DROPDOWN_A_CLS} href="#certificates">
-                    Ёс зүйн дүрэм
+                    {t("nav_transparency_ethics")}
                   </a>
                   <a className={DROPDOWN_A_CLS} href="#certificates">
-                    Зөвлөмжийн хэрэгжилт
+                    {t("nav_transparency_recommendations")}
                   </a>
                 </div>
               </li>
               <li>
                 <a href="#certificates" className={NAV_LINK_A_CLS}>
-                  Хууль, эрх зүй
+                  {t("nav_legal")}
                 </a>
               </li>
               <li>
                 <a href="#certificates" className={NAV_LINK_A_CLS}>
-                  Шилэн
+                  {t("nav_shilen")}
                 </a>
               </li>
               <li>
                 <a href="#news" className={NAV_LINK_A_CLS}>
-                  Мэдээ мэдээлэл
+                  {t("nav_news")}
                 </a>
               </li>
               <li>
                 <a href="#contact" className={NAV_LINK_A_CLS}>
-                  Холбоо барих
+                  {t("nav_contact")}
                 </a>
               </li>
             </ul>
 
             <div className={HEADER_AUTH_CLS}>
+              <LanguageSwitcher />
               {session && session.identifier ? (
                 <UserMenu />
               ) : (
-                <Link to="/login" className={AUTH_BTN_CLS} aria-label="Нэвтрэх">
+                <Link to="/login" className={AUTH_BTN_CLS} aria-label={t("nav_login")}>
                   <svg
                     viewBox="0 0 24 24"
                     fill="none"
@@ -310,13 +311,13 @@ export default function SiteHeader() {
                     <circle cx="12" cy="8" r="4" />
                     <path d="M4 21a8 8 0 0116 0" />
                   </svg>
-                  <span>Нэвтрэх</span>
+                  <span>{t("nav_login")}</span>
                 </Link>
               )}
               <button
                 type="button"
                 className={HAMBURGER_BTN_CLS}
-                aria-label="Цэс нээх"
+                aria-label={t("nav_open_menu")}
                 aria-expanded={mobileOpen}
                 aria-controls="mobile-drawer"
                 onClick={() => setMobileOpen(true)}
@@ -349,7 +350,7 @@ export default function SiteHeader() {
         id="mobile-drawer"
         className={`${DRAWER_BASE_CLS} ${mobileOpen ? "[transform:translateX(0)]" : "[transform:translateX(-100%)]"}`}
         aria-hidden={!mobileOpen}
-        aria-label="Үндсэн цэс"
+        aria-label={t("nav_main_menu")}
       >
         <div className={DRAWER_HEADER_CLS}>
           <Link to="/" className={DRAWER_LOGO_CLS} onClick={closeDrawer}>
@@ -361,7 +362,7 @@ export default function SiteHeader() {
           <button
             type="button"
             className={DRAWER_CLOSE_CLS}
-            aria-label="Цэс хаах"
+            aria-label={t("nav_close_menu")}
             onClick={closeDrawer}
           >
             <svg
@@ -453,6 +454,9 @@ export default function SiteHeader() {
         </ul>
 
         <div className={DRAWER_FOOTER_CLS}>
+          <div className="mb-2">
+            <LanguageSwitcher dark />
+          </div>
           <a href="mailto:info@tsengeldekh.mn" className={DRAWER_CONTACT_CLS}>
             <svg
               viewBox="0 0 24 24"
