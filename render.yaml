@@ -94,7 +94,6 @@ services:
   - type: web
     name: cs360-frontend
     runtime: static
-    plan: free
     autoDeploy: true
     buildCommand: |
       corepack enable
