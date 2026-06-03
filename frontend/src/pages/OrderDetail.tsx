@@ -137,7 +137,10 @@ export default function OrderDetail() {
             {t("watch_tab_tickets")}
           </Link>
         </nav>
-        <div className={WATCH_USER_CLS} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div
+          className={WATCH_USER_CLS}
+          style={{ display: "flex", alignItems: "center", gap: 12 }}
+        >
           <LanguageSwitcher dark />
           <UserMenu />
         </div>
@@ -169,9 +172,7 @@ export default function OrderDetail() {
         ) : !order ? (
           <section className={EMPTY_CLS}>
             <h1 className={EMPTY_H1_CLS}>{t("order_not_found")}</h1>
-            <p className={EMPTY_P_CLS}>
-              {t("order_not_found_desc")}
-            </p>
+            <p className={EMPTY_P_CLS}>{t("order_not_found_desc")}</p>
             <Link
               to="/watch#tickets"
               className={`${WATCH_BTN_CLS} ${WATCH_BTN_PRIMARY_CLS}`}
@@ -205,9 +206,7 @@ export default function OrderDetail() {
                 </span>
                 <h1 className={TITLE_CLS}>{order.title}</h1>
                 <span className={EVENT_DATE_CLS}>{order.date}</span>
-                <span className={VENUE_CLS}>
-                  📡 {t("order_online_stream")}
-                </span>
+                <span className={VENUE_CLS}>📡 {t("order_online_stream")}</span>
               </div>
             </header>
 
@@ -239,7 +238,9 @@ export default function OrderDetail() {
               </section>
 
               <section className={SECTION_CLS}>
-                <h2 className={SECTION_TITLE_CLS}>{t("order_package_title")}</h2>
+                <h2 className={SECTION_TITLE_CLS}>
+                  {t("order_package_title")}
+                </h2>
                 <dl className={META_CLS}>
                   <div>
                     <dt className={META_DT_CLS}>{t("order_package")}</dt>
@@ -247,7 +248,9 @@ export default function OrderDetail() {
                   </div>
                   <div>
                     <dt className={META_DT_CLS}>{t("order_access")}</dt>
-                    <dd className={META_DD_CLS}>{order.qty} {t("order_devices")}</dd>
+                    <dd className={META_DD_CLS}>
+                      {order.qty} {t("order_devices")}
+                    </dd>
                   </div>
                   <div>
                     <dt className={META_DT_CLS}>{t("order_quality")}</dt>
@@ -257,7 +260,9 @@ export default function OrderDetail() {
               </section>
 
               <section className={SECTION_WIDE_CLS}>
-                <h2 className={SECTION_TITLE_CLS}>{t("order_payment_title")}</h2>
+                <h2 className={SECTION_TITLE_CLS}>
+                  {t("order_payment_title")}
+                </h2>
                 <table className={LINE_ITEMS_TABLE_CLS}>
                   <thead>
                     <tr>

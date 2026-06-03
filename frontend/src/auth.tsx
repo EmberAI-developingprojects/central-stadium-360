@@ -21,6 +21,7 @@ export type Session = {
   fullname: string;
   avatar: string | null;
   bio: string;
+  phone: string;
   role: UserRole;
 };
 
@@ -73,6 +74,7 @@ type SbUserMetadata = {
   full_name?: string;
   bio?: string;
   avatar?: string | null;
+  phone?: string;
 };
 
 function sessionFromSupabase(
@@ -89,6 +91,7 @@ function sessionFromSupabase(
     fullname: profile?.full_name || md.full_name || "",
     avatar: md.avatar ?? null,
     bio: md.bio ?? "",
+    phone: md.phone ?? (profile?.phone || user.phone || ""),
     role: profile?.role ?? "user",
   };
 }
@@ -162,6 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         fullname: "",
         avatar: null,
         bio: "",
+        phone: payload.user.phone || "",
         role: payload.user.role,
       });
     },
@@ -243,6 +247,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (typeof patch.fullname === "string") md.full_name = patch.fullname;
       if (typeof patch.bio === "string") md.bio = patch.bio;
       if (patch.avatar !== undefined) md.avatar = patch.avatar;
+      if (typeof patch.phone === "string") md.phone = patch.phone;
       if (Object.keys(md).length > 0) {
         await supabase.auth.updateUser({ data: md });
       }

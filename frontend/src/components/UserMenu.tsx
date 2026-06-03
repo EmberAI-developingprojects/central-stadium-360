@@ -38,22 +38,22 @@ const CARET_CLS =
 const CARET_OPEN_CLS = "[transform:rotate(180deg)]";
 
 const PANEL_CLS =
-  "absolute right-0 min-w-[280px] p-2.5 rounded-[14px] z-[120] top-[calc(100%+10px)] bg-[rgba(255,255,255,0.96)] [backdrop-filter:blur(20px)_saturate(170%)] [-webkit-backdrop-filter:blur(20px)_saturate(170%)] border border-solid border-[rgba(31,41,55,0.08)] shadow-[0_20px_50px_-14px_rgba(31,41,55,0.25)] [animation:userMenuIn_.14s_ease]";
+  "absolute right-0 min-w-[280px] p-2.5 rounded-[14px] z-[120] top-[calc(100%+10px)] bg-[rgba(255,255,255,0.96)] [backdrop-filter:blur(20px)_saturate(170%)] [-webkit-backdrop-filter:blur(20px)_saturate(170%)] border border-solid border-[rgba(31,41,55,0.08)] shadow-[0_20px_50px_-14px_rgba(31,41,55,0.25)] [animation:userMenuIn_.14s_ease] [.watch-header_&]:bg-[rgba(17,22,36,0.92)] [.watch-header_&]:border-[rgba(255,255,255,0.10)] [.watch-header_&]:shadow-[0_24px_60px_-18px_rgba(0,0,0,0.7)]";
 
 const HEAD_CLS = "flex items-center gap-3 pt-2 pr-2.5 pb-3 pl-2.5 [&>div]:flex [&>div]:flex-col [&>div]:min-w-0";
 const FULLNAME_CLS =
-  "text-sm font-bold text-ink leading-[1.2] whitespace-nowrap overflow-hidden text-ellipsis";
+  "text-sm font-bold text-ink leading-[1.2] whitespace-nowrap overflow-hidden text-ellipsis [.watch-header_&]:text-white";
 const ID_CLS =
-  "text-xs text-ink-soft mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis";
-const SEP_CLS = "h-px my-1 mx-0 bg-[rgba(31,41,55,0.08)]";
+  "text-xs text-ink-soft mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis [.watch-header_&]:text-[rgba(255,255,255,0.55)]";
+const SEP_CLS = "h-px my-1 mx-0 bg-[rgba(31,41,55,0.08)] [.watch-header_&]:bg-[rgba(255,255,255,0.10)]";
 
 const ITEM_CLS =
-  "flex items-center gap-3 w-full bg-transparent border-0 rounded-[9px] cursor-pointer text-sm font-medium text-ink text-left py-2.5 px-3 font-[inherit] [transition:background_.15s_ease,color_.15s_ease] hover:bg-brand-blue-tint hover:text-brand-blue [&_svg]:w-[18px] [&_svg]:h-[18px] [&_svg]:text-ink-soft [&_svg]:shrink-0 hover:[&_svg]:text-brand-blue";
+  "flex items-center gap-3 w-full bg-transparent border-0 rounded-[9px] cursor-pointer text-sm font-medium text-ink text-left py-2.5 px-3 font-[inherit] [transition:background_.15s_ease,color_.15s_ease] hover:bg-brand-blue-tint hover:text-brand-blue [&_svg]:w-[18px] [&_svg]:h-[18px] [&_svg]:text-ink-soft [&_svg]:shrink-0 hover:[&_svg]:text-brand-blue [.watch-header_&]:text-[rgba(255,255,255,0.88)] [.watch-header_&]:[&_svg]:text-[rgba(255,255,255,0.55)] [.watch-header_&]:hover:bg-[rgba(255,255,255,0.08)] [.watch-header_&]:hover:text-white [.watch-header_&]:hover:[&_svg]:text-white";
 const ITEM_DANGER_CLS =
-  "!text-[#B91C1C] [&_svg]:!text-[#B91C1C] hover:!bg-[rgba(185,28,28,0.08)] hover:!text-[#991B1B] hover:[&_svg]:!text-[#991B1B]";
+  "!text-[#B91C1C] [&_svg]:!text-[#B91C1C] hover:!bg-[rgba(185,28,28,0.08)] hover:!text-[#991B1B] hover:[&_svg]:!text-[#991B1B] [.watch-header_&]:!text-[#FCA5A5] [.watch-header_&]:[&_svg]:!text-[#FCA5A5] [.watch-header_&]:hover:!bg-[rgba(185,28,28,0.18)] [.watch-header_&]:hover:!text-[#FECACA] [.watch-header_&]:hover:[&_svg]:!text-[#FECACA]";
 
 const BADGE_CLS =
-  "ml-auto min-w-[22px] rounded-full bg-brand-blue text-white text-[11px] font-bold text-center py-0.5 px-[7px]";
+  "ml-auto min-w-[22px] rounded-full bg-brand-blue text-white text-[11px] font-bold text-center py-0.5 px-[7px] [.watch-header_&]:bg-brand-blue-soft";
 
 export default function UserMenu() {
   const { t } = useTranslation();
