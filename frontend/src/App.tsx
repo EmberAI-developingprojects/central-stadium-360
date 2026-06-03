@@ -28,7 +28,25 @@ import Content from './admin/pages/Content';
 function ScrollToTop() {
   const { pathname, hash } = useLocation();
   useEffect(() => {
-    if (hash) return;
+    if (hash) {
+      // Wait for the destination route to mount before scrolling to the anchor.
+      const id = hash.slice(1);
+      const tryScroll = () => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          return true;
+        }
+        return false;
+      };
+      if (tryScroll()) return;
+      let attempts = 0;
+      const timer = window.setInterval(() => {
+        attempts += 1;
+        if (tryScroll() || attempts > 20) window.clearInterval(timer);
+      }, 50);
+      return () => window.clearInterval(timer);
+    }
     window.scrollTo(0, 0);
   }, [pathname, hash]);
   return null;

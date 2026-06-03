@@ -355,10 +355,10 @@ function toServicePayload(items: MemberItem[]): Partial<DbHomeService>[] {
 }
 
 const DEFAULT_HERO: HeroImage[] = [
-  { slot: "tile1", image_url: "/assets/images/hero/featured.jpg",       alt: "Онцлох үйл явдал" },
-  { slot: "tile2", image_url: "/assets/images/hero/stadium-aerial.png", alt: "Төв цэнгэлдэх хүрээлэн" },
+  { slot: "tile1", image_url: "/assets/images/hero/featured.opt.jpg",   alt: "Онцлох үйл явдал" },
+  { slot: "tile2", image_url: "/assets/images/hero/stadium-aerial.jpg", alt: "Төв цэнгэлдэх хүрээлэн" },
   { slot: "tile3", image_url: "/assets/images/hero/event-tengri.png",   alt: "THUNDERZ — TENGRI" },
-  { slot: "tile4", image_url: "/assets/images/hero/live-360.png",       alt: "Live streaming · 360°" },
+  { slot: "tile4", image_url: "/assets/images/hero/live-360.jpg",       alt: "Live streaming · 360°" },
 ];
 
 const EMPTY_CONTENT: HomeContent = {

@@ -14,16 +14,16 @@ const HEADER_SCROLLED_CLS =
 const HEADER_INNER_CLS = "max-w-screen-page mx-auto";
 
 const MAINNAV_CLS =
-  "flex items-center justify-between gap-6 py-[8px] px-0 max-[920px]:px-0 max-[920px]:py-2 max-[920px]:gap-3";
+  "flex items-center justify-between gap-6 py-[8px] px-0 max-[1200px]:gap-4 max-[1200px]:py-2";
 
-const LOGO_CLS = "inline-flex items-center gap-2.5 no-underline text-ink";
+const LOGO_CLS = "inline-flex items-center gap-2.5 no-underline text-ink flex-none";
 const LOGO_MARK_CLS =
-  "w-auto h-9 rounded-none bg-transparent border-0 flex-none [&_img]:block [&_img]:h-full [&_img]:w-auto max-[920px]:h-8";
+  "w-auto h-9 rounded-none bg-transparent border-0 flex-none [&_img]:block [&_img]:h-full [&_img]:w-auto max-[1200px]:h-8";
 
 const NAV_LINKS_CLS =
-  "flex items-center list-none m-0 p-0 gap-8 max-[1100px]:gap-5 max-[920px]:hidden";
+  "flex items-center list-none m-0 p-0 gap-7 max-[1380px]:gap-5 max-[1280px]:gap-4 max-[1200px]:hidden";
 const NAV_LINK_A_CLS =
-  "no-underline text-ink text-[16px] font-semibold whitespace-nowrap [transition:color_0.15s_ease] hover:text-brand-blue";
+  "no-underline text-ink text-[15px] font-semibold whitespace-nowrap [transition:color_0.15s_ease] hover:text-brand-blue max-[1380px]:text-[14px]";
 const NAV_LINK_DROPDOWN_TRIGGER_CLS = `${NAV_LINK_A_CLS} inline-flex items-center gap-1.5`;
 
 const HAS_DROPDOWN_LI_CLS = "group relative";
@@ -37,13 +37,13 @@ const DROPDOWN_CLS =
 const DROPDOWN_A_CLS =
   "block text-[15px] font-medium text-ink rounded-lg whitespace-nowrap py-[9px] px-[14px] no-underline hover:bg-brand-blue-tint hover:text-brand-blue";
 
-const HEADER_AUTH_CLS = "inline-flex items-center gap-[14px] max-[920px]:gap-2";
+const HEADER_AUTH_CLS = "inline-flex items-center gap-[14px] flex-none max-[1200px]:gap-2";
 
 const AUTH_BTN_CLS =
   "inline-flex items-center leading-none gap-2 rounded-full bg-brand-blue text-white text-[15px] font-semibold no-underline py-[9px] px-[18px] [transition:background_.15s_ease,transform_.15s_ease,box-shadow_.2s_ease] shadow-[0_6px_18px_-8px_rgba(34,48,198,.55)] hover:bg-brand-blue-soft hover:-translate-y-px hover:shadow-[0_10px_24px_-8px_rgba(34,48,198,.65)] [&_svg]:w-4 [&_svg]:h-4";
 
 const HAMBURGER_BTN_CLS =
-  "hidden max-[920px]:inline-flex items-center justify-center w-10 h-10 rounded-full bg-white border border-solid border-[rgba(31,41,55,0.10)] text-ink [transition:border-color_.15s_ease,box-shadow_.2s_ease] hover:border-[rgba(34,48,198,0.30)] hover:shadow-[0_6px_18px_-10px_rgba(34,48,198,.45)] [&_svg]:w-[18px] [&_svg]:h-[18px]";
+  "hidden max-[1200px]:inline-flex items-center justify-center w-10 h-10 rounded-full bg-white border border-solid border-[rgba(31,41,55,0.10)] text-ink [transition:border-color_.15s_ease,box-shadow_.2s_ease] hover:border-[rgba(34,48,198,0.30)] hover:shadow-[0_6px_18px_-10px_rgba(34,48,198,.45)] [&_svg]:w-[18px] [&_svg]:h-[18px]";
 
 const DRAWER_BACKDROP_BASE_CLS =
   "fixed inset-0 bg-[rgba(15,23,42,0.55)] z-[200] [backdrop-filter:blur(2px)] [-webkit-backdrop-filter:blur(2px)] [transition:opacity_.25s_ease]";
@@ -94,32 +94,32 @@ type NavGroup = {
 const buildNavGroups = (t: (k: string) => string): NavGroup[] => [
   {
     label: t("nav_about"),
-    href: "#about",
+    href: "/#about",
     children: [
-      { label: t("nav_about_intro"), href: "#about" },
-      { label: t("nav_about_history"), href: "#events" },
-      { label: t("nav_about_mission"), href: "#about" },
+      { label: t("nav_about_intro"), href: "/#about" },
+      { label: t("nav_about_history"), href: "/#events" },
+      { label: t("nav_about_mission"), href: "/#about" },
     ],
   },
   { label: t("nav_events"), href: "/events" },
   {
     label: t("nav_transparency"),
-    href: "#certificates",
+    href: "/#certificates",
     children: [
-      { label: t("nav_transparency_report"), href: "#certificates" },
-      { label: t("nav_transparency_resolution"), href: "#certificates" },
-      { label: t("nav_transparency_petition"), href: "#contact" },
-      { label: t("nav_transparency_hr"), href: "#certificates" },
-      { label: t("nav_transparency_selection"), href: "#certificates" },
-      { label: t("nav_transparency_evaluation"), href: "#certificates" },
-      { label: t("nav_transparency_ethics"), href: "#certificates" },
-      { label: t("nav_transparency_recommendations"), href: "#certificates" },
+      { label: t("nav_transparency_report"), href: "/#certificates" },
+      { label: t("nav_transparency_resolution"), href: "/#certificates" },
+      { label: t("nav_transparency_petition"), href: "/#contact" },
+      { label: t("nav_transparency_hr"), href: "/#certificates" },
+      { label: t("nav_transparency_selection"), href: "/#certificates" },
+      { label: t("nav_transparency_evaluation"), href: "/#certificates" },
+      { label: t("nav_transparency_ethics"), href: "/#certificates" },
+      { label: t("nav_transparency_recommendations"), href: "/#certificates" },
     ],
   },
-  { label: t("nav_legal"), href: "#certificates" },
-  { label: t("nav_shilen"), href: "#certificates" },
-  { label: t("nav_news"), href: "#news" },
-  { label: t("nav_contact"), href: "#contact" },
+  { label: t("nav_legal"), href: "/#certificates" },
+  { label: t("nav_shilen"), href: "/#certificates" },
+  { label: t("nav_news"), href: "/#news" },
+  { label: t("nav_contact"), href: "/#contact" },
 ];
 
 export default function SiteHeader() {
@@ -187,13 +187,17 @@ export default function SiteHeader() {
                 <img
                   src="/assets/images/brand/logo.png"
                   alt="Төв Цэнгэлдэх Хүрээлэн"
+                  width="180"
+                  height="36"
+                  fetchPriority="high"
+                  decoding="async"
                 />
               </span>
             </Link>
 
             <ul className={NAV_LINKS_CLS}>
               <li className={HAS_DROPDOWN_LI_CLS}>
-                <a href="#about" className={NAV_LINK_DROPDOWN_TRIGGER_CLS}>
+                <Link to="/#about" className={NAV_LINK_DROPDOWN_TRIGGER_CLS}>
                   {t("nav_about")}
                   <svg
                     className={CARET_CLS}
@@ -207,17 +211,17 @@ export default function SiteHeader() {
                   >
                     <path d="M1 1l4 4 4-4" />
                   </svg>
-                </a>
+                </Link>
                 <div className={DROPDOWN_CLS} role="menu">
-                  <a className={DROPDOWN_A_CLS} href="#about">
+                  <Link className={DROPDOWN_A_CLS} to="/#about">
                     {t("nav_about_intro")}
-                  </a>
-                  <a className={DROPDOWN_A_CLS} href="#events">
+                  </Link>
+                  <Link className={DROPDOWN_A_CLS} to="/#events">
                     {t("nav_about_history")}
-                  </a>
-                  <a className={DROPDOWN_A_CLS} href="#about">
+                  </Link>
+                  <Link className={DROPDOWN_A_CLS} to="/#about">
                     {t("nav_about_mission")}
-                  </a>
+                  </Link>
                 </div>
               </li>
               <li>
@@ -226,8 +230,8 @@ export default function SiteHeader() {
                 </Link>
               </li>
               <li className={HAS_DROPDOWN_LI_CLS}>
-                <a
-                  href="#certificates"
+                <Link
+                  to="/#certificates"
                   className={NAV_LINK_DROPDOWN_TRIGGER_CLS}
                 >
                   {t("nav_transparency")}
@@ -243,53 +247,53 @@ export default function SiteHeader() {
                   >
                     <path d="M1 1l4 4 4-4" />
                   </svg>
-                </a>
+                </Link>
                 <div className={DROPDOWN_CLS} role="menu">
-                  <a className={DROPDOWN_A_CLS} href="#certificates">
+                  <Link className={DROPDOWN_A_CLS} to="/#certificates">
                     {t("nav_transparency_report")}
-                  </a>
-                  <a className={DROPDOWN_A_CLS} href="#certificates">
+                  </Link>
+                  <Link className={DROPDOWN_A_CLS} to="/#certificates">
                     {t("nav_transparency_resolution")}
-                  </a>
-                  <a className={DROPDOWN_A_CLS} href="#contact">
+                  </Link>
+                  <Link className={DROPDOWN_A_CLS} to="/#contact">
                     {t("nav_transparency_petition")}
-                  </a>
-                  <a className={DROPDOWN_A_CLS} href="#certificates">
+                  </Link>
+                  <Link className={DROPDOWN_A_CLS} to="/#certificates">
                     {t("nav_transparency_hr")}
-                  </a>
-                  <a className={DROPDOWN_A_CLS} href="#certificates">
+                  </Link>
+                  <Link className={DROPDOWN_A_CLS} to="/#certificates">
                     {t("nav_transparency_selection")}
-                  </a>
-                  <a className={DROPDOWN_A_CLS} href="#certificates">
+                  </Link>
+                  <Link className={DROPDOWN_A_CLS} to="/#certificates">
                     {t("nav_transparency_evaluation")}
-                  </a>
-                  <a className={DROPDOWN_A_CLS} href="#certificates">
+                  </Link>
+                  <Link className={DROPDOWN_A_CLS} to="/#certificates">
                     {t("nav_transparency_ethics")}
-                  </a>
-                  <a className={DROPDOWN_A_CLS} href="#certificates">
+                  </Link>
+                  <Link className={DROPDOWN_A_CLS} to="/#certificates">
                     {t("nav_transparency_recommendations")}
-                  </a>
+                  </Link>
                 </div>
               </li>
               <li>
-                <a href="#certificates" className={NAV_LINK_A_CLS}>
+                <Link to="/#certificates" className={NAV_LINK_A_CLS}>
                   {t("nav_legal")}
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#certificates" className={NAV_LINK_A_CLS}>
+                <Link to="/#certificates" className={NAV_LINK_A_CLS}>
                   {t("nav_shilen")}
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#news" className={NAV_LINK_A_CLS}>
+                <Link to="/#news" className={NAV_LINK_A_CLS}>
                   {t("nav_news")}
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#contact" className={NAV_LINK_A_CLS}>
+                <Link to="/#contact" className={NAV_LINK_A_CLS}>
                   {t("nav_contact")}
-                </a>
+                </Link>
               </li>
             </ul>
 
@@ -357,6 +361,9 @@ export default function SiteHeader() {
             <img
               src="/assets/images/brand/logo-white.png"
               alt="Төв Цэнгэлдэх Хүрээлэн"
+              width="200"
+              height="40"
+              decoding="async"
             />
           </Link>
           <button
@@ -438,14 +445,14 @@ export default function SiteHeader() {
                   }}
                 >
                   {group.children.map((child) => (
-                    <a
+                    <Link
                       key={child.label}
-                      href={child.href}
+                      to={child.href}
                       className={DRAWER_SUBLINK_CLS}
                       onClick={closeDrawer}
                     >
                       {child.label}
-                    </a>
+                    </Link>
                   ))}
                 </div>
               </li>

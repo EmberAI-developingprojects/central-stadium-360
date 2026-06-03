@@ -50,7 +50,7 @@ export default function About() {
               data-stagger="2"
             >
               <img
-                src="/assets/images/stadium/exterior.jpg"
+                src="/assets/images/stadium/exterior.opt.jpg"
                 alt="Төв цэнгэлдэх хүрээлэн — гадна талаас"
                 className="w-full h-full object-cover object-center block [border-radius:inherit]"
                 loading="lazy"

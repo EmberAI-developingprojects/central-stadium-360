@@ -209,22 +209,51 @@ function Hero({
                 </svg>
                 {tiles[0].image_url && (
                   <section className={`${TILE_BASE} left-[-14.1%] top-[6.8%] w-[53.2%] h-[87.9%] [border-radius:4cqw] [clip-path:url(#tile1-shape)] hover:[&_img]:[transform:scale(1.04)]`}>
-                    <img src={tiles[0].image_url} alt={tiles[0].alt} loading="eager" />
+                    <img
+                      src={tiles[0].image_url}
+                      alt={tiles[0].alt}
+                      width="640"
+                      height="800"
+                      loading="eager"
+                      fetchPriority="high"
+                      decoding="async"
+                    />
                   </section>
                 )}
                 {tiles[1].image_url && (
                   <section className={`${TILE_BASE} left-[42.2%] top-[6.8%] w-[51.8%] h-[28%] [border-radius:4.44cqw] [transform:skewX(18deg)] [transform-origin:center] [&_img]:[transform:skewX(-18deg)_scale(1.18)] [&_img]:[transform-origin:center] hover:[&_img]:[transform:skewX(-18deg)_scale(1.22)]`}>
-                    <img src={tiles[1].image_url} alt={tiles[1].alt} loading="lazy" />
+                    <img
+                      src={tiles[1].image_url}
+                      alt={tiles[1].alt}
+                      width="420"
+                      height="260"
+                      loading="lazy"
+                      decoding="async"
+                    />
                   </section>
                 )}
                 {tiles[2].image_url && (
                   <section className={`${TILE_BASE} left-[45.1%] top-[36.6%] w-[53.2%] h-[28%] [border-radius:3.89cqw] hover:[&_img]:[transform:scale(1.04)]`}>
-                    <img src={tiles[2].image_url} alt={tiles[2].alt} loading="lazy" />
+                    <img
+                      src={tiles[2].image_url}
+                      alt={tiles[2].alt}
+                      width="420"
+                      height="260"
+                      loading="lazy"
+                      decoding="async"
+                    />
                   </section>
                 )}
                 {tiles[3].image_url && (
                   <section className={`${TILE_BASE} left-[42.1%] top-[66.4%] w-[51.8%] h-[28.3%] [border-radius:4.44cqw] [transform:skewX(-18deg)] [transform-origin:center] [&_img]:[transform:skewX(18deg)_scale(1.18)] [&_img]:[transform-origin:center] hover:[&_img]:[transform:skewX(18deg)_scale(1.22)]`}>
-                    <img src={tiles[3].image_url} alt={tiles[3].alt} loading="lazy" />
+                    <img
+                      src={tiles[3].image_url}
+                      alt={tiles[3].alt}
+                      width="420"
+                      height="260"
+                      loading="lazy"
+                      decoding="async"
+                    />
                   </section>
                 )}
               </main>
@@ -239,8 +268,12 @@ function Hero({
                     <img
                       src={t.image_url}
                       alt={t.alt}
+                      width="460"
+                      height="345"
                       className="w-full h-full object-cover block"
                       loading={i === 0 ? "eager" : "lazy"}
+                      decoding="async"
+                      fetchPriority={i === 0 ? "high" : undefined}
                     />
                   </div>
                 ))}
@@ -290,10 +323,13 @@ function Highlights() {
             data-stagger="2"
           >
             <img
-              src="/assets/images/stadium/exterior.jpg"
+              src="/assets/images/stadium/exterior.opt.jpg"
               alt="Төв цэнгэлдэх хүрээлэн — гадна талаас"
+              width="600"
+              height="630"
               className="w-full h-full object-cover object-center block [border-radius:inherit]"
               loading="lazy"
+              decoding="async"
             />
           </div>
 
@@ -908,7 +944,7 @@ function VideoCta() {
               muted
               playsInline
               preload="metadata"
-              poster="/assets/images/stadium/exterior.jpg"
+              poster="/assets/images/stadium/exterior.opt.jpg"
               fallbackAriaLabel="Чамтай бас чамгүй — тоглолтын зураг"
             />
             <button
