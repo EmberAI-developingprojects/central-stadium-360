@@ -75,9 +75,13 @@ export const REG_CHECKBOX_CLS =
   "w-4 h-4 cursor-pointer m-0 mt-0.5 accent-brand-blue flex-none";
 
 export const REG_TABS_CLS =
-  "grid gap-1.5 p-1 bg-surface-1 rounded-xl border border-solid border-[rgba(31,41,55,0.08)] m-0 mb-[22px] [grid-template-columns:1fr_1fr]";
+  "relative grid gap-3 m-0 mb-[22px] [grid-template-columns:1fr_1fr] max-[480px]:[grid-template-columns:1fr] max-[480px]:gap-2.5";
+export const REG_TABS_DIVIDER_CLS =
+  "pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[1] flex items-center justify-center w-8 h-8 rounded-full bg-white text-[10.5px] font-bold uppercase tracking-[.12em] text-ink-soft border border-solid border-[rgba(31,41,55,0.10)] shadow-[0_4px_10px_-4px_rgba(31,41,55,0.18)] max-[480px]:left-1/2 max-[480px]:top-1/2 max-[480px]:[transform:translate(-50%,-50%)]";
 export const REG_TAB_CLS =
-  "inline-flex items-center justify-center gap-2 bg-transparent border-0 rounded-[9px] text-[13.5px] font-semibold text-ink-soft cursor-pointer no-underline h-10 px-3 font-[inherit] [transition:background_.2s_ease,color_.2s_ease,box-shadow_.2s_ease] hover:text-brand-blue [&_svg]:w-[15px] [&_svg]:h-[15px]";
+  "group inline-flex flex-col items-center justify-center gap-2 rounded-[14px] bg-white text-ink cursor-pointer no-underline py-[18px] px-4 border border-solid border-[rgba(31,41,55,0.12)] font-[inherit] text-center [transition:border-color_.2s_ease,background_.2s_ease,box-shadow_.2s_ease,transform_.15s_ease] hover:border-brand-blue hover:bg-brand-blue-tint hover:-translate-y-px hover:shadow-[0_10px_24px_-12px_rgba(34,48,198,.35)] [&_svg]:w-[22px] [&_svg]:h-[22px] [&_svg]:text-brand-blue";
+export const REG_TAB_LABEL_CLS = "text-[13.5px] font-bold text-ink";
+export const REG_TAB_SUB_CLS = "text-[11.5px] text-ink-soft font-medium tracking-[0.02em]";
 export const REG_TAB_ACTIVE_CLS =
   "bg-white text-brand-blue shadow-[0_4px_12px_-6px_rgba(31,41,55,0.2)]";
 

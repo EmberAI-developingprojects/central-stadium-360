@@ -558,15 +558,19 @@ function Upcoming({ gatedGo, events }: UpcomingProps) {
                     alt={u.alt}
                     loading={i === 0 ? "eager" : "lazy"}
                   />
-                  <div className="absolute flex items-end justify-between gap-4 flex-wrap text-white z-[2] inset-x-0 bottom-0 top-auto p-[clamp(16px,2.5vw,28px)] [background:linear-gradient(180deg,transparent_0%,rgba(15,23,42,0.82)_100%)] max-[720px]:py-[14px] max-[720px]:px-4 max-[720px]:gap-2.5">
-                    <div className="inline-flex items-center gap-[14px] flex-wrap">
-                      <span className="text-sm font-medium uppercase tracking-[0.08em] text-[rgba(255,255,255,0.85)]">
-                        <strong className="text-brand-blue-soft font-extrabold text-lg">
+                  <div className="absolute flex items-end justify-between gap-4 flex-wrap text-white z-[2] inset-x-0 bottom-0 top-auto p-[clamp(16px,2.5vw,28px)] [background:linear-gradient(180deg,transparent_0%,rgba(15,23,42,0.88)_100%)] max-[720px]:py-[14px] max-[720px]:px-4 max-[720px]:gap-2.5">
+                    <div className="inline-flex items-center gap-2.5 flex-wrap">
+                      <span className="inline-flex items-baseline gap-2 rounded-[10px] bg-brand-blue text-white py-1.5 px-3 shadow-[0_8px_22px_-10px_rgba(34,48,198,0.8)] [font-variant-numeric:tabular-nums]">
+                        <strong className="font-black text-[18px] leading-none tracking-[-0.01em]">
                           {u.date}
                         </strong>
-                        {u.year ? ` · ${u.year}` : ""}
+                        {u.year && (
+                          <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/80">
+                            {u.year}
+                          </span>
+                        )}
                       </span>
-                      <span className="rounded-full text-[11px] uppercase font-semibold text-brand-blue-soft bg-[rgba(255,255,255,0.08)] border border-solid border-[rgba(68,81,220,0.55)] py-1.5 px-3 tracking-[0.15em]">
+                      <span className="rounded-full text-[11px] uppercase font-bold text-white bg-[rgba(255,255,255,0.14)] border border-solid border-[rgba(255,255,255,0.25)] py-1.5 px-3 tracking-[0.14em] [backdrop-filter:blur(6px)] [-webkit-backdrop-filter:blur(6px)]">
                         {u.pill}
                       </span>
                     </div>
