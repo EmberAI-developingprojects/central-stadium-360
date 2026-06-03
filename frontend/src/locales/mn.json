@@ -147,7 +147,9 @@
   "auth_register_title": "Шинээр бүртгүүлэх",
   "auth_register_subtitle": "Утасны дугаар эсвэл Gmail хаягаасаа сонгоод бүртгэлээ үүсгэнэ үү.",
   "auth_register_phone": "Утасны дугаараар",
+  "auth_register_phone_sub": "SMS баталгаажуулах код",
   "auth_register_email": "Gmail-аар",
+  "auth_register_email_sub": "Зөвхөн @gmail.com",
   "auth_already_registered": "Аль хэдийн бүртгэлтэй — Нэвтрэх",
 
   "auth_logo_alt": "Төв Цэнгэлдэх Хүрээлэн",
