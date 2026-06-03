@@ -1,5 +1,6 @@
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../auth";
 import {
   BACK_CLS,
@@ -39,26 +40,27 @@ import {
 
 type Step = "form" | "verify";
 
-function explainError(code: string, fallback: string): string {
-  switch (code) {
-    case "already_registered":
-      return "Энэ дугаар аль хэдийн бүртгэлтэй байна.";
-    case "rate_limited":
-      return "Хэт олон оролдлого. Хэдэн минутын дараа дахин оролдоно уу.";
-    case "invalid_input":
-      return "Оруулсан мэдээллийг шалгана уу.";
-    case "supabase_not_configured":
-      return "Сервер тохиргоо дутуу байна. Админд хандана уу.";
-    case "otp_invalid":
-      return "Код буруу эсвэл хугацаа дууссан байна.";
-    default:
-      return fallback;
-  }
-}
-
 export default function RegisterPhone() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { registerPhone, verifyPhone, resendCode } = useAuth();
+
+  const explainError = (code: string, fallback: string): string => {
+    switch (code) {
+      case "already_registered":
+        return t("auth_err_already_registered_phone");
+      case "rate_limited":
+        return t("auth_err_rate_limited");
+      case "invalid_input":
+        return t("auth_err_invalid_input");
+      case "supabase_not_configured":
+        return t("auth_err_supabase_not_configured");
+      case "otp_invalid":
+        return t("auth_err_otp_invalid");
+      default:
+        return fallback;
+    }
+  };
 
   const [fullname, setFullname] = useState("");
   const [phone, setPhone] = useState("");
@@ -67,7 +69,7 @@ export default function RegisterPhone() {
   const [agree, setAgree] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [alert, setAlert] = useState("");
-  const [submitLabel, setSubmitLabel] = useState("Бүртгүүлэх");
+  const [submitLabel, setSubmitLabel] = useState<string>(t("auth_register_btn"));
   const [busy, setBusy] = useState(false);
 
   const [step, setStep] = useState<Step>("form");
@@ -91,23 +93,21 @@ export default function RegisterPhone() {
     e.preventDefault();
     setAlert("");
 
-    if (fullname.trim().length < 2) return setAlert("Бүтэн нэрээ оруулна уу.");
+    if (fullname.trim().length < 2) return setAlert(t("auth_err_fullname_required"));
     const digits = phone.replace(/\D/g, "");
     if (digits.length !== 8)
-      return setAlert("Утасны дугаар 8 оронтой байх ёстой.");
+      return setAlert(t("auth_err_phone_8_digits"));
     if (!/^[6789]/.test(digits)) {
-      return setAlert(
-        "Зөвхөн Монгол утасны дугаар хүлээн авна (6, 7, 8, 9-өөр эхэлсэн).",
-      );
+      return setAlert(t("auth_err_phone_only_mn"));
     }
     if (password.length < 8)
-      return setAlert("Нууц үг хамгийн багадаа 8 тэмдэгт байх ёстой.");
-    if (password !== confirmPw) return setAlert("Нууц үг таарахгүй байна.");
-    if (!agree) return setAlert("Үйлчилгээний нөхцөлийг зөвшөөрнө үү.");
+      return setAlert(t("auth_err_password_min"));
+    if (password !== confirmPw) return setAlert(t("auth_err_passwords_dont_match"));
+    if (!agree) return setAlert(t("auth_err_must_agree"));
 
     const identifier = "+976" + digits;
     setBusy(true);
-    setSubmitLabel("Илгээж байна…");
+    setSubmitLabel(t("auth_sending"));
     const res = await registerPhone({
       fullName: fullname.trim(),
       phone: identifier,
@@ -115,16 +115,16 @@ export default function RegisterPhone() {
     });
     if (!res.ok) {
       setBusy(false);
-      setSubmitLabel("Бүртгүүлэх");
+      setSubmitLabel(t("auth_register_btn"));
       setAlert(
-        explainError(res.error, "Бүртгэхэд алдаа гарлаа. Дахин оролдоно уу."),
+        explainError(res.error, t("auth_err_register_failed")),
       );
       return;
     }
     setPendingPhone(identifier);
     setStep("verify");
     setBusy(false);
-    setSubmitLabel("Бүртгүүлэх");
+    setSubmitLabel(t("auth_register_btn"));
   };
 
   const onVerifySubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -132,7 +132,7 @@ export default function RegisterPhone() {
     setVerifyAlert(null);
     const clean = code.replace(/\D/g, "");
     if (clean.length < 4) {
-      setVerifyAlert({ kind: "error", msg: "Кодыг бүрэн оруулна уу." });
+      setVerifyAlert({ kind: "error", msg: t("auth_err_code_incomplete") });
       return;
     }
     setVerifyBusy(true);
@@ -141,11 +141,11 @@ export default function RegisterPhone() {
     if (!res.ok) {
       setVerifyAlert({
         kind: "error",
-        msg: explainError(res.error, "Код буруу байна."),
+        msg: explainError(res.error, t("auth_err_code_wrong")),
       });
       return;
     }
-    setVerifyAlert({ kind: "ok", msg: "Баталгаажлаа ✓" });
+    setVerifyAlert({ kind: "ok", msg: t("auth_verified") });
     setTimeout(() => navigate("/watch", { replace: true }), 700);
   };
 
@@ -157,11 +157,11 @@ export default function RegisterPhone() {
     if (!res.ok) {
       setVerifyAlert({
         kind: "error",
-        msg: explainError(res.error, "Дахин илгээх боломжгүй байна."),
+        msg: explainError(res.error, t("auth_err_resend_failed")),
       });
       return;
     }
-    setVerifyAlert({ kind: "ok", msg: "Шинэ код илгээгдлээ." });
+    setVerifyAlert({ kind: "ok", msg: t("auth_new_code_sent") });
   };
 
   if (step === "verify") {
@@ -171,12 +171,12 @@ export default function RegisterPhone() {
           <Link
             className={LOGO_CLS}
             to="/"
-            aria-label="Төв Цэнгэлдэх Хүрээлэн — Нүүр"
+            aria-label={t("auth_logo_aria")}
           >
             <img
               className={LOGO_IMG_CLS}
               src="/assets/images/brand/logo.png"
-              alt="Төв Цэнгэлдэх Хүрээлэн"
+              alt={t("auth_logo_alt")}
             />
           </Link>
           <Link className={BACK_CLS} to="/login">
@@ -192,7 +192,7 @@ export default function RegisterPhone() {
               <line x1="19" y1="12" x2="5" y2="12" />
               <polyline points="12 19 5 12 12 5" />
             </svg>
-            Нэвтрэх рүү буцах
+            {t("auth_back_login")}
           </Link>
         </header>
 
@@ -200,18 +200,17 @@ export default function RegisterPhone() {
           <section className={CARD_CLS}>
             <span className={EYEBROW_CLS}>
               <span className={EYEBROW_DOT_CLS} aria-hidden="true"></span>
-              Баталгаажуулалт
+              {t("auth_verify_eyebrow")}
             </span>
 
-            <h1 className={TITLE_CLS}>Утсаа баталгаажуулах</h1>
+            <h1 className={TITLE_CLS}>{t("auth_verify_phone_title")}</h1>
             <p className={SUBTITLE_CLS}>
-              {pendingPhone} дугаар руу 6 оронтой код илгээлээ. Хүлээж аваад
-              доор оруулна уу.
+              {t("auth_verify_phone_subtitle", { identifier: pendingPhone })}
             </p>
 
             <form className={FORM_CLS} onSubmit={onVerifySubmit} noValidate>
               <label className={FIELD_CLS}>
-                <span className={LABEL_CLS}>Баталгаажуулах код</span>
+                <span className={LABEL_CLS}>{t("auth_verify_code_label")}</span>
                 <input
                   className={INPUT_CLS}
                   type="text"
@@ -224,9 +223,7 @@ export default function RegisterPhone() {
                   required
                   autoFocus
                 />
-                <span className={REG_HINT_CLS}>
-                  Кодын хүчинтэй хугацаа: 5 минут
-                </span>
+                <span className={REG_HINT_CLS}>{t("auth_verify_hint")}</span>
               </label>
 
               {verifyAlert && (
@@ -243,7 +240,7 @@ export default function RegisterPhone() {
                 className={SUBMIT_CLS}
                 disabled={verifyBusy}
               >
-                {verifyBusy ? "Шалгаж байна…" : "Баталгаажуулах"}
+                {verifyBusy ? t("auth_verifying") : t("auth_verify_btn")}
                 <svg
                   viewBox="0 0 24 24"
                   fill="none"
@@ -260,7 +257,7 @@ export default function RegisterPhone() {
             </form>
 
             <div className={DIVIDER_CLS}>
-              <span>эсвэл</span>
+              <span>{t("auth_or")}</span>
             </div>
 
             <button
@@ -270,10 +267,10 @@ export default function RegisterPhone() {
               disabled={resendBusy}
               style={RESEND_BTN_STYLE}
             >
-              {resendBusy ? "Илгээж байна…" : "Дахин код илгээх"}
+              {resendBusy ? t("auth_sending") : t("auth_resend_code")}
             </button>
             <Link className={HOME_CLS} to="/login">
-              Нэвтрэх рүү буцах
+              {t("auth_back_login")}
             </Link>
           </section>
         </main>
@@ -287,12 +284,12 @@ export default function RegisterPhone() {
         <Link
           className={LOGO_CLS}
           to="/"
-          aria-label="Төв Цэнгэлдэх Хүрээлэн — Нүүр"
+          aria-label={t("auth_logo_aria")}
         >
           <img
             className={LOGO_IMG_CLS}
             src="/assets/images/brand/logo.png"
-            alt="Төв Цэнгэлдэх Хүрээлэн"
+            alt={t("auth_logo_alt")}
           />
         </Link>
         <Link className={BACK_CLS} to="/register">
@@ -308,7 +305,7 @@ export default function RegisterPhone() {
             <line x1="19" y1="12" x2="5" y2="12" />
             <polyline points="12 19 5 12 12 5" />
           </svg>
-          Сонголт руу буцах
+          {t("auth_back_choose")}
         </Link>
       </header>
 
@@ -316,23 +313,20 @@ export default function RegisterPhone() {
         <section className={CARD_CLS}>
           <span className={EYEBROW_CLS}>
             <span className={EYEBROW_DOT_CLS} aria-hidden="true"></span>
-            Хувийн булан
+            {t("auth_register_eyebrow")}
           </span>
 
-          <h1 className={TITLE_CLS}>Утасны дугаараар бүртгүүлэх</h1>
-          <p className={SUBTITLE_CLS}>
-            8 оронтой Монгол утасны дугаараа оруулаад баталгаажуулах SMS код
-            хүлээж аваарай.
-          </p>
+          <h1 className={TITLE_CLS}>{t("auth_reg_phone_title")}</h1>
+          <p className={SUBTITLE_CLS}>{t("auth_reg_phone_subtitle")}</p>
 
           <form className={REG_FORM_CLS} onSubmit={onSubmit} noValidate>
             <label className={FIELD_CLS}>
-              <span className={LABEL_CLS}>Бүтэн нэр</span>
+              <span className={LABEL_CLS}>{t("auth_fullname_label")}</span>
               <input
                 className={INPUT_CLS}
                 type="text"
                 name="fullname"
-                placeholder="Жишээ: Б. Болор"
+                placeholder={t("auth_fullname_placeholder")}
                 autoComplete="name"
                 value={fullname}
                 onChange={(e) => setFullname(e.target.value)}
@@ -341,7 +335,7 @@ export default function RegisterPhone() {
             </label>
 
             <label className={FIELD_CLS}>
-              <span className={LABEL_CLS}>Утасны дугаар</span>
+              <span className={LABEL_CLS}>{t("auth_phone_label")}</span>
               <span className={REG_PHONE_WRAP_CLS}>
                 <span className={REG_PHONE_PREFIX_CLS} aria-hidden="true">
                   +976
@@ -359,13 +353,11 @@ export default function RegisterPhone() {
                   required
                 />
               </span>
-              <span className={REG_HINT_CLS}>
-                8 оронтой Монгол утасны дугаар оруулна уу
-              </span>
+              <span className={REG_HINT_CLS}>{t("auth_phone_hint")}</span>
             </label>
 
             <label className={FIELD_CLS}>
-              <span className={LABEL_CLS}>Нууц үг</span>
+              <span className={LABEL_CLS}>{t("auth_password_label")}</span>
               <span className={PWD_WRAP_CLS}>
                 <input
                   className={PWD_INPUT_CLS}
@@ -381,7 +373,7 @@ export default function RegisterPhone() {
                 <button
                   type="button"
                   className={PWD_TOGGLE_CLS}
-                  aria-label={showPw ? "Нууц үг нуух" : "Нууц үг харах"}
+                  aria-label={showPw ? t("auth_hide_pw") : t("auth_show_pw")}
                   onClick={() => setShowPw((s) => !s)}
                 >
                   <svg
@@ -398,11 +390,11 @@ export default function RegisterPhone() {
                   </svg>
                 </button>
               </span>
-              <span className={REG_HINT_CLS}>Хамгийн багадаа 8 тэмдэгт</span>
+              <span className={REG_HINT_CLS}>{t("auth_password_hint")}</span>
             </label>
 
             <label className={FIELD_CLS}>
-              <span className={LABEL_CLS}>Нууц үг давтах</span>
+              <span className={LABEL_CLS}>{t("auth_password_confirm_label")}</span>
               <input
                 className={INPUT_CLS}
                 type="password"
@@ -425,10 +417,7 @@ export default function RegisterPhone() {
                 className={REG_CHECKBOX_CLS}
                 required
               />
-              <span>
-                Үйлчилгээний нөхцөл болон нууцлалын бодлогыг хүлээн зөвшөөрч
-                байна.
-              </span>
+              <span>{t("auth_terms_label")}</span>
             </label>
 
             <div className={REG_ALERT_CLS} role="alert" hidden={!alert}>
@@ -453,14 +442,14 @@ export default function RegisterPhone() {
           </form>
 
           <div className={DIVIDER_CLS}>
-            <span>эсвэл</span>
+            <span>{t("auth_or")}</span>
           </div>
 
           <Link className={REGISTER_CLS} to="/register/email">
-            Gmail-аар бүртгүүлэх
+            {t("auth_register_with_email")}
           </Link>
           <Link className={HOME_CLS} to="/login">
-            Аль хэдийн бүртгэлтэй — Нэвтрэх
+            {t("auth_already_registered")}
           </Link>
         </section>
       </main>

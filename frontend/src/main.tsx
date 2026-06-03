@@ -5,6 +5,7 @@ import App from './App';
 import { AuthProvider } from './auth';
 import { seedIfEmpty } from './data/store';
 import './document-head';
+import './i18n';
 import 'virtual:tailwind.css';
 
 seedIfEmpty();

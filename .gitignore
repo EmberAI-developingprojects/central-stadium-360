@@ -17,6 +17,7 @@ build/
 .env
 .env.*
 !.env.example
+*.pem
 
 # Editor / OS noise
 .DS_Store

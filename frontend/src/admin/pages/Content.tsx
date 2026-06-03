@@ -2,13 +2,13 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Editor } from "@tinymce/tinymce-react";
 import { getHomeContent, updateHomeContent } from "../../data/store";
 import { api } from "../../lib/api";
+import { useToast } from "../components/Toast";
 import type {
   HeroImage,
   HomeContent,
   MemberItem,
   NewsItem,
   Partner,
-  RoadmapItem,
 } from "../../data/store";
 import {
   ADMIN_ACTIONS_CLS,
@@ -28,13 +28,12 @@ import {
   ADMIN_TABS_CLS,
 } from "../_adminStyles";
 
-type SectionKey = "news" | "partners" | "roadmap" | "members" | "hero";
+type SectionKey = "news" | "partners" | "members" | "hero";
 
 const TABS: { key: SectionKey; label: string }[] = [
   { key: "hero", label: "Hero зураг" },
   { key: "news", label: "Мэдээ" },
   { key: "partners", label: "Хамтрагч" },
-  { key: "roadmap", label: "Түүхэн замнал" },
   { key: "members", label: "Үйлчилгээ" },
 ];
 
@@ -50,7 +49,6 @@ const ICON_KEYS = [
 const NEW_ITEM: {
   news: () => NewsItem;
   partners: () => Partner;
-  roadmap: () => RoadmapItem;
   members: () => MemberItem;
 } = {
   news: () => ({
@@ -68,12 +66,6 @@ const NEW_ITEM: {
     image: "",
     alt: "Партнёр байгууллага",
   }),
-  roadmap: () => ({
-    id: "m" + Math.random().toString(36).slice(2, 6),
-    year: "",
-    title: "",
-    position: "top",
-  }),
   members: () => ({
     id: "svc-" + Math.random().toString(36).slice(2, 7),
     title: "",
@@ -85,6 +77,7 @@ const NEW_ITEM: {
 };
 
 export default function Content() {
+  const toast = useToast();
   const [tab, setTab] = useState<SectionKey>("news");
   const [content, setContent] = useState<HomeContent | null>(null);
   const [busy, setBusy] = useState(false);
@@ -102,8 +95,6 @@ export default function Content() {
     setContent({ ...content, news: next });
   const updateSectionPartners = (next: Partner[]) =>
     setContent({ ...content, partners: next });
-  const updateSectionRoadmap = (next: RoadmapItem[]) =>
-    setContent({ ...content, roadmap: next });
   const updateSectionMembers = (next: MemberItem[]) =>
     setContent({ ...content, members: next });
   const updateHeroTile = (slot: string, patch: Partial<HeroImage>) =>
@@ -117,8 +108,6 @@ export default function Content() {
       updateSectionNews(content.news.filter((it) => it.id !== id));
     else if (tab === "partners")
       updateSectionPartners(content.partners.filter((it) => it.id !== id));
-    else if (tab === "roadmap")
-      updateSectionRoadmap(content.roadmap.filter((it) => it.id !== id));
     else if (tab === "members")
       updateSectionMembers(content.members.filter((it) => it.id !== id));
   };
@@ -131,10 +120,6 @@ export default function Content() {
     updateSectionPartners(
       content.partners.map((it) => (it.id === id ? { ...it, ...patch } : it)),
     );
-  const updateRoadmap = (id: string, patch: Partial<RoadmapItem>) =>
-    updateSectionRoadmap(
-      content.roadmap.map((it) => (it.id === id ? { ...it, ...patch } : it)),
-    );
   const updateMember = (id: string, patch: Partial<MemberItem>) =>
     updateSectionMembers(
       content.members.map((it) => (it.id === id ? { ...it, ...patch } : it)),
@@ -144,8 +129,6 @@ export default function Content() {
     if (tab === "news") updateSectionNews([...content.news, NEW_ITEM.news()]);
     else if (tab === "partners")
       updateSectionPartners([...content.partners, NEW_ITEM.partners()]);
-    else if (tab === "roadmap")
-      updateSectionRoadmap([...content.roadmap, NEW_ITEM.roadmap()]);
     else if (tab === "members")
       updateSectionMembers([...content.members, NEW_ITEM.members()]);
   };
@@ -159,6 +142,9 @@ export default function Content() {
         await updateHomeContent({ [tab]: content[tab] });
       }
       setSavedAt(Date.now());
+      toast.success("Контент хадгалагдлаа.");
+    } catch (e) {
+      toast.error((e as Error).message || "Хадгалах боломжгүй.");
     } finally {
       setBusy(false);
     }
@@ -170,8 +156,7 @@ export default function Content() {
         <div>
           <h2>Контент засварлагч</h2>
           <p>
-            Нүүр хуудсанд харагдах мэдээ, хамтрагч, түүхэн замнал, үйлчилгээний
-            картууд.
+            Нүүр хуудсанд харагдах мэдээ, хамтрагч, үйлчилгээний картууд.
           </p>
         </div>
         <div className={ADMIN_ACTIONS_CLS}>
@@ -248,16 +233,6 @@ export default function Content() {
                 <PartnerRow
                   item={it}
                   onChange={(p) => updatePartner(it.id, p)}
-                  onRemove={() => removeItem(it.id)}
-                />
-              </div>
-            ))}
-          {tab === "roadmap" &&
-            content.roadmap.map((it) => (
-              <div key={it.id} className={ADMIN_CARD_CLS}>
-                <RoadmapRow
-                  item={it}
-                  onChange={(p) => updateRoadmap(it.id, p)}
                   onRemove={() => removeItem(it.id)}
                 />
               </div>
@@ -603,14 +578,15 @@ function PartnerRow({
   onChange: (p: Partial<Partner>) => void;
   onRemove: () => void;
 }) {
+  const toast = useToast();
   const onPickFile = (file: File | null) => {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      window.alert("Зөвхөн зургийн файл сонгоно уу.");
+      toast.error("Зөвхөн зургийн файл сонгоно уу.");
       return;
     }
     if (file.size > 2 * 1024 * 1024) {
-      window.alert("Зурагны хэмжээ 2MB-аас бага байх ёстой.");
+      toast.error("Зурагны хэмжээ 2MB-аас бага байх ёстой.");
       return;
     }
     const reader = new FileReader();
@@ -677,52 +653,6 @@ function PartnerRow({
           }}
         />
       )}
-    </>
-  );
-}
-
-function RoadmapRow({
-  item,
-  onChange,
-  onRemove,
-}: {
-  item: RoadmapItem;
-  onChange: (p: Partial<RoadmapItem>) => void;
-  onRemove: () => void;
-}) {
-  return (
-    <>
-      <RowHeader onRemove={onRemove}>
-        {item.year || "Шинэ мөр"} — {item.title}
-      </RowHeader>
-      <div className={ADMIN_FORM_ROW_CLS}>
-        <div className={ADMIN_FIELD_CLS}>
-          <label>Он</label>
-          <input
-            value={item.year || ""}
-            onChange={(e) => onChange({ year: e.target.value })}
-          />
-        </div>
-        <div className={ADMIN_FIELD_CLS}>
-          <label>Байршил</label>
-          <select
-            value={item.position || "top"}
-            onChange={(e) =>
-              onChange({ position: e.target.value as "top" | "bot" })
-            }
-          >
-            <option value="top">Дээр</option>
-            <option value="bot">Доор</option>
-          </select>
-        </div>
-      </div>
-      <div className={ADMIN_FIELD_CLS}>
-        <label>Гарчиг</label>
-        <input
-          value={item.title || ""}
-          onChange={(e) => onChange({ title: e.target.value })}
-        />
-      </div>
     </>
   );
 }

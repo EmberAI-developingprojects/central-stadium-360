@@ -5,12 +5,12 @@ export const WATCH_PAGE_BG =
   "radial-gradient(50% 50% at 0% 100%, rgba(168, 153, 104, 0.08) 0%, transparent 70%)," +
   "#0B0F1A";
 
-export const WATCH_PAGE_CLS = "watch-page min-h-screen text-[rgba(255,255,255,0.88)]";
+export const WATCH_PAGE_CLS = "watch-page min-h-screen w-full max-w-[100vw] overflow-x-hidden text-[rgba(255,255,255,0.88)]";
 
 export const WATCH_HEADER_CLS =
-  "watch-header sticky top-0 z-50 grid items-center gap-8 py-[18px] px-8 bg-[rgba(11,15,26,0.7)] [backdrop-filter:blur(18px)_saturate(160%)] [-webkit-backdrop-filter:blur(18px)_saturate(160%)] border-b border-solid border-[rgba(255,255,255,0.06)] [grid-template-columns:auto_1fr_auto] max-[900px]:[grid-template-columns:auto_auto] max-[900px]:gap-3 max-[900px]:py-[14px] max-[900px]:px-[18px]";
+  "watch-header sticky top-0 z-50 grid items-center gap-8 py-[18px] px-8 bg-[rgba(11,15,26,0.7)] [backdrop-filter:blur(18px)_saturate(160%)] [-webkit-backdrop-filter:blur(18px)_saturate(160%)] border-b border-solid border-[rgba(255,255,255,0.06)] [grid-template-columns:auto_1fr_auto] max-[900px]:[grid-template-columns:minmax(0,auto)_minmax(0,1fr)] max-[900px]:gap-3 max-[900px]:py-[12px] max-[900px]:px-4 max-[420px]:px-3 max-[420px]:gap-2";
 
-export const WATCH_LOGO_CLS = "inline-flex items-center no-underline [&_img]:block [&_img]:w-auto [&_img]:h-11";
+export const WATCH_LOGO_CLS = "inline-flex items-center no-underline shrink-0 [&_img]:block [&_img]:w-auto [&_img]:h-11 max-[540px]:[&_img]:h-9 max-[420px]:[&_img]:h-8";
 
 export const WATCH_TABS_CLS =
   "justify-self-center inline-flex gap-1 p-1 rounded-full bg-[rgba(255,255,255,0.05)] border border-solid border-[rgba(255,255,255,0.08)] max-[900px]:[grid-column:1/-1] max-[900px]:order-3 max-[900px]:justify-self-stretch max-[900px]:justify-center";
@@ -23,7 +23,7 @@ export const WATCH_TAB_ACTIVE_CLS = "is-active !bg-brand-blue !text-white shadow
 export const WATCH_TAB_COUNT_CLS =
   "inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-brand-blue text-white text-[10.5px] font-extrabold py-0 px-[5px] tracking-normal [.is-active_&]:bg-white [.is-active_&]:text-brand-blue";
 
-export const WATCH_USER_CLS = "inline-flex items-center gap-2.5";
+export const WATCH_USER_CLS = "inline-flex items-center gap-2.5 min-w-0 justify-end justify-self-end max-[420px]:gap-1.5";
 
 export const WATCH_USER_CHIP_CLS =
   "inline-flex items-center gap-2 rounded-full text-[13px] font-semibold text-white py-2 px-[14px] bg-[rgba(255,255,255,0.08)] border border-solid border-[rgba(255,255,255,0.1)] [&_svg]:w-4 [&_svg]:h-4 max-[540px]:py-1.5 max-[540px]:px-2.5 max-[540px]:text-xs";
@@ -230,7 +230,7 @@ export const TICKET_SUCCESS_CODE_CLS =
 export const TICKET_SUCCESS_ACTIONS_CLS = "inline-flex gap-2.5";
 
 export const VIEWER_CLS =
-  "fixed inset-0 z-[250] flex flex-col text-white bg-[#05080F] [animation:tmFade_.25s_ease]";
+  "fixed inset-0 z-[250] w-screen max-w-[100vw] flex flex-col text-white bg-[#05080F] overflow-x-hidden [animation:tmFade_.25s_ease]";
 
 export const VIEWER_HEADER_CLS =
   "grid items-center gap-[18px] flex-none [grid-template-columns:auto_1fr_auto] py-[14px] px-[22px] bg-[rgba(11,15,26,0.92)] border-b border-solid border-[rgba(255,255,255,0.06)] max-[720px]:[grid-template-columns:auto_1fr] max-[720px]:py-2.5 max-[720px]:px-[14px]";
@@ -255,9 +255,9 @@ export const VIEWER_ICON_BTN_CLS =
 export const VIEWER_ICON_BTN_ON_CLS = "is-on !bg-brand-blue";
 
 export const VIEWER_BODY_CLS =
-  "flex-1 min-h-0 grid gap-[14px] p-[14px] [grid-template-columns:220px_1fr_320px] max-[1100px]:[grid-template-columns:180px_1fr] max-[720px]:[grid-template-columns:100px_1fr] max-[720px]:p-2.5 max-[720px]:gap-2.5";
+  "flex-1 min-h-0 min-w-0 max-w-full w-full gap-[14px] p-[14px] overflow-x-hidden overflow-y-auto grid [grid-template-columns:220px_1fr_320px] max-[1100px]:!flex max-[1100px]:!flex-col max-[720px]:p-2.5 max-[720px]:gap-2";
 
-export const VIEWER_ANGLES_CLS = "flex flex-col gap-3 min-h-0 overflow-auto";
+export const VIEWER_ANGLES_CLS = "flex flex-col gap-3 min-h-0 overflow-auto max-[1100px]:hidden";
 export const VIEWER_ANGLE_CLS =
   "block bg-transparent border-0 p-0 cursor-pointer text-left text-white [transition:transform_.2s_ease] hover:-translate-y-0.5";
 export const VIEWER_ANGLE_ACTIVE_CLS = "is-active";
@@ -273,12 +273,12 @@ export const VFX_VIDEO_CLS: Record<'stage' | 'crowd' | 'drone' | 'band', string>
 export const VIEWER_ANGLE_LIVE_CLS =
   "absolute w-2 h-2 rounded-full top-2 left-2 bg-[#E53935] shadow-[0_0_0_0_rgba(229,57,53,0.6)] [animation:live-pulse_1.4s_ease-in-out_infinite]";
 export const VIEWER_ANGLE_LABEL_CLS =
-  "flex flex-col mt-2 text-[12.5px] leading-[1.3] [&_strong]:text-white [&_strong]:font-bold [&_small]:text-[10.5px] [&_small]:uppercase [&_small]:text-[rgba(255,255,255,0.5)] [&_small]:tracking-[.08em] max-[720px]:[&_small]:hidden";
+  "flex flex-col mt-2 text-[12.5px] leading-[1.3] [&_strong]:text-white [&_strong]:font-bold [&_small]:text-[10.5px] [&_small]:uppercase [&_small]:text-[rgba(255,255,255,0.5)] [&_small]:tracking-[.08em]";
 
 export const VIEWER_STAGE_CLS =
-  "relative min-h-0 flex flex-col gap-3 [.is-fs]:w-screen [.is-fs]:h-screen [.is-fs]:p-0 [.is-fs]:bg-black [.is-fs]:gap-0 [&.is-fs.is-idle]:cursor-none";
+  "relative min-h-0 min-w-0 max-w-full flex flex-col gap-3 max-[1100px]:w-full [.is-fs]:w-screen [.is-fs]:h-screen [.is-fs]:p-0 [.is-fs]:bg-black [.is-fs]:gap-0 [&.is-fs.is-idle]:cursor-none";
 export const VIEWER_STAGE_SHELL_CLS =
-  "flex-1 min-h-0 relative rounded-2xl overflow-hidden bg-black shadow-[0_40px_80px_-40px_rgba(0,0,0,0.9)] [.is-fs_&]:rounded-none [.is-fs_&]:shadow-none [&_video]:w-full [&_video]:h-full [&_video]:object-cover [&_video]:block [&_video]:[transition:transform_.35s_ease,filter_.35s_ease]";
+  "flex-1 min-h-0 relative rounded-2xl overflow-hidden bg-black shadow-[0_40px_80px_-40px_rgba(0,0,0,0.9)] max-[1100px]:!flex-none max-[1100px]:w-full max-[1100px]:!h-[calc((100vw-20px)*9/16)] max-[1100px]:!max-h-[55vh] max-[720px]:!h-[calc((100vw-20px)*9/16)] max-[720px]:!max-h-[40vh] [.is-fs_&]:!flex-1 [.is-fs_&]:!h-auto [.is-fs_&]:!max-h-none [.is-fs_&]:rounded-none [.is-fs_&]:shadow-none [&_video]:w-full [&_video]:h-full [&_video]:object-cover [&_video]:block [&_video]:[transition:transform_.35s_ease,filter_.35s_ease]";
 export const VIEWER_MAIN_CAM_CLS =
   "absolute top-4 left-4 z-[2] bg-[rgba(11,15,26,0.7)] [backdrop-filter:blur(8px)] [-webkit-backdrop-filter:blur(8px)] py-[7px] px-[13px] rounded-full text-xs text-[rgba(255,255,255,0.9)] tracking-[.04em] [&_strong]:text-white [&_strong]:font-bold [&_strong]:mr-1 [.is-fs_&]:top-[22px] [.is-fs_&]:left-[22px] [.is-fs_&]:[transition:opacity_.25s_ease] [.is-fs.is-idle_&]:opacity-0";
 
@@ -286,23 +286,23 @@ export const VIEWER_REACT_FLOAT_CLS =
   "absolute inset-0 pointer-events-none overflow-hidden";
 
 export const VIEWER_CONTROLS_CLS =
-  "flex-none grid [grid-template-columns:1fr_auto_1fr] items-center gap-4 py-2.5 px-[14px] bg-[rgba(255,255,255,0.04)] border border-solid border-[rgba(255,255,255,0.08)] rounded-[14px] [.is-fs_&]:absolute [.is-fs_&]:left-1/2 [.is-fs_&]:bottom-6 [.is-fs_&]:[transform:translateX(-50%)] [.is-fs_&]:w-[min(900px,calc(100vw-32px))] [.is-fs_&]:bg-[rgba(11,15,26,0.65)] [.is-fs_&]:[backdrop-filter:blur(14px)_saturate(160%)] [.is-fs_&]:[-webkit-backdrop-filter:blur(14px)_saturate(160%)] [.is-fs_&]:border-[rgba(255,255,255,0.12)] [.is-fs_&]:shadow-[0_18px_40px_-10px_rgba(0,0,0,0.6)] [.is-fs_&]:opacity-0 [.is-fs_&]:[transition:opacity_.25s_ease] [.is-fs:hover_&]:opacity-100 [.is-fs:focus-within_&]:opacity-100 [.is-fs.is-idle_&]:!opacity-0 [.is-fs.is-idle_&]:pointer-events-none max-[720px]:[grid-template-columns:1fr] max-[720px]:gap-2.5 max-[720px]:p-2.5";
-export const VIEWER_CONTROLS_LEFT_CLS = "inline-flex items-center gap-2.5";
-export const VIEWER_CONTROLS_RIGHT_CLS = "inline-flex items-center gap-2.5 justify-self-end max-[720px]:justify-self-start";
+  "flex-none min-w-0 grid [grid-template-columns:minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 py-2.5 px-[14px] bg-[rgba(255,255,255,0.04)] border border-solid border-[rgba(255,255,255,0.08)] rounded-[14px] [.is-fs_&]:absolute [.is-fs_&]:left-1/2 [.is-fs_&]:bottom-6 [.is-fs_&]:[transform:translateX(-50%)] [.is-fs_&]:w-[min(900px,calc(100vw-32px))] [.is-fs_&]:bg-[rgba(11,15,26,0.65)] [.is-fs_&]:[backdrop-filter:blur(14px)_saturate(160%)] [.is-fs_&]:[-webkit-backdrop-filter:blur(14px)_saturate(160%)] [.is-fs_&]:border-[rgba(255,255,255,0.12)] [.is-fs_&]:shadow-[0_18px_40px_-10px_rgba(0,0,0,0.6)] [.is-fs_&]:opacity-0 [.is-fs_&]:[transition:opacity_.25s_ease] [.is-fs:hover_&]:opacity-100 [.is-fs:focus-within_&]:opacity-100 [.is-fs.is-idle_&]:!opacity-0 [.is-fs.is-idle_&]:pointer-events-none max-[720px]:!flex max-[720px]:!flex-wrap max-[720px]:!items-center max-[720px]:!justify-between max-[720px]:gap-2 max-[720px]:py-2 max-[720px]:px-2.5";
+export const VIEWER_CONTROLS_LEFT_CLS = "inline-flex items-center gap-2.5 min-w-0 max-[720px]:gap-1.5";
+export const VIEWER_CONTROLS_RIGHT_CLS = "inline-flex items-center gap-2.5 justify-self-end max-[720px]:justify-self-auto max-[720px]:gap-1.5";
 
 export const VIEWER_VOL_CLS =
-  "[appearance:none] [-webkit-appearance:none] w-[110px] h-1 bg-[rgba(255,255,255,0.18)] rounded-full cursor-pointer max-[720px]:w-20 [&::-webkit-slider-thumb]:[-webkit-appearance:none] [&::-webkit-slider-thumb]:w-[14px] [&::-webkit-slider-thumb]:h-[14px] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-brand-blue [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-solid [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:w-[14px] [&::-moz-range-thumb]:h-[14px] [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-brand-blue [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-solid [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:cursor-pointer";
+  "[appearance:none] [-webkit-appearance:none] w-[110px] h-1 bg-[rgba(255,255,255,0.18)] rounded-full cursor-pointer max-[720px]:hidden [&::-webkit-slider-thumb]:[-webkit-appearance:none] [&::-webkit-slider-thumb]:w-[14px] [&::-webkit-slider-thumb]:h-[14px] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-brand-blue [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-solid [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:w-[14px] [&::-moz-range-thumb]:h-[14px] [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-brand-blue [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-solid [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:cursor-pointer";
 
 export const VIEWER_REACTIONS_CLS =
-  "inline-flex gap-1.5 p-1 bg-[rgba(255,255,255,0.04)] rounded-full border border-solid border-[rgba(255,255,255,0.06)]";
+  "inline-flex gap-1.5 p-1 bg-[rgba(255,255,255,0.04)] rounded-full border border-solid border-[rgba(255,255,255,0.06)] shrink-0 max-[720px]:gap-1 max-[720px]:order-3 max-[720px]:[flex-basis:100%] max-[720px]:justify-center";
 export const VIEWER_REACT_CLS =
   "w-9 h-9 rounded-full border-0 bg-transparent text-lg cursor-pointer [transition:background_.15s_ease,transform_.15s_ease] hover:bg-[rgba(255,255,255,0.1)] hover:scale-[1.12] active:scale-90 max-[720px]:w-8 max-[720px]:h-8 max-[720px]:text-base";
 
 export const VIEWER_QUALITY_CLS =
-  "inline-flex items-center gap-2 text-xs text-[rgba(255,255,255,0.7)] [&_select]:[appearance:none] [&_select]:[-webkit-appearance:none] [&_select]:bg-[rgba(255,255,255,0.06)] [&_select]:border [&_select]:border-solid [&_select]:border-[rgba(255,255,255,0.1)] [&_select]:text-white [&_select]:font-[inherit] [&_select]:text-[12.5px] [&_select]:font-semibold [&_select]:pt-[7px] [&_select]:pr-[26px] [&_select]:pb-[7px] [&_select]:pl-3 [&_select]:rounded-[9px] [&_select]:cursor-pointer [&_select]:[background-repeat:no-repeat] [&_select]:[background-position:right_9px_center] [&_select]:[background-size:9px_5px] [&_select]:[background-image:url(\"data:image/svg+xml;utf8,<svg_xmlns='http://www.w3.org/2000/svg'_viewBox='0_0_10_6'><path_d='M1_1l4_4_4-4'_stroke='%23fff'_stroke-width='1.6'_fill='none'_stroke-linecap='round'_stroke-linejoin='round'/></svg>\")]";
+  "inline-flex items-center gap-2 text-xs text-[rgba(255,255,255,0.7)] max-[720px]:gap-1.5 [&_select]:[appearance:none] [&_select]:[-webkit-appearance:none] [&_select]:bg-[rgba(255,255,255,0.06)] [&_select]:border [&_select]:border-solid [&_select]:border-[rgba(255,255,255,0.1)] [&_select]:text-white [&_select]:font-[inherit] [&_select]:text-[12.5px] [&_select]:font-semibold [&_select]:pt-[7px] [&_select]:pr-[26px] [&_select]:pb-[7px] [&_select]:pl-3 [&_select]:rounded-[9px] [&_select]:cursor-pointer [&_select]:[background-repeat:no-repeat] [&_select]:[background-position:right_9px_center] [&_select]:[background-size:9px_5px] [&_select]:[background-image:url(\"data:image/svg+xml;utf8,<svg_xmlns='http://www.w3.org/2000/svg'_viewBox='0_0_10_6'><path_d='M1_1l4_4_4-4'_stroke='%23fff'_stroke-width='1.6'_fill='none'_stroke-linecap='round'_stroke-linejoin='round'/></svg>\")] max-[720px]:[&_select]:text-[11.5px] max-[720px]:[&_select]:pt-1.5 max-[720px]:[&_select]:pb-1.5 max-[720px]:[&_select]:pl-2";
 
 export const VIEWER_CHAT_CLS =
-  "flex flex-col min-h-0 bg-[rgba(255,255,255,0.03)] border border-solid border-[rgba(255,255,255,0.08)] rounded-[14px] overflow-hidden max-[1100px]:hidden";
+  "flex flex-col min-h-0 min-w-0 max-w-full bg-[rgba(255,255,255,0.03)] border border-solid border-[rgba(255,255,255,0.08)] rounded-[14px] overflow-hidden max-[1100px]:w-full max-[1100px]:min-h-[220px] max-[1100px]:max-h-[55vh]";
 export const VIEWER_CHAT_HEAD_CLS =
   "flex-none py-[14px] px-4 border-b border-solid border-[rgba(255,255,255,0.06)] text-[13px] font-bold tracking-[.04em] text-white inline-flex items-center gap-2 [&_svg]:w-4 [&_svg]:h-4 [&_svg]:text-brand-blue-soft";
 export const VIEWER_CHAT_COUNT_CLS =
@@ -318,3 +318,24 @@ export const VIEWER_CHAT_FORM_CLS =
   "flex-none flex gap-1.5 p-2.5 border-t border-solid border-[rgba(255,255,255,0.06)] [&_input]:flex-1 [&_input]:bg-[rgba(255,255,255,0.04)] [&_input]:border [&_input]:border-solid [&_input]:border-[rgba(255,255,255,0.1)] [&_input]:text-white [&_input]:font-[inherit] [&_input]:text-[13px] [&_input]:py-[9px] [&_input]:px-3 [&_input]:rounded-[10px] [&_input]:outline-none [&_input]:[transition:border-color_.15s_ease] [&_input]:placeholder:text-[rgba(255,255,255,0.4)] [&_input]:focus:border-brand-blue";
 export const VIEWER_CHAT_SEND_CLS =
   "w-[38px] h-[38px] rounded-[10px] bg-brand-blue border-0 text-white cursor-pointer grid place-items-center [transition:background_.15s_ease,transform_.15s_ease] hover:bg-brand-blue-soft hover:-translate-y-px [&_svg]:w-4 [&_svg]:h-4";
+
+export const VIEWER_CAM_PICKER_BTN_CLS =
+  "hidden max-[1100px]:flex items-center justify-center gap-2 w-full max-w-full min-w-0 py-3 px-4 rounded-[14px] bg-[rgba(34,48,198,0.18)] border border-solid border-[rgba(34,48,198,0.4)] text-white font-bold text-[13px] tracking-[.04em] cursor-pointer [transition:background_.15s_ease,transform_.15s_ease] hover:bg-[rgba(34,48,198,0.3)] active:scale-[0.98] [&_svg]:w-[18px] [&_svg]:h-[18px]";
+
+export const VIEWER_CAM_SHEET_BACKDROP_CLS =
+  "fixed inset-0 z-[260] bg-[rgba(5,8,15,0.7)] [backdrop-filter:blur(6px)] [-webkit-backdrop-filter:blur(6px)] [animation:tmFade_.2s_ease]";
+
+export const VIEWER_CAM_SHEET_CLS =
+  "fixed left-0 right-0 bottom-0 z-[270] bg-[#0b1220] border-t border-solid border-[rgba(255,255,255,0.1)] rounded-t-[20px] max-h-[80vh] flex flex-col [animation:tmSlideUp_.25s_ease]";
+
+export const VIEWER_CAM_SHEET_HEAD_CLS =
+  "flex-none flex items-center justify-between py-4 px-5 border-b border-solid border-[rgba(255,255,255,0.06)]";
+
+export const VIEWER_CAM_SHEET_TITLE_CLS =
+  "text-[15px] font-bold text-white m-0";
+
+export const VIEWER_CAM_SHEET_CLOSE_CLS =
+  "w-[34px] h-[34px] rounded-full text-white cursor-pointer grid place-items-center bg-[rgba(255,255,255,0.08)] border-0 [transition:background_.15s_ease] hover:bg-[rgba(255,255,255,0.16)] [&_svg]:w-4 [&_svg]:h-4";
+
+export const VIEWER_CAM_SHEET_LIST_CLS =
+  "flex-1 min-h-0 overflow-y-auto p-4 grid grid-cols-2 gap-3";

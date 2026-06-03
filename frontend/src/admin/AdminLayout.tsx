@@ -1,6 +1,8 @@
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import type { ComponentType } from "react";
 import { useAuth } from "../auth";
+import { ConfirmProvider } from "./components/ConfirmDialog";
+import { ToastProvider } from "./components/Toast";
 import {
   ADMIN_AVATAR_CLS,
   ADMIN_BRAND_CLS,
@@ -69,6 +71,34 @@ export default function AdminLayout() {
   };
 
   return (
+    <ToastProvider>
+      <ConfirmProvider>
+        <AdminShell
+          title={title}
+          initials={initials}
+          fullname={session?.fullname}
+          identifier={session?.identifier}
+          onLogout={onLogout}
+        />
+      </ConfirmProvider>
+    </ToastProvider>
+  );
+}
+
+function AdminShell({
+  title,
+  initials,
+  fullname,
+  identifier,
+  onLogout,
+}: {
+  title: string;
+  initials: string;
+  fullname?: string;
+  identifier?: string;
+  onLogout: () => void;
+}) {
+  return (
     <div className={ADMIN_SHELL_CLS}>
       <aside className={ADMIN_SIDEBAR_CLS} aria-label="Админ цэс">
         <div className={ADMIN_BRAND_CLS}>
@@ -115,7 +145,7 @@ export default function AdminLayout() {
           <h1>{title}</h1>
           <div className={ADMIN_TOPBAR_SPACER_CLS} />
           <div className={ADMIN_TOPBAR_USER_CLS}>
-            <span>{session?.fullname || session?.identifier}</span>
+            <span>{fullname || identifier}</span>
             <span className={ADMIN_AVATAR_CLS} aria-hidden="true">
               {initials}
             </span>

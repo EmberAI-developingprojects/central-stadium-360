@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 export default function SiteFooter() {
+  const { t } = useTranslation();
   const colTitleCls =
     "text-white text-[14px] font-bold uppercase tracking-[0.12em] m-0 mb-5";
   const ulCls = "list-none p-0 m-0 flex flex-col gap-2.5";
@@ -26,8 +28,7 @@ export default function SiteFooter() {
               />
             </Link>
             <p className="text-[15px] leading-[1.65] m-0 mb-6 max-w-[320px] text-[rgba(255,255,255,0.7)]">
-              Монгол улсын спорт, соёл, баяр ёслолын төв &mdash; аваргууд төрж,
-              мөч бүр дурсамж болдог газар.
+              {t("footer_tagline")}
             </p>
             <div className="flex gap-1.5 -ml-2">
               <a href="#" aria-label="Facebook" className={socialLinkCls}>
@@ -69,69 +70,29 @@ export default function SiteFooter() {
           </div>
 
           <div>
-            <h4 className={colTitleCls}>Хурдан холбоос</h4>
+            <h4 className={colTitleCls}>{t("footer_quick_links")}</h4>
             <ul className={ulCls}>
-              <li>
-                <a className={linkCls} href="#top">
-                  Нүүр
-                </a>
-              </li>
-              <li>
-                <a className={linkCls} href="#about">
-                  Бидний тухай
-                </a>
-              </li>
-              <li>
-                <a className={linkCls} href="#events">
-                  Үйл явдал
-                </a>
-              </li>
-              <li>
-                <a className={linkCls} href="#partners">
-                  Хамтрагч
-                </a>
-              </li>
-              <li>
-                <a className={linkCls} href="#membership">
-                  Гишүүнчлэл
-                </a>
-              </li>
+              <li><a className={linkCls} href="#top">{t("footer_home")}</a></li>
+              <li><a className={linkCls} href="#about">{t("footer_about")}</a></li>
+              <li><a className={linkCls} href="#events">{t("footer_events")}</a></li>
+              <li><a className={linkCls} href="#partners">{t("footer_partners")}</a></li>
+              <li><a className={linkCls} href="#membership">{t("footer_membership")}</a></li>
             </ul>
           </div>
 
           <div>
-            <h4 className={colTitleCls}>Мэдээлэл</h4>
+            <h4 className={colTitleCls}>{t("footer_info")}</h4>
             <ul className={ulCls}>
-              <li>
-                <a className={linkCls} href="#news">
-                  Мэдээ
-                </a>
-              </li>
-              <li>
-                <a className={linkCls} href="#partners">
-                  Ивээн тэтгэгч
-                </a>
-              </li>
-              <li>
-                <a className={linkCls} href="#certificates">
-                  Гэрчилгээ
-                </a>
-              </li>
-              <li>
-                <a className={linkCls} href="#contact">
-                  Тусламж
-                </a>
-              </li>
-              <li>
-                <a className={linkCls} href="#contact">
-                  Холбоо барих
-                </a>
-              </li>
+              <li><a className={linkCls} href="#news">{t("footer_news")}</a></li>
+              <li><a className={linkCls} href="#partners">{t("footer_sponsors")}</a></li>
+              <li><a className={linkCls} href="#certificates">{t("footer_certificates")}</a></li>
+              <li><a className={linkCls} href="#contact">{t("footer_help")}</a></li>
+              <li><a className={linkCls} href="#contact">{t("footer_contact")}</a></li>
             </ul>
           </div>
 
           <div id="contact">
-            <h4 className={colTitleCls}>Холбоо барих</h4>
+            <h4 className={colTitleCls}>{t("footer_contact")}</h4>
             <ul className={ulCls}>
               <li className={liCls}>+976 7700 1212</li>
               <li className={liCls}>info@stadium.mn</li>
@@ -141,33 +102,16 @@ export default function SiteFooter() {
         </div>
 
         <div className="flex justify-between items-center pt-6 text-[13px] text-[rgba(255,255,255,0.45)] max-[560px]:flex-col max-[560px]:gap-3 max-[560px]:text-center">
-          <p className="m-0">
-            &copy; 2026 Төв Цэнгэлдэх Хүрээлэн. Бүх эрх хуулиар хамгаалагдсан.
-          </p>
+          <p className="m-0">{t("footer_copyright")}</p>
           <ul className="list-none p-0 m-0 flex gap-6">
             <li>
-              <a
-                className="no-underline text-[13px] text-[rgba(255,255,255,0.45)] [transition:color_0.15s_ease] hover:text-white"
-                href="#"
-              >
-                Нууцлалын бодлого
-              </a>
+              <a className="no-underline text-[13px] text-[rgba(255,255,255,0.45)] [transition:color_0.15s_ease] hover:text-white" href="#">{t("footer_privacy")}</a>
             </li>
             <li>
-              <a
-                className="no-underline text-[13px] text-[rgba(255,255,255,0.45)] [transition:color_0.15s_ease] hover:text-white"
-                href="#"
-              >
-                Үйлчилгээний нөхцөл
-              </a>
+              <a className="no-underline text-[13px] text-[rgba(255,255,255,0.45)] [transition:color_0.15s_ease] hover:text-white" href="#">{t("footer_terms")}</a>
             </li>
             <li>
-              <a
-                className="no-underline text-[13px] text-[rgba(255,255,255,0.45)] [transition:color_0.15s_ease] hover:text-white"
-                href="#"
-              >
-                Күүки
-              </a>
+              <a className="no-underline text-[13px] text-[rgba(255,255,255,0.45)] [transition:color_0.15s_ease] hover:text-white" href="#">{t("footer_cookies")}</a>
             </li>
           </ul>
         </div>

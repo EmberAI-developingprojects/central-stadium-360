@@ -11,9 +11,11 @@ import {
 import Hls from 'hls.js';
 import * as THREE from 'three';
 import { Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useRequireAuth } from '../auth';
 import type { Session } from '../auth';
 import UserMenu from '../components/UserMenu';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 import { api } from '../lib/api';
 import type { WatchCam } from '../lib/api';
 import { createOrder, listEvents, listOrders } from '../data/store';
@@ -32,6 +34,13 @@ import {
   VIEWER_CHAT_HEAD_CLS,
   VIEWER_CHAT_LIST_CLS,
   VIEWER_CHAT_SEND_CLS,
+  VIEWER_CAM_PICKER_BTN_CLS,
+  VIEWER_CAM_SHEET_BACKDROP_CLS,
+  VIEWER_CAM_SHEET_CLS,
+  VIEWER_CAM_SHEET_HEAD_CLS,
+  VIEWER_CAM_SHEET_TITLE_CLS,
+  VIEWER_CAM_SHEET_CLOSE_CLS,
+  VIEWER_CAM_SHEET_LIST_CLS,
   VIEWER_CLOSE_CLS,
   VIEWER_CLS,
   VIEWER_CONTROLS_CLS,
@@ -169,7 +178,26 @@ type TicketModalEvent = {
   desc?: string;
 };
 
-type ChatMessage = { name: string; color: string; text: string; mine: boolean };
+type ChatMessage = {
+  id: string;
+  name: string;
+  color: string;
+  text: string;
+  clientId: string;
+};
+
+const CHAT_WS_URL = (() => {
+  const base = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '';
+  if (base) {
+    return base.replace(/^http(s?):/, 'ws$1:').replace(/\/$/, '') + '/api/chat';
+  }
+  // Same-origin fallback for production builds behind the API.
+  if (typeof window !== 'undefined') {
+    const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    return `${proto}://${window.location.host}/api/chat`;
+  }
+  return '';
+})();
 
 const FEATURED_FALLBACK: TicketModalEvent = {
   id: 'featured-placeholder',
@@ -193,6 +221,7 @@ const isTabId = (value: string): value is TabId =>
 const money = (n: number): string => n.toLocaleString('en-US') + '₮';
 
 export default function Watch() {
+  const { t } = useTranslation();
   const session = useRequireAuth();
   const location = useLocation();
 
@@ -275,16 +304,17 @@ export default function Watch() {
           <img src="/assets/images/brand/logo-white.png" alt="Төв Цэнгэлдэх Хүрээлэн" />
         </Link>
 
-        <nav className={WATCH_TABS_CLS} aria-label="Үзэх төрөл">
-          <a className={`${WATCH_TAB_CLS}${activeTab === 'live' ? ' ' + WATCH_TAB_ACTIVE_CLS : ''}`} href="#live" onClick={(e) => { e.preventDefault(); goSection('live'); }}>Шууд</a>
-          <a className={`${WATCH_TAB_CLS}${activeTab === 'upcoming' ? ' ' + WATCH_TAB_ACTIVE_CLS : ''}`} href="#upcoming" onClick={(e) => { e.preventDefault(); goSection('upcoming'); }}>Удахгүй</a>
+        <nav className={WATCH_TABS_CLS} aria-label={t('watch_tab_live')}>
+          <a className={`${WATCH_TAB_CLS}${activeTab === 'live' ? ' ' + WATCH_TAB_ACTIVE_CLS : ''}`} href="#live" onClick={(e) => { e.preventDefault(); goSection('live'); }}>{t('watch_tab_live')}</a>
+          <a className={`${WATCH_TAB_CLS}${activeTab === 'upcoming' ? ' ' + WATCH_TAB_ACTIVE_CLS : ''}`} href="#upcoming" onClick={(e) => { e.preventDefault(); goSection('upcoming'); }}>{t('watch_tab_upcoming')}</a>
           <a className={`${WATCH_TAB_CLS}${activeTab === 'tickets' ? ' ' + WATCH_TAB_ACTIVE_CLS : ''}`} href="#tickets" onClick={(e) => { e.preventDefault(); goSection('tickets'); }}>
-            Тасалбар
+            {t('watch_tab_tickets')}
             <span className={WATCH_TAB_COUNT_CLS} hidden={myTickets.length === 0}>{myTickets.length}</span>
           </a>
         </nav>
 
-        <div className={WATCH_USER_CLS}>
+        <div className={WATCH_USER_CLS} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <LanguageSwitcher dark />
           <UserMenu />
         </div>
       </header>
@@ -358,6 +388,7 @@ function useCountdown(startTime: string | undefined) {
 }
 
 function LiveSection({ featuredEvent, ownsFeatured, onWatch }: LiveSectionProps) {
+  const { t } = useTranslation();
   const { isLive, hasTime, days, hours, minutes, seconds } = useCountdown(featuredEvent.start_time);
   const d = featuredEvent.start_time ? new Date(featuredEvent.start_time) : null;
   const valid = d && !Number.isNaN(d.getTime());
@@ -366,10 +397,10 @@ function LiveSection({ featuredEvent, ownsFeatured, onWatch }: LiveSectionProps)
     : featuredEvent.date;
 
   return (
-    <section className="w-full" id="live">
-      <div className="grid [grid-template-columns:55%_45%] max-[720px]:grid-cols-1 min-h-[460px] max-[720px]:min-h-0">
+    <section className="w-full max-w-full overflow-hidden" id="live">
+      <div className="grid [grid-template-columns:55%_45%] max-[720px]:grid-cols-1 min-h-[460px] max-[720px]:min-h-0 w-full max-w-full">
         {/* Left: image */}
-        <div className="relative overflow-hidden bg-[#0a1628] max-[720px]:[aspect-ratio:16/9]">
+        <div className="relative overflow-hidden bg-[#0a1628] min-w-0 max-[720px]:[aspect-ratio:16/9]">
           {featuredEvent.image ? (
             <img
               src={featuredEvent.image}
@@ -389,24 +420,24 @@ function LiveSection({ featuredEvent, ownsFeatured, onWatch }: LiveSectionProps)
         </div>
 
         {/* Right: info */}
-        <div className="bg-[#071526] flex flex-col justify-center px-10 py-14 max-[920px]:px-7 max-[920px]:py-10 max-[720px]:px-6 max-[720px]:py-8">
-          <p className="text-[rgba(255,255,255,0.5)] text-[13px] font-bold uppercase tracking-[0.2em] m-0 mb-5">
+        <div className="bg-[#071526] flex flex-col justify-center min-w-0 px-10 py-14 max-[920px]:px-7 max-[920px]:py-10 max-[720px]:px-5 max-[720px]:py-7 max-[420px]:px-4 max-[420px]:py-6">
+          <p className="text-[rgba(255,255,255,0.5)] text-[13px] font-bold uppercase tracking-[0.2em] m-0 mb-5 max-[420px]:text-[12px] max-[420px]:mb-3">
             {dateStr}
           </p>
-          <h1 className="text-white text-[40px] font-extrabold uppercase tracking-[-0.01em] leading-[1.1] m-0 max-[920px]:text-[30px] max-[720px]:text-[24px]">
+          <h1 className="text-white text-[40px] font-extrabold uppercase tracking-[-0.01em] leading-[1.1] m-0 break-words max-[920px]:text-[30px] max-[720px]:text-[22px] max-[420px]:text-[20px]">
             {featuredEvent.title}
           </h1>
           {featuredEvent.desc && (
-            <p className="text-[rgba(255,255,255,0.5)] text-[14px] mt-3 m-0 uppercase tracking-[0.06em] font-medium">
+            <p className="text-[rgba(255,255,255,0.5)] text-[14px] mt-3 m-0 uppercase tracking-[0.06em] font-medium break-words max-[420px]:text-[12px]">
               {featuredEvent.desc}
             </p>
           )}
-          <div className="mt-8 flex items-center gap-3">
+          <div className="mt-8 flex flex-wrap items-center gap-3 max-[720px]:mt-6 max-[420px]:gap-2">
             <Link
               to={`/watch/events/${featuredEvent.id}`}
-              className="inline-flex items-center justify-center h-11 px-5 rounded-sm bg-white text-[#071526] text-[12px] font-bold uppercase tracking-[0.1em] no-underline [transition:background_.15s_ease,transform_.15s_ease] hover:bg-[rgba(255,255,255,0.88)] hover:-translate-y-px whitespace-nowrap"
+              className="inline-flex items-center justify-center h-11 px-5 rounded-sm bg-white text-[#071526] text-[12px] font-bold uppercase tracking-[0.1em] no-underline [transition:background_.15s_ease,transform_.15s_ease] hover:bg-[rgba(255,255,255,0.88)] hover:-translate-y-px whitespace-nowrap max-[420px]:flex-1 max-[420px]:px-3 max-[420px]:text-[11px] max-[420px]:tracking-[0.06em]"
             >
-              Дэлгэрэнгүй
+              {t('watch_details')}
             </Link>
 
             {/* No ticket: buy button */}
@@ -414,22 +445,22 @@ function LiveSection({ featuredEvent, ownsFeatured, onWatch }: LiveSectionProps)
               <button
                 type="button"
                 onClick={onWatch}
-                className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-sm bg-transparent border-2 border-solid border-white text-white text-[12px] font-bold uppercase tracking-[0.1em] cursor-pointer font-[inherit] [transition:background_.15s_ease,transform_.15s_ease] hover:bg-[rgba(255,255,255,0.1)] hover:-translate-y-px whitespace-nowrap"
+                className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-sm bg-transparent border-2 border-solid border-white text-white text-[12px] font-bold uppercase tracking-[0.1em] cursor-pointer font-[inherit] [transition:background_.15s_ease,transform_.15s_ease] hover:bg-[rgba(255,255,255,0.1)] hover:-translate-y-px whitespace-nowrap max-[420px]:flex-1 max-[420px]:px-3 max-[420px]:text-[11px] max-[420px]:tracking-[0.06em] max-[420px]:gap-1.5"
               >
                 <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M2 9a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z"/>
                 </svg>
-                Тасалбар авах
+                {t('watch_buy_ticket')}
               </button>
             )}
 
             {/* Has ticket, not live: countdown */}
             {ownsFeatured && !isLive && hasTime && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'rgba(255,255,255,0.4)' }}>
-                  Эхлэх хүртэл
+              <div className="flex flex-col gap-[3px]">
+                <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/40">
+                  {t('watch_starts_in')}
                 </span>
-                <span style={{ fontSize: 28, fontWeight: 900, color: '#fff', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', lineHeight: 1 }}>
+                <span className="text-[28px] font-black text-white [font-variant-numeric:tabular-nums] tracking-[-0.02em] leading-none max-[420px]:text-[22px]">
                   {days > 0 ? `${days}ш ` : ''}{pad2(hours)}:{pad2(minutes)}:{pad2(seconds)}
                 </span>
               </div>
@@ -440,10 +471,10 @@ function LiveSection({ featuredEvent, ownsFeatured, onWatch }: LiveSectionProps)
               <button
                 type="button"
                 onClick={onWatch}
-                className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-sm bg-transparent border-2 border-solid border-white text-white text-[12px] font-bold uppercase tracking-[0.1em] cursor-pointer font-[inherit] [transition:background_.15s_ease,transform_.15s_ease] hover:bg-[rgba(255,255,255,0.1)] hover:-translate-y-px whitespace-nowrap"
+                className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-sm bg-transparent border-2 border-solid border-white text-white text-[12px] font-bold uppercase tracking-[0.1em] cursor-pointer font-[inherit] [transition:background_.15s_ease,transform_.15s_ease] hover:bg-[rgba(255,255,255,0.1)] hover:-translate-y-px whitespace-nowrap max-[420px]:flex-1 max-[420px]:px-3 max-[420px]:text-[11px] max-[420px]:tracking-[0.06em] max-[420px]:gap-1.5"
               >
                 <span className="w-2 h-2 rounded-full bg-[#e53935] animate-live-blink shrink-0" aria-hidden="true" />
-                Шууд үзэх
+                {t('watch_watch_live')}
               </button>
             )}
           </div>
@@ -471,6 +502,7 @@ type UpcomingSectionProps = {
 };
 
 function UpcomingSection({ events, myTickets, onBuy, onWatch }: UpcomingSectionProps) {
+  const { t } = useTranslation();
   if (events.length === 0) return null;
   return (
     <section className="w-full px-6 py-10 max-[920px]:px-5" id="upcoming">
@@ -480,7 +512,7 @@ function UpcomingSection({ events, myTickets, onBuy, onWatch }: UpcomingSectionP
             <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
           </svg>
           <span className="text-[12px] font-bold uppercase tracking-[0.2em] text-[rgba(255,255,255,0.5)]">
-            Арга хэмжээнүүд
+            {t('watch_events_section')}
           </span>
         </div>
         <div className="grid grid-cols-3 gap-5 max-[920px]:grid-cols-2 max-[560px]:grid-cols-1">
@@ -516,7 +548,7 @@ function UpcomingSection({ events, myTickets, onBuy, onWatch }: UpcomingSectionP
                   {owned && (
                     <span className="absolute top-2 right-2 inline-flex items-center gap-1 bg-[rgba(16,185,129,0.85)] text-white text-[10px] font-bold uppercase tracking-[0.1em] rounded-full px-2.5 py-1">
                       <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-                      Тасалбартай
+                      {t('watch_ticketed')}
                     </span>
                   )}
                 </div>
@@ -555,38 +587,39 @@ type TicketCardProps = {
   onWatch: () => void;
 };
 
-function TicketCard({ ticket: t, startTime, onWatch }: TicketCardProps) {
+function TicketCard({ ticket: tk, startTime, onWatch }: TicketCardProps) {
+  const { t } = useTranslation();
   const { isLive, hasTime, days, hours, minutes, seconds } = useCountdown(startTime);
   return (
-    <article className={TICKET_STUB_CLS} data-code={t.code}>
+    <article className={TICKET_STUB_CLS} data-code={tk.code}>
       <div className={TICKET_STUB_COVER_CLS}>
-        <img src={t.image} alt={t.title} />
-        <span className={TICKET_STUB_TIER_CLS}>{t.tierName}</span>
+        <img src={tk.image} alt={tk.title} />
+        <span className={TICKET_STUB_TIER_CLS}>{tk.tierName}</span>
       </div>
       <div className={TICKET_STUB_BODY_CLS}>
-        <span className={TICKET_STUB_DATE_CLS}>{t.date}</span>
-        <h3 className={TICKET_STUB_TITLE_CLS}>{t.title}</h3>
+        <span className={TICKET_STUB_DATE_CLS}>{tk.date}</span>
+        <h3 className={TICKET_STUB_TITLE_CLS}>{tk.title}</h3>
         <dl className={TICKET_STUB_META_CLS}>
-          <div><dt className={TICKET_STUB_META_DT_CLS}>Захиалгын код</dt><dd className={`${TICKET_STUB_META_DD_CLS} ${TICKET_STUB_CODE_CLS}`}>{t.code}</dd></div>
-          <div><dt className={TICKET_STUB_META_DT_CLS}>Үзэх эрх</dt><dd className={TICKET_STUB_META_DD_CLS}>{t.qty} төхөөрөмж</dd></div>
-          <div><dt className={TICKET_STUB_META_DT_CLS}>Нийт төлбөр</dt><dd className={TICKET_STUB_META_DD_CLS}>{money(t.total)}</dd></div>
-          <div><dt className={TICKET_STUB_META_DT_CLS}>Төлбөрийн хэрэгсэл</dt><dd className={TICKET_STUB_META_DD_CLS}>{t.paymentName || t.payment}</dd></div>
+          <div><dt className={TICKET_STUB_META_DT_CLS}>{t('watch_order_code')}</dt><dd className={`${TICKET_STUB_META_DD_CLS} ${TICKET_STUB_CODE_CLS}`}>{tk.code}</dd></div>
+          <div><dt className={TICKET_STUB_META_DT_CLS}>{t('watch_view_access')}</dt><dd className={TICKET_STUB_META_DD_CLS}>{tk.qty} {t('watch_devices')}</dd></div>
+          <div><dt className={TICKET_STUB_META_DT_CLS}>{t('watch_total')}</dt><dd className={TICKET_STUB_META_DD_CLS}>{money(tk.total)}</dd></div>
+          <div><dt className={TICKET_STUB_META_DT_CLS}>{t('watch_payment_method')}</dt><dd className={TICKET_STUB_META_DD_CLS}>{tk.paymentName || tk.payment}</dd></div>
         </dl>
         <div className={TICKET_STUB_BARCODE_CLS} aria-hidden="true"></div>
         <div className={TICKET_STUB_ACTIONS_CLS}>
-          <Link to={`/watch/events/${t.eventId}`} className={`${WATCH_BTN_CLS} ${WATCH_BTN_GHOST_CLS} ${TICKET_STUB_BTN_CLS}`}>
-            Дэлгэрэнгүй
+          <Link to={`/watch/events/${tk.eventId}`} className={`${WATCH_BTN_CLS} ${WATCH_BTN_GHOST_CLS} ${TICKET_STUB_BTN_CLS}`}>
+            {t('watch_details')}
           </Link>
           {isLive && (
             <button type="button" className={`${WATCH_BTN_CLS} ${WATCH_BTN_PRIMARY_CLS} ${TICKET_STUB_BTN_CLS}`} onClick={onWatch}>
               <span className="w-1.5 h-1.5 rounded-full bg-white animate-live-blink flex-none" aria-hidden="true" />
-              Шууд үзэх
+              {t('watch_watch_live')}
             </button>
           )}
           {!isLive && hasTime && (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2, justifyContent: "center" }}>
               <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "rgba(255,255,255,0.4)" }}>
-                Эхлэх хүртэл
+                {t('watch_starts_in')}
               </span>
               <span style={{ fontSize: 18, fontWeight: 900, color: "#fff", fontVariantNumeric: "tabular-nums", letterSpacing: "-0.01em", lineHeight: 1 }}>
                 {days > 0 ? `${days} өдөр ` : ""}{pad2(hours)}:{pad2(minutes)}:{pad2(seconds)}
@@ -600,6 +633,7 @@ function TicketCard({ ticket: t, startTime, onWatch }: TicketCardProps) {
 }
 
 function TicketsSection({ tickets, events, onWatch }: TicketsSectionProps) {
+  const { t: tr } = useTranslation();
   const sorted = useMemo(
     () => [...tickets].sort((a, b) => (b.purchasedAt || "").localeCompare(a.purchasedAt || "")),
     [tickets],
@@ -608,8 +642,8 @@ function TicketsSection({ tickets, events, onWatch }: TicketsSectionProps) {
   return (
     <section className={WATCH_SECTION_CLS} id="tickets">
       <div className={WATCH_SECTION_HEAD_CLS}>
-        <span className={WATCH_EYEBROW_CLS}>Хувийн булан</span>
-        <h2 className={WATCH_TITLE_CLS}>Миний тасалбарууд</h2>
+        <span className={WATCH_EYEBROW_CLS}>{tr('watch_my_section')}</span>
+        <h2 className={WATCH_TITLE_CLS}>{tr('watch_my_tickets')}</h2>
       </div>
       <div className={TICKETS_LIST_CLS}>
         {sorted.length === 0 ? (
@@ -622,17 +656,17 @@ function TicketsSection({ tickets, events, onWatch }: TicketsSectionProps) {
                 <line x1="13" y1="17" x2="13" y2="19"/>
               </svg>
             </div>
-            <h3>Танд одоогоор тасалбар алга</h3>
-            <p>«Удахгүй болох арга хэмжээ» хэсгээс тасалбар авч, эндээ хадгална уу.</p>
-            <a className={`${WATCH_BTN_CLS} ${WATCH_BTN_PRIMARY_CLS}`} href="#upcoming">Арга хэмжээ үзэх</a>
+            <h3>{tr('watch_no_tickets')}</h3>
+            <p>{tr('watch_no_tickets_hint')}</p>
+            <a className={`${WATCH_BTN_CLS} ${WATCH_BTN_PRIMARY_CLS}`} href="#upcoming">{tr('watch_browse_events')}</a>
           </div>
         ) : (
-          sorted.map((t) => {
-            const ev = events.find((e) => e.id === t.eventId);
+          sorted.map((tk) => {
+            const ev = events.find((e) => e.id === tk.eventId);
             return (
               <TicketCard
-                key={t.code}
-                ticket={t}
+                key={tk.code}
+                ticket={tk}
                 startTime={ev?.start_time}
                 onWatch={onWatch}
               />
@@ -681,8 +715,15 @@ function ViewerOverlay({ session, featuredEvent, onClose }: ViewerOverlayProps) 
   const [idle, setIdle] = useState(false);
   const [chat, setChat] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
+  const [chatConnected, setChatConnected] = useState(false);
+  const chatSocketRef = useRef<WebSocket | null>(null);
+  const clientIdRef = useRef<string>(
+    Math.random().toString(36).slice(2, 10) +
+      Math.random().toString(36).slice(2, 10),
+  );
   const [bubbles, setBubbles] = useState<Array<{ id: number; emoji: string; left: string; duration: string }>>([]);
   const bubbleIdRef = useRef(0);
+  const [camPickerOpen, setCamPickerOpen] = useState(false);
 
   const activeCam = cams[camIdx] ?? null;
   const is360 = activeCam?.type === '360';
@@ -836,13 +877,35 @@ function ViewerOverlay({ session, featuredEvent, onClose }: ViewerOverlayProps) 
   }, []);
 
   // Fullscreen state
-  const toggleStageFs = useCallback(() => {
-    const t = stageRef.current as FullscreenElement | null;
-    if (!t) return;
+  const toggleStageFs = useCallback(async () => {
+    const stage = stageRef.current as FullscreenElement | null;
+    const video = videoRef.current as (HTMLVideoElement & { webkitEnterFullscreen?: () => void }) | null;
     const doc = document as FullscreenDocument;
     const inFs = doc.fullscreenElement || doc.webkitFullscreenElement;
-    if (!inFs) (t.requestFullscreen || t.webkitRequestFullscreen)?.call(t);
-    else (doc.exitFullscreen || doc.webkitExitFullscreen)?.call(doc);
+    const screenOrient = (screen.orientation ?? null) as (ScreenOrientation & { lock?: (o: string) => Promise<void>; unlock?: () => void }) | null;
+
+    if (inFs) {
+      try { await (doc.exitFullscreen || doc.webkitExitFullscreen)?.call(doc); } catch { /* noop */ }
+      try { screenOrient?.unlock?.(); } catch { /* noop */ }
+      return;
+    }
+
+    let entered = false;
+    if (stage) {
+      try {
+        await (stage.requestFullscreen || stage.webkitRequestFullscreen)?.call(stage);
+        entered = true;
+      } catch { /* fallthrough to iOS path */ }
+    }
+
+    if (entered) {
+      try { await screenOrient?.lock?.('landscape'); } catch { /* iOS / unsupported */ }
+      return;
+    }
+
+    if (video?.webkitEnterFullscreen) {
+      try { video.webkitEnterFullscreen(); } catch { /* noop */ }
+    }
   }, []);
 
   useEffect(() => {
@@ -883,6 +946,80 @@ function ViewerOverlay({ session, featuredEvent, onClose }: ViewerOverlayProps) 
     if (list) list.scrollTop = list.scrollHeight;
   }, [chat]);
 
+  // Real-time chat over WebSocket. No persistence — messages are ephemeral
+  // and shared with everyone currently connected.
+  useEffect(() => {
+    if (!CHAT_WS_URL) return;
+    let cancelled = false;
+    let retry = 0;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const connect = () => {
+      if (cancelled) return;
+      let ws: WebSocket;
+      try {
+        ws = new WebSocket(CHAT_WS_URL);
+      } catch {
+        scheduleRetry();
+        return;
+      }
+      chatSocketRef.current = ws;
+
+      ws.onopen = () => {
+        if (cancelled) { ws.close(); return; }
+        retry = 0;
+        setChatConnected(true);
+      };
+      ws.onmessage = (ev) => {
+        try {
+          const data = JSON.parse(String(ev.data));
+          if (data?.type !== 'msg') return;
+          const msg: ChatMessage = {
+            id: String(data.id ?? Math.random().toString(36).slice(2, 11)),
+            name: String(data.name ?? 'Зочин'),
+            color: String(data.color ?? '#4451DC'),
+            text: String(data.text ?? ''),
+            clientId: String(data.clientId ?? ''),
+          };
+          if (!msg.text) return;
+          setChat((prev) => {
+            const next = [...prev, msg];
+            return next.length > 200 ? next.slice(next.length - 200) : next;
+          });
+        } catch {
+          /* ignore malformed payload */
+        }
+      };
+      ws.onclose = () => {
+        setChatConnected(false);
+        if (chatSocketRef.current === ws) chatSocketRef.current = null;
+        scheduleRetry();
+      };
+      ws.onerror = () => {
+        try { ws.close(); } catch { /* ignore */ }
+      };
+    };
+
+    const scheduleRetry = () => {
+      if (cancelled) return;
+      retry = Math.min(retry + 1, 6);
+      const delay = Math.min(500 * 2 ** (retry - 1), 8000);
+      retryTimer = setTimeout(connect, delay);
+    };
+
+    connect();
+
+    return () => {
+      cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
+      const ws = chatSocketRef.current;
+      chatSocketRef.current = null;
+      if (ws) {
+        try { ws.close(); } catch { /* ignore */ }
+      }
+    };
+  }, []);
+
   const togglePlay = () => {
     const v = videoRef.current;
     if (!v) return;
@@ -916,8 +1053,18 @@ function ViewerOverlay({ session, featuredEvent, onClose }: ViewerOverlayProps) 
     const text = chatInput.trim();
     if (!text) return;
     const name = session.fullname || session.identifier || 'Та';
-    setChat((prev) => [...prev, { name, color: '#4451DC', text, mine: true }]);
-    setChatInput('');
+    const ws = chatSocketRef.current;
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(
+        JSON.stringify({
+          name,
+          color: '#4451DC',
+          text,
+          clientId: clientIdRef.current,
+        }),
+      );
+      setChatInput('');
+    }
   };
 
   const qualityLabel = qualityIdx === -1 ? 'Auto' : (qualityLevels.find(l => l.index === qualityIdx)?.label ?? 'Auto');
@@ -988,7 +1135,7 @@ function ViewerOverlay({ session, featuredEvent, onClose }: ViewerOverlayProps) 
 
         {/* Main player stage */}
         <section className={`${VIEWER_STAGE_CLS}${isFs ? ' is-fs' : ''}${idle ? ' is-idle' : ''}`} ref={stageRef}>
-          <div className={VIEWER_STAGE_SHELL_CLS} style={{ background: '#000', position: 'relative', width: '100%', height: '100%' }}>
+          <div className={VIEWER_STAGE_SHELL_CLS} style={{ background: '#000' }}>
             {/* Hidden video element — used for both normal and 360° (as texture source) */}
             <video
               ref={videoRef}
@@ -1089,6 +1236,20 @@ function ViewerOverlay({ session, featuredEvent, onClose }: ViewerOverlayProps) 
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
             Шууд чат
+            <span
+              aria-hidden="true"
+              title={chatConnected ? 'Холбогдсон' : 'Холбогдож байна…'}
+              style={{
+                display: 'inline-block',
+                width: 7,
+                height: 7,
+                marginLeft: 6,
+                borderRadius: '50%',
+                background: chatConnected ? '#22c55e' : '#f59e0b',
+                boxShadow: chatConnected ? '0 0 0 2px rgba(34,197,94,0.18)' : 'none',
+                transition: 'background 200ms',
+              }}
+            />
             <span className={VIEWER_CHAT_COUNT_CLS}>{chat.length}</span>
           </header>
           <div className={VIEWER_CHAT_LIST_CLS} ref={chatListRef} aria-live="polite">
@@ -1097,29 +1258,104 @@ function ViewerOverlay({ session, featuredEvent, onClose }: ViewerOverlayProps) 
                 Одоогоор мессеж алга.<br/>Та мессеж бичиж эхлэх боломжтой.
               </div>
             )}
-            {chat.map((m, i) => (
-              <div key={i} className={`${VIEWER_MSG_CLS}${m.mine ? ' ' + VIEWER_MSG_MINE_CLS : ''}`}>
-                <span className={VIEWER_MSG_NAME_CLS} style={{ color: m.color }}>{m.name}</span>
-                <span>{m.text}</span>
-              </div>
-            ))}
+            {chat.map((m) => {
+              const mine = m.clientId === clientIdRef.current;
+              return (
+                <div key={m.id} className={`${VIEWER_MSG_CLS}${mine ? ' ' + VIEWER_MSG_MINE_CLS : ''}`}>
+                  <span className={VIEWER_MSG_NAME_CLS} style={{ color: m.color }}>{m.name}</span>
+                  <span>{m.text}</span>
+                </div>
+              );
+            })}
           </div>
           <form className={VIEWER_CHAT_FORM_CLS} onSubmit={onChatSubmit} autoComplete="off">
             <input
               type="text"
-              placeholder="Мессеж бичих…"
+              placeholder={chatConnected ? 'Мессеж бичих…' : 'Холбогдож байна…'}
               maxLength={140}
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
+              disabled={!chatConnected}
             />
-            <button type="submit" className={VIEWER_CHAT_SEND_CLS} aria-label="Илгээх">
+            <button
+              type="submit"
+              className={VIEWER_CHAT_SEND_CLS}
+              aria-label="Илгээх"
+              disabled={!chatConnected || !chatInput.trim()}
+            >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
               </svg>
             </button>
           </form>
         </aside>
+
+        <button
+          type="button"
+          className={VIEWER_CAM_PICKER_BTN_CLS}
+          onClick={() => setCamPickerOpen(true)}
+          aria-label="Камер сонгох"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+          {activeCam ? `Камер: ${activeCam.label}` : 'Камер сонгох'}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ marginLeft: 'auto' }}>
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
       </div>
+
+      {camPickerOpen && (
+        <>
+          <div className={VIEWER_CAM_SHEET_BACKDROP_CLS} onClick={() => setCamPickerOpen(false)} />
+          <div className={VIEWER_CAM_SHEET_CLS} role="dialog" aria-modal="true" aria-label="Камер сонгох">
+            <header className={VIEWER_CAM_SHEET_HEAD_CLS}>
+              <h4 className={VIEWER_CAM_SHEET_TITLE_CLS}>Камерын өнцөг</h4>
+              <button
+                type="button"
+                className={VIEWER_CAM_SHEET_CLOSE_CLS}
+                onClick={() => setCamPickerOpen(false)}
+                aria-label="Хаах"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </header>
+            <div className={VIEWER_CAM_SHEET_LIST_CLS}>
+              {cams.map((cam, i) => (
+                <button
+                  key={cam.id}
+                  type="button"
+                  className={`${VIEWER_ANGLE_CLS}${camIdx === i ? ' ' + VIEWER_ANGLE_ACTIVE_CLS : ''}`}
+                  onClick={() => { setCamIdx(i); setCamPickerOpen(false); }}
+                >
+                  <span className={VIEWER_ANGLE_THUMB_CLS} style={{ background: '#0b1929', position: 'relative' }}>
+                    {featuredEvent.image && (
+                      <img
+                        src={featuredEvent.image}
+                        alt=""
+                        aria-hidden="true"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: camIdx === i ? 0.5 : 0.35 }}
+                      />
+                    )}
+                    <span className={VIEWER_ANGLE_LIVE_CLS}></span>
+                    {cam.type === '360' && (
+                      <span style={{ position: 'absolute', bottom: 4, right: 4, fontSize: 9, fontWeight: 700, background: 'rgba(0,0,0,0.7)', color: '#60a5fa', padding: '1px 4px', borderRadius: 3, letterSpacing: '0.06em' }}>360°</span>
+                    )}
+                  </span>
+                  <span className={VIEWER_ANGLE_LABEL_CLS}>
+                    <strong>{cam.label}</strong>
+                    <small>{cam.sub}</small>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -1140,14 +1376,15 @@ type TicketModalProps = {
 };
 
 function TicketModal({ event, session, onClose, onPurchased, onWatchSuccess }: TicketModalProps) {
+  const { t } = useTranslation();
   const [tier, setTier] = useState<TierValue>('standard');
   const [qty, setQty] = useState(1);
   const [busy, setBusy] = useState(false);
   const [alert, setAlert] = useState('');
-  const [checkoutLabel, setCheckoutLabel] = useState('Худалдан авах');
+  const [checkoutLabel, setCheckoutLabel] = useState<string>(t('ticket_purchase'));
   const [success, setSuccess] = useState<OrderRecord | null>(null);
 
-  const selectedTier = TICKET_TIERS.find((t) => t.value === tier);
+  const selectedTier = TICKET_TIERS.find((tt) => tt.value === tier);
 
   const total = event.base * (selectedTier?.mult || 1) * qty;
 
@@ -1160,14 +1397,14 @@ function TicketModal({ event, session, onClose, onPurchased, onWatchSuccess }: T
   const checkout = () => {
     setAlert('');
     setBusy(true);
-    setCheckoutLabel('QPay рүү шилжиж байна…');
+    setCheckoutLabel(t('ticket_redirecting'));
 
     setTimeout(() => {
 
       if (Math.random() < 0.05) {
         setBusy(false);
-        setCheckoutLabel('Дахин оролдох');
-        setAlert('Төлбөр амжилтгүй боллоо. Дахин оролдоно уу.');
+        setCheckoutLabel(t('ticket_retry'));
+        setAlert(t('ticket_error'));
         return;
       }
       const order: OrderRecord = {
@@ -1178,7 +1415,7 @@ function TicketModal({ event, session, onClose, onPurchased, onWatchSuccess }: T
         date: event.date,
         image: event.image,
         tier,
-        tierName: selectedTier?.name,
+        tierName: t('ticket_standard'),
         qty,
         unitPrice: event.base * (selectedTier?.mult ?? 1),
         total,
@@ -1201,7 +1438,7 @@ function TicketModal({ event, session, onClose, onPurchased, onWatchSuccess }: T
     <div className={TICKET_MODAL_CLS} role="dialog" aria-modal="true" aria-labelledby="ticketModalTitle" onClick={onBackdrop}>
       <div className={TICKET_MODAL_BACKDROP_CLS} data-close=""></div>
       <div className={TICKET_MODAL_CARD_CLS} role="document" onClick={(e) => e.stopPropagation()}>
-        <button type="button" className={TICKET_MODAL_CLOSE_CLS} aria-label="Хаах" onClick={onClose}>
+        <button type="button" className={TICKET_MODAL_CLOSE_CLS} aria-label={t('ticket_close')} onClick={onClose}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
@@ -1214,21 +1451,21 @@ function TicketModal({ event, session, onClose, onPurchased, onWatchSuccess }: T
               <div className={TICKET_MODAL_COVER_META_CLS}>
                 <span className={TICKET_MODAL_DATE_CLS}>{event.date}</span>
                 <h2 id="ticketModalTitle" className={TICKET_MODAL_TITLE_CLS}>{event.title}</h2>
-                <span className={TICKET_MODAL_VENUE_CLS}>📡 Онлайн шууд дамжуулал · энэ вэбсайтаас үзнэ</span>
+                <span className={TICKET_MODAL_VENUE_CLS}>📡 {t('watch_online_stream')}</span>
               </div>
             </div>
 
             <div className={TICKET_MODAL_FORM_CLS}>
               <div className={TICKET_SECTION_CLS}>
-                <span className={TICKET_SECTION_LABEL_CLS}>Үзэх багц</span>
+                <span className={TICKET_SECTION_LABEL_CLS}>{t('ticket_package')}</span>
                 <div className={TICKET_RADIO_GROUP_CLS} role="radiogroup">
-                  {TICKET_TIERS.map((t) => (
-                    <label key={t.value} className={TICKET_RADIO_LABEL_CLS}>
-                      <input className={TICKET_RADIO_INPUT_CLS} type="radio" name="tier" value={t.value} checked={tier === t.value} onChange={() => setTier(t.value)} />
+                  {TICKET_TIERS.map((tt) => (
+                    <label key={tt.value} className={TICKET_RADIO_LABEL_CLS}>
+                      <input className={TICKET_RADIO_INPUT_CLS} type="radio" name="tier" value={tt.value} checked={tier === tt.value} onChange={() => setTier(tt.value)} />
                       <span className={TICKET_RADIO_CARD_CLS}>
-                        <span className={TICKET_TIER_NAME_CLS}>{t.name}</span>
-                        <span className={TICKET_TIER_DESC_CLS}>{t.desc}</span>
-                        <span className={TICKET_TIER_PRICE_CLS}>{money(event.base * t.mult)}</span>
+                        <span className={TICKET_TIER_NAME_CLS}>{t('ticket_standard')}</span>
+                        <span className={TICKET_TIER_DESC_CLS}>{t('ticket_standard_desc')}</span>
+                        <span className={TICKET_TIER_PRICE_CLS}>{money(event.base * tt.mult)}</span>
                       </span>
                     </label>
                   ))}
@@ -1237,22 +1474,22 @@ function TicketModal({ event, session, onClose, onPurchased, onWatchSuccess }: T
 
               <div className={`${TICKET_SECTION_CLS} ${TICKET_ROW_CLS}`}>
                 <div>
-                  <span className={TICKET_SECTION_LABEL_CLS}>Үзэх эрхийн тоо</span>
+                  <span className={TICKET_SECTION_LABEL_CLS}>{t('ticket_device_count')}</span>
                   <div className={TICKET_QTY_CLS}>
-                    <button type="button" className={TICKET_QTY_BTN_CLS} onClick={() => setQty((q) => Math.max(1, q - 1))} aria-label="Хасах">−</button>
+                    <button type="button" className={TICKET_QTY_BTN_CLS} onClick={() => setQty((q) => Math.max(1, q - 1))} aria-label="−">−</button>
                     <span className={TICKET_QTY_VAL_CLS}>{qty}</span>
-                    <button type="button" className={TICKET_QTY_BTN_CLS} onClick={() => setQty((q) => Math.min(10, q + 1))} aria-label="Нэмэх">+</button>
+                    <button type="button" className={TICKET_QTY_BTN_CLS} onClick={() => setQty((q) => Math.min(10, q + 1))} aria-label="+">+</button>
                   </div>
                 </div>
                 <div className={TICKET_TOTAL_WRAP_CLS}>
-                  <span className={TICKET_SECTION_LABEL_CLS}>Нийт төлөх</span>
+                  <span className={TICKET_SECTION_LABEL_CLS}>{t('ticket_total_pay')}</span>
                   <span className={TICKET_TOTAL_CLS}>{money(total)}</span>
                 </div>
               </div>
 
               <div className={TICKET_SECTION_CLS} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                <span className={TICKET_SECTION_LABEL_CLS} style={{ marginBottom: 0 }}>Төлбөрийн хэрэгсэл</span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>QPay — Банкны апп-аар</span>
+                <span className={TICKET_SECTION_LABEL_CLS} style={{ marginBottom: 0 }}>{t('ticket_payment')}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>{t('ticket_qpay_label')}</span>
               </div>
 
               <div className={TICKET_ALERT_CLS} hidden={!alert}>{alert}</div>
@@ -1265,8 +1502,7 @@ function TicketModal({ event, session, onClose, onPurchased, onWatchSuccess }: T
                 </svg>
               </button>
               <p className={TICKET_FINEPRINT_CLS}>
-                Төлбөр амжилттай болсны дараа таны бүртгэлд үзэх эрх нэмэгдэж, «Миний тасалбарууд»
-                хэсгээс эфирийн цагт шууд үзэх боломжтой болно. Физик тасалбар өгөхгүй.
+                {t('ticket_fineprint')}
               </p>
             </div>
           </div>
@@ -1277,19 +1513,19 @@ function TicketModal({ event, session, onClose, onPurchased, onWatchSuccess }: T
                 <polyline points="20 6 9 17 4 12"/>
               </svg>
             </div>
-            <h3 className={TICKET_SUCCESS_TITLE_CLS}>Худалдан авалт амжилттай!</h3>
+            <h3 className={TICKET_SUCCESS_TITLE_CLS}>{t('ticket_success_title')}</h3>
             <p className={TICKET_SUCCESS_DESC_CLS}>
               <strong>{success.title}</strong><br/>
-              {success.tierName} · {success.qty} төхөөрөмж · {money(success.total)}<br/>
-              <small>Эфирийн цагт «Миний тасалбарууд» эсвэл «Шууд» хэсгээс үзэх боломжтой.</small>
+              {success.tierName} · {success.qty} {t('watch_devices')} · {money(success.total)}<br/>
+              <small>{t('ticket_success_hint')}</small>
             </p>
             <div className={TICKET_SUCCESS_CODE_CLS}>
-              Захиалгын код<br/>
+              {t('ticket_order_code')}<br/>
               <strong>{success.code}</strong>
             </div>
             <div className={TICKET_SUCCESS_ACTIONS_CLS}>
-              <button type="button" className={`${WATCH_BTN_CLS} ${WATCH_BTN_GHOST_CLS}`} onClick={onClose}>Хаах</button>
-              <button type="button" className={`${WATCH_BTN_CLS} ${WATCH_BTN_PRIMARY_CLS}`} onClick={onWatchSuccess}>Миний тасалбарууд</button>
+              <button type="button" className={`${WATCH_BTN_CLS} ${WATCH_BTN_GHOST_CLS}`} onClick={onClose}>{t('ticket_close')}</button>
+              <button type="button" className={`${WATCH_BTN_CLS} ${WATCH_BTN_PRIMARY_CLS}`} onClick={onWatchSuccess}>{t('watch_my_tickets')}</button>
             </div>
           </div>
         )}

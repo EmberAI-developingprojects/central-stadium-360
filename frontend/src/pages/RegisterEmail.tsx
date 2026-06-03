@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../auth";
 import {
   BACK_CLS,
@@ -35,23 +36,24 @@ import {
 
 type Step = "form" | "verify";
 
-function explainError(code: string, fallback: string): string {
-  switch (code) {
-    case "already_registered":
-      return "Энэ имэйл аль хэдийн бүртгэлтэй байна.";
-    case "rate_limited":
-      return "Хэт олон оролдлого. Хэдэн минутын дараа дахин оролдоно уу.";
-    case "invalid_input":
-      return "Оруулсан мэдээллийг шалгана уу.";
-    case "supabase_not_configured":
-      return "Сервер тохиргоо дутуу байна. Админд хандана уу.";
-    default:
-      return fallback;
-  }
-}
-
 export default function RegisterEmail() {
+  const { t } = useTranslation();
   const { registerEmail, resendCode } = useAuth();
+
+  const explainError = (code: string, fallback: string): string => {
+    switch (code) {
+      case "already_registered":
+        return t("auth_err_already_registered_email");
+      case "rate_limited":
+        return t("auth_err_rate_limited");
+      case "invalid_input":
+        return t("auth_err_invalid_input");
+      case "supabase_not_configured":
+        return t("auth_err_supabase_not_configured");
+      default:
+        return fallback;
+    }
+  };
 
   const [fullname, setFullname] = useState("");
   const [email, setEmail] = useState("");
@@ -60,7 +62,7 @@ export default function RegisterEmail() {
   const [agree, setAgree] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [alert, setAlert] = useState("");
-  const [submitLabel, setSubmitLabel] = useState("Бүртгүүлэх");
+  const [submitLabel, setSubmitLabel] = useState<string>(t("auth_register_btn"));
   const [busy, setBusy] = useState(false);
 
   const [step, setStep] = useState<Step>("form");
@@ -75,18 +77,18 @@ export default function RegisterEmail() {
     e.preventDefault();
     setAlert("");
 
-    if (fullname.trim().length < 2) return setAlert("Бүтэн нэрээ оруулна уу.");
+    if (fullname.trim().length < 2) return setAlert(t("auth_err_fullname_required"));
     const normalized = email.trim().toLowerCase();
     if (!/^[a-z0-9._%+-]+@gmail\.com$/.test(normalized)) {
-      return setAlert("Зөвхөн @gmail.com хаяг хүлээн авна.");
+      return setAlert(t("auth_err_email_only_gmail"));
     }
     if (password.length < 8)
-      return setAlert("Нууц үг хамгийн багадаа 8 тэмдэгт байх ёстой.");
-    if (password !== confirmPw) return setAlert("Нууц үг таарахгүй байна.");
-    if (!agree) return setAlert("Үйлчилгээний нөхцөлийг зөвшөөрнө үү.");
+      return setAlert(t("auth_err_password_min"));
+    if (password !== confirmPw) return setAlert(t("auth_err_passwords_dont_match"));
+    if (!agree) return setAlert(t("auth_err_must_agree"));
 
     setBusy(true);
-    setSubmitLabel("Илгээж байна…");
+    setSubmitLabel(t("auth_sending"));
     const res = await registerEmail({
       fullName: fullname.trim(),
       email: normalized,
@@ -94,16 +96,16 @@ export default function RegisterEmail() {
     });
     if (!res.ok) {
       setBusy(false);
-      setSubmitLabel("Бүртгүүлэх");
+      setSubmitLabel(t("auth_register_btn"));
       setAlert(
-        explainError(res.error, "Бүртгэхэд алдаа гарлаа. Дахин оролдоно уу."),
+        explainError(res.error, t("auth_err_register_failed")),
       );
       return;
     }
     setPendingEmail(normalized);
     setStep("verify");
     setBusy(false);
-    setSubmitLabel("Бүртгүүлэх");
+    setSubmitLabel(t("auth_register_btn"));
   };
 
   const onResend = async () => {
@@ -114,11 +116,11 @@ export default function RegisterEmail() {
     if (!res.ok) {
       setVerifyAlert({
         kind: "error",
-        msg: explainError(res.error, "Дахин илгээх боломжгүй байна."),
+        msg: explainError(res.error, t("auth_err_resend_failed")),
       });
       return;
     }
-    setVerifyAlert({ kind: "ok", msg: "Шинэ имэйл илгээгдлээ." });
+    setVerifyAlert({ kind: "ok", msg: t("auth_new_email_sent") });
   };
 
   if (step === "verify") {
@@ -128,12 +130,12 @@ export default function RegisterEmail() {
           <Link
             className={LOGO_CLS}
             to="/"
-            aria-label="Төв Цэнгэлдэх Хүрээлэн — Нүүр"
+            aria-label={t("auth_logo_aria")}
           >
             <img
               className={LOGO_IMG_CLS}
               src="/assets/images/brand/logo.png"
-              alt="Төв Цэнгэлдэх Хүрээлэн"
+              alt={t("auth_logo_alt")}
             />
           </Link>
           <Link className={BACK_CLS} to="/login">
@@ -149,7 +151,7 @@ export default function RegisterEmail() {
               <line x1="19" y1="12" x2="5" y2="12" />
               <polyline points="12 19 5 12 12 5" />
             </svg>
-            Нэвтрэх рүү буцах
+            {t("auth_back_login")}
           </Link>
         </header>
 
@@ -157,17 +159,16 @@ export default function RegisterEmail() {
           <section className={CARD_CLS}>
             <span className={EYEBROW_CLS}>
               <span className={EYEBROW_DOT_CLS} aria-hidden="true"></span>
-              Баталгаажуулалт
+              {t("auth_verify_eyebrow")}
             </span>
 
-            <h1 className={TITLE_CLS}>Гмэйлээ шалгана уу</h1>
+            <h1 className={TITLE_CLS}>{t("auth_verify_email_title")}</h1>
             <p className={SUBTITLE_CLS}>
-              Бид {pendingEmail} хаяг руу баталгаажуулах линк илгээлээ. Линк
-              дээр дарж бүртгэлээ идэвхжүүлээрэй.
+              {t("auth_verify_email_subtitle", { identifier: pendingEmail })}
             </p>
 
             <div className={REG_ALERT_OK_CLS} role="status">
-              Дахин харагдахгүй бол спам хавтсаа шалгана уу.
+              {t("auth_check_spam")}
             </div>
 
             {verifyAlert && (
@@ -181,7 +182,7 @@ export default function RegisterEmail() {
             )}
 
             <div className={DIVIDER_CLS}>
-              <span>эсвэл</span>
+              <span>{t("auth_or")}</span>
             </div>
 
             <button
@@ -191,10 +192,10 @@ export default function RegisterEmail() {
               disabled={resendBusy}
               style={RESEND_BTN_STYLE}
             >
-              {resendBusy ? "Илгээж байна…" : "Дахин линк илгээх"}
+              {resendBusy ? t("auth_sending") : t("auth_resend_link")}
             </button>
             <Link className={HOME_CLS} to="/login">
-              Нэвтрэх рүү буцах
+              {t("auth_back_login")}
             </Link>
           </section>
         </main>
@@ -208,12 +209,12 @@ export default function RegisterEmail() {
         <Link
           className={LOGO_CLS}
           to="/"
-          aria-label="Төв Цэнгэлдэх Хүрээлэн — Нүүр"
+          aria-label={t("auth_logo_aria")}
         >
           <img
             className={LOGO_IMG_CLS}
             src="/assets/images/brand/logo.png"
-            alt="Төв Цэнгэлдэх Хүрээлэн"
+            alt={t("auth_logo_alt")}
           />
         </Link>
         <Link className={BACK_CLS} to="/register">
@@ -229,7 +230,7 @@ export default function RegisterEmail() {
             <line x1="19" y1="12" x2="5" y2="12" />
             <polyline points="12 19 5 12 12 5" />
           </svg>
-          Сонголт руу буцах
+          {t("auth_back_choose")}
         </Link>
       </header>
 
@@ -237,23 +238,20 @@ export default function RegisterEmail() {
         <section className={CARD_CLS}>
           <span className={EYEBROW_CLS}>
             <span className={EYEBROW_DOT_CLS} aria-hidden="true"></span>
-            Хувийн булан
+            {t("auth_register_eyebrow")}
           </span>
 
-          <h1 className={TITLE_CLS}>Gmail хаягаар бүртгүүлэх</h1>
-          <p className={SUBTITLE_CLS}>
-            @gmail.com хаягаараа бүртгүүлж, баталгаажуулах линкээ имэйлээрээ
-            хүлээж аваарай.
-          </p>
+          <h1 className={TITLE_CLS}>{t("auth_reg_email_title")}</h1>
+          <p className={SUBTITLE_CLS}>{t("auth_reg_email_subtitle")}</p>
 
           <form className={REG_FORM_CLS} onSubmit={onSubmit} noValidate>
             <label className={FIELD_CLS}>
-              <span className={LABEL_CLS}>Бүтэн нэр</span>
+              <span className={LABEL_CLS}>{t("auth_fullname_label")}</span>
               <input
                 className={INPUT_CLS}
                 type="text"
                 name="fullname"
-                placeholder="Жишээ: Б. Болор"
+                placeholder={t("auth_fullname_placeholder")}
                 autoComplete="name"
                 value={fullname}
                 onChange={(e) => setFullname(e.target.value)}
@@ -262,7 +260,7 @@ export default function RegisterEmail() {
             </label>
 
             <label className={FIELD_CLS}>
-              <span className={LABEL_CLS}>Gmail хаяг</span>
+              <span className={LABEL_CLS}>{t("auth_email_label")}</span>
               <input
                 className={INPUT_CLS}
                 type="email"
@@ -273,13 +271,11 @@ export default function RegisterEmail() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
-              <span className={REG_HINT_CLS}>
-                Зөвхөн @gmail.com хаяг хүлээн авна
-              </span>
+              <span className={REG_HINT_CLS}>{t("auth_email_hint")}</span>
             </label>
 
             <label className={FIELD_CLS}>
-              <span className={LABEL_CLS}>Нууц үг</span>
+              <span className={LABEL_CLS}>{t("auth_password_label")}</span>
               <span className={PWD_WRAP_CLS}>
                 <input
                   className={PWD_INPUT_CLS}
@@ -295,7 +291,7 @@ export default function RegisterEmail() {
                 <button
                   type="button"
                   className={PWD_TOGGLE_CLS}
-                  aria-label={showPw ? "Нууц үг нуух" : "Нууц үг харах"}
+                  aria-label={showPw ? t("auth_hide_pw") : t("auth_show_pw")}
                   onClick={() => setShowPw((s) => !s)}
                 >
                   <svg
@@ -312,11 +308,11 @@ export default function RegisterEmail() {
                   </svg>
                 </button>
               </span>
-              <span className={REG_HINT_CLS}>Хамгийн багадаа 8 тэмдэгт</span>
+              <span className={REG_HINT_CLS}>{t("auth_password_hint")}</span>
             </label>
 
             <label className={FIELD_CLS}>
-              <span className={LABEL_CLS}>Нууц үг давтах</span>
+              <span className={LABEL_CLS}>{t("auth_password_confirm_label")}</span>
               <input
                 className={INPUT_CLS}
                 type="password"
@@ -339,10 +335,7 @@ export default function RegisterEmail() {
                 className={REG_CHECKBOX_CLS}
                 required
               />
-              <span>
-                Үйлчилгээний нөхцөл болон нууцлалын бодлогыг хүлээн зөвшөөрч
-                байна.
-              </span>
+              <span>{t("auth_terms_label")}</span>
             </label>
 
             <div className={REG_ALERT_CLS} role="alert" hidden={!alert}>
@@ -367,14 +360,14 @@ export default function RegisterEmail() {
           </form>
 
           <div className={DIVIDER_CLS}>
-            <span>эсвэл</span>
+            <span>{t("auth_or")}</span>
           </div>
 
           <Link className={REGISTER_CLS} to="/register/phone">
-            Утасны дугаараар бүртгүүлэх
+            {t("auth_register_with_phone")}
           </Link>
           <Link className={HOME_CLS} to="/login">
-            Аль хэдийн бүртгэлтэй — Нэвтрэх
+            {t("auth_already_registered")}
           </Link>
         </section>
       </main>
