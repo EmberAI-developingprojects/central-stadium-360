@@ -9,7 +9,15 @@ const tailwindEntry = () => ({
   },
   load(id) {
     if (id === '\0virtual:tailwind.css') {
-      return '@tailwind base;\n@tailwind components;\n@tailwind utilities;\n';
+      return [
+        '@tailwind base;',
+        '@tailwind components;',
+        '@tailwind utilities;',
+        '@layer base {',
+        '  svg:not([width]):not([height]) { width: 1em; height: 1em; flex-shrink: 0; }',
+        '}',
+        '',
+      ].join('\n');
     }
     return null;
   },
