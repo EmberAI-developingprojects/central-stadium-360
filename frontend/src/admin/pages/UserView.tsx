@@ -95,7 +95,10 @@ export default function UserView() {
     const next: UserRole = user.role === "admin" ? "user" : "admin";
     const nextLabel = next === "admin" ? "Админ" : "Хэрэглэгч";
     const ok = await confirm({
-      title: next === "admin" ? "Хэрэглэгчийг админ болгох уу?" : "Админ эрхийг хасах уу?",
+      title:
+        next === "admin"
+          ? "Хэрэглэгчийг админ болгох уу?"
+          : "Админ эрхийг хасах уу?",
       message: (
         <>
           Энэ хэрэглэгчийн эрхийг{" "}
@@ -150,9 +153,8 @@ export default function UserView() {
       title: "Хэрэглэгчийг устгах уу?",
       message: (
         <>
-          <strong className="font-semibold text-zinc-900">«{who}»</strong>{" "}
-          бүх захиалга, өгөгдлийн хамт устгагдана. Энэ үйлдлийг буцаах
-          боломжгүй.
+          <strong className="font-semibold text-zinc-900">«{who}»</strong> бүх
+          захиалга, өгөгдлийн хамт устгагдана. Энэ үйлдлийг буцаах боломжгүй.
         </>
       ),
       confirmLabel: "Бүрмөсөн устгах",
@@ -193,11 +195,11 @@ export default function UserView() {
           <table className={ADMIN_TABLE_CLS}>
             <tbody>
               <tr>
-                <th>Бүтэн нэр</th>
+                <th>Нэр</th>
                 <td>{user.fullname || "—"}</td>
               </tr>
               <tr>
-                <th>Контакт</th>
+                <th>Бүртгэл</th>
                 <td>{user.identifier}</td>
               </tr>
               <tr>
@@ -255,11 +257,13 @@ export default function UserView() {
               className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_PRIMARY_CLS}`}
               onClick={toggleRole}
             >
-              {user.role === "admin"
-                ? "Эрх хасах"
-                : "Админ болгох"}
+              {user.role === "admin" ? "Эрх хасах" : "Админ болгох"}
             </button>
-            <button type="button" className={ADMIN_BTN_CLS} onClick={toggleDisabled}>
+            <button
+              type="button"
+              className={ADMIN_BTN_CLS}
+              onClick={toggleDisabled}
+            >
               {user.disabled ? "Дахин идэвхжүүлэх" : "Хандалт хязгаарлах"}
             </button>
             <button
@@ -302,7 +306,11 @@ export default function UserView() {
                   <td>{o.tierName || o.tier}</td>
                   <td style={{ textAlign: "right" }}>{money(o.total)}</td>
                   <td>
-                    <span className={ORDER_STATUS_BADGE[o.status] || ADMIN_BADGE_CLS}>
+                    <span
+                      className={
+                        ORDER_STATUS_BADGE[o.status] || ADMIN_BADGE_CLS
+                      }
+                    >
                       {ORDER_STATUS_LABEL[o.status] || o.status}
                     </span>
                   </td>
