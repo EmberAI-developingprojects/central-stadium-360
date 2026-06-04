@@ -1258,17 +1258,23 @@ function ViewerOverlay({
     let t: ReturnType<typeof setTimeout> | null = null;
     const stage = stageRef.current;
     if (!stage) return;
-    const onMove = () => {
+    const onActivity = () => {
       setIdle(false);
       if (t) clearTimeout(t);
-      t = setTimeout(() => setIdle(true), 2500);
+      t = setTimeout(() => setIdle(true), 3500);
     };
-    stage.addEventListener("mousemove", onMove);
-    stage.addEventListener("mouseleave", () => setIdle(false));
-    onMove();
+    const onLeave = () => setIdle(false);
+    stage.addEventListener("mousemove", onActivity);
+    stage.addEventListener("mouseleave", onLeave);
+    stage.addEventListener("touchstart", onActivity, { passive: true });
+    stage.addEventListener("touchmove", onActivity, { passive: true });
+    onActivity();
     return () => {
       if (t) clearTimeout(t);
-      stage.removeEventListener("mousemove", onMove);
+      stage.removeEventListener("mousemove", onActivity);
+      stage.removeEventListener("mouseleave", onLeave);
+      stage.removeEventListener("touchstart", onActivity);
+      stage.removeEventListener("touchmove", onActivity);
     };
   }, [isFs, pseudoFs]);
 
@@ -1604,6 +1610,10 @@ function ViewerOverlay({
               ? {
                   position: "fixed",
                   inset: 0,
+                  width: "100dvw",
+                  height: "100dvh",
+                  padding: 0,
+                  gap: 0,
                   zIndex: 2000,
                   background: "#000",
                 }
@@ -1612,7 +1622,19 @@ function ViewerOverlay({
         >
           <div
             className={VIEWER_STAGE_SHELL_CLS}
-            style={{ background: "#000" }}
+            style={
+              isFs || pseudoFs
+                ? {
+                    background: "#000",
+                    flex: "1 1 0%",
+                    width: "100%",
+                    height: "100%",
+                    maxHeight: "none",
+                    borderRadius: 0,
+                    boxShadow: "none",
+                  }
+                : { background: "#000" }
+            }
           >
             {/* Hidden video element — used for both normal and 360° (as texture source) */}
             <video
@@ -1623,7 +1645,7 @@ function ViewerOverlay({
               style={{
                 width: "100%",
                 height: "100%",
-                objectFit: "contain",
+                objectFit: isFs || pseudoFs ? "cover" : "contain",
                 display: is360 ? "none" : "block",
               }}
               poster={featuredEvent.image}
