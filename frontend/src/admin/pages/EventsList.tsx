@@ -33,7 +33,7 @@ function computeStatus(startIso: string | undefined): StatusKind {
   if (Number.isNaN(start)) return "upcoming";
   const now = Date.now();
   if (now < start) return "upcoming";
-  // treat "live" as 3 hours after start (typical event duration)
+
   if (now - start < 3 * 60 * 60 * 1000) return "live";
   return "past";
 }

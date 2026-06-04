@@ -116,43 +116,15 @@ import {
   TICKETS_EMPTY_CLS,
   TICKETS_EMPTY_ICON_CLS,
   TICKETS_LIST_CLS,
-  WATCH_BADGE_CLS,
   WATCH_BTN_CLS,
   WATCH_BTN_GHOST_CLS,
   WATCH_BTN_PRIMARY_CLS,
-  WATCH_CARD_ACTIONS_CLS,
-  WATCH_CARD_BODY_CLS,
-  WATCH_CARD_CLS,
-  WATCH_CARD_DATE_CLS,
-  WATCH_CARD_DESC_CLS,
-  WATCH_CARD_IMG_CLS,
-  WATCH_CARD_PILL_CLS,
-  WATCH_CARD_PRICE_CLS,
-  WATCH_CARD_TITLE_CLS,
   WATCH_EYEBROW_CLS,
-  WATCH_FEATURE_ACTIONS_CLS,
-  WATCH_FEATURE_CLS,
-  WATCH_FEATURE_DESC_CLS,
-  WATCH_FEATURE_TEXT_CLS,
-  WATCH_FEATURE_TITLE_CLS,
-  WATCH_GRID_CLS,
   WATCH_HEADER_CLS,
-  WATCH_LIVE_DOT_CLS,
-  WATCH_LIVE_PILL_CLS,
-  WATCH_LIVE_PULSE_CLS,
-  WATCH_LOCKED_CLS,
-  WATCH_LOCKED_ICON_CLS,
-  WATCH_LOCKED_INNER_CLS,
   WATCH_LOGO_CLS,
   WATCH_MAIN_CLS,
-  WATCH_META_LIST_CLS,
   WATCH_PAGE_BG,
   WATCH_PAGE_CLS,
-  WATCH_PLAY_CLS,
-  WATCH_PLAYER_CLS,
-  WATCH_PLAYER_LOCKED_CLS,
-  WATCH_PLAYER_META_CLS,
-  WATCH_PLAYER_OVERLAY_CLS,
   WATCH_SECTION_CLS,
   WATCH_SECTION_HEAD_CLS,
   WATCH_TAB_ACTIVE_CLS,
@@ -191,7 +163,6 @@ const CHAT_WS_URL = (() => {
   if (base) {
     return base.replace(/^http(s?):/, "ws$1:").replace(/\/$/, "") + "/api/chat";
   }
-  // Same-origin fallback for production builds behind the API.
   if (typeof window !== "undefined") {
     const proto = window.location.protocol === "https:" ? "wss" : "ws";
     return `${proto}://${window.location.host}/api/chat`;
@@ -497,7 +468,6 @@ function LiveSection({
   return (
     <section className="w-full max-w-full overflow-hidden" id="live">
       <div className="grid [grid-template-columns:55%_45%] max-[720px]:grid-cols-1 min-h-[460px] max-[720px]:min-h-0 w-full max-w-full">
-        {/* Left: image */}
         <div className="relative overflow-hidden bg-[#0a1628] min-w-0 max-[720px]:[aspect-ratio:16/9]">
           {featuredEvent.image ? (
             <img
@@ -520,7 +490,6 @@ function LiveSection({
           )}
         </div>
 
-        {/* Right: info */}
         <div className="bg-[#071526] flex flex-col justify-center min-w-0 px-10 py-14 max-[920px]:px-7 max-[920px]:py-10 max-[720px]:px-5 max-[720px]:py-7 max-[420px]:px-4 max-[420px]:py-6">
           <p className="text-[rgba(255,255,255,0.5)] text-[13px] font-bold uppercase tracking-[0.2em] m-0 mb-5 max-[420px]:text-[12px] max-[420px]:mb-3">
             {dateStr}
@@ -541,7 +510,6 @@ function LiveSection({
               {t("watch_details")}
             </Link>
 
-            {/* No ticket: buy button */}
             {!ownsFeatured && (
               <button
                 type="button"
@@ -564,7 +532,6 @@ function LiveSection({
               </button>
             )}
 
-            {/* Has ticket, not live: countdown */}
             {ownsFeatured && !isLive && hasTime && (
               <div className="flex flex-col gap-[3px]">
                 <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/40">
@@ -577,7 +544,6 @@ function LiveSection({
               </div>
             )}
 
-            {/* Has ticket, live: watch button */}
             {ownsFeatured && isLive && (
               <button
                 type="button"
@@ -992,6 +958,7 @@ function ViewerOverlay({
   const [isFs, setIsFs] = useState(false);
   const [pseudoFs, setPseudoFs] = useState(false);
   const [idle, setIdle] = useState(false);
+  const [isAtLive, setIsAtLive] = useState(true);
   const [chat, setChat] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [chatConnected, setChatConnected] = useState(false);
@@ -1009,14 +976,12 @@ function ViewerOverlay({
   const activeCam = cams[camIdx] ?? null;
   const is360 = activeCam?.type === "360";
 
-  // Load camera stream configs
   useEffect(() => {
     api.getWatchToken().then((res) => {
       if (res.ok) setCams(res.data.cams);
     });
   }, []);
 
-  // HLS stream loading — re-runs when active camera changes
   useEffect(() => {
     const video = videoRef.current;
     const url = activeCam?.hlsUrl;
@@ -1063,12 +1028,10 @@ function ViewerOverlay({
     };
   }, [activeCam?.hlsUrl]);
 
-  // Apply quality level selection
   useEffect(() => {
     if (hlsRef.current) hlsRef.current.currentLevel = qualityIdx;
   }, [qualityIdx]);
 
-  // Sync video state
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
@@ -1083,7 +1046,6 @@ function ViewerOverlay({
     };
   }, [muted, volume]);
 
-  // 360° Three.js sphere renderer
   useEffect(() => {
     const canvas = canvasRef.current;
     const video = videoRef.current;
@@ -1185,18 +1147,11 @@ function ViewerOverlay({
     };
   }, [is360]);
 
-  // Elapsed timer from viewer open
   useEffect(() => {
     const id = setInterval(() => setElapsedSec((s) => s + 1), 1000);
     return () => clearInterval(id);
   }, []);
 
-  // Fullscreen toggle — request the native Fullscreen API on the stage so
-  // the device's own orientation handling kicks in. On iOS Safari / in-app
-  // webviews where requestFullscreen on a non-video element is rejected,
-  // fall back to a CSS `position:fixed; inset:0` overlay so the viewer
-  // still fills the screen. We never force-rotate: if the user rotates the
-  // phone to landscape, the device itself rotates the page.
   const toggleStageFs = useCallback(async () => {
     const stage = stageRef.current as FullscreenElement | null;
     const doc = document as FullscreenDocument;
@@ -1206,9 +1161,7 @@ function ViewerOverlay({
       if (inFs) {
         try {
           await (doc.exitFullscreen || doc.webkitExitFullscreen)?.call(doc);
-        } catch {
-          /* noop */
-        }
+        } catch {}
       }
       if (pseudoFs) setPseudoFs(false);
       return;
@@ -1222,14 +1175,31 @@ function ViewerOverlay({
         try {
           await requestFs();
           if (doc.fullscreenElement || doc.webkitFullscreenElement) return;
-        } catch {
-          /* fallthrough to CSS pseudo-fullscreen */
-        }
+        } catch {}
       }
     }
 
     setPseudoFs(true);
   }, [pseudoFs]);
+
+  const exitFsAndClose = useCallback(async () => {
+    const doc = document as FullscreenDocument;
+    const inFs = doc.fullscreenElement || doc.webkitFullscreenElement;
+    if (inFs) {
+      try {
+        await (doc.exitFullscreen || doc.webkitExitFullscreen)?.call(doc);
+      } catch {}
+    }
+    if (pseudoFs) setPseudoFs(false);
+    onClose();
+  }, [pseudoFs, onClose]);
+
+  useEffect(() => {
+    window.history.pushState({ cs360Viewer: true }, "");
+    const onPop = () => onClose();
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [onClose]);
 
   useEffect(() => {
     const onFs = () => {
@@ -1238,8 +1208,7 @@ function ViewerOverlay({
         (doc.fullscreenElement || doc.webkitFullscreenElement) ===
         stageRef.current;
       setIsFs(active);
-      // If the user dropped out of real fullscreen via Escape / OS gesture,
-      // also drop the CSS rotation so we don't strand them in pseudo-fs.
+
       if (!active) setPseudoFs(false);
     };
     document.addEventListener("fullscreenchange", onFs);
@@ -1304,8 +1273,6 @@ function ViewerOverlay({
     if (list) list.scrollTop = list.scrollHeight;
   }, [chat]);
 
-  // Real-time chat over WebSocket. No persistence — messages are ephemeral
-  // and shared with everyone currently connected.
   useEffect(() => {
     if (!CHAT_WS_URL) return;
     let cancelled = false;
@@ -1347,9 +1314,7 @@ function ViewerOverlay({
             const next = [...prev, msg];
             return next.length > 200 ? next.slice(next.length - 200) : next;
           });
-        } catch {
-          /* ignore malformed payload */
-        }
+        } catch {}
       };
       ws.onclose = () => {
         setChatConnected(false);
@@ -1359,9 +1324,7 @@ function ViewerOverlay({
       ws.onerror = () => {
         try {
           ws.close();
-        } catch {
-          /* ignore */
-        }
+        } catch {}
       };
     };
 
@@ -1382,9 +1345,7 @@ function ViewerOverlay({
       if (ws) {
         try {
           ws.close();
-        } catch {
-          /* ignore */
-        }
+        } catch {}
       }
     };
   }, []);
@@ -1395,6 +1356,41 @@ function ViewerOverlay({
     if (v.paused) v.play();
     else v.pause();
   };
+
+  const jumpToLive = useCallback(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    const hls = hlsRef.current as (Hls & { liveSyncPosition?: number }) | null;
+    let target = NaN;
+    if (hls && typeof hls.liveSyncPosition === "number") {
+      target = hls.liveSyncPosition;
+    } else if (v.seekable.length > 0) {
+      target = v.seekable.end(v.seekable.length - 1);
+    }
+    if (Number.isFinite(target) && target > 0) {
+      v.currentTime = target;
+    }
+    v.play().catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      const v = videoRef.current;
+      if (!v) return;
+      const hls = hlsRef.current as
+        | (Hls & { liveSyncPosition?: number })
+        | null;
+      let livePos = NaN;
+      if (hls && typeof hls.liveSyncPosition === "number") {
+        livePos = hls.liveSyncPosition;
+      } else if (v.seekable.length > 0) {
+        livePos = v.seekable.end(v.seekable.length - 1);
+      }
+      if (!Number.isFinite(livePos)) return;
+      setIsAtLive(livePos - v.currentTime < 5);
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
 
   const toggleMute = () =>
     setMuted((m) => {
@@ -1414,9 +1410,7 @@ function ViewerOverlay({
         await document.exitPictureInPicture();
       else if (videoRef.current?.requestPictureInPicture)
         await videoRef.current.requestPictureInPicture();
-    } catch {
-      /* pip not supported */
-    }
+    } catch {}
   };
 
   const emitReact = (emoji: string) => {
@@ -1547,7 +1541,6 @@ function ViewerOverlay({
       </header>
 
       <div className={VIEWER_BODY_CLS}>
-        {/* Camera sidebar — all 4 selectable */}
         <aside className={VIEWER_ANGLES_CLS} aria-label="Камерын өнцөг">
           {cams.map((cam, i) => (
             <button
@@ -1601,7 +1594,6 @@ function ViewerOverlay({
           ))}
         </aside>
 
-        {/* Main player stage */}
         <section
           className={`${VIEWER_STAGE_CLS}${isFs || pseudoFs ? " is-fs" : ""}${idle ? " is-idle" : ""}`}
           ref={stageRef}
@@ -1636,7 +1628,6 @@ function ViewerOverlay({
                 : { background: "#000" }
             }
           >
-            {/* Hidden video element — used for both normal and 360° (as texture source) */}
             <video
               ref={videoRef}
               autoPlay
@@ -1651,7 +1642,6 @@ function ViewerOverlay({
               poster={featuredEvent.image}
               onDoubleClick={toggleStageFs}
             />
-            {/* Three.js canvas for 360° camera */}
             <canvas
               ref={canvasRef}
               style={{
@@ -1663,7 +1653,6 @@ function ViewerOverlay({
               }}
               onDoubleClick={toggleStageFs}
             />
-            {/* No stream placeholder */}
             {!activeCam?.hlsUrl && (
               <div
                 style={{
@@ -1697,6 +1686,28 @@ function ViewerOverlay({
               </div>
             )}
           </div>
+
+          {(isFs || pseudoFs) && (
+            <button
+              type="button"
+              onClick={exitFsAndClose}
+              aria-label="Буцах"
+              title="Буцах"
+              className="absolute top-4 left-4 z-[3] w-[44px] h-[44px] rounded-full text-white grid place-items-center cursor-pointer bg-[rgba(11,15,26,0.7)] [backdrop-filter:blur(8px)] [-webkit-backdrop-filter:blur(8px)] border border-solid border-[rgba(255,255,255,0.14)] [transition:background_.15s_ease,opacity_.25s_ease] hover:bg-[rgba(11,15,26,0.9)] [.is-idle_&]:opacity-0 [.is-idle_&]:pointer-events-none [&_svg]:w-5 [&_svg]:h-5"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
+          )}
 
           {activeCam && (
             <span className={VIEWER_MAIN_CAM_CLS}>
@@ -1786,6 +1797,29 @@ function ViewerOverlay({
                 onChange={onVolume}
                 aria-label="Дуу"
               />
+              <button
+                type="button"
+                onClick={jumpToLive}
+                aria-label="Шууд дамжуулалт руу шилжих"
+                title={
+                  isAtLive ? "Шууд дамжуулалт" : "Шууд дамжуулалт руу шилжих"
+                }
+                className={`inline-flex items-center gap-1.5 h-[34px] px-3 rounded-full text-[11px] font-extrabold tracking-[.12em] cursor-pointer border border-solid [transition:background_.15s_ease,color_.15s_ease,border-color_.15s_ease] ${
+                  isAtLive
+                    ? "bg-[#E53935] border-[#E53935] text-white cursor-default"
+                    : "bg-[rgba(255,255,255,0.06)] border-[rgba(255,255,255,0.18)] text-[rgba(255,255,255,0.85)] hover:bg-[#E53935] hover:border-[#E53935] hover:text-white"
+                }`}
+              >
+                <span
+                  className={`w-[7px] h-[7px] rounded-full ${
+                    isAtLive
+                      ? "bg-white [animation:live-pulse_1.4s_ease-in-out_infinite]"
+                      : "bg-[#E53935]"
+                  }`}
+                  aria-hidden="true"
+                />
+                LIVE
+              </button>
             </div>
 
             <div

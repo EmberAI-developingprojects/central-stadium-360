@@ -20,7 +20,6 @@ import {
   REG_ALERT_OK_CLS,
   REG_HINT_CLS,
   SUBMIT_CLS,
-  SUBTITLE_CLS,
   TITLE_CLS,
 } from "./_authStyles";
 import { WATCH_PAGE_BG } from "./_watchStyles";

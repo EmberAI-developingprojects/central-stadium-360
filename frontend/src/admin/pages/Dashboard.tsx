@@ -114,7 +114,6 @@ export default function Dashboard() {
     const buyerPct =
       users.length > 0 ? Math.round((uniqueBuyers / users.length) * 100) : 0;
 
-    // Monthly bar data — last 8 months
     const monthlyBars = Array.from({ length: 8 }, (_, i) => {
       const d = new Date(cy, cm - (7 - i), 1);
       const mo = d.getMonth();
@@ -130,7 +129,6 @@ export default function Dashboard() {
       };
     });
 
-    // Weekly bar data — last 8 weeks (Sunday start)
     const weeklyBars = Array.from({ length: 8 }, (_, i) => {
       const endD = new Date(now);
       endD.setDate(endD.getDate() - (7 - i - 1) * 7);
@@ -148,12 +146,10 @@ export default function Dashboard() {
       };
     });
 
-    // Recent 10 newest users
     const recentUsers = [...users]
       .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""))
       .slice(0, 10);
 
-    // Recent 10 orders
     const recentOrders = [...orders]
       .sort((a, b) => (b.purchasedAt || "").localeCompare(a.purchasedAt || ""))
       .slice(0, 10);
@@ -203,7 +199,7 @@ export default function Dashboard() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      {/* ── Page header ── */}
+
       <div
         style={{
           display: "flex",
@@ -280,7 +276,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── 4 Stat cards ── */}
       <div
         style={{
           display: "grid",
@@ -315,7 +310,6 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* ── Chart row ── */}
       <div
         style={{
           display: "grid",
@@ -324,7 +318,7 @@ export default function Dashboard() {
           alignItems: "stretch",
         }}
       >
-        {/* Bar chart */}
+
         <div className={ADMIN_CARD_CLS} style={{ padding: "20px 24px" }}>
           <div
             style={{
@@ -365,7 +359,6 @@ export default function Dashboard() {
           <BarChart bars={bars} maxVal={maxBar} />
         </div>
 
-        {/* Donut chart */}
         <div
           className={ADMIN_CARD_CLS}
           style={{
@@ -414,7 +407,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── Recent users table ── */}
       <div
         className={ADMIN_CARD_CLS}
         style={{ padding: 0, overflow: "hidden" }}
@@ -524,7 +516,6 @@ export default function Dashboard() {
   );
 }
 
-/* ────────────── Stat Card ────────────── */
 function StatCard({
   label,
   value,
@@ -615,7 +606,6 @@ function StatCard({
   );
 }
 
-/* ────────────── Bar Chart ────────────── */
 type BarDatum = {
   label: string;
   revenue: number;
@@ -644,7 +634,7 @@ function BarChart({ bars, maxVal }: { bars: BarDatum[]; maxVal: number }) {
         style={{ width: "100%", height: H + 24, display: "block" }}
         onMouseLeave={() => setTooltip(null)}
       >
-        {/* Y grid lines */}
+
         {[0, 0.25, 0.5, 0.75, 1].map((f) => {
           const y = 4 + MAX_H - f * MAX_H;
           return (
@@ -670,7 +660,6 @@ function BarChart({ bars, maxVal }: { bars: BarDatum[]; maxVal: number }) {
           );
         })}
 
-        {/* Bars */}
         {bars.map((b, i) => {
           const barH = maxVal > 0 ? (b.revenue / maxVal) * MAX_H : 0;
           const x = PL + i * (BAR_W + GAP);
@@ -688,7 +677,7 @@ function BarChart({ bars, maxVal }: { bars: BarDatum[]; maxVal: number }) {
               }}
               style={{ cursor: "pointer" }}
             >
-              {/* Background bar */}
+
               <rect
                 x={x}
                 y={4}
@@ -697,7 +686,7 @@ function BarChart({ bars, maxVal }: { bars: BarDatum[]; maxVal: number }) {
                 rx={5}
                 fill="#f4f4f5"
               />
-              {/* Value bar */}
+
               {barH > 0 && (
                 <rect
                   x={x}
@@ -709,7 +698,7 @@ function BarChart({ bars, maxVal }: { bars: BarDatum[]; maxVal: number }) {
                   opacity={isHovered ? 1 : 0.9}
                 />
               )}
-              {/* Label */}
+
               <text
                 x={x + BAR_W / 2}
                 y={H + 18}
@@ -731,7 +720,6 @@ function BarChart({ bars, maxVal }: { bars: BarDatum[]; maxVal: number }) {
         </defs>
       </svg>
 
-      {/* Tooltip */}
       {tooltip !== null &&
         (() => {
           const b = bars[tooltip.i];
@@ -767,7 +755,6 @@ function BarChart({ bars, maxVal }: { bars: BarDatum[]; maxVal: number }) {
   );
 }
 
-/* ────────────── Donut Chart ────────────── */
 function DonutChart({ percent }: { percent: number }) {
   const r = 66;
   const cx = 90;
@@ -783,7 +770,7 @@ function DonutChart({ percent }: { percent: number }) {
   let offset = 0;
   return (
     <svg viewBox="0 0 180 180" style={{ width: 170, height: 170 }}>
-      {/* Track */}
+
       <circle
         cx={cx}
         cy={cy}
@@ -792,7 +779,7 @@ function DonutChart({ percent }: { percent: number }) {
         stroke="#f4f4f5"
         strokeWidth="22"
       />
-      {/* Segments */}
+
       {segments.map((seg, i) => {
         const dash = seg.frac * c;
         const gap = c - dash;
@@ -814,7 +801,7 @@ function DonutChart({ percent }: { percent: number }) {
           />
         );
       })}
-      {/* Center text */}
+
       <text
         x={cx}
         y={cy - 6}
@@ -832,7 +819,6 @@ function DonutChart({ percent }: { percent: number }) {
   );
 }
 
-/* ────────────── Icons ────────────── */
 function IconUsers() {
   return (
     <svg

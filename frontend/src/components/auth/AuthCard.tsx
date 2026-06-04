@@ -3,11 +3,11 @@
 import type { ReactNode } from 'react';
 
 type Props = {
-  
+
   eyebrow?: ReactNode;
   title: ReactNode;
   subtitle?: ReactNode;
-  
+
   children: ReactNode;
   className?: string;
 };

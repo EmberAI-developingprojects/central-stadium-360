@@ -42,7 +42,7 @@ export function attachChatServer(httpServer: UpgradableServer): void {
   httpServer.on("upgrade", (req, socket, head) => {
     const url = req.url ?? "";
     if (!url.startsWith(CHAT_PATH)) {
-      return; // let other handlers / default 404 take it
+      return;
     }
     wss.handleUpgrade(req, socket, head, (ws) => {
       wss.emit("connection", ws, req);
@@ -82,14 +82,13 @@ export function attachChatServer(httpServer: UpgradableServer): void {
     });
   });
 
-  // Periodic ping to keep connections alive through proxies.
   const interval = setInterval(() => {
     for (const client of wss.clients) {
       if (client.readyState === WebSocket.OPEN) {
         try {
           client.ping();
         } catch {
-          /* ignore */
+
         }
       }
     }

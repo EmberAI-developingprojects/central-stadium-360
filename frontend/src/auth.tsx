@@ -30,7 +30,7 @@ type SessionState = Session | null;
 type AuthContextValue = {
   session: SessionState;
   loading: boolean;
-  
+
   login: (input: { identifier: string; password: string }) => Promise<
     | { ok: true }
     | {
@@ -50,21 +50,21 @@ type AuthContextValue = {
     email: string;
     password: string;
   }) => Promise<{ ok: true; email: string } | { ok: false; error: string }>;
-  
+
   verifyPhone: (input: {
     phone: string;
     code: string;
   }) => Promise<{ ok: true } | { ok: false; error: string }>;
-  
+
   resendCode: (
     identifier: string,
   ) => Promise<
     { ok: true; kind: "phone" | "email" } | { ok: false; error: string }
   >;
   logout: () => Promise<void>;
-  
+
   updateSession: (patch: Partial<Session>) => Promise<void>;
-  
+
   deleteAccount: () => Promise<{ ok: true } | { ok: false; error: string }>;
 };
 
@@ -108,16 +108,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     const hydrate = async (sb: SbSession | null) => {
-      // No supabase session at all → genuinely signed out.
+
       if (!sb?.user) {
         if (!cancelled) setSession(null);
         return;
       }
-      // We intentionally do NOT re-check `isVerified` here:
-      //   - /api/auth/login already refuses unverified users (403 not_verified).
-      //   - After a fresh setSession the supabase-js User object may not yet
-      //     have email_confirmed_at populated; checking it caused valid admin
-      //     sessions to be wiped immediately after login.
+
       const res = await api.me();
       if (cancelled) return;
       if (res.ok) {
@@ -127,7 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await supabase!.auth.signOut().catch(() => undefined);
         if (!cancelled) setSession(null);
       } else {
-        // Transient /me failure — keep whatever session login() seeded.
+
         console.warn("[auth] /me failed:", res.error, "status:", res.status);
       }
     };
@@ -154,12 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         access_token: payload.session.access_token,
         refresh_token: payload.session.refresh_token,
       });
-      // The supabase setSession triggers onAuthStateChange, which then calls
-      // /api/auth/me to fill in full_name/avatar/bio. That round-trip can take
-      // a few hundred ms, during which protected-route guards see session=null
-      // and bounce the user back to /login. Seed the React session synchronously
-      // from the verified login response so routing (admin → /admin, user →
-      // /watch) doesn't have to wait — the later /me response will refine it.
+
       setSession({
         identifier: payload.user.phone || payload.user.email || "",
         fullname: "",
@@ -358,5 +349,5 @@ export function readUsers(): never[] {
 }
 
 export function writeUsers(_: unknown[]): void {
-  
+
 }

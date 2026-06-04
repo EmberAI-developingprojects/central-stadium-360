@@ -17,7 +17,6 @@ export default function About() {
     <div className="min-h-screen bg-white">
       <SiteHeader />
 
-      {/* Бидний тухай */}
       <section className="w-full bg-white py-12 px-6 max-[920px]:py-14 max-[920px]:px-5">
         <div className="max-w-screen-page mx-auto">
           <h1
@@ -86,7 +85,6 @@ export default function About() {
         </div>
       </section>
 
-      {/* Тоон мэдээлэл */}
       <section className="w-full bg-white pt-8 px-6 pb-14 max-[920px]:pb-16 max-[920px]:px-5">
         <div className="max-w-screen-page mx-auto pb-10">
           <div className="grid items-center [grid-template-columns:1fr_auto_1fr_auto_1fr_auto_1fr] gap-[18px] max-[920px]:[grid-template-columns:1fr_1fr] max-[920px]:gap-x-[18px] max-[920px]:gap-y-8 max-[480px]:[grid-template-columns:1fr]">

@@ -29,21 +29,20 @@ function b64url(input: string | Buffer): string {
   return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-// Node's ECDSA sign() returns DER; JWT ES384 requires raw R||S (48 bytes each)
 function derToRawEcdsa(derSig: Buffer, coordBytes: number): Buffer {
-  let pos = 1; // skip SEQUENCE tag 0x30
+  let pos = 1;
   if (derSig[pos]! & 0x80) {
-    pos += 1 + (derSig[pos]! & 0x7f); // long-form length
+    pos += 1 + (derSig[pos]! & 0x7f);
   } else {
     pos += 1;
   }
 
-  pos++; // INTEGER tag 0x02
+  pos++;
   const rLen = derSig[pos++]!;
   const r = derSig.subarray(pos, pos + rLen);
   pos += rLen;
 
-  pos++; // INTEGER tag 0x02
+  pos++;
   const sLen = derSig[pos++]!;
   const s = derSig.subarray(pos, pos + sLen);
 
@@ -67,7 +66,7 @@ function signIvsToken(
   const payload = b64url(
     JSON.stringify({
       "aws:channel-arn": channelArn,
-      exp: Math.floor(Date.now() / 1000) + 21600, // 6 h
+      exp: Math.floor(Date.now() / 1000) + 21600,
     }),
   );
   const signingInput = `${header}.${payload}`;
@@ -80,7 +79,7 @@ function signIvsToken(
   const signer = createSign("SHA384");
   signer.update(signingInput);
   const derSig = signer.sign(privateKey);
-  const rawSig = derToRawEcdsa(derSig, 48); // P-384: 48 bytes per coordinate
+  const rawSig = derToRawEcdsa(derSig, 48);
 
   return `${signingInput}.${b64url(rawSig)}`;
 }
@@ -106,7 +105,6 @@ watch.get("/token", requireUser, (c) => {
       return { ...cam, hlsUrl: `${rawUrl}?token=${token}` };
     }
 
-    // TODO: gate behind ticket ownership once QPay is live
     return { ...cam, hlsUrl: rawUrl };
   });
 

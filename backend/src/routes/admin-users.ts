@@ -17,9 +17,6 @@ const SELECT_COLS = "id,phone,email,full_name,role,created_at,deleted_at";
 
 const roleSchema = z.object({ role: z.enum(["user", "admin"]) });
 
-// We can't ban an admin from banning themself — that would lock the whole panel
-// out. The frontend guards against this too but the server is the source of
-// truth.
 function isSelf(c: { get: (k: "user") => { id: string } }, targetId: string) {
   return c.get("user").id === targetId;
 }
@@ -28,9 +25,6 @@ async function attachBanStatus(rows: DbUser[]): Promise<AdminUserRow[]> {
   const admin = getSupabaseAdmin();
   if (!admin) return rows.map((r) => ({ ...r, banned: false }));
 
-  // Supabase Admin API paginates; for this admin panel we don't expect
-  // huge user counts yet, so a single page of 1000 covers it. If the
-  // user count grows, swap this for a per-id lookup.
   const { data, error } = await admin.auth.admin.listUsers({
     page: 1,
     perPage: 1000,
@@ -121,7 +115,6 @@ adminUsers.patch("/:id/role", async (c) => {
     );
   }
 
-  // Don't allow an admin to demote the last admin.
   if (parsed.data.role === "user") {
     const { count, error: cntErr } = await admin
       .from("users")
@@ -203,7 +196,7 @@ adminUsers.post("/", async (c) => {
     role,
   });
   if (profileErr) {
-    // Roll back auth user if profile insert fails
+
     await supaAdmin.auth.admin.deleteUser(authData.user.id);
     return c.json({ ok: false, error: profileErr.message } as const, 500);
   }
@@ -242,8 +235,7 @@ adminUsers.patch("/:id/disabled", async (c) => {
       400,
     );
   }
-  // "Disabled" maps to a long auth ban; the public.users row stays intact so
-  // existing tickets/orders keep their FK references.
+
   const banDuration = parsed.data.disabled ? "876000h" : "none";
   const { error } = await admin.auth.admin.updateUserById(id, {
     ban_duration: banDuration,
@@ -282,7 +274,6 @@ adminUsers.delete("/:id", async (c) => {
     return c.json({ ok: false, error: "cannot_self_delete" } as const, 409);
   }
 
-  // Soft-delete: wipe PII and ban auth so the user can't log back in.
   const { error: updErr } = await admin
     .from("users")
     .update({

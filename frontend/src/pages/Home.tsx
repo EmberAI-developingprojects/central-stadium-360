@@ -184,13 +184,12 @@ function Hero({
           </div>
         </div>
 
-        {/* Desktop tile collage */}
         {(() => {
           const TILE_BASE =
             "absolute grid place-items-center overflow-hidden [isolation:isolate] [background:linear-gradient(132deg,rgba(255,255,255,0.10),rgba(255,255,255,0)_36%),#FAF7EE] shadow-[inset_1px_1px_1px_rgba(255,255,255,0.36),0_10px_22px_rgba(0,0,0,0.025)] after:content-[''] after:absolute after:inset-0 after:-z-10 after:[background:radial-gradient(circle_at_22%_20%,rgba(255,255,255,0.2),transparent_34%),radial-gradient(circle_at_88%_88%,rgba(0,0,0,0.04),transparent_42%)] [&_img]:w-full [&_img]:h-full [&_img]:object-cover [&_img]:object-center [&_img]:block [&_img]:[transition:transform_.6s_cubic-bezier(.2,.8,.2,1)]";
           return (
             <>
-              {/* Desktop: fancy collage */}
+
               <main
                 className="relative w-full max-w-[580px] mx-auto [aspect-ratio:1/1] [container-type:inline-size] overflow-hidden max-[720px]:max-w-[460px] max-[920px]:hidden"
                 aria-label="Four card layout"
@@ -258,7 +257,6 @@ function Hero({
                 )}
               </main>
 
-              {/* Mobile: simple 2×2 grid */}
               <div
                 className="hidden max-[920px]:grid grid-cols-2 gap-3 w-full max-w-[460px] mx-auto"
                 aria-label="Зургийн цомог"
@@ -516,7 +514,7 @@ function Upcoming({ gatedGo, events }: UpcomingProps) {
         }
       };
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, []);
 
   const go = (next: number) => {
@@ -615,30 +613,6 @@ function Upcoming({ gatedGo, events }: UpcomingProps) {
               );
             })}
           </div>
-          {/* 
-          <div className="absolute inline-flex items-center gap-4 flex-wrap z-[3] right-[clamp(16px,2.5vw,28px)] bottom-[clamp(16px,2.5vw,28px)] max-[720px]:gap-2.5">
-            <button
-              type="button"
-              className={`${upBtnBase} bg-brand-blue text-white hover:bg-brand-blue-soft hover:-translate-y-px after:content-['→'] after:[transition:transform_0.18s_ease] hover:after:translate-x-1`}
-              onClick={() => gatedGo("/watch")}
-            >
-              Live үзэх
-            </button>
-            <button
-              type="button"
-              className="inline-flex items-center font-bold text-xs uppercase no-underline text-white pb-1 tracking-[0.12em] border-b-2 border-solid border-[rgba(255,255,255,0.55)] [transition:color_0.18s_ease,border-color_0.18s_ease] hover:text-brand-blue-soft hover:border-brand-blue-soft"
-              onClick={() => gatedGo("/watch")}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                font: "inherit",
-                color: "inherit",
-              }}
-            >
-              Live тасалбар
-            </button>
-          </div> */}
 
           <button
             className={`${upNavBase} left-4`}
@@ -1138,9 +1112,6 @@ function Roadmap(_props: { items?: RoadmapItem[] }) {
             />
           </svg>
 
-          {/* Connector lines + dots + labels all share the SAME CSS
-              percentage positioning so they line up exactly, regardless of
-              how the SVG curve underneath is stretched. */}
           {botDots.map((d, i) => (
             <span
               key={`bl-${i}`}

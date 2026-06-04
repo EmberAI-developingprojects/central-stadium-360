@@ -37,9 +37,9 @@ export function BackButton({ onClick, children }: BackButtonProps) {
 }
 
 type Props = {
-  
+
   back?: ReactNode;
-  
+
   children: ReactNode;
 };
 

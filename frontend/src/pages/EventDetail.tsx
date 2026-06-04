@@ -56,7 +56,7 @@ export default function EventDetail() {
 
       {event && (
         <>
-          {/* Hero */}
+
           <div className="relative w-full overflow-hidden bg-[#0a1628]" style={{ aspectRatio: '21/9', minHeight: 220, maxHeight: 460 }}>
             {event.image && (
               <img src={event.image} alt={event.title} className="w-full h-full object-cover block" loading="eager" />
@@ -77,10 +77,8 @@ export default function EventDetail() {
             )}
           </div>
 
-          {/* Body */}
           <div className="max-w-[1060px] mx-auto px-5 py-10 md:px-10 md:py-14 grid grid-cols-1 md:[grid-template-columns:1fr_260px] gap-8 md:gap-14 items-start">
 
-            {/* Left */}
             <div>
               <Link to="/events" className="inline-flex items-center gap-2 text-[13px] font-semibold text-ink-soft no-underline hover:text-brand-blue mb-6">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -103,7 +101,6 @@ export default function EventDetail() {
 
               <div className="h-px bg-[rgba(31,41,55,0.1)] my-8" />
 
-              {/* Venue + time */}
               <div className="flex flex-col gap-3">
                 {dt && (
                   <div className="flex items-center gap-2.5 text-[13.5px] text-ink-soft">
@@ -128,7 +125,6 @@ export default function EventDetail() {
               </div>
             </div>
 
-            {/* Right: ticket card */}
             <div className="order-first md:order-last md:sticky md:top-24 bg-white rounded-2xl p-6 shadow-[0_8px_32px_-12px_rgba(31,41,55,0.18)] border border-solid border-[rgba(31,41,55,0.07)]">
               {dt && (
                 <div className="mb-5">

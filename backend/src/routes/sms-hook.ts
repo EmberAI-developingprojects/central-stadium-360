@@ -16,13 +16,6 @@ interface SupabaseSmsHookPayload {
   };
 }
 
-/**
- * Standard Webhooks signature verification.
- *
- * Supabase signs the body with HMAC-SHA256(secret, `${id}.${timestamp}.${body}`)
- * and ships it as `svix-signature: v1,<base64-of-hmac>`. The secret in the
- * dashboard is stored as `v1,whsec_<base64>`; we strip the prefix.
- */
 function verifySupabaseSignature(
   secret: string,
   svixId: string | undefined,

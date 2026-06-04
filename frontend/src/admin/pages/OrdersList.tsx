@@ -45,12 +45,10 @@ export default function OrdersList() {
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<StatusFilter>("all");
 
-  // Fetch full list (for stats) once.
   useEffect(() => {
     listOrders().then(setAllOrders);
   }, []);
 
-  // Re-fetch filtered list whenever filters change.
   useEffect(() => {
     listOrders({ q, status }).then(setOrders);
   }, [q, status]);

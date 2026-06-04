@@ -56,7 +56,7 @@ async function request<T>(
   try {
     json = (await res.json()) as Record<string, unknown>;
   } catch {
-    /* empty body */
+
   }
   if (!res.ok || json.ok === false) {
     return {
@@ -201,7 +201,7 @@ export const api = {
       try {
         json = (await res.json()) as Record<string, unknown>;
       } catch {
-        /* empty body */
+
       }
       if (!res.ok || json.ok === false) {
         return {
