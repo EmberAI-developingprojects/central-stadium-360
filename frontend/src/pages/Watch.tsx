@@ -990,6 +990,8 @@ function ViewerOverlay({
   const [qualityIdx, setQualityIdx] = useState(-1);
   const [cc, setCc] = useState(false);
   const [isFs, setIsFs] = useState(false);
+  const [pseudoFs, setPseudoFs] = useState(false);
+  const [isPortrait, setIsPortrait] = useState(false);
   const [idle, setIdle] = useState(false);
   const [chat, setChat] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
@@ -1219,15 +1221,25 @@ function ViewerOverlay({
       return;
     }
 
+    if (pseudoFs) {
+      setPseudoFs(false);
+      return;
+    }
+
     let entered = false;
     if (stage) {
-      try {
-        await (stage.requestFullscreen || stage.webkitRequestFullscreen)?.call(
-          stage,
-        );
-        entered = true;
-      } catch {
-        /* fallthrough to iOS path */
+      const requestFs =
+        stage.requestFullscreen?.bind(stage) ||
+        stage.webkitRequestFullscreen?.bind(stage);
+      if (requestFs) {
+        try {
+          await requestFs();
+          entered = !!(
+            doc.fullscreenElement || doc.webkitFullscreenElement
+          );
+        } catch {
+          /* fallthrough */
+        }
       }
     }
 
@@ -1240,14 +1252,19 @@ function ViewerOverlay({
       return;
     }
 
-    if (video?.webkitEnterFullscreen) {
+    if (!is360 && video?.webkitEnterFullscreen) {
       try {
         video.webkitEnterFullscreen();
+        return;
       } catch {
         /* noop */
       }
     }
-  }, []);
+
+    // Last resort (iOS Safari, embedded webviews): CSS pseudo-fullscreen with
+    // portrait→landscape rotation handled inline via stage style.
+    setPseudoFs(true);
+  }, [is360, pseudoFs]);
 
   useEffect(() => {
     const onFs = () => {
@@ -1265,8 +1282,25 @@ function ViewerOverlay({
     };
   }, []);
 
+  // Track portrait/landscape so the pseudo-fullscreen fallback can rotate
+  // the stage to landscape on phones held vertically.
   useEffect(() => {
-    if (!isFs) {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(orientation: portrait)");
+    const sync = () => setIsPortrait(mq.matches);
+    sync();
+    mq.addEventListener?.("change", sync);
+    return () => mq.removeEventListener?.("change", sync);
+  }, []);
+
+  // Exit pseudo-fullscreen automatically once the real fullscreen kicks in
+  // (e.g. after user rotates phone and a deferred lock succeeds).
+  useEffect(() => {
+    if (isFs && pseudoFs) setPseudoFs(false);
+  }, [isFs, pseudoFs]);
+
+  useEffect(() => {
+    if (!isFs && !pseudoFs) {
       setIdle(false);
       return;
     }
@@ -1285,14 +1319,20 @@ function ViewerOverlay({
       if (t) clearTimeout(t);
       stage.removeEventListener("mousemove", onMove);
     };
-  }, [isFs]);
+  }, [isFs, pseudoFs]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const tgt = e.target as HTMLElement | null;
       if (tgt && (tgt.tagName === "INPUT" || tgt.tagName === "TEXTAREA"))
         return;
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        if (pseudoFs) {
+          setPseudoFs(false);
+          return;
+        }
+        onClose();
+      }
       if (e.key === "f" || e.key === "F") {
         e.preventDefault();
         toggleStageFs();
@@ -1300,7 +1340,7 @@ function ViewerOverlay({
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [onClose, toggleStageFs]);
+  }, [onClose, toggleStageFs, pseudoFs]);
 
   useEffect(() => {
     const list = chatListRef.current;
@@ -1606,8 +1646,30 @@ function ViewerOverlay({
 
         {/* Main player stage */}
         <section
-          className={`${VIEWER_STAGE_CLS}${isFs ? " is-fs" : ""}${idle ? " is-idle" : ""}`}
+          className={`${VIEWER_STAGE_CLS}${isFs || pseudoFs ? " is-fs" : ""}${idle ? " is-idle" : ""}`}
           ref={stageRef}
+          style={
+            pseudoFs
+              ? isPortrait
+                ? {
+                    position: "fixed",
+                    top: 0,
+                    left: 0,
+                    width: "100vh",
+                    height: "100vw",
+                    transformOrigin: "top left",
+                    transform: "translateX(100vw) rotate(90deg)",
+                    zIndex: 2000,
+                    background: "#000",
+                  }
+                : {
+                    position: "fixed",
+                    inset: 0,
+                    zIndex: 2000,
+                    background: "#000",
+                  }
+              : undefined
+          }
         >
           <div
             className={VIEWER_STAGE_SHELL_CLS}
