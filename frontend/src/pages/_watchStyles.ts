@@ -276,7 +276,7 @@ export const VIEWER_ANGLE_LABEL_CLS =
   "flex flex-col mt-2 text-[12.5px] leading-[1.3] [&_strong]:text-white [&_strong]:font-bold [&_small]:text-[10.5px] [&_small]:uppercase [&_small]:text-[rgba(255,255,255,0.5)] [&_small]:tracking-[.08em]";
 
 export const VIEWER_STAGE_CLS =
-  "relative min-h-0 min-w-0 max-w-full flex flex-col gap-3 max-[1100px]:w-full [.is-fs]:w-screen [.is-fs]:h-screen [.is-fs]:p-0 [.is-fs]:bg-black [.is-fs]:gap-0 [&.is-fs.is-idle]:cursor-none";
+  "relative min-h-0 min-w-0 max-w-full flex flex-col gap-3 max-[1100px]:w-full [&.is-fs]:w-screen [&.is-fs]:h-screen [&.is-fs]:p-0 [&.is-fs]:bg-black [&.is-fs]:gap-0 [&.is-fs.is-idle]:cursor-none";
 export const VIEWER_STAGE_SHELL_CLS =
   "flex-1 min-h-0 relative rounded-2xl overflow-hidden bg-black shadow-[0_40px_80px_-40px_rgba(0,0,0,0.9)] max-[1100px]:!flex-none max-[1100px]:w-full max-[1100px]:!h-[calc((100vw-20px)*9/16)] max-[1100px]:!max-h-[55vh] max-[720px]:!h-[calc((100vw-20px)*9/16)] max-[720px]:!max-h-[40vh] [.is-fs_&]:!flex-1 [.is-fs_&]:!h-auto [.is-fs_&]:!max-h-none [.is-fs_&]:rounded-none [.is-fs_&]:shadow-none [&_video]:w-full [&_video]:h-full [&_video]:object-cover [&_video]:block [&_video]:[transition:transform_.35s_ease,filter_.35s_ease]";
 export const VIEWER_MAIN_CAM_CLS =

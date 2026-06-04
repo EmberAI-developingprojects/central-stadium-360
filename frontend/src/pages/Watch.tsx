@@ -991,7 +991,6 @@ function ViewerOverlay({
   const [cc, setCc] = useState(false);
   const [isFs, setIsFs] = useState(false);
   const [pseudoFs, setPseudoFs] = useState(false);
-  const [isPortrait, setIsPortrait] = useState(false);
   const [idle, setIdle] = useState(false);
   const [chat, setChat] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
@@ -1192,19 +1191,16 @@ function ViewerOverlay({
     return () => clearInterval(id);
   }, []);
 
-  // Fullscreen state — phones use a CSS-rotated pseudo-fullscreen so the
-  // YouTube-style "tap → fills the screen sideways" works even when the
-  // browser denies screen.orientation.lock (iOS Safari, in-app webviews).
+  // Fullscreen toggle — request the native Fullscreen API on the stage so
+  // the device's own orientation handling kicks in. On iOS Safari / in-app
+  // webviews where requestFullscreen on a non-video element is rejected,
+  // fall back to a CSS `position:fixed; inset:0` overlay so the viewer
+  // still fills the screen. We never force-rotate: if the user rotates the
+  // phone to landscape, the device itself rotates the page.
   const toggleStageFs = useCallback(async () => {
     const stage = stageRef.current as FullscreenElement | null;
     const doc = document as FullscreenDocument;
     const inFs = doc.fullscreenElement || doc.webkitFullscreenElement;
-    const screenOrient = (screen.orientation ?? null) as
-      | (ScreenOrientation & {
-          lock?: (o: string) => Promise<void>;
-          unlock?: () => void;
-        })
-      | null;
 
     if (inFs || pseudoFs) {
       if (inFs) {
@@ -1214,48 +1210,10 @@ function ViewerOverlay({
           /* noop */
         }
       }
-      try {
-        screenOrient?.unlock?.();
-      } catch {
-        /* noop */
-      }
       if (pseudoFs) setPseudoFs(false);
       return;
     }
 
-    const isMobile =
-      typeof window !== "undefined" &&
-      window.matchMedia(
-        "(pointer: coarse), (max-width: 1024px)",
-      ).matches;
-
-    // Phones/tablets: always rotate via CSS so the result is deterministic
-    // across iOS Safari, Android Chrome, and in-app webviews. We still try
-    // real fullscreen + orientation.lock in the background; if either takes,
-    // the stage stays visually correct because both target the same element.
-    if (isMobile) {
-      setPseudoFs(true);
-      if (stage) {
-        const requestFs =
-          stage.requestFullscreen?.bind(stage) ||
-          stage.webkitRequestFullscreen?.bind(stage);
-        if (requestFs) {
-          try {
-            await requestFs();
-          } catch {
-            /* noop — CSS pseudo-fs still active */
-          }
-        }
-      }
-      try {
-        await screenOrient?.lock?.("landscape");
-      } catch {
-        /* iOS / unsupported — CSS rotation already covers this */
-      }
-      return;
-    }
-
-    // Desktop: prefer the real Fullscreen API so the browser chrome hides.
     if (stage) {
       const requestFs =
         stage.requestFullscreen?.bind(stage) ||
@@ -1265,12 +1223,11 @@ function ViewerOverlay({
           await requestFs();
           if (doc.fullscreenElement || doc.webkitFullscreenElement) return;
         } catch {
-          /* fallthrough */
+          /* fallthrough to CSS pseudo-fullscreen */
         }
       }
     }
 
-    // Desktop fallback (very rare): CSS pseudo-fullscreen, no rotation.
     setPseudoFs(true);
   }, [pseudoFs]);
 
@@ -1291,17 +1248,6 @@ function ViewerOverlay({
       document.removeEventListener("fullscreenchange", onFs);
       document.removeEventListener("webkitfullscreenchange", onFs);
     };
-  }, []);
-
-  // Track portrait/landscape so the pseudo-fullscreen fallback can rotate
-  // the stage to landscape on phones held vertically.
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
-    const mq = window.matchMedia("(orientation: portrait)");
-    const sync = () => setIsPortrait(mq.matches);
-    sync();
-    mq.addEventListener?.("change", sync);
-    return () => mq.removeEventListener?.("change", sync);
   }, []);
 
   useEffect(() => {
@@ -1655,24 +1601,12 @@ function ViewerOverlay({
           ref={stageRef}
           style={
             pseudoFs
-              ? isPortrait
-                ? {
-                    position: "fixed",
-                    top: 0,
-                    left: 0,
-                    width: "100vh",
-                    height: "100vw",
-                    transformOrigin: "top left",
-                    transform: "translateX(100vw) rotate(90deg)",
-                    zIndex: 2000,
-                    background: "#000",
-                  }
-                : {
-                    position: "fixed",
-                    inset: 0,
-                    zIndex: 2000,
-                    background: "#000",
-                  }
+              ? {
+                  position: "fixed",
+                  inset: 0,
+                  zIndex: 2000,
+                  background: "#000",
+                }
               : undefined
           }
         >
