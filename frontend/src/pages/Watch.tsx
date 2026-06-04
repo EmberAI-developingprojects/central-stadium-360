@@ -1192,12 +1192,11 @@ function ViewerOverlay({
     return () => clearInterval(id);
   }, []);
 
-  // Fullscreen state
+  // Fullscreen state — phones use a CSS-rotated pseudo-fullscreen so the
+  // YouTube-style "tap → fills the screen sideways" works even when the
+  // browser denies screen.orientation.lock (iOS Safari, in-app webviews).
   const toggleStageFs = useCallback(async () => {
     const stage = stageRef.current as FullscreenElement | null;
-    const video = videoRef.current as
-      | (HTMLVideoElement & { webkitEnterFullscreen?: () => void })
-      | null;
     const doc = document as FullscreenDocument;
     const inFs = doc.fullscreenElement || doc.webkitFullscreenElement;
     const screenOrient = (screen.orientation ?? null) as
@@ -1207,26 +1206,56 @@ function ViewerOverlay({
         })
       | null;
 
-    if (inFs) {
-      try {
-        await (doc.exitFullscreen || doc.webkitExitFullscreen)?.call(doc);
-      } catch {
-        /* noop */
+    if (inFs || pseudoFs) {
+      if (inFs) {
+        try {
+          await (doc.exitFullscreen || doc.webkitExitFullscreen)?.call(doc);
+        } catch {
+          /* noop */
+        }
       }
       try {
         screenOrient?.unlock?.();
       } catch {
         /* noop */
       }
+      if (pseudoFs) setPseudoFs(false);
       return;
     }
 
-    if (pseudoFs) {
-      setPseudoFs(false);
+    const isMobile =
+      typeof window !== "undefined" &&
+      window.matchMedia(
+        "(pointer: coarse), (max-width: 1024px)",
+      ).matches;
+
+    // Phones/tablets: always rotate via CSS so the result is deterministic
+    // across iOS Safari, Android Chrome, and in-app webviews. We still try
+    // real fullscreen + orientation.lock in the background; if either takes,
+    // the stage stays visually correct because both target the same element.
+    if (isMobile) {
+      setPseudoFs(true);
+      if (stage) {
+        const requestFs =
+          stage.requestFullscreen?.bind(stage) ||
+          stage.webkitRequestFullscreen?.bind(stage);
+        if (requestFs) {
+          try {
+            await requestFs();
+          } catch {
+            /* noop — CSS pseudo-fs still active */
+          }
+        }
+      }
+      try {
+        await screenOrient?.lock?.("landscape");
+      } catch {
+        /* iOS / unsupported — CSS rotation already covers this */
+      }
       return;
     }
 
-    let entered = false;
+    // Desktop: prefer the real Fullscreen API so the browser chrome hides.
     if (stage) {
       const requestFs =
         stage.requestFullscreen?.bind(stage) ||
@@ -1234,45 +1263,27 @@ function ViewerOverlay({
       if (requestFs) {
         try {
           await requestFs();
-          entered = !!(
-            doc.fullscreenElement || doc.webkitFullscreenElement
-          );
+          if (doc.fullscreenElement || doc.webkitFullscreenElement) return;
         } catch {
           /* fallthrough */
         }
       }
     }
 
-    if (entered) {
-      try {
-        await screenOrient?.lock?.("landscape");
-      } catch {
-        /* iOS / unsupported */
-      }
-      return;
-    }
-
-    if (!is360 && video?.webkitEnterFullscreen) {
-      try {
-        video.webkitEnterFullscreen();
-        return;
-      } catch {
-        /* noop */
-      }
-    }
-
-    // Last resort (iOS Safari, embedded webviews): CSS pseudo-fullscreen with
-    // portrait→landscape rotation handled inline via stage style.
+    // Desktop fallback (very rare): CSS pseudo-fullscreen, no rotation.
     setPseudoFs(true);
-  }, [is360, pseudoFs]);
+  }, [pseudoFs]);
 
   useEffect(() => {
     const onFs = () => {
       const doc = document as FullscreenDocument;
-      setIsFs(
+      const active =
         (doc.fullscreenElement || doc.webkitFullscreenElement) ===
-          stageRef.current,
-      );
+        stageRef.current;
+      setIsFs(active);
+      // If the user dropped out of real fullscreen via Escape / OS gesture,
+      // also drop the CSS rotation so we don't strand them in pseudo-fs.
+      if (!active) setPseudoFs(false);
     };
     document.addEventListener("fullscreenchange", onFs);
     document.addEventListener("webkitfullscreenchange", onFs);
@@ -1292,12 +1303,6 @@ function ViewerOverlay({
     mq.addEventListener?.("change", sync);
     return () => mq.removeEventListener?.("change", sync);
   }, []);
-
-  // Exit pseudo-fullscreen automatically once the real fullscreen kicks in
-  // (e.g. after user rotates phone and a deferred lock succeeds).
-  useEffect(() => {
-    if (isFs && pseudoFs) setPseudoFs(false);
-  }, [isFs, pseudoFs]);
 
   useEffect(() => {
     if (!isFs && !pseudoFs) {
