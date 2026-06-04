@@ -954,6 +954,8 @@ function ViewerOverlay({
   const [elapsedSec, setElapsedSec] = useState(0);
   const [qualityLevels, setQualityLevels] = useState<QualityLevel[]>([]);
   const [qualityIdx, setQualityIdx] = useState(-1);
+  const [qualityOpen, setQualityOpen] = useState(false);
+  const qualityRef = useRef<HTMLDivElement>(null);
   const [cc, setCc] = useState(false);
   const [isFs, setIsFs] = useState(false);
   const [pseudoFs, setPseudoFs] = useState(false);
@@ -1010,7 +1012,9 @@ function ViewerOverlay({
               ? "1080p"
               : l.height >= 720
                 ? "720p"
-                : `${l.height}p`,
+                : l.height >= 480
+                  ? "480p"
+                  : `${l.height}p`,
         }));
         setQualityLevels(levels);
         video.play().catch(() => {});
@@ -1391,6 +1395,20 @@ function ViewerOverlay({
     }, 1000);
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    if (!qualityOpen) return;
+    const onDown = (e: MouseEvent | TouchEvent) => {
+      const root = qualityRef.current;
+      if (root && !root.contains(e.target as Node)) setQualityOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("touchstart", onDown, { passive: true });
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("touchstart", onDown);
+    };
+  }, [qualityOpen]);
 
   const toggleMute = () =>
     setMuted((m) => {
@@ -1841,22 +1859,102 @@ function ViewerOverlay({
             </div>
 
             <div className={VIEWER_CONTROLS_RIGHT_CLS}>
-              <label className={VIEWER_QUALITY_CLS}>
-                <span>Чанар</span>
-                <select
-                  value={qualityIdx}
-                  onChange={(e) => setQualityIdx(Number(e.target.value))}
-                >
-                  <option value={-1}>Auto</option>
-                  {qualityLevels
-                    .filter((l) => l.height === 1080 || l.height === 720)
-                    .map((l) => (
-                      <option key={l.index} value={l.index}>
-                        {l.label}
-                      </option>
-                    ))}
-                </select>
-              </label>
+              {(() => {
+                const visibleLevels = qualityLevels.filter(
+                  (l) =>
+                    l.height === 480 ||
+                    l.height === 720 ||
+                    l.height === 1080,
+                );
+                const currentLabel =
+                  qualityIdx === -1
+                    ? "Auto"
+                    : (qualityLevels.find((l) => l.index === qualityIdx)
+                        ?.label ?? "Auto");
+                return (
+                  <div
+                    ref={qualityRef}
+                    className="relative inline-flex items-center gap-2 text-xs text-[rgba(255,255,255,0.7)] max-[720px]:gap-1.5"
+                  >
+                    <span>Чанар</span>
+                    <button
+                      type="button"
+                      onClick={() => setQualityOpen((o) => !o)}
+                      aria-haspopup="listbox"
+                      aria-expanded={qualityOpen}
+                      className="inline-flex items-center justify-between gap-2 min-w-[78px] bg-[rgba(255,255,255,0.06)] border border-solid border-[rgba(255,255,255,0.1)] text-white font-semibold text-[12.5px] pt-[7px] pr-2.5 pb-[7px] pl-3 rounded-[9px] cursor-pointer [transition:background_.15s_ease,border-color_.15s_ease] hover:bg-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] max-[720px]:text-[11.5px] max-[720px]:pt-1.5 max-[720px]:pb-1.5 max-[720px]:pl-2"
+                    >
+                      <span>{currentLabel}</span>
+                      <svg
+                        viewBox="0 0 10 6"
+                        width="9"
+                        height="5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                        className={`shrink-0 [transition:transform_.15s_ease] ${qualityOpen ? "rotate-180" : ""}`}
+                      >
+                        <path d="M1 1l4 4 4-4" />
+                      </svg>
+                    </button>
+                    {qualityOpen && (
+                      <ul
+                        role="listbox"
+                        aria-label="Чанар"
+                        className="absolute bottom-full right-0 mb-2 z-[20] min-w-[110px] p-1 list-none rounded-[12px] bg-[rgba(17,22,35,0.96)] border border-solid border-[rgba(255,255,255,0.1)] shadow-[0_18px_40px_-12px_rgba(0,0,0,0.6)] [backdrop-filter:blur(12px)] [-webkit-backdrop-filter:blur(12px)]"
+                      >
+                        {[
+                          { idx: -1, label: "Auto" },
+                          ...visibleLevels.map((l) => ({
+                            idx: l.index,
+                            label: l.label,
+                          })),
+                        ].map((opt) => {
+                          const selected = opt.idx === qualityIdx;
+                          return (
+                            <li key={opt.idx}>
+                              <button
+                                type="button"
+                                role="option"
+                                aria-selected={selected}
+                                onClick={() => {
+                                  setQualityIdx(opt.idx);
+                                  setQualityOpen(false);
+                                }}
+                                className={`w-full inline-flex items-center gap-2 text-left font-semibold text-[12.5px] py-2 px-3 rounded-[8px] cursor-pointer bg-transparent border-0 text-white [transition:background_.12s_ease] hover:bg-[rgba(255,255,255,0.08)] ${
+                                  selected ? "bg-[rgba(34,48,198,0.25)]" : ""
+                                }`}
+                              >
+                                <span
+                                  aria-hidden="true"
+                                  className={`inline-flex w-3.5 justify-center ${selected ? "opacity-100" : "opacity-0"}`}
+                                >
+                                  <svg
+                                    viewBox="0 0 24 24"
+                                    width="12"
+                                    height="12"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="3"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  >
+                                    <polyline points="20 6 9 17 4 12" />
+                                  </svg>
+                                </span>
+                                {opt.label}
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </div>
+                );
+              })()}
               <button
                 type="button"
                 className={`${VIEWER_ICON_BTN_CLS}${cc ? " " + VIEWER_ICON_BTN_ON_CLS : ""}`}
