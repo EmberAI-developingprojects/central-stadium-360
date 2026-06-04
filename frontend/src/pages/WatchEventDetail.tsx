@@ -41,7 +41,7 @@ export default function WatchEventDetail() {
 
   return (
     <div className="min-h-screen bg-[#071526] text-white">
-      {/* Header */}
+
       <header className="sticky top-0 z-50 flex items-center gap-2 sm:gap-4 h-14 sm:h-[60px] px-4 sm:px-6 md:px-7 bg-[rgba(7,21,38,0.92)] backdrop-blur-xl border-b border-white/[0.07]">
         <button
           type="button"
@@ -75,7 +75,7 @@ export default function WatchEventDetail() {
 
       {event && (
         <>
-          {/* Hero */}
+
           <div className="relative w-full overflow-hidden bg-[#0a1628] aspect-[16/10] sm:aspect-[2/1] md:aspect-[21/9] min-h-[220px] max-h-[480px]">
             {event.image && (
               <img
@@ -84,9 +84,9 @@ export default function WatchEventDetail() {
                 className="w-full h-full object-cover block"
               />
             )}
-            {/* Dark gradient overlay */}
+
             <div className="absolute inset-0 bg-gradient-to-b from-[rgba(7,21,38,0.15)] via-[rgba(7,21,38,0.55)] to-[rgba(7,21,38,0.95)]" />
-            {/* Event title over image */}
+
             <div className="absolute bottom-0 left-0 right-0 px-4 pb-5 pt-8 sm:px-6 sm:pb-6 md:px-12 md:pb-10 max-w-[900px]">
               {event.pill && (
                 <div className="text-[10px] sm:text-[11px] font-bold tracking-[0.16em] uppercase text-white/60 mb-2 sm:mb-2.5">
@@ -105,10 +105,8 @@ export default function WatchEventDetail() {
             )}
           </div>
 
-          {/* Body — two equal cards side by side on desktop, stacked on mobile */}
           <div className="max-w-[1200px] mx-auto px-4 py-8 sm:px-5 sm:py-10 md:px-8 md:py-14 grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 md:gap-8 items-start">
 
-            {/* Left card: event info */}
             <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl sm:rounded-[20px] p-5 sm:p-7 md:p-10">
               {dt?.month && (
                 <div className="text-[11px] sm:text-xs font-bold tracking-[0.1em] uppercase text-white/40 mb-3 sm:mb-4">
@@ -132,7 +130,6 @@ export default function WatchEventDetail() {
               </div>
             </div>
 
-            {/* Right card: ticket purchase */}
             <div className="bg-white/[0.05] border border-white/10 rounded-2xl sm:rounded-[20px] p-5 sm:p-7 md:p-10">
               {dt?.month && (
                 <div className="mb-6 sm:mb-7">

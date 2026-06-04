@@ -148,13 +148,13 @@ export interface DbSession {
 }
 
 export interface QPayInvoiceLink {
-  
+
   name: string;
-  
+
   description?: string;
-  
+
   logo?: string;
-  
+
   link: string;
 }
 

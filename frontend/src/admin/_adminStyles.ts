@@ -1,10 +1,7 @@
-// Admin design system. Minimal, refined, SaaS-grade.
-// Palette: zinc neutrals with brand indigo reserved for the brand mark only.
+
 
 export const ADMIN_SHELL_CLS =
   "admin-shell font-sans antialiased text-[13.5px] leading-[1.5] text-zinc-900 bg-[#fafafa] min-h-screen grid [grid-template-columns:248px_1fr] max-[980px]:[grid-template-columns:1fr]";
-
-// Sidebar -----------------------------------------------------------------
 
 export const ADMIN_SIDEBAR_CLS =
   "bg-white border-r border-[#ececef] py-4 px-3 flex flex-col gap-1 sticky top-0 h-screen max-[980px]:relative max-[980px]:h-auto max-[980px]:border-r-0 max-[980px]:border-b";
@@ -32,8 +29,6 @@ export const ADMIN_SIDEBAR_FOOTER_CLS =
   "[&>button:hover]:bg-zinc-100 [&>button:hover]:text-zinc-900 " +
   "[&>button_svg]:w-3.5 [&>button_svg]:h-3.5 [&>button_svg]:shrink-0 [&>button_svg]:text-zinc-400 [&>button:hover_svg]:text-zinc-700";
 
-// Main / topbar / content ---------------------------------------------------
-
 export const ADMIN_MAIN_CLS = "flex flex-col min-w-0";
 export const ADMIN_TOPBAR_CLS =
   "bg-white/85 backdrop-blur-md border-b border-[#ececef] h-[60px] flex items-center px-8 sticky top-0 z-[5] " +
@@ -46,14 +41,10 @@ export const ADMIN_AVATAR_CLS =
 
 export const ADMIN_CONTENT_CLS = "p-8 flex-1 max-w-[1280px] w-full";
 
-// Page header --------------------------------------------------------------
-
 export const ADMIN_PAGE_HEADER_CLS =
   "flex items-start justify-between gap-4 mb-6 " +
   "[&_h2]:text-[22px] [&_h2]:font-semibold [&_h2]:m-0 [&_h2]:mb-1 [&_h2]:text-zinc-900 [&_h2]:tracking-[-0.02em] [&_h2]:leading-tight " +
   "[&_p]:m-0 [&_p]:text-zinc-500 [&_p]:text-[13.5px]";
-
-// Cards --------------------------------------------------------------------
 
 export const ADMIN_CARD_CLS =
   "bg-white border border-[#ececef] rounded-xl p-6 " +
@@ -65,8 +56,6 @@ export const ADMIN_GRID_4_CLS =
 export const ADMIN_GRID_2_CLS =
   "[grid-template-columns:repeat(2,minmax(0,1fr))] max-[980px]:[grid-template-columns:1fr]";
 
-// Stat cards --------------------------------------------------------------
-
 export const ADMIN_STAT_CARD_CLS =
   "bg-white border border-[#ececef] rounded-xl p-5 " +
   "[&_.stat-label]:text-[11px] [&_.stat-label]:text-zinc-500 [&_.stat-label]:uppercase [&_.stat-label]:tracking-[.06em] [&_.stat-label]:font-medium " +
@@ -74,8 +63,6 @@ export const ADMIN_STAT_CARD_CLS =
   "[&_.stat-sub]:text-[12px] [&_.stat-sub]:text-zinc-500 [&_.stat-sub]:mt-2.5";
 
 export const ADMIN_SPARKLINE_CLS = "w-full h-[160px] block";
-
-// Buttons -----------------------------------------------------------------
 
 export const ADMIN_BTN_CLS =
   "inline-flex items-center justify-center gap-1.5 h-9 px-3.5 rounded-md font-[inherit] text-[13px] font-medium border border-[#e4e4e7] bg-white text-zinc-900 cursor-pointer transition-colors no-underline " +
@@ -89,8 +76,6 @@ export const ADMIN_BTN_GHOST_CLS =
   "!border-transparent !bg-transparent !text-zinc-600 hover:!bg-zinc-100 hover:!text-zinc-900 hover:!border-transparent";
 export const ADMIN_BTN_SM_CLS = "!h-8 !px-2.5 !text-[12.5px]";
 
-// Tables ------------------------------------------------------------------
-
 export const ADMIN_TABLE_WRAP_CLS =
   "bg-white border border-[#ececef] rounded-xl overflow-hidden";
 export const ADMIN_TABLE_CLS =
@@ -102,13 +87,9 @@ export const ADMIN_TABLE_CLS =
 export const ADMIN_TABLE_THUMB_CLS =
   "w-[60px] h-[36px] rounded-md bg-zinc-100 [background-size:cover] [background-position:center] inline-block ring-1 ring-inset ring-[#ececef]";
 
-// Empty state -------------------------------------------------------------
-
 export const ADMIN_EMPTY_CLS =
   "py-14 px-6 text-center text-zinc-500 text-[13.5px] bg-white border border-dashed border-[#e4e4e7] rounded-xl " +
   "[&_strong]:block [&_strong]:text-zinc-900 [&_strong]:mb-1.5 [&_strong]:font-semibold [&_strong]:text-[14px]";
-
-// Forms -------------------------------------------------------------------
 
 export const ADMIN_FORM_CLS = "flex flex-col gap-5 max-w-[720px]";
 export const ADMIN_FORM_ROW_CLS =
@@ -131,8 +112,6 @@ export const ADMIN_CHECKBOX_CLS =
 export const ADMIN_FORM_ACTIONS_CLS =
   "flex gap-2.5 pt-5 mt-2 border-t border-[#ececef]";
 
-// Badges ------------------------------------------------------------------
-
 export const ADMIN_BADGE_CLS =
   "inline-flex items-center py-0.5 px-2 rounded-full text-[11px] font-medium bg-zinc-100 text-zinc-700 leading-[1.6]";
 export const ADMIN_BADGE_ADMIN_CLS = "!bg-violet-50 !text-violet-700";
@@ -142,22 +121,16 @@ export const ADMIN_BADGE_CANCELLED_CLS = "!bg-amber-50 !text-amber-700";
 export const ADMIN_BADGE_DISABLED_CLS = "!bg-red-50 !text-red-700";
 export const ADMIN_BADGE_FEATURED_CLS = "!bg-amber-50 !text-amber-700";
 
-// Filters -----------------------------------------------------------------
-
 export const ADMIN_FILTERS_CLS =
   "flex gap-2.5 items-center flex-wrap mb-4 " +
   "[&_input]:font-[inherit] [&_input]:text-[13px] [&_input]:h-9 [&_input]:px-3 [&_input]:bg-white [&_input]:border [&_input]:border-[#e4e4e7] [&_input]:rounded-md [&_input]:min-w-[260px] [&_input]:outline-none [&_input]:transition-shadow [&_input::placeholder]:text-zinc-400 [&_input:focus]:border-zinc-400 [&_input:focus]:shadow-[0_0_0_3px_rgba(24,24,27,0.06)] " +
   "[&_select]:font-[inherit] [&_select]:text-[13px] [&_select]:h-9 [&_select]:px-3 [&_select]:bg-white [&_select]:border [&_select]:border-[#e4e4e7] [&_select]:rounded-md [&_select]:outline-none";
-
-// Tabs --------------------------------------------------------------------
 
 export const ADMIN_TABS_CLS =
   "flex gap-1 border-b border-[#ececef] mb-6 " +
   "[&_button]:bg-transparent [&_button]:border-0 [&_button]:font-[inherit] [&_button]:text-[13.5px] [&_button]:font-medium [&_button]:py-2.5 [&_button]:px-3.5 [&_button]:cursor-pointer [&_button]:text-zinc-500 [&_button]:border-b-2 [&_button]:border-transparent [&_button]:-mb-px [&_button]:transition-colors " +
   "[&_button:hover]:text-zinc-900 " +
   "[&_button.is-active]:text-zinc-900 [&_button.is-active]:!border-b-zinc-900";
-
-// Misc --------------------------------------------------------------------
 
 export const ADMIN_LINK_CLS =
   "text-zinc-900 no-underline font-medium hover:underline underline-offset-[3px] decoration-zinc-300";

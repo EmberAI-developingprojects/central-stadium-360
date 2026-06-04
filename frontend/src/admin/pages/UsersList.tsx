@@ -396,7 +396,6 @@ export default function UsersList() {
   );
 }
 
-/* ── Add User Modal ── */
 function AddUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: (name: string) => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

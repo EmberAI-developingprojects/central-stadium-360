@@ -29,7 +29,7 @@ function ScrollToTop() {
   const { pathname, hash } = useLocation();
   useEffect(() => {
     if (hash) {
-      // Wait for the destination route to mount before scrolling to the anchor.
+
       const id = hash.slice(1);
       const tryScroll = () => {
         const el = document.getElementById(id);

@@ -10,15 +10,6 @@ import type {
 } from "@cs360/shared";
 import { api } from "../lib/api";
 
-// -----------------------------------------------------------------------------
-// View-model types
-//
-// The public/admin pages were built against these shapes when the data lived
-// in localStorage. They are kept stable so the components don't need to
-// change as we move events + home content onto Supabase. Orders and users
-// still live in localStorage until their migrations land.
-// -----------------------------------------------------------------------------
-
 export type EventRecord = {
   id: string;
   title: string;
@@ -158,7 +149,7 @@ function writeJSON(key: string, value: unknown): void {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch {
-    /* ignore quota errors */
+
   }
 }
 
@@ -168,14 +159,6 @@ const withDefaultStatus = <T extends { status?: OrderStatus }>(
   o.status
     ? (o as T & { status: OrderStatus })
     : { ...o, status: "paid" as OrderStatus };
-
-// -----------------------------------------------------------------------------
-// Date formatters
-//
-// Events store a single timestamptz; the cards/watch page expect two display
-// strings. We derive them here so the rest of the UI doesn't have to think
-// about timestamps.
-// -----------------------------------------------------------------------------
 
 function pad2(n: number): string {
   return String(n).padStart(2, "0");
@@ -516,10 +499,6 @@ export function ordersStats(): Promise<OrdersStats> {
     last30d,
   });
 }
-
-// -----------------------------------------------------------------------------
-// Users (Supabase via /api/admin/users)
-// -----------------------------------------------------------------------------
 
 function dbToUser(row: AdminUserRow): UserRecord {
   return {

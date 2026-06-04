@@ -1,5 +1,3 @@
-
-
 export const PAGE_BG =
   "radial-gradient(60% 50% at 100% 0%, rgba(34, 48, 198, 0.08) 0%, transparent 70%)," +
   "radial-gradient(50% 50% at 0% 100%, rgba(168, 153, 104, 0.10) 0%, transparent 70%)," +
@@ -31,7 +29,8 @@ export const EYEBROW_DOT_CLS =
 export const TITLE_CLS =
   "text-3xl font-extrabold text-ink tracking-[-0.02em] m-0 mb-2.5 max-[540px]:text-[26px]";
 
-export const SUBTITLE_CLS = "text-[14.5px] leading-[1.65] text-ink-soft m-0 mb-7";
+export const SUBTITLE_CLS =
+  "text-[14.5px] leading-[1.65] text-ink-soft m-0 mb-7";
 
 export const FORM_CLS = "flex flex-col gap-4 text-left";
 
@@ -39,7 +38,8 @@ export const REG_FORM_CLS = "flex flex-col gap-[14px] text-left";
 
 export const FIELD_CLS = "flex flex-col gap-1.5";
 
-export const LABEL_CLS = "text-[12.5px] font-semibold text-ink tracking-[0.02em]";
+export const LABEL_CLS =
+  "text-[12.5px] font-semibold text-ink tracking-[0.02em]";
 
 export const INPUT_CLS =
   "w-full bg-white text-ink rounded-xl outline-none h-[46px] py-0 px-4 border border-solid border-[rgba(31,41,55,0.14)] font-[inherit] text-[14.5px] [transition:border-color_.2s_ease,box-shadow_.2s_ease] placeholder:text-[#b3b8c2] hover:border-[rgba(34,48,198,0.30)] focus:border-brand-blue focus:shadow-[0_0_0_4px_rgba(34,48,198,0.12)]";
@@ -81,7 +81,8 @@ export const REG_TABS_DIVIDER_CLS =
 export const REG_TAB_CLS =
   "group inline-flex flex-col items-center justify-center gap-2 rounded-[14px] bg-white text-ink cursor-pointer no-underline py-[18px] px-4 border border-solid border-[rgba(31,41,55,0.12)] font-[inherit] text-center [transition:border-color_.2s_ease,background_.2s_ease,box-shadow_.2s_ease,transform_.15s_ease] hover:border-brand-blue hover:bg-brand-blue-tint hover:-translate-y-px hover:shadow-[0_10px_24px_-12px_rgba(34,48,198,.35)] [&_svg]:w-[22px] [&_svg]:h-[22px] [&_svg]:text-brand-blue";
 export const REG_TAB_LABEL_CLS = "text-[13.5px] font-bold text-ink";
-export const REG_TAB_SUB_CLS = "text-[11.5px] text-ink-soft font-medium tracking-[0.02em]";
+export const REG_TAB_SUB_CLS =
+  "text-[11.5px] text-ink-soft font-medium tracking-[0.02em]";
 export const REG_TAB_ACTIVE_CLS =
   "bg-white text-brand-blue shadow-[0_4px_12px_-6px_rgba(31,41,55,0.2)]";
 

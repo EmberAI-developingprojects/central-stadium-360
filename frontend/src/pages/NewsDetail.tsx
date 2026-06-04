@@ -9,9 +9,6 @@ const PAGE_CLS = "min-h-screen bg-white";
 const SECTION_CLS =
   "w-full px-6 py-12 max-[920px]:px-5 max-[920px]:py-8 max-[640px]:py-6";
 
-// One consistent reading column for text AND images so the article feels
-// unified — wide enough that big imagery feels presentable, narrow enough
-// that body text doesn't span half the page.
 const OUTER_CLS = "max-w-[860px] mx-auto";
 const ARTICLE_HEAD_CLS = "mb-8 max-[640px]:mb-6";
 
@@ -70,9 +67,7 @@ function bumpView(id: string): number {
   all[id] = (all[id] || 0) + 1;
   try {
     localStorage.setItem(KEY_VIEWS, JSON.stringify(all));
-  } catch {
-    /* ignore quota */
-  }
+  } catch {}
   return all[id];
 }
 

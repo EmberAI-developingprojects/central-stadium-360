@@ -4,9 +4,9 @@ import type { ReactNode } from 'react';
 
 type Props = {
   kind?: 'error' | 'ok';
-  
+
   hidden?: boolean;
-  
+
   role?: 'alert' | 'status';
   className?: string;
   children: ReactNode;

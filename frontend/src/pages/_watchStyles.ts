@@ -1,16 +1,16 @@
-
-
 export const WATCH_PAGE_BG =
   "radial-gradient(60% 50% at 80% 0%, rgba(34, 48, 198, 0.18) 0%, transparent 65%)," +
   "radial-gradient(50% 50% at 0% 100%, rgba(168, 153, 104, 0.08) 0%, transparent 70%)," +
   "#0B0F1A";
 
-export const WATCH_PAGE_CLS = "watch-page min-h-screen w-full max-w-[100vw] overflow-x-hidden text-[rgba(255,255,255,0.88)]";
+export const WATCH_PAGE_CLS =
+  "watch-page min-h-screen w-full max-w-[100vw] overflow-x-hidden text-[rgba(255,255,255,0.88)]";
 
 export const WATCH_HEADER_CLS =
   "watch-header sticky top-0 z-50 grid items-center gap-8 py-[18px] px-8 bg-[rgba(11,15,26,0.7)] [backdrop-filter:blur(18px)_saturate(160%)] [-webkit-backdrop-filter:blur(18px)_saturate(160%)] border-b border-solid border-[rgba(255,255,255,0.06)] [grid-template-columns:auto_1fr_auto] max-[900px]:[grid-template-columns:minmax(0,auto)_minmax(0,1fr)] max-[900px]:gap-3 max-[900px]:py-[12px] max-[900px]:px-4 max-[420px]:px-3 max-[420px]:gap-2";
 
-export const WATCH_LOGO_CLS = "inline-flex items-center no-underline shrink-0 [&_img]:block [&_img]:w-auto [&_img]:h-11 max-[540px]:[&_img]:h-9 max-[420px]:[&_img]:h-8";
+export const WATCH_LOGO_CLS =
+  "inline-flex items-center no-underline shrink-0 [&_img]:block [&_img]:w-auto [&_img]:h-11 max-[540px]:[&_img]:h-9 max-[420px]:[&_img]:h-8";
 
 export const WATCH_TABS_CLS =
   "justify-self-center inline-flex gap-1 p-1 rounded-full bg-[rgba(255,255,255,0.05)] border border-solid border-[rgba(255,255,255,0.08)] max-[900px]:[grid-column:1/-1] max-[900px]:order-3 max-[900px]:justify-self-stretch max-[900px]:justify-center";
@@ -18,12 +18,14 @@ export const WATCH_TABS_CLS =
 export const WATCH_TAB_CLS =
   "inline-flex items-center gap-1.5 rounded-full text-[13px] font-semibold no-underline py-2 px-[18px] text-[rgba(255,255,255,0.65)] [transition:background_.2s_ease,color_.2s_ease] hover:text-white max-[540px]:py-[7px] max-[540px]:px-3 max-[540px]:text-xs";
 
-export const WATCH_TAB_ACTIVE_CLS = "is-active !bg-brand-blue !text-white shadow-[0_8px_20px_-10px_rgba(34,48,198,0.7)]";
+export const WATCH_TAB_ACTIVE_CLS =
+  "is-active !bg-brand-blue !text-white shadow-[0_8px_20px_-10px_rgba(34,48,198,0.7)]";
 
 export const WATCH_TAB_COUNT_CLS =
   "inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-brand-blue text-white text-[10.5px] font-extrabold py-0 px-[5px] tracking-normal [.is-active_&]:bg-white [.is-active_&]:text-brand-blue";
 
-export const WATCH_USER_CLS = "inline-flex items-center gap-2.5 min-w-0 justify-end justify-self-end max-[420px]:gap-1.5";
+export const WATCH_USER_CLS =
+  "inline-flex items-center gap-2.5 min-w-0 justify-end justify-self-end max-[420px]:gap-1.5";
 
 export const WATCH_USER_CHIP_CLS =
   "inline-flex items-center gap-2 rounded-full text-[13px] font-semibold text-white py-2 px-[14px] bg-[rgba(255,255,255,0.08)] border border-solid border-[rgba(255,255,255,0.1)] [&_svg]:w-4 [&_svg]:h-4 max-[540px]:py-1.5 max-[540px]:px-2.5 max-[540px]:text-xs";
@@ -31,7 +33,8 @@ export const WATCH_USER_CHIP_CLS =
 export const WATCH_LOGOUT_CLS =
   "bg-transparent border-0 text-[13px] cursor-pointer text-[rgba(255,255,255,0.55)] font-[inherit] [transition:color_.15s_ease] hover:text-white";
 
-export const WATCH_MAIN_CLS = "max-w-screen-page mx-auto pt-10 px-8 pb-20 max-[540px]:pt-6 max-[540px]:px-4 max-[540px]:pb-16";
+export const WATCH_MAIN_CLS =
+  "max-w-screen-page mx-auto pt-10 px-8 pb-20 max-[540px]:pt-6 max-[540px]:px-4 max-[540px]:pb-16";
 
 export const WATCH_BTN_CLS =
   "inline-flex items-center gap-2 rounded-[10px] text-[13.5px] font-bold cursor-pointer no-underline py-[11px] px-[18px] font-[inherit] border border-solid border-transparent [transition:background_.2s_ease,color_.2s_ease,transform_.15s_ease,border-color_.2s_ease] [&_svg]:w-[15px] [&_svg]:h-[15px]";
@@ -90,19 +93,26 @@ export const WATCH_META_LIST_CLS =
   "list-none p-0 m-0 mb-[22px] flex flex-col gap-2 text-[13px] text-[rgba(255,255,255,0.75)]";
 export const WATCH_FEATURE_ACTIONS_CLS = "flex gap-2.5 flex-wrap";
 
-export const WATCH_GRID_CLS = "grid gap-5 [grid-template-columns:repeat(auto-fill,minmax(260px,1fr))]";
+export const WATCH_GRID_CLS =
+  "grid gap-5 [grid-template-columns:repeat(auto-fill,minmax(260px,1fr))]";
 export const WATCH_CARD_CLS =
   "group rounded-2xl overflow-hidden flex flex-col bg-[rgba(255,255,255,0.04)] border border-solid border-[rgba(255,255,255,0.08)] [transition:transform_.3s_cubic-bezier(.34,1.56,.64,1),border-color_.25s_ease,box-shadow_.25s_ease] hover:-translate-y-1 hover:border-[rgba(34,48,198,0.5)] hover:shadow-[0_24px_42px_-22px_rgba(34,48,198,0.5)]";
 export const WATCH_CARD_IMG_CLS =
   "relative overflow-hidden [aspect-ratio:16/9] [&_img]:w-full [&_img]:h-full [&_img]:object-cover [&_img]:block [&_img]:[transition:transform_.5s_ease] [&_img]:group-hover:scale-[1.06]";
 export const WATCH_CARD_PILL_CLS =
   "absolute text-white text-[10.5px] font-bold uppercase rounded-full top-3 left-3 bg-[rgba(11,15,26,0.75)] tracking-[.12em] py-[5px] px-[9px] [backdrop-filter:blur(6px)] [-webkit-backdrop-filter:blur(6px)]";
-export const WATCH_CARD_BODY_CLS = "flex flex-col gap-2 flex-1 pt-4 px-4 pb-[18px]";
-export const WATCH_CARD_DATE_CLS = "text-xs font-bold text-brand-blue-soft tracking-[.08em]";
-export const WATCH_CARD_TITLE_CLS = "text-base font-bold text-white m-0 leading-[1.3]";
-export const WATCH_CARD_DESC_CLS = "text-[13px] leading-[1.55] m-0 flex-1 text-[rgba(255,255,255,0.65)]";
-export const WATCH_CARD_ACTIONS_CLS = "mt-2.5 flex items-center justify-between gap-3";
-export const WATCH_CARD_PRICE_CLS = "text-[12.5px] font-semibold text-[rgba(255,255,255,0.6)]";
+export const WATCH_CARD_BODY_CLS =
+  "flex flex-col gap-2 flex-1 pt-4 px-4 pb-[18px]";
+export const WATCH_CARD_DATE_CLS =
+  "text-xs font-bold text-brand-blue-soft tracking-[.08em]";
+export const WATCH_CARD_TITLE_CLS =
+  "text-base font-bold text-white m-0 leading-[1.3]";
+export const WATCH_CARD_DESC_CLS =
+  "text-[13px] leading-[1.55] m-0 flex-1 text-[rgba(255,255,255,0.65)]";
+export const WATCH_CARD_ACTIONS_CLS =
+  "mt-2.5 flex items-center justify-between gap-3";
+export const WATCH_CARD_PRICE_CLS =
+  "text-[12.5px] font-semibold text-[rgba(255,255,255,0.6)]";
 
 export const TICKETS_LIST_CLS =
   "grid gap-5 [grid-template-columns:repeat(auto-fill,minmax(320px,1fr))]";
@@ -110,7 +120,8 @@ export const TICKETS_LIST_CLS =
 export const TICKET_STUB_CLS =
   "relative bg-[rgba(255,255,255,0.04)] border border-solid border-[rgba(255,255,255,0.08)] rounded-[18px] overflow-hidden flex flex-col [transition:transform_.3s_cubic-bezier(.34,1.56,.64,1),border-color_.25s_ease,box-shadow_.25s_ease] hover:-translate-y-[3px] hover:border-[rgba(34,48,198,0.45)] hover:shadow-[0_24px_42px_-22px_rgba(34,48,198,0.45)] before:content-[''] before:absolute before:top-[calc(16/8*100%*(1/(1+1.05)))] before:w-[14px] before:h-[14px] before:rounded-full before:bg-[#0B0F1A] before:z-[2] before:-left-[7px] after:content-[''] after:absolute after:top-[calc(16/8*100%*(1/(1+1.05)))] after:w-[14px] after:h-[14px] after:rounded-full after:bg-[#0B0F1A] after:z-[2] after:-right-[7px]";
 
-export const TICKET_STUB_COVER_CLS = "relative [aspect-ratio:16/8] overflow-hidden [&_img]:w-full [&_img]:h-full [&_img]:object-cover [&_img]:block [&_img]:[filter:saturate(.9)]";
+export const TICKET_STUB_COVER_CLS =
+  "relative [aspect-ratio:16/8] overflow-hidden [&_img]:w-full [&_img]:h-full [&_img]:object-cover [&_img]:block [&_img]:[filter:saturate(.9)]";
 
 export const TICKET_STUB_TIER_CLS =
   "absolute top-3 left-3 bg-brand-blue text-white text-[10.5px] font-extrabold tracking-[.14em] uppercase py-[5px] px-2.5 rounded-full shadow-[0_6px_14px_-6px_rgba(34,48,198,0.7)]";
@@ -137,8 +148,10 @@ export const TICKET_STUB_BARCODE_CLS =
 
 export const TICKET_STUB_ACTIONS_CLS = "flex gap-2.5 mt-1";
 
-export const TICKET_STUB_BTN_CLS = "!flex-1 !justify-center !py-2.5 !px-[14px] !text-[13px] [&_svg]:!w-[14px] [&_svg]:!h-[14px]";
-export const TICKET_STUB_REMOVE_HOVER_CLS = "hover:!text-[#FCA5A5] hover:!border-[rgba(252,165,165,0.4)]";
+export const TICKET_STUB_BTN_CLS =
+  "!flex-1 !justify-center !py-2.5 !px-[14px] !text-[13px] [&_svg]:!w-[14px] [&_svg]:!h-[14px]";
+export const TICKET_STUB_REMOVE_HOVER_CLS =
+  "hover:!text-[#FCA5A5] hover:!border-[rgba(252,165,165,0.4)]";
 
 export const TICKETS_EMPTY_CLS =
   "[grid-column:1/-1] text-center py-14 px-6 bg-[rgba(255,255,255,0.03)] border border-dashed border-[rgba(255,255,255,0.12)] rounded-[18px] [&_h3]:text-[18px] [&_h3]:font-extrabold [&_h3]:text-white [&_h3]:m-0 [&_h3]:mb-2 [&_p]:text-[13.5px] [&_p]:text-[rgba(255,255,255,0.6)] [&_p]:m-0 [&_p]:mx-auto [&_p]:mb-[22px] [&_p]:max-w-[380px] [&_p]:leading-[1.6]";
@@ -172,7 +185,8 @@ export const TICKET_MODAL_DATE_CLS =
 export const TICKET_MODAL_TITLE_CLS =
   "text-[22px] font-extrabold text-white m-0 mb-2 leading-[1.25] tracking-[-0.01em]";
 
-export const TICKET_MODAL_VENUE_CLS = "text-[13px] text-[rgba(255,255,255,0.75)]";
+export const TICKET_MODAL_VENUE_CLS =
+  "text-[13px] text-[rgba(255,255,255,0.75)]";
 
 export const TICKET_MODAL_FORM_CLS =
   "flex flex-col gap-[18px] pt-[26px] pr-7 pb-7 pl-7 max-[700px]:py-[22px] max-[700px]:px-5";
@@ -184,12 +198,14 @@ export const TICKET_SECTION_LABEL_CLS =
 export const TICKET_RADIO_GROUP_CLS = "grid gap-2 [grid-template-columns:1fr]";
 export const TICKET_RADIO_LABEL_CLS = "block cursor-pointer";
 
-export const TICKET_RADIO_INPUT_CLS = "peer absolute opacity-0 pointer-events-none";
+export const TICKET_RADIO_INPUT_CLS =
+  "peer absolute opacity-0 pointer-events-none";
 
 export const TICKET_RADIO_CARD_CLS =
   "grid [grid-template-columns:1fr_auto] [grid-auto-rows:auto] gap-y-[2px] gap-x-[14px] py-3 px-[14px] rounded-xl bg-[rgba(255,255,255,0.04)] border-[1.5px] border-solid border-[rgba(255,255,255,0.08)] [transition:border-color_.2s_ease,background_.2s_ease] hover:border-[rgba(34,48,198,0.4)] peer-checked:border-brand-blue peer-checked:bg-[rgba(34,48,198,0.16)] peer-checked:shadow-[0_8px_22px_-12px_rgba(34,48,198,0.6)]";
 
-export const TICKET_TIER_NAME_CLS = "text-[14.5px] font-bold text-white [grid-column:1]";
+export const TICKET_TIER_NAME_CLS =
+  "text-[14.5px] font-bold text-white [grid-column:1]";
 export const TICKET_TIER_DESC_CLS =
   "text-xs leading-[1.45] text-[rgba(255,255,255,0.6)] [grid-column:1]";
 export const TICKET_TIER_PRICE_CLS =
@@ -198,13 +214,15 @@ export const TICKET_TIER_PRICE_CLS =
 export const TICKET_PAY_NAME_CLS = TICKET_TIER_NAME_CLS;
 export const TICKET_PAY_DESC_CLS = TICKET_TIER_DESC_CLS;
 
-export const TICKET_ROW_CLS = "flex-row items-end justify-between gap-4 max-[700px]:flex-col max-[700px]:items-stretch";
+export const TICKET_ROW_CLS =
+  "flex-row items-end justify-between gap-4 max-[700px]:flex-col max-[700px]:items-stretch";
 
 export const TICKET_QTY_CLS =
   "inline-flex items-center gap-3 mt-1.5 rounded-xl p-1 bg-[rgba(255,255,255,0.04)] border border-solid border-[rgba(255,255,255,0.08)]";
 export const TICKET_QTY_BTN_CLS =
   "w-[34px] h-[34px] rounded-[9px] text-white border-0 text-lg font-bold cursor-pointer bg-[rgba(255,255,255,0.06)] font-[inherit] [transition:background_.15s_ease] hover:bg-brand-blue";
-export const TICKET_QTY_VAL_CLS = "text-center text-[15px] font-bold text-white min-w-[28px]";
+export const TICKET_QTY_VAL_CLS =
+  "text-center text-[15px] font-bold text-white min-w-[28px]";
 
 export const TICKET_TOTAL_WRAP_CLS = "text-right max-[700px]:text-left";
 export const TICKET_TOTAL_CLS =
@@ -222,7 +240,8 @@ export const TICKET_FINEPRINT_CLS =
 export const TICKET_MODAL_SUCCESS_CLS = "text-center pt-10 pr-9 pb-9 pl-9";
 export const TICKET_SUCCESS_ICON_CLS =
   "w-16 h-16 mx-auto mb-[18px] rounded-full grid place-items-center bg-[rgba(34,197,94,0.16)] text-[#22C55E] [animation:tmPop_.5s_cubic-bezier(.34,1.56,.64,1)_both] [&_svg]:w-[30px] [&_svg]:h-[30px]";
-export const TICKET_SUCCESS_TITLE_CLS = "text-[22px] font-extrabold text-white m-0 mb-2.5";
+export const TICKET_SUCCESS_TITLE_CLS =
+  "text-[22px] font-extrabold text-white m-0 mb-2.5";
 export const TICKET_SUCCESS_DESC_CLS =
   "text-sm leading-[1.65] m-0 mb-5 text-[rgba(255,255,255,0.72)]";
 export const TICKET_SUCCESS_CODE_CLS =
@@ -257,18 +276,24 @@ export const VIEWER_ICON_BTN_ON_CLS = "is-on !bg-brand-blue";
 export const VIEWER_BODY_CLS =
   "flex-1 min-h-0 min-w-0 max-w-full w-full gap-[14px] p-[14px] overflow-x-hidden overflow-y-auto grid [grid-template-columns:220px_1fr_320px] max-[1100px]:!flex max-[1100px]:!flex-col max-[720px]:p-2.5 max-[720px]:gap-2";
 
-export const VIEWER_ANGLES_CLS = "flex flex-col gap-3 min-h-0 overflow-auto max-[1100px]:hidden";
+export const VIEWER_ANGLES_CLS =
+  "flex flex-col gap-3 min-h-0 overflow-auto max-[1100px]:hidden";
 export const VIEWER_ANGLE_CLS =
   "block bg-transparent border-0 p-0 cursor-pointer text-left text-white [transition:transform_.2s_ease] hover:-translate-y-0.5";
 export const VIEWER_ANGLE_ACTIVE_CLS = "is-active";
 export const VIEWER_ANGLE_THUMB_CLS =
   "block relative rounded-xl overflow-hidden [aspect-ratio:16/10] bg-black border-2 border-solid border-transparent [transition:border-color_.2s_ease,box-shadow_.2s_ease] [.is-active_&]:!border-brand-blue [.is-active_&]:shadow-[0_10px_28px_-10px_rgba(34,48,198,0.7)] [&_video]:w-full [&_video]:h-full [&_video]:object-cover [&_video]:block";
 
-export const VFX_VIDEO_CLS: Record<'stage' | 'crowd' | 'drone' | 'band', string> = {
+export const VFX_VIDEO_CLS: Record<
+  "stage" | "crowd" | "drone" | "band",
+  string
+> = {
   stage: "[&_video]:[transform:scale(1.02)] [&_video]:[filter:saturate(1.05)]",
-  crowd: "[&_video]:[transform:scale(1.35)_translateY(8%)] [&_video]:[filter:brightness(.92)_saturate(.95)]",
-  drone: "[&_video]:[transform:scale(.9)] [&_video]:[filter:hue-rotate(-8deg)_saturate(.85)_brightness(1.05)]",
-  band:  "[&_video]:[transform:scale(1.25)_translate(-8%,4%)] [&_video]:[filter:contrast(1.05)_saturate(1.1)]",
+  crowd:
+    "[&_video]:[transform:scale(1.35)_translateY(8%)] [&_video]:[filter:brightness(.92)_saturate(.95)]",
+  drone:
+    "[&_video]:[transform:scale(.9)] [&_video]:[filter:hue-rotate(-8deg)_saturate(.85)_brightness(1.05)]",
+  band: "[&_video]:[transform:scale(1.25)_translate(-8%,4%)] [&_video]:[filter:contrast(1.05)_saturate(1.1)]",
 };
 export const VIEWER_ANGLE_LIVE_CLS =
   "absolute w-2 h-2 rounded-full top-2 left-2 bg-[#E53935] shadow-[0_0_0_0_rgba(229,57,53,0.6)] [animation:live-pulse_1.4s_ease-in-out_infinite]";
@@ -287,8 +312,10 @@ export const VIEWER_REACT_FLOAT_CLS =
 
 export const VIEWER_CONTROLS_CLS =
   "flex-none min-w-0 grid [grid-template-columns:minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 py-2.5 px-[14px] bg-[rgba(255,255,255,0.04)] border border-solid border-[rgba(255,255,255,0.08)] rounded-[14px] [.is-fs_&]:absolute [.is-fs_&]:left-1/2 [.is-fs_&]:bottom-6 [.is-fs_&]:[transform:translateX(-50%)] [.is-fs_&]:w-[min(900px,calc(100vw-32px))] [.is-fs_&]:bg-[rgba(11,15,26,0.65)] [.is-fs_&]:[backdrop-filter:blur(14px)_saturate(160%)] [.is-fs_&]:[-webkit-backdrop-filter:blur(14px)_saturate(160%)] [.is-fs_&]:border-[rgba(255,255,255,0.12)] [.is-fs_&]:shadow-[0_18px_40px_-10px_rgba(0,0,0,0.6)] [.is-fs_&]:opacity-100 [.is-fs_&]:[transition:opacity_.25s_ease] [.is-fs.is-idle_&]:!opacity-0 [.is-fs.is-idle_&]:pointer-events-none max-[720px]:!flex max-[720px]:!flex-wrap max-[720px]:!items-center max-[720px]:!justify-between max-[720px]:gap-2 max-[720px]:py-2 max-[720px]:px-2.5";
-export const VIEWER_CONTROLS_LEFT_CLS = "inline-flex items-center gap-2.5 min-w-0 max-[720px]:gap-1.5";
-export const VIEWER_CONTROLS_RIGHT_CLS = "inline-flex items-center gap-2.5 justify-self-end max-[720px]:justify-self-auto max-[720px]:gap-1.5";
+export const VIEWER_CONTROLS_LEFT_CLS =
+  "inline-flex items-center gap-2.5 min-w-0 max-[720px]:gap-1.5";
+export const VIEWER_CONTROLS_RIGHT_CLS =
+  "inline-flex items-center gap-2.5 justify-self-end max-[720px]:justify-self-auto max-[720px]:gap-1.5";
 
 export const VIEWER_VOL_CLS =
   "[appearance:none] [-webkit-appearance:none] w-[110px] h-1 bg-[rgba(255,255,255,0.18)] rounded-full cursor-pointer max-[720px]:hidden [&::-webkit-slider-thumb]:[-webkit-appearance:none] [&::-webkit-slider-thumb]:w-[14px] [&::-webkit-slider-thumb]:h-[14px] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-brand-blue [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-solid [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:w-[14px] [&::-moz-range-thumb]:h-[14px] [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-brand-blue [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-solid [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:cursor-pointer";

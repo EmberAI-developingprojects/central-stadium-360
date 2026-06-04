@@ -3,16 +3,16 @@ export type SmsProvider = "dev" | "twilio" | "mobicom" | "skytel";
 export interface SmsMessage {
   phone: string;
   otp: string;
-  /** Optional override of the rendered text. Default: localized OTP message. */
+
   text?: string;
 }
 
 export interface SmsResult {
   ok: boolean;
   provider: SmsProvider;
-  /** Provider-side message id, when available. */
+
   messageId?: string;
-  /** Non-fatal note (e.g. "logged to console; no provider configured"). */
+
   note?: string;
 }
 
@@ -29,7 +29,6 @@ function defaultText(otp: string): string {
 async function sendViaDev(msg: SmsMessage): Promise<SmsResult> {
   const text = msg.text ?? defaultText(msg.otp);
 
-  // eslint-disable-next-line no-console
   console.log(
     `\n────────── [DEV SMS] no SMS_PROVIDER configured ──────────\n` +
       `to:   ${msg.phone}\n` +

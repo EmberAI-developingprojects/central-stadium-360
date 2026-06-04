@@ -104,7 +104,7 @@ function ConfirmDialog({
       }
     };
     window.addEventListener("keydown", onKey);
-    // focus confirm button shortly after mount so layout is settled
+
     const id = window.setTimeout(() => confirmRef.current?.focus(), 30);
     return () => {
       window.removeEventListener("keydown", onKey);

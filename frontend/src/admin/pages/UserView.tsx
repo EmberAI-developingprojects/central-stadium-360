@@ -69,7 +69,7 @@ export default function UserView() {
   };
 
   useEffect(() => {
-    load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */
+    load();
   }, [id]);
 
   if (user === undefined)

@@ -229,9 +229,9 @@ export default function EventEdit() {
 
       <form onSubmit={onSubmit} className="pb-24">
         <div className="grid gap-5 [grid-template-columns:minmax(0,1fr)_360px] max-[1100px]:[grid-template-columns:1fr]">
-          {/* LEFT COLUMN ────────────────────────────────────────────────── */}
+
           <div className="flex flex-col gap-5 min-w-0">
-            {/* Үндсэн мэдээлэл */}
+
             <section className={CARD_CLS}>
               <header className={CARD_HEAD_CLS}>
                 <span className={CARD_HEAD_ICON_CLS} aria-hidden="true">
@@ -312,7 +312,6 @@ export default function EventEdit() {
               </div>
             </section>
 
-            {/* Үнэ */}
             <section className={CARD_CLS}>
               <header className={CARD_HEAD_CLS}>
                 <span className={CARD_HEAD_ICON_CLS} aria-hidden="true">
@@ -380,7 +379,6 @@ export default function EventEdit() {
             </section>
           </div>
 
-          {/* RIGHT COLUMN — IMAGE ─────────────────────────────────────── */}
           <aside className="min-w-0">
             <section className={`${CARD_CLS} sticky top-[76px]`}>
               <header className={CARD_HEAD_CLS}>
@@ -490,7 +488,6 @@ export default function EventEdit() {
           </aside>
         </div>
 
-        {/* Sticky action bar */}
         <div className="sticky bottom-0 -mx-8 mt-6 bg-white/95 backdrop-blur-md border-t border-[#ececef] px-8 py-3.5 flex items-center gap-2 z-10">
           <button
             type="submit"

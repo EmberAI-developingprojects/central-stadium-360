@@ -35,8 +35,6 @@ export default function useRevealOnScroll(): void {
     };
     observeAll(document);
 
-    // Catch .reveal-up nodes that get inserted *after* this effect runs —
-    // e.g. cards rendered once async data (news, events) resolves.
     const mo = new MutationObserver((mutations) => {
       for (const m of mutations) {
         m.addedNodes.forEach((node) => {

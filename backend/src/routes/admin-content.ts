@@ -17,10 +17,6 @@ import {
 
 const adminContent = new Hono<AuthEnv>();
 
-// GET is public (homepage anon read); writes require admin.
-// Mounted under /api/admin/content, but we open up the GET via a separate
-// public path below.
-
 adminContent.use("*", requireUser);
 adminContent.use("*", async (c, next) => requireAdmin(c, next));
 
@@ -29,8 +25,6 @@ const NEWS_COLS_WITH_BLOCKS =
 const NEWS_COLS_NO_BLOCKS =
   "id,label,title,body,image,featured,sort_order,created_at";
 
-// Track whether the `blocks` column exists. We discover this lazily so the API
-// works on databases where the 0006 migration has not been applied yet.
 let blocksColumnAvailable: boolean | null = null;
 
 function isMissingColumnError(err: unknown, column: string): boolean {
@@ -133,7 +127,6 @@ adminContent.put("/:section", async (c) => {
 
   const table = TABLE_FOR_SECTION[section];
 
-  // Hero uses slot as PK — upsert in place instead of delete+insert.
   if (section === "hero") {
     const rows = parsed.data as {
       slot: string;
@@ -151,9 +144,6 @@ adminContent.put("/:section", async (c) => {
     return c.json({ ok: true, data: data ?? [] } as const);
   }
 
-  // Replace strategy: wipe the section, then insert the supplied rows
-  // with their explicit sort_order. The admin UI sends the full list on
-  // every save, so this is the simplest consistent shape.
   const { error: delErr } = await admin
     .from(table)
     .delete()
@@ -180,9 +170,6 @@ adminContent.put("/:section", async (c) => {
     .insert(rows)
     .select("*");
 
-  // If the news.blocks column hasn't been migrated yet, retry without it so
-  // the rest of the content editor keeps working. Block content is lost in
-  // that case but the user is told via the section's load path.
   if (insErr && section === "news" && isMissingColumnError(insErr, "blocks")) {
     blocksColumnAvailable = false;
     const rowsNoBlocks = rows.map((r) => {
@@ -206,10 +193,6 @@ adminContent.put("/:section", async (c) => {
 
 export default adminContent;
 
-// -----------------------------------------------------------------------------
-// Public home content GET — separate Hono app so the public route is not
-// behind requireAdmin. Mounted in app.ts at /api/content.
-// -----------------------------------------------------------------------------
 export const publicContent = new Hono();
 
 publicContent.get("/", async (c) => {
@@ -271,7 +254,7 @@ publicContent.get("/", async (c) => {
       return c.json({ ok: false, error: r.error.message } as const, 500);
     }
   }
-  // hero table may not exist yet (migration pending) — degrade gracefully
+
   if (hero.error) {
     console.warn(
       "[content] home_hero query failed (migration pending?):",
@@ -279,8 +262,6 @@ publicContent.get("/", async (c) => {
     );
   }
 
-  // Normalize blocks: ensure each row has a `blocks: []` field even when the
-  // column doesn't exist yet, so the frontend converter has a stable shape.
   const newsNormalized: DbHomeNews[] = (news.data ?? []).map((r) => ({
     ...(r as DbHomeNews),
     blocks: Array.isArray(r.blocks) ? (r.blocks as DbHomeNews["blocks"]) : [],
