@@ -52,6 +52,10 @@ import {
   VIEWER_LIVE_PILL_CLS,
   VIEWER_LIVE_PULSE_CLS,
   VIEWER_MAIN_CAM_CLS,
+  VIEWER_MOBILE_CAM_CLS,
+  VIEWER_MOBILE_CAM_LABEL_CLS,
+  VIEWER_MOBILE_CAM_THUMB_CLS,
+  VIEWER_MOBILE_CAMS_CLS,
   VIEWER_MSG_CLS,
   VIEWER_MSG_MINE_CLS,
   VIEWER_MSG_NAME_CLS,
@@ -1742,6 +1746,62 @@ function ViewerOverlay({
               >
                 {b.emoji}
               </span>
+            ))}
+          </div>
+
+          <div
+            className={VIEWER_MOBILE_CAMS_CLS}
+            role="group"
+            aria-label="Камерын өнцөг"
+          >
+            {cams.map((cam, i) => (
+              <button
+                key={cam.id}
+                type="button"
+                className={`${VIEWER_MOBILE_CAM_CLS}${camIdx === i ? " " + VIEWER_ANGLE_ACTIVE_CLS : ""}`}
+                onClick={() => setCamIdx(i)}
+                aria-label={cam.label}
+                aria-pressed={camIdx === i}
+              >
+                <span
+                  className={VIEWER_MOBILE_CAM_THUMB_CLS}
+                  style={{ background: "#0b1929" }}
+                >
+                  {featuredEvent.image && (
+                    <img
+                      src={featuredEvent.image}
+                      alt=""
+                      aria-hidden="true"
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        opacity: camIdx === i ? 0.55 : 0.32,
+                      }}
+                    />
+                  )}
+                  <span className={VIEWER_ANGLE_LIVE_CLS}></span>
+                  {cam.type === "360" && (
+                    <span
+                      style={{
+                        position: "absolute",
+                        bottom: 4,
+                        right: 4,
+                        fontSize: 9,
+                        fontWeight: 700,
+                        background: "rgba(0,0,0,0.7)",
+                        color: "#60a5fa",
+                        padding: "1px 4px",
+                        borderRadius: 3,
+                        letterSpacing: "0.06em",
+                      }}
+                    >
+                      360°
+                    </span>
+                  )}
+                </span>
+                <span className={VIEWER_MOBILE_CAM_LABEL_CLS}>{cam.label}</span>
+              </button>
             ))}
           </div>
 
