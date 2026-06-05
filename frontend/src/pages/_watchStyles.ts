@@ -249,7 +249,7 @@ export const TICKET_SUCCESS_CODE_CLS =
 export const TICKET_SUCCESS_ACTIONS_CLS = "inline-flex gap-2.5";
 
 export const VIEWER_CLS =
-  "fixed inset-0 z-[250] w-screen max-w-[100vw] flex flex-col text-white bg-[#05080F] overflow-x-hidden [animation:tmFade_.25s_ease]";
+  "fixed inset-0 z-[250] w-screen max-w-[100vw] flex flex-col text-white overflow-x-hidden [animation:tmFade_.25s_ease] [background:radial-gradient(70%_45%_at_50%_-5%,rgba(34,48,198,0.22)_0%,transparent_55%),radial-gradient(45%_35%_at_90%_115%,rgba(245,158,11,0.07)_0%,transparent_70%),#05080F]";
 
 export const VIEWER_HEADER_CLS =
   "grid items-center gap-[18px] flex-none [grid-template-columns:auto_1fr_auto] py-[14px] px-[22px] bg-[rgba(11,15,26,0.92)] border-b border-solid border-[rgba(255,255,255,0.06)] max-[720px]:[grid-template-columns:auto_1fr] max-[720px]:py-2.5 max-[720px]:px-[14px]";
@@ -261,7 +261,7 @@ export const VIEWER_TITLE_WRAP_CLS = "flex items-center gap-[14px] min-w-0";
 export const VIEWER_TITLE_CLS =
   "text-base font-bold text-white m-0 overflow-hidden text-ellipsis whitespace-nowrap max-w-[50vw] max-[720px]:text-sm max-[720px]:max-w-[60vw]";
 export const VIEWER_LIVE_PILL_CLS =
-  "inline-flex items-center gap-2 text-white text-[11px] font-extrabold rounded-full bg-[#E53935] tracking-[.12em] py-[5px] px-[11px] flex-none [font-variant-numeric:tabular-nums]";
+  "inline-flex items-center gap-2 text-white text-[11px] font-extrabold rounded-full bg-[#E53935] tracking-[.12em] py-[5px] px-[11px] flex-none [font-variant-numeric:tabular-nums] shadow-[0_0_0_1px_rgba(229,57,53,0.4),0_6px_18px_-8px_rgba(229,57,53,0.7)] [&>span:last-child]:text-[#FCD34D]";
 export const VIEWER_LIVE_PULSE_CLS =
   "rounded-full bg-white w-[7px] h-[7px] shadow-[0_0_0_0_rgba(255,255,255,0.9)] [animation:live-pulse_1.4s_ease-in-out_infinite]";
 
@@ -282,7 +282,7 @@ export const VIEWER_ANGLE_CLS =
   "block bg-transparent border-0 p-0 cursor-pointer text-left text-white [transition:transform_.2s_ease,opacity_.2s_ease] opacity-70 hover:opacity-100 hover:-translate-y-0.5 [&.is-active]:opacity-100";
 export const VIEWER_ANGLE_ACTIVE_CLS = "is-active";
 export const VIEWER_ANGLE_THUMB_CLS =
-  "block relative rounded-[10px] overflow-hidden [aspect-ratio:16/9] bg-black border border-solid border-[rgba(255,255,255,0.08)] [transition:border-color_.2s_ease,box-shadow_.2s_ease] [.is-active_&]:!border-brand-blue [.is-active_&]:!border-2 [.is-active_&]:shadow-[0_10px_24px_-10px_rgba(34,48,198,0.7)] [&_video]:w-full [&_video]:h-full [&_video]:object-cover [&_video]:block";
+  "block relative rounded-[10px] overflow-hidden [aspect-ratio:16/9] bg-black border border-solid border-[rgba(255,255,255,0.08)] [transition:border-color_.2s_ease,box-shadow_.2s_ease] [.is-active_&]:!border-brand-blue [.is-active_&]:!border-2 [.is-active_&]:shadow-[0_10px_24px_-10px_rgba(34,48,198,0.75),0_0_0_2px_rgba(245,158,11,0.18)] [&_video]:w-full [&_video]:h-full [&_video]:object-cover [&_video]:block";
 
 export const VFX_VIDEO_CLS: Record<
   "stage" | "crowd" | "drone" | "band",
@@ -305,14 +305,14 @@ export const VIEWER_MOBILE_CAMS_CLS =
 export const VIEWER_MOBILE_CAM_CLS =
   "shrink-0 w-[116px] block bg-transparent border-0 p-0 cursor-pointer text-left text-white snap-start [transition:opacity_.15s_ease,transform_.15s_ease] opacity-65 [&.is-active]:opacity-100 active:scale-[0.97]";
 export const VIEWER_MOBILE_CAM_THUMB_CLS =
-  "block relative rounded-[10px] overflow-hidden aspect-[16/9] bg-black border border-solid border-[rgba(255,255,255,0.1)] [transition:border-color_.15s_ease,box-shadow_.15s_ease] [.is-active_&]:!border-2 [.is-active_&]:!border-brand-blue [.is-active_&]:shadow-[0_8px_22px_-10px_rgba(34,48,198,0.7)]";
+  "block relative rounded-[10px] overflow-hidden aspect-[16/9] bg-black border border-solid border-[rgba(255,255,255,0.1)] [transition:border-color_.15s_ease,box-shadow_.15s_ease] [.is-active_&]:!border-2 [.is-active_&]:!border-brand-blue [.is-active_&]:shadow-[0_8px_22px_-10px_rgba(34,48,198,0.75),0_0_0_2px_rgba(245,158,11,0.18)]";
 export const VIEWER_MOBILE_CAM_LABEL_CLS =
   "block mt-1.5 text-[11.5px] font-bold truncate text-white [.is-active_&]:text-brand-blue-soft";
 
 export const VIEWER_STAGE_CLS =
   "relative min-h-0 min-w-0 max-w-full flex flex-col gap-3 max-[1100px]:w-full [&.is-fs]:w-screen [&.is-fs]:h-screen [&.is-fs]:p-0 [&.is-fs]:bg-black [&.is-fs]:gap-0 [&.is-fs.is-idle]:cursor-none";
 export const VIEWER_STAGE_SHELL_CLS =
-  "flex-1 min-h-0 relative rounded-2xl overflow-hidden bg-black shadow-[0_40px_80px_-40px_rgba(0,0,0,0.9)] max-[1100px]:!flex-none max-[1100px]:w-full max-[1100px]:!h-[calc((100vw-20px)*9/16)] max-[1100px]:!max-h-[60vh] max-[720px]:!h-[calc((100vw-20px)*9/16)] max-[720px]:!max-h-none [.is-fs_&]:!flex-1 [.is-fs_&]:!h-auto [.is-fs_&]:!max-h-none [.is-fs_&]:rounded-none [.is-fs_&]:shadow-none [&_video]:w-full [&_video]:h-full [&_video]:object-cover [&_video]:block [&_video]:[transition:transform_.35s_ease,filter_.35s_ease]";
+  "flex-1 min-h-0 relative rounded-2xl overflow-hidden bg-black shadow-[0_40px_80px_-40px_rgba(0,0,0,0.9),0_0_80px_-30px_rgba(34,48,198,0.45),inset_0_0_0_1px_rgba(255,255,255,0.04)] max-[1100px]:!flex-none max-[1100px]:w-full max-[1100px]:!h-[calc((100vw-20px)*9/16)] max-[1100px]:!max-h-[60vh] max-[720px]:!h-[calc((100vw-20px)*9/16)] max-[720px]:!max-h-none [.is-fs_&]:!flex-1 [.is-fs_&]:!h-auto [.is-fs_&]:!max-h-none [.is-fs_&]:rounded-none [.is-fs_&]:shadow-none [&_video]:w-full [&_video]:h-full [&_video]:object-cover [&_video]:block [&_video]:[transition:transform_.35s_ease,filter_.35s_ease]";
 export const VIEWER_MAIN_CAM_CLS =
   "absolute top-4 left-4 z-[2] bg-[rgba(11,15,26,0.7)] [backdrop-filter:blur(8px)] [-webkit-backdrop-filter:blur(8px)] py-[7px] px-[13px] rounded-full text-xs text-[rgba(255,255,255,0.9)] tracking-[.04em] [&_strong]:text-white [&_strong]:font-bold [&_strong]:mr-1 [.is-fs_&]:top-[22px] [.is-fs_&]:left-[22px] [.is-fs_&]:[transition:opacity_.25s_ease] [.is-fs.is-idle_&]:opacity-0";
 
