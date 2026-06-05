@@ -16,7 +16,7 @@ events.get("/", async (c) => {
   const { data, error } = await supabase
     .from("events")
     .select(
-      "id,title,description,status,start_time,price,image,pill,featured,created_at",
+      "id,title,description,status,start_time,price,image,featured,created_at",
     )
     .order("start_time", { ascending: true });
 

@@ -63,9 +63,6 @@ export default function EventDetail() {
             )}
             <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(10,22,40,0.1) 0%, rgba(10,22,40,0.55) 55%, rgba(10,22,40,0.92) 100%)' }} />
             <div className="absolute bottom-0 left-0 right-0 px-5 pb-7 md:px-14 md:pb-10" style={{ maxWidth: 860 }}>
-              {event.pill && (
-                <span className="inline-block text-[11px] font-bold uppercase tracking-[0.16em] text-white/60 mb-2">{event.pill}</span>
-              )}
               <h1 style={{ margin: 0, fontSize: 'clamp(24px, 4.5vw, 52px)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.01em', lineHeight: 1.06, color: '#fff', textShadow: '0 2px 20px rgba(0,0,0,0.5)' }}>
                 {event.title}
               </h1>

@@ -421,7 +421,6 @@ function Upcoming({ gatedGo, events }: UpcomingProps) {
       alt: e.title,
       date: d || e.date,
       year: y || "",
-      pill: e.pill,
     };
   });
 
@@ -603,9 +602,6 @@ function Upcoming({ gatedGo, events }: UpcomingProps) {
                             {u.year}
                           </span>
                         )}
-                      </span>
-                      <span className="rounded-full text-[11px] uppercase font-bold text-white bg-[rgba(255,255,255,0.14)] border border-solid border-[rgba(255,255,255,0.25)] py-1.5 px-3 tracking-[0.14em] [backdrop-filter:blur(6px)] [-webkit-backdrop-filter:blur(6px)]">
-                        {u.pill}
                       </span>
                     </div>
                   </div>
@@ -1022,19 +1018,19 @@ function Roadmap(_props: { items?: RoadmapItem[] }) {
   const all = [...bot, ...top];
 
   const botDots = [
-    { x: 80, y: 258 },
-    { x: 185, y: 256 },
-    { x: 290, y: 250 },
-    { x: 395, y: 232 },
-    { x: 500, y: 205 },
+    { x: 80, y: 230 },
+    { x: 185, y: 230 },
+    { x: 290, y: 230 },
+    { x: 395, y: 230 },
+    { x: 500, y: 230 },
   ];
   const topDots = [
-    { x: 620, y: 160 },
+    { x: 620, y: 110 },
     { x: 730, y: 110 },
-    { x: 838, y: 86 },
-    { x: 946, y: 76 },
-    { x: 1054, y: 72 },
-    { x: 1162, y: 70 },
+    { x: 838, y: 110 },
+    { x: 946, y: 110 },
+    { x: 1054, y: 110 },
+    { x: 1162, y: 110 },
   ];
   const dotPct = (x: number) => (x / 1200) * 100;
 
@@ -1103,7 +1099,7 @@ function Roadmap(_props: { items?: RoadmapItem[] }) {
             aria-hidden="true"
           >
             <path
-              d="M 40,260 C 160,259 260,256 350,242 S 500,210 600,170 S 740,98 860,82 S 1060,72 1170,70"
+              d="M 40,230 L 510,230 C 555,230 575,110 620,110 L 1170,110"
               stroke="#2230C6"
               strokeWidth="2.2"
               fill="none"

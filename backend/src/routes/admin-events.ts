@@ -14,7 +14,7 @@ adminEvents.use("*", requireUser);
 adminEvents.use("*", async (c, next) => requireAdmin(c, next));
 
 const SELECT_COLS =
-  "id,title,description,status,start_time,price,image,pill,featured,created_at";
+  "id,title,description,status,start_time,price,image,featured,created_at";
 
 const eventStatus = z.enum(["upcoming", "live", "ended"]);
 
@@ -25,7 +25,6 @@ const createSchema = z.object({
   start_time: z.string().min(1),
   price: z.number().int().min(0),
   image: z.string().nullable().optional(),
-  pill: z.string().nullable().optional(),
   featured: z.boolean().optional(),
 });
 

@@ -28,20 +28,11 @@ const EMPTY: EventRecord = {
   desc: "",
   date: "",
   when: "",
-  pill: "Концерт",
   image: "",
   base: 0,
   featured: false,
   start_time: "",
 };
-
-const CATEGORY_SUGGESTIONS = [
-  "Концерт",
-  "Спорт",
-  "Тоглолт",
-  "Шоу",
-  "Бусад",
-];
 
 function isoToLocalInput(iso: string): string {
   if (!iso) return "";
@@ -245,7 +236,7 @@ export default function EventEdit() {
                 <div className="min-w-0">
                   <h3 className={CARD_HEAD_TITLE_CLS}>Үндсэн мэдээлэл</h3>
                   <p className={CARD_HEAD_DESC_CLS}>
-                    Тоглолтын гарчиг, ангилал, цаг, тайлбар.
+                    Тоглолтын гарчиг, цаг, тайлбар.
                   </p>
                 </div>
               </header>
@@ -261,39 +252,22 @@ export default function EventEdit() {
                   />
                 </div>
 
-                <div className={TWO_COL_CLS}>
-                  <div className={ADMIN_FIELD_CLS}>
-                    <label htmlFor="evt-pill">Ангилал</label>
-                    <input
-                      id="evt-pill"
-                      value={form.pill}
-                      onChange={(e) => update({ pill: e.target.value })}
-                      placeholder="Концерт"
-                      list="evt-pill-suggestions"
-                    />
-                    <datalist id="evt-pill-suggestions">
-                      {CATEGORY_SUGGESTIONS.map((c) => (
-                        <option key={c} value={c} />
-                      ))}
-                    </datalist>
-                  </div>
-                  <div className={ADMIN_FIELD_CLS}>
-                    <label htmlFor="evt-start">Эхлэх огноо, цаг *</label>
-                    <input
-                      id="evt-start"
-                      type="datetime-local"
-                      value={isoToLocalInput(form.start_time)}
-                      onChange={(e) =>
-                        update({ start_time: localInputToIso(e.target.value) })
-                      }
-                      required
-                    />
-                    {startsAtLabel && (
-                      <span className="text-[11.5px] text-zinc-500">
-                        {startsAtLabel}
-                      </span>
-                    )}
-                  </div>
+                <div className={ADMIN_FIELD_CLS}>
+                  <label htmlFor="evt-start">Эхлэх огноо, цаг *</label>
+                  <input
+                    id="evt-start"
+                    type="datetime-local"
+                    value={isoToLocalInput(form.start_time)}
+                    onChange={(e) =>
+                      update({ start_time: localInputToIso(e.target.value) })
+                    }
+                    required
+                  />
+                  {startsAtLabel && (
+                    <span className="text-[11.5px] text-zinc-500">
+                      {startsAtLabel}
+                    </span>
+                  )}
                 </div>
 
                 <div className={ADMIN_FIELD_CLS}>

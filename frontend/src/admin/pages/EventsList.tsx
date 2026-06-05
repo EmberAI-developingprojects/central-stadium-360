@@ -165,10 +165,7 @@ export default function EventsList() {
       if (statusFilter !== "all" && r.status !== statusFilter) return false;
       if (!q) return true;
       const needle = q.toLowerCase();
-      return (
-        (r.event.title || "").toLowerCase().includes(needle) ||
-        (r.event.pill || "").toLowerCase().includes(needle)
-      );
+      return (r.event.title || "").toLowerCase().includes(needle);
     });
   }, [enriched, q, statusFilter]);
 
@@ -357,12 +354,6 @@ export default function EventsList() {
                             )}
                           </div>
                           <div className="text-[11.5px] text-zinc-500 mt-0.5 flex items-center gap-1.5">
-                            {e.pill && (
-                              <span className="text-zinc-700">{e.pill}</span>
-                            )}
-                            {e.pill && (
-                              <span className="text-zinc-300" aria-hidden="true">·</span>
-                            )}
                             <span className="font-mono text-[10.5px] text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity">
                               {e.id.slice(0, 8)}
                             </span>

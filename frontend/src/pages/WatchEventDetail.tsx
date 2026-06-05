@@ -88,11 +88,6 @@ export default function WatchEventDetail() {
             <div className="absolute inset-0 bg-gradient-to-b from-[rgba(7,21,38,0.15)] via-[rgba(7,21,38,0.55)] to-[rgba(7,21,38,0.95)]" />
 
             <div className="absolute bottom-0 left-0 right-0 px-4 pb-5 pt-8 sm:px-6 sm:pb-6 md:px-12 md:pb-10 max-w-[900px]">
-              {event.pill && (
-                <div className="text-[10px] sm:text-[11px] font-bold tracking-[0.16em] uppercase text-white/60 mb-2 sm:mb-2.5">
-                  {event.pill}
-                </div>
-              )}
               <h1 className="m-0 text-[26px] sm:text-[34px] md:text-[44px] lg:text-[56px] font-black uppercase tracking-[-0.01em] leading-[1.05] text-white [text-shadow:0_2px_24px_rgba(0,0,0,0.6)]">
                 {event.title}
               </h1>
