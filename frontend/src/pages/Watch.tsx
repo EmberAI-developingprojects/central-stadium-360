@@ -719,11 +719,6 @@ function UpcomingSection({
                     </span>
                   </div>
                   <div className="flex-1 min-w-0 pt-0.5">
-                    {ev.pill && (
-                      <span className="inline-block text-[10px] font-extrabold uppercase tracking-[0.14em] bg-[rgba(255,255,255,0.08)] text-[#6fa8dc] border border-solid border-[rgba(111,168,220,0.3)] rounded px-2 py-0.5 mb-2">
-                        {ev.pill}
-                      </span>
-                    )}
                     <h3 className="text-white font-extrabold text-[16px] leading-[1.25] m-0 tracking-[-0.01em] uppercase">
                       {ev.title}
                     </h3>
