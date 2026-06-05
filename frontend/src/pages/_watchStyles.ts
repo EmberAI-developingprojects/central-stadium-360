@@ -274,15 +274,15 @@ export const VIEWER_ICON_BTN_CLS =
 export const VIEWER_ICON_BTN_ON_CLS = "is-on !bg-brand-blue";
 
 export const VIEWER_BODY_CLS =
-  "flex-1 min-h-0 min-w-0 max-w-full w-full gap-[14px] p-[14px] overflow-x-hidden overflow-y-auto grid [grid-template-columns:220px_1fr_320px] max-[1100px]:!flex max-[1100px]:!flex-col max-[720px]:p-2.5 max-[720px]:gap-2";
+  "flex-1 min-h-0 min-w-0 max-w-full w-full gap-[18px] p-[16px] overflow-x-hidden overflow-y-auto grid [grid-template-columns:132px_minmax(0,1fr)_300px] max-[1100px]:!flex max-[1100px]:!flex-col max-[720px]:p-2.5 max-[720px]:gap-2";
 
 export const VIEWER_ANGLES_CLS =
-  "flex flex-col gap-3 min-h-0 overflow-auto max-[1100px]:hidden";
+  "flex flex-col gap-2.5 min-h-0 overflow-y-auto overflow-x-hidden pr-1 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-[rgba(255,255,255,0.1)] [&::-webkit-scrollbar-thumb]:rounded-full max-[1100px]:hidden";
 export const VIEWER_ANGLE_CLS =
-  "block bg-transparent border-0 p-0 cursor-pointer text-left text-white [transition:transform_.2s_ease] hover:-translate-y-0.5";
+  "block bg-transparent border-0 p-0 cursor-pointer text-left text-white [transition:transform_.2s_ease,opacity_.2s_ease] opacity-70 hover:opacity-100 hover:-translate-y-0.5 [&.is-active]:opacity-100";
 export const VIEWER_ANGLE_ACTIVE_CLS = "is-active";
 export const VIEWER_ANGLE_THUMB_CLS =
-  "block relative rounded-xl overflow-hidden [aspect-ratio:16/10] bg-black border-2 border-solid border-transparent [transition:border-color_.2s_ease,box-shadow_.2s_ease] [.is-active_&]:!border-brand-blue [.is-active_&]:shadow-[0_10px_28px_-10px_rgba(34,48,198,0.7)] [&_video]:w-full [&_video]:h-full [&_video]:object-cover [&_video]:block";
+  "block relative rounded-[10px] overflow-hidden [aspect-ratio:16/9] bg-black border border-solid border-[rgba(255,255,255,0.08)] [transition:border-color_.2s_ease,box-shadow_.2s_ease] [.is-active_&]:!border-brand-blue [.is-active_&]:!border-2 [.is-active_&]:shadow-[0_10px_24px_-10px_rgba(34,48,198,0.7)] [&_video]:w-full [&_video]:h-full [&_video]:object-cover [&_video]:block";
 
 export const VFX_VIDEO_CLS: Record<
   "stage" | "crowd" | "drone" | "band",
@@ -298,7 +298,7 @@ export const VFX_VIDEO_CLS: Record<
 export const VIEWER_ANGLE_LIVE_CLS =
   "absolute w-2 h-2 rounded-full top-2 left-2 bg-[#E53935] shadow-[0_0_0_0_rgba(229,57,53,0.6)] [animation:live-pulse_1.4s_ease-in-out_infinite]";
 export const VIEWER_ANGLE_LABEL_CLS =
-  "flex flex-col mt-2 text-[12.5px] leading-[1.3] [&_strong]:text-white [&_strong]:font-bold [&_small]:text-[10.5px] [&_small]:uppercase [&_small]:text-[rgba(255,255,255,0.5)] [&_small]:tracking-[.08em]";
+  "flex flex-col mt-1.5 text-[11.5px] leading-[1.25] [&_strong]:text-white [&_strong]:font-bold [&_strong]:truncate [&_small]:text-[9.5px] [&_small]:uppercase [&_small]:text-[rgba(255,255,255,0.45)] [&_small]:tracking-[.08em] [&_small]:truncate [.is-active_&_strong]:text-brand-blue-soft";
 
 export const VIEWER_STAGE_CLS =
   "relative min-h-0 min-w-0 max-w-full flex flex-col gap-3 max-[1100px]:w-full [&.is-fs]:w-screen [&.is-fs]:h-screen [&.is-fs]:p-0 [&.is-fs]:bg-black [&.is-fs]:gap-0 [&.is-fs.is-idle]:cursor-none";
