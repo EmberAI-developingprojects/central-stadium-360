@@ -270,7 +270,7 @@ export const VIEWER_STATS_CLS =
 export const VIEWER_STAT_CLS =
   "inline-flex items-center gap-2 rounded-full text-[13px] font-semibold py-2 px-[14px] bg-[rgba(255,255,255,0.06)] border border-solid border-[rgba(255,255,255,0.08)] [font-variant-numeric:tabular-nums] [&_svg]:w-4 [&_svg]:h-4";
 export const VIEWER_ICON_BTN_CLS =
-  "w-[38px] h-[38px] rounded-[10px] text-white cursor-pointer grid place-items-center bg-[rgba(255,255,255,0.06)] border border-solid border-[rgba(255,255,255,0.08)] [transition:background_.15s_ease,color_.15s_ease,transform_.15s_ease] hover:bg-brand-blue hover:-translate-y-px [&_svg]:w-[17px] [&_svg]:h-[17px]";
+  "w-[38px] h-[38px] rounded-[10px] text-white cursor-pointer grid place-items-center bg-[rgba(255,255,255,0.06)] border border-solid border-[rgba(255,255,255,0.08)] [transition:background_.15s_ease,color_.15s_ease,transform_.15s_ease] hover:bg-brand-blue hover:-translate-y-px [&_svg]:w-[17px] [&_svg]:h-[17px] max-[720px]:!w-[42px] max-[720px]:!h-[42px]";
 export const VIEWER_ICON_BTN_ON_CLS = "is-on !bg-brand-blue";
 
 export const VIEWER_BODY_CLS =
@@ -300,10 +300,19 @@ export const VIEWER_ANGLE_LIVE_CLS =
 export const VIEWER_ANGLE_LABEL_CLS =
   "flex flex-col mt-1.5 text-[11.5px] leading-[1.25] [&_strong]:text-white [&_strong]:font-bold [&_strong]:truncate [&_small]:text-[9.5px] [&_small]:uppercase [&_small]:text-[rgba(255,255,255,0.45)] [&_small]:tracking-[.08em] [&_small]:truncate [.is-active_&_strong]:text-brand-blue-soft";
 
+export const VIEWER_MOBILE_CAMS_CLS =
+  "hidden max-[1100px]:flex flex-row gap-2 overflow-x-auto overflow-y-hidden -mx-2.5 px-2.5 pb-1.5 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [.is-fs_&]:!hidden";
+export const VIEWER_MOBILE_CAM_CLS =
+  "shrink-0 w-[116px] block bg-transparent border-0 p-0 cursor-pointer text-left text-white snap-start [transition:opacity_.15s_ease,transform_.15s_ease] opacity-65 [&.is-active]:opacity-100 active:scale-[0.97]";
+export const VIEWER_MOBILE_CAM_THUMB_CLS =
+  "block relative rounded-[10px] overflow-hidden aspect-[16/9] bg-black border border-solid border-[rgba(255,255,255,0.1)] [transition:border-color_.15s_ease,box-shadow_.15s_ease] [.is-active_&]:!border-2 [.is-active_&]:!border-brand-blue [.is-active_&]:shadow-[0_8px_22px_-10px_rgba(34,48,198,0.7)]";
+export const VIEWER_MOBILE_CAM_LABEL_CLS =
+  "block mt-1.5 text-[11.5px] font-bold truncate text-white [.is-active_&]:text-brand-blue-soft";
+
 export const VIEWER_STAGE_CLS =
   "relative min-h-0 min-w-0 max-w-full flex flex-col gap-3 max-[1100px]:w-full [&.is-fs]:w-screen [&.is-fs]:h-screen [&.is-fs]:p-0 [&.is-fs]:bg-black [&.is-fs]:gap-0 [&.is-fs.is-idle]:cursor-none";
 export const VIEWER_STAGE_SHELL_CLS =
-  "flex-1 min-h-0 relative rounded-2xl overflow-hidden bg-black shadow-[0_40px_80px_-40px_rgba(0,0,0,0.9)] max-[1100px]:!flex-none max-[1100px]:w-full max-[1100px]:!h-[calc((100vw-20px)*9/16)] max-[1100px]:!max-h-[55vh] max-[720px]:!h-[calc((100vw-20px)*9/16)] max-[720px]:!max-h-[40vh] [.is-fs_&]:!flex-1 [.is-fs_&]:!h-auto [.is-fs_&]:!max-h-none [.is-fs_&]:rounded-none [.is-fs_&]:shadow-none [&_video]:w-full [&_video]:h-full [&_video]:object-cover [&_video]:block [&_video]:[transition:transform_.35s_ease,filter_.35s_ease]";
+  "flex-1 min-h-0 relative rounded-2xl overflow-hidden bg-black shadow-[0_40px_80px_-40px_rgba(0,0,0,0.9)] max-[1100px]:!flex-none max-[1100px]:w-full max-[1100px]:!h-[calc((100vw-20px)*9/16)] max-[1100px]:!max-h-[60vh] max-[720px]:!h-[calc((100vw-20px)*9/16)] max-[720px]:!max-h-none [.is-fs_&]:!flex-1 [.is-fs_&]:!h-auto [.is-fs_&]:!max-h-none [.is-fs_&]:rounded-none [.is-fs_&]:shadow-none [&_video]:w-full [&_video]:h-full [&_video]:object-cover [&_video]:block [&_video]:[transition:transform_.35s_ease,filter_.35s_ease]";
 export const VIEWER_MAIN_CAM_CLS =
   "absolute top-4 left-4 z-[2] bg-[rgba(11,15,26,0.7)] [backdrop-filter:blur(8px)] [-webkit-backdrop-filter:blur(8px)] py-[7px] px-[13px] rounded-full text-xs text-[rgba(255,255,255,0.9)] tracking-[.04em] [&_strong]:text-white [&_strong]:font-bold [&_strong]:mr-1 [.is-fs_&]:top-[22px] [.is-fs_&]:left-[22px] [.is-fs_&]:[transition:opacity_.25s_ease] [.is-fs.is-idle_&]:opacity-0";
 
@@ -329,7 +338,7 @@ export const VIEWER_QUALITY_CLS =
   "inline-flex items-center gap-2 text-xs text-[rgba(255,255,255,0.7)] max-[720px]:gap-1.5 [&_select]:[appearance:none] [&_select]:[-webkit-appearance:none] [&_select]:bg-[rgba(255,255,255,0.06)] [&_select]:border [&_select]:border-solid [&_select]:border-[rgba(255,255,255,0.1)] [&_select]:text-white [&_select]:font-[inherit] [&_select]:text-[12.5px] [&_select]:font-semibold [&_select]:pt-[7px] [&_select]:pr-[26px] [&_select]:pb-[7px] [&_select]:pl-3 [&_select]:rounded-[9px] [&_select]:cursor-pointer [&_select]:[background-repeat:no-repeat] [&_select]:[background-position:right_9px_center] [&_select]:[background-size:9px_5px] [&_select]:[background-image:url(\"data:image/svg+xml;utf8,<svg_xmlns='http://www.w3.org/2000/svg'_viewBox='0_0_10_6'><path_d='M1_1l4_4_4-4'_stroke='%23fff'_stroke-width='1.6'_fill='none'_stroke-linecap='round'_stroke-linejoin='round'/></svg>\")] max-[720px]:[&_select]:text-[11.5px] max-[720px]:[&_select]:pt-1.5 max-[720px]:[&_select]:pb-1.5 max-[720px]:[&_select]:pl-2";
 
 export const VIEWER_CHAT_CLS =
-  "flex flex-col min-h-0 min-w-0 max-w-full bg-[rgba(255,255,255,0.03)] border border-solid border-[rgba(255,255,255,0.08)] rounded-[14px] overflow-hidden max-[1100px]:w-full max-[1100px]:min-h-[220px] max-[1100px]:max-h-[55vh]";
+  "flex flex-col min-h-0 min-w-0 max-w-full bg-[rgba(255,255,255,0.03)] border border-solid border-[rgba(255,255,255,0.08)] rounded-[14px] overflow-hidden max-[1100px]:w-full max-[1100px]:!flex-1 max-[1100px]:min-h-[260px]";
 export const VIEWER_CHAT_HEAD_CLS =
   "flex-none py-[14px] px-4 border-b border-solid border-[rgba(255,255,255,0.06)] text-[13px] font-bold tracking-[.04em] text-white inline-flex items-center gap-2 [&_svg]:w-4 [&_svg]:h-4 [&_svg]:text-brand-blue-soft";
 export const VIEWER_CHAT_COUNT_CLS =
@@ -342,12 +351,11 @@ export const VIEWER_MSG_MINE_CLS =
   "!bg-[rgba(34,48,198,0.18)] py-2 px-2.5 rounded-[10px] border-l-2 border-solid border-brand-blue";
 export const VIEWER_MSG_NAME_CLS = "font-bold mr-1.5";
 export const VIEWER_CHAT_FORM_CLS =
-  "flex-none flex gap-1.5 p-2.5 border-t border-solid border-[rgba(255,255,255,0.06)] [&_input]:flex-1 [&_input]:bg-[rgba(255,255,255,0.04)] [&_input]:border [&_input]:border-solid [&_input]:border-[rgba(255,255,255,0.1)] [&_input]:text-white [&_input]:font-[inherit] [&_input]:text-[13px] [&_input]:py-[9px] [&_input]:px-3 [&_input]:rounded-[10px] [&_input]:outline-none [&_input]:[transition:border-color_.15s_ease] [&_input]:placeholder:text-[rgba(255,255,255,0.4)] [&_input]:focus:border-brand-blue";
+  "flex-none flex gap-2 p-2.5 border-t border-solid border-[rgba(255,255,255,0.06)] [&_input]:flex-1 [&_input]:bg-[rgba(255,255,255,0.04)] [&_input]:border [&_input]:border-solid [&_input]:border-[rgba(255,255,255,0.1)] [&_input]:text-white [&_input]:font-[inherit] [&_input]:text-[13px] [&_input]:py-[9px] [&_input]:px-3 [&_input]:rounded-[10px] [&_input]:outline-none [&_input]:[transition:border-color_.15s_ease] [&_input]:placeholder:text-[rgba(255,255,255,0.4)] [&_input]:focus:border-brand-blue max-[720px]:[&_input]:py-3 max-[720px]:[&_input]:text-[14px]";
 export const VIEWER_CHAT_SEND_CLS =
-  "w-[38px] h-[38px] rounded-[10px] bg-brand-blue border-0 text-white cursor-pointer grid place-items-center [transition:background_.15s_ease,transform_.15s_ease] hover:bg-brand-blue-soft hover:-translate-y-px [&_svg]:w-4 [&_svg]:h-4";
+  "w-[38px] h-[38px] rounded-[10px] bg-brand-blue border-0 text-white cursor-pointer grid place-items-center shrink-0 [transition:background_.15s_ease,transform_.15s_ease] hover:bg-brand-blue-soft hover:-translate-y-px disabled:opacity-50 disabled:cursor-not-allowed [&_svg]:w-4 [&_svg]:h-4 max-[720px]:!w-[44px] max-[720px]:!h-[44px]";
 
-export const VIEWER_CAM_PICKER_BTN_CLS =
-  "hidden max-[1100px]:flex items-center justify-center gap-2 w-full max-w-full min-w-0 py-3 px-4 rounded-[14px] bg-[rgba(34,48,198,0.18)] border border-solid border-[rgba(34,48,198,0.4)] text-white font-bold text-[13px] tracking-[.04em] cursor-pointer [transition:background_.15s_ease,transform_.15s_ease] hover:bg-[rgba(34,48,198,0.3)] active:scale-[0.98] [&_svg]:w-[18px] [&_svg]:h-[18px]";
+export const VIEWER_CAM_PICKER_BTN_CLS = "hidden";
 
 export const VIEWER_CAM_SHEET_BACKDROP_CLS =
   "fixed inset-0 z-[260] bg-[rgba(5,8,15,0.7)] [backdrop-filter:blur(6px)] [-webkit-backdrop-filter:blur(6px)] [animation:tmFade_.2s_ease]";
