@@ -35,7 +35,6 @@ export interface DbEvent {
   start_time: string;
   price: number;
   image: string | null;
-  pill: string | null;
   featured: boolean;
   created_at: string;
 }
@@ -47,7 +46,6 @@ export type EventInput = {
   start_time: string;
   price: number;
   image?: string | null;
-  pill?: string | null;
   featured?: boolean;
 };
 

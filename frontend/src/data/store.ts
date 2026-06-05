@@ -16,7 +16,6 @@ export type EventRecord = {
   desc: string;
   date: string;
   when: string;
-  pill: string;
   image: string;
   base: number;
   featured: boolean;
@@ -186,7 +185,6 @@ function dbToEvent(row: DbEvent): EventRecord {
     desc: row.description ?? "",
     date: fmtDateShort(row.start_time),
     when: fmtDateLong(row.start_time),
-    pill: row.pill ?? "",
     image: row.image ?? "",
     base: row.price,
     featured: row.featured,
@@ -230,7 +228,6 @@ function toEventInput(input: EventInput) {
         : new Date().toISOString()),
     price: Number(input.base) || 0,
     image: input.image ?? null,
-    pill: input.pill ?? null,
     featured: !!input.featured,
   };
 }
@@ -249,7 +246,6 @@ export async function updateEvent(
   const body: Record<string, unknown> = {};
   if (patch.title !== undefined) body.title = patch.title;
   if (patch.desc !== undefined) body.description = patch.desc;
-  if (patch.pill !== undefined) body.pill = patch.pill;
   if (patch.image !== undefined) body.image = patch.image;
   if (patch.featured !== undefined) body.featured = !!patch.featured;
   if (patch.base !== undefined) body.price = Number(patch.base) || 0;
