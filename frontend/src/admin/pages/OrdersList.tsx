@@ -16,7 +16,7 @@ const money = (n: number | undefined): string =>
   (n || 0).toLocaleString("en-US") + "₮";
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
-  paid: "Төлбөртэй",
+  paid: "Төлбөгдсөн",
   refunded: "Буцаагдсан",
 };
 
@@ -26,7 +26,8 @@ function formatPurchasedAt(iso: string | undefined): {
 } {
   if (!iso) return { primary: "—", secondary: "" };
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return { primary: iso.slice(0, 10), secondary: "" };
+  if (Number.isNaN(d.getTime()))
+    return { primary: iso.slice(0, 10), secondary: "" };
   const primary = d.toLocaleDateString("mn-MN", {
     year: "numeric",
     month: "short",
@@ -95,9 +96,7 @@ export default function OrdersList() {
             label="Буцаалт"
             value={money(stats.refundedAmt)}
             sub={
-              stats.refunded > 0
-                ? `${stats.refunded} захиалга`
-                : "буцаалт алга"
+              stats.refunded > 0 ? `${stats.refunded} захиалга` : "буцаалт алга"
             }
             accent={stats.refunded > 0 ? "refunded" : undefined}
           />
@@ -226,7 +225,17 @@ export default function OrdersList() {
                           />
                         ) : (
                           <span className="shrink-0 inline-flex w-9 h-9 items-center justify-center rounded-md bg-zinc-100 text-zinc-400 ring-1 ring-inset ring-[#ececef]">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <svg
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              aria-hidden="true"
+                            >
                               <rect x="3" y="3" width="18" height="18" rx="2" />
                               <circle cx="8.5" cy="8.5" r="1.5" />
                               <polyline points="21 15 16 10 5 21" />
@@ -256,10 +265,11 @@ export default function OrdersList() {
                         </span>
                       </div>
                     </td>
-                    <td className="tabular-nums text-center">
-                      {o.qty || 1}
-                    </td>
-                    <td className="tabular-nums text-zinc-900 font-semibold" style={{ textAlign: "right" }}>
+                    <td className="tabular-nums text-center">{o.qty || 1}</td>
+                    <td
+                      className="tabular-nums text-zinc-900 font-semibold"
+                      style={{ textAlign: "right" }}
+                    >
                       {money(o.total)}
                     </td>
                     <td className="text-zinc-600">
@@ -285,7 +295,17 @@ export default function OrdersList() {
                         aria-label={`«${o.code}» захиалгыг үзэх`}
                         className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#e4e4e7] bg-white text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 hover:border-zinc-300 transition-colors"
                       >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                        >
                           <path d="M5 12h14" />
                           <polyline points="12 5 19 12 12 19" />
                         </svg>
@@ -324,7 +344,9 @@ function StatCard({
       <span className="text-[11px] text-zinc-500 uppercase tracking-[.06em] font-medium">
         {label}
       </span>
-      <div className={`text-[22px] font-semibold tracking-[-0.02em] leading-none mt-2 ${valueColor}`}>
+      <div
+        className={`text-[22px] font-semibold tracking-[-0.02em] leading-none mt-2 ${valueColor}`}
+      >
         {value}
       </div>
       <div className="text-[11.5px] text-zinc-500 mt-2">{sub}</div>

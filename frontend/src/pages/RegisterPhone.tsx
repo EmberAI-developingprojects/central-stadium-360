@@ -69,7 +69,9 @@ export default function RegisterPhone() {
   const [agree, setAgree] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [alert, setAlert] = useState("");
-  const [submitLabel, setSubmitLabel] = useState<string>(t("auth_register_btn"));
+  const [submitLabel, setSubmitLabel] = useState<string>(
+    t("auth_register_btn"),
+  );
   const [busy, setBusy] = useState(false);
 
   const [step, setStep] = useState<Step>("form");
@@ -93,16 +95,16 @@ export default function RegisterPhone() {
     e.preventDefault();
     setAlert("");
 
-    if (fullname.trim().length < 2) return setAlert(t("auth_err_fullname_required"));
+    if (fullname.trim().length < 2)
+      return setAlert(t("auth_err_fullname_required"));
     const digits = phone.replace(/\D/g, "");
-    if (digits.length !== 8)
-      return setAlert(t("auth_err_phone_8_digits"));
+    if (digits.length !== 8) return setAlert(t("auth_err_phone_8_digits"));
     if (!/^[6789]/.test(digits)) {
       return setAlert(t("auth_err_phone_only_mn"));
     }
-    if (password.length < 8)
-      return setAlert(t("auth_err_password_min"));
-    if (password !== confirmPw) return setAlert(t("auth_err_passwords_dont_match"));
+    if (password.length < 8) return setAlert(t("auth_err_password_min"));
+    if (password !== confirmPw)
+      return setAlert(t("auth_err_passwords_dont_match"));
     if (!agree) return setAlert(t("auth_err_must_agree"));
 
     const identifier = "+976" + digits;
@@ -116,9 +118,7 @@ export default function RegisterPhone() {
     if (!res.ok) {
       setBusy(false);
       setSubmitLabel(t("auth_register_btn"));
-      setAlert(
-        explainError(res.error, t("auth_err_register_failed")),
-      );
+      setAlert(explainError(res.error, t("auth_err_register_failed")));
       return;
     }
     setPendingPhone(identifier);
@@ -168,11 +168,7 @@ export default function RegisterPhone() {
     return (
       <div className={PAGE_CLS} style={{ background: PAGE_BG }}>
         <header className={HEADER_CLS}>
-          <Link
-            className={LOGO_CLS}
-            to="/"
-            aria-label={t("auth_logo_aria")}
-          >
+          <Link className={LOGO_CLS} to="/" aria-label={t("auth_logo_aria")}>
             <img
               className={LOGO_IMG_CLS}
               src="/assets/images/brand/logo.png"
@@ -228,7 +224,9 @@ export default function RegisterPhone() {
 
               {verifyAlert && (
                 <div
-                  className={verifyAlert.kind === "ok" ? REG_ALERT_OK_CLS : REG_ALERT_CLS}
+                  className={
+                    verifyAlert.kind === "ok" ? REG_ALERT_OK_CLS : REG_ALERT_CLS
+                  }
                   role="alert"
                 >
                   {verifyAlert.msg}
@@ -281,11 +279,7 @@ export default function RegisterPhone() {
   return (
     <div className={PAGE_CLS} style={{ background: PAGE_BG }}>
       <header className={HEADER_CLS}>
-        <Link
-          className={LOGO_CLS}
-          to="/"
-          aria-label={t("auth_logo_aria")}
-        >
+        <Link className={LOGO_CLS} to="/" aria-label={t("auth_logo_aria")}>
           <img
             className={LOGO_IMG_CLS}
             src="/assets/images/brand/logo.png"
@@ -394,7 +388,9 @@ export default function RegisterPhone() {
             </label>
 
             <label className={FIELD_CLS}>
-              <span className={LABEL_CLS}>{t("auth_password_confirm_label")}</span>
+              <span className={LABEL_CLS}>
+                {t("auth_password_confirm_label")}
+              </span>
               <input
                 className={INPUT_CLS}
                 type="password"

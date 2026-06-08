@@ -1,4 +1,6 @@
 import type {
+  AdminTicketRow,
+  AdminTicketStats,
   AdminUserRow,
   DbEvent,
   DbHomeHero,
@@ -6,10 +8,14 @@ import type {
   DbHomePartner,
   DbHomeRoadmap,
   DbHomeService,
+  DbTicket,
   EventInput,
   EventPatch,
   HomeContentResponse,
   HomeContentSection,
+  PaymentStatus,
+  TicketCreateResponse,
+  TicketStatus,
   UserRole,
 } from "@cs360/shared";
 import { supabase } from "./supabase";
@@ -149,6 +155,17 @@ export const api = {
       startedAt: number | null;
     }>("GET", "/api/watch/status"),
 
+  createTicket: (input: { event_id: string }) =>
+    request<TicketCreateResponse>("POST", "/api/tickets/create", input),
+
+  getPaymentStatus: (invoiceId: string) =>
+    request<PaymentStatus>(
+      "GET",
+      `/api/payments/status/${encodeURIComponent(invoiceId)}`,
+    ),
+
+  listMyTickets: () => request<DbTicket[]>("GET", "/api/tickets/my"),
+
   admin: {
     listEvents: () => request<DbEvent[]>("GET", "/api/admin/events"),
     getEvent: (id: string) =>
@@ -171,6 +188,29 @@ export const api = {
         | Partial<DbHomeService>[]
         | DbHomeHero[],
     ) => request<unknown[]>("PUT", `/api/admin/content/${section}`, items),
+
+    listTickets: (filter?: {
+      status?: TicketStatus | "all";
+      eventId?: string;
+      from?: string;
+      to?: string;
+    }) => {
+      const qs = new URLSearchParams();
+      if (filter?.status) qs.set("status", filter.status);
+      if (filter?.eventId) qs.set("eventId", filter.eventId);
+      if (filter?.from) qs.set("from", filter.from);
+      if (filter?.to) qs.set("to", filter.to);
+      const suffix = qs.toString() ? `?${qs.toString()}` : "";
+      return request<AdminTicketRow[]>("GET", `/api/admin/tickets${suffix}`);
+    },
+    getTicket: (id: string) =>
+      request<AdminTicketRow>("GET", `/api/admin/tickets/${id}`),
+    refundTicket: (id: string) =>
+      request<AdminTicketRow>("POST", `/api/admin/tickets/${id}/refund`),
+    deleteTicket: (id: string) =>
+      request<{ id: string }>("DELETE", `/api/admin/tickets/${id}`),
+    ticketsStats: () =>
+      request<AdminTicketStats>("GET", `/api/admin/tickets/stats`),
 
     createUser: (input: { email: string; password: string; full_name?: string; role?: "user" | "admin" }) =>
       request<AdminUserRow>("POST", "/api/admin/users", input),

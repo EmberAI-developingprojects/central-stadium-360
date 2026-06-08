@@ -189,7 +189,6 @@ function Hero({
             "absolute grid place-items-center overflow-hidden [isolation:isolate] [background:linear-gradient(132deg,rgba(255,255,255,0.10),rgba(255,255,255,0)_36%),#FAF7EE] shadow-[inset_1px_1px_1px_rgba(255,255,255,0.36),0_10px_22px_rgba(0,0,0,0.025)] after:content-[''] after:absolute after:inset-0 after:-z-10 after:[background:radial-gradient(circle_at_22%_20%,rgba(255,255,255,0.2),transparent_34%),radial-gradient(circle_at_88%_88%,rgba(0,0,0,0.04),transparent_42%)] [&_img]:w-full [&_img]:h-full [&_img]:object-cover [&_img]:object-center [&_img]:block [&_img]:[transition:transform_.6s_cubic-bezier(.2,.8,.2,1)]";
           return (
             <>
-
               <main
                 className="relative w-full max-w-[580px] mx-auto [aspect-ratio:1/1] [container-type:inline-size] overflow-hidden max-[720px]:max-w-[460px] max-[920px]:hidden"
                 aria-label="Four card layout"
@@ -201,13 +200,18 @@ function Hero({
                   aria-hidden="true"
                 >
                   <defs>
-                    <clipPath id="tile1-shape" clipPathUnits="objectBoundingBox">
+                    <clipPath
+                      id="tile1-shape"
+                      clipPathUnits="objectBoundingBox"
+                    >
                       <path d="M 0.1016,0 H 0.7898 C 0.8822,0 0.9677,0.0642 0.9769,0.1415 C 1.0046,0.3566 1.0116,0.5962 0.9700,0.8604 C 0.9584,0.9321 0.8799,0.9981 0.7852,0.9981 H 0.1016 C 0.0462,0.9981 0,0.9604 0,0.9151 V 0.0830 C 0,0.0377 0.0462,0 0.1016,0 Z" />
                     </clipPath>
                   </defs>
                 </svg>
                 {tiles[0].image_url && (
-                  <section className={`${TILE_BASE} left-[-14.1%] top-[6.8%] w-[53.2%] h-[87.9%] [border-radius:4cqw] [clip-path:url(#tile1-shape)] hover:[&_img]:[transform:scale(1.04)]`}>
+                  <section
+                    className={`${TILE_BASE} left-[-14.1%] top-[6.8%] w-[53.2%] h-[87.9%] [border-radius:4cqw] [clip-path:url(#tile1-shape)] hover:[&_img]:[transform:scale(1.04)]`}
+                  >
                     <img
                       src={tiles[0].image_url}
                       alt={tiles[0].alt}
@@ -220,7 +224,9 @@ function Hero({
                   </section>
                 )}
                 {tiles[1].image_url && (
-                  <section className={`${TILE_BASE} left-[42.2%] top-[6.8%] w-[51.8%] h-[28%] [border-radius:4.44cqw] [transform:skewX(18deg)] [transform-origin:center] [&_img]:[transform:skewX(-18deg)_scale(1.18)] [&_img]:[transform-origin:center] hover:[&_img]:[transform:skewX(-18deg)_scale(1.22)]`}>
+                  <section
+                    className={`${TILE_BASE} left-[42.2%] top-[6.8%] w-[51.8%] h-[28%] [border-radius:4.44cqw] [transform:skewX(18deg)] [transform-origin:center] [&_img]:[transform:skewX(-18deg)_scale(1.18)] [&_img]:[transform-origin:center] hover:[&_img]:[transform:skewX(-18deg)_scale(1.22)]`}
+                  >
                     <img
                       src={tiles[1].image_url}
                       alt={tiles[1].alt}
@@ -232,7 +238,9 @@ function Hero({
                   </section>
                 )}
                 {tiles[2].image_url && (
-                  <section className={`${TILE_BASE} left-[45.1%] top-[36.6%] w-[53.2%] h-[28%] [border-radius:3.89cqw] hover:[&_img]:[transform:scale(1.04)]`}>
+                  <section
+                    className={`${TILE_BASE} left-[45.1%] top-[36.6%] w-[53.2%] h-[28%] [border-radius:3.89cqw] hover:[&_img]:[transform:scale(1.04)]`}
+                  >
                     <img
                       src={tiles[2].image_url}
                       alt={tiles[2].alt}
@@ -244,7 +252,9 @@ function Hero({
                   </section>
                 )}
                 {tiles[3].image_url && (
-                  <section className={`${TILE_BASE} left-[42.1%] top-[66.4%] w-[51.8%] h-[28.3%] [border-radius:4.44cqw] [transform:skewX(-18deg)] [transform-origin:center] [&_img]:[transform:skewX(18deg)_scale(1.18)] [&_img]:[transform-origin:center] hover:[&_img]:[transform:skewX(18deg)_scale(1.22)]`}>
+                  <section
+                    className={`${TILE_BASE} left-[42.1%] top-[66.4%] w-[51.8%] h-[28.3%] [border-radius:4.44cqw] [transform:skewX(-18deg)] [transform-origin:center] [&_img]:[transform:skewX(18deg)_scale(1.18)] [&_img]:[transform-origin:center] hover:[&_img]:[transform:skewX(18deg)_scale(1.22)]`}
+                  >
                     <img
                       src={tiles[3].image_url}
                       alt={tiles[3].alt}
@@ -261,20 +271,25 @@ function Hero({
                 className="hidden max-[920px]:grid grid-cols-2 gap-3 w-full max-w-[460px] mx-auto"
                 aria-label="Зургийн цомог"
               >
-                {tiles.filter(t => t.image_url).map((t, i) => (
-                  <div key={t.slot} className="overflow-hidden rounded-[20px] aspect-[4/3]">
-                    <img
-                      src={t.image_url}
-                      alt={t.alt}
-                      width="460"
-                      height="345"
-                      className="w-full h-full object-cover block"
-                      loading={i === 0 ? "eager" : "lazy"}
-                      decoding="async"
-                      fetchPriority={i === 0 ? "high" : undefined}
-                    />
-                  </div>
-                ))}
+                {tiles
+                  .filter((t) => t.image_url)
+                  .map((t, i) => (
+                    <div
+                      key={t.slot}
+                      className="overflow-hidden rounded-[20px] aspect-[4/3]"
+                    >
+                      <img
+                        src={t.image_url}
+                        alt={t.alt}
+                        width="460"
+                        height="345"
+                        className="w-full h-full object-cover block"
+                        loading={i === 0 ? "eager" : "lazy"}
+                        decoding="async"
+                        fetchPriority={i === 0 ? "high" : undefined}
+                      />
+                    </div>
+                  ))}
               </div>
             </>
           );
@@ -338,8 +353,7 @@ function Highlights() {
             <div
               className="flex-1 w-full min-h-0 rounded-[28px] overflow-hidden"
               style={{
-                backgroundImage:
-                  "url('/assets/images/stadium/huuchin.jpg')",
+                backgroundImage: "url('/assets/images/stadium/huuchin.jpg')",
                 backgroundSize: "cover",
                 backgroundPosition: "center",
               }}
@@ -513,7 +527,6 @@ function Upcoming({ gatedGo, events }: UpcomingProps) {
         }
       };
     }
-
   }, []);
 
   const go = (next: number) => {

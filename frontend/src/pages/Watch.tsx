@@ -18,7 +18,8 @@ import UserMenu from "../components/UserMenu";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import { api } from "../lib/api";
 import type { WatchCam } from "../lib/api";
-import { createOrder, listEvents, listOrders } from "../data/store";
+import type { TicketCreateResponse } from "@cs360/shared";
+import { listEvents, listMyOrders } from "../data/store";
 import type { EventRecord, OrderRecord } from "../data/store";
 import {
   VIEWER_ANGLE_ACTIVE_CLS,
@@ -141,7 +142,6 @@ import {
 
 type TabId = "live" | "upcoming" | "tickets";
 type CamKey = string;
-type TierValue = "standard";
 type PayValue = "qpay";
 
 type TicketModalEvent = {
@@ -182,20 +182,6 @@ const FEATURED_FALLBACK: TicketModalEvent = {
   base: 0,
 };
 
-const TICKET_TIERS: {
-  value: TierValue;
-  name: string;
-  desc: string;
-  mult: number;
-}[] = [
-  {
-    value: "standard",
-    name: "Стандарт",
-    desc: "HD 1080p шууд дамжуулал · нэг төхөөрөмж",
-    mult: 1,
-  },
-];
-
 const TAB_IDS: readonly TabId[] = ["live", "upcoming", "tickets"] as const;
 const isTabId = (value: string): value is TabId =>
   (TAB_IDS as readonly string[]).includes(value);
@@ -216,7 +202,7 @@ export default function Watch() {
   const [viewerOpen, setViewerOpen] = useState(false);
 
   const refreshTickets = useCallback(() => {
-    listOrders().then((all) =>
+    listMyOrders().then((all) =>
       setTickets(all.filter((t) => t.status !== "refunded")),
     );
   }, []);
@@ -395,8 +381,7 @@ export default function Watch() {
           event={modalEvent}
           session={session}
           onClose={closeTicketModal}
-          onPurchased={async (order) => {
-            await createOrder(order);
+          onPurchased={async () => {
             refreshTickets();
           }}
           onWatchSuccess={() => {
@@ -2394,11 +2379,18 @@ function fmtElapsed(s: number): string {
   return `${h}:${m}:${sec}`;
 }
 
+function formatRemaining(ms: number): string {
+  const total = Math.ceil(ms / 1000);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
 type TicketModalProps = {
   event: TicketModalEvent;
   session: Session;
   onClose: () => void;
-  onPurchased: (order: OrderRecord) => void;
+  onPurchased: () => void;
   onWatchSuccess: () => void;
 };
 
@@ -2410,18 +2402,24 @@ function TicketModal({
   onWatchSuccess,
 }: TicketModalProps) {
   const { t } = useTranslation();
-  const [tier, setTier] = useState<TierValue>("standard");
-  const [qty, setQty] = useState(1);
   const [busy, setBusy] = useState(false);
   const [alert, setAlert] = useState("");
   const [checkoutLabel, setCheckoutLabel] = useState<string>(
     t("ticket_purchase"),
   );
+  const [step, setStep] = useState<"form" | "qr" | "success">("form");
+  const [invoice, setInvoice] = useState<TicketCreateResponse | null>(null);
+  const [qrExpiresAt, setQrExpiresAt] = useState<number | null>(null);
+  const [now, setNow] = useState<number>(() => Date.now());
   const [success, setSuccess] = useState<OrderRecord | null>(null);
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== "undefined"
+      ? window.matchMedia("(max-width: 768px)").matches
+      : false,
+  );
 
-  const selectedTier = TICKET_TIERS.find((tt) => tt.value === tier);
-
-  const total = event.base * (selectedTier?.mult || 1) * qty;
+  const total = event.base;
+  const QR_TTL_MS = 10 * 60 * 1000;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -2431,41 +2429,98 @@ function TicketModal({
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const checkout = () => {
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 768px)");
+    const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  const issueInvoice = useCallback(async (): Promise<boolean> => {
+    const res = await api.createTicket({ event_id: event.id });
+    if (!res.ok) {
+      console.error("[checkout] createTicket failed", res);
+      setAlert(`${t("ticket_error")} (${res.error})`);
+      return false;
+    }
+    setInvoice(res.data);
+    setQrExpiresAt(Date.now() + QR_TTL_MS);
+    return true;
+  }, [event.id, t, QR_TTL_MS]);
+
+  const checkout = async () => {
     setAlert("");
     setBusy(true);
     setCheckoutLabel(t("ticket_redirecting"));
+    const ok = await issueInvoice();
+    if (!ok) {
+      setBusy(false);
+      setCheckoutLabel(t("ticket_retry"));
+      return;
+    }
+    setStep("qr");
+    setBusy(false);
+    setCheckoutLabel(t("ticket_purchase"));
+  };
 
-    setTimeout(() => {
-      if (Math.random() < 0.05) {
-        setBusy(false);
-        setCheckoutLabel(t("ticket_retry"));
-        setAlert(t("ticket_error"));
-        return;
-      }
+  const checkPayment = useCallback(async (): Promise<boolean> => {
+    if (!invoice) return false;
+    const r = await api.getPaymentStatus(invoice.invoice_id);
+    if (r.ok && r.data.status === "paid") {
       const order: OrderRecord = {
-        code: "TS-" + Math.random().toString(36).slice(2, 8).toUpperCase(),
+        code: invoice.ticket_id.slice(0, 8).toUpperCase(),
         user: session.identifier || "",
         eventId: event.id,
         title: event.title,
         date: event.date,
         image: event.image,
-        tier,
-        tierName: t("ticket_standard"),
-        qty,
-        unitPrice: event.base * (selectedTier?.mult ?? 1),
-        total,
+        tier: "standard",
+        tierName: "",
+        qty: 1,
+        unitPrice: invoice.price,
+        total: invoice.price,
         payment: "qpay",
         paymentName: "QPay",
-        purchasedAt: new Date().toISOString(),
+        purchasedAt: r.data.paid_at ?? new Date().toISOString(),
         status: "paid",
       };
-      onPurchased(order);
+      onPurchased();
       setSuccess(order);
-    }, 1100);
-  };
+      setStep("success");
+      return true;
+    }
+    return false;
+  }, [invoice, event, session, onPurchased]);
+
+  useEffect(() => {
+    if (step !== "qr" || !invoice) return;
+    let alive = true;
+    const tick = async () => {
+      if (!alive) return;
+      await checkPayment();
+    };
+    tick();
+    const id = setInterval(tick, 3000);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
+  }, [step, invoice, checkPayment]);
+
+  useEffect(() => {
+    if (step !== "qr") return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [step]);
+
+  useEffect(() => {
+    if (step !== "qr" || !qrExpiresAt) return;
+    if (now < qrExpiresAt) return;
+    void issueInvoice();
+  }, [now, qrExpiresAt, step, issueInvoice]);
 
   const onBackdrop = (e: ReactMouseEvent<HTMLDivElement>) => {
+    if (step === "qr") return;
     const tgt = e.target as HTMLElement;
     if (tgt.dataset?.close !== undefined || tgt.closest("[data-close]"))
       onClose();
@@ -2505,7 +2560,7 @@ function TicketModal({
           </svg>
         </button>
 
-        {!success ? (
+        {step === "form" ? (
           <div className={TICKET_MODAL_BODY_CLS}>
             <div className={TICKET_MODAL_COVER_CLS}>
               <img src={event.image} alt={event.title} />
@@ -2521,62 +2576,7 @@ function TicketModal({
             </div>
 
             <div className={TICKET_MODAL_FORM_CLS}>
-              <div className={TICKET_SECTION_CLS}>
-                <span className={TICKET_SECTION_LABEL_CLS}>
-                  {t("ticket_package")}
-                </span>
-                <div className={TICKET_RADIO_GROUP_CLS} role="radiogroup">
-                  {TICKET_TIERS.map((tt) => (
-                    <label key={tt.value} className={TICKET_RADIO_LABEL_CLS}>
-                      <input
-                        className={TICKET_RADIO_INPUT_CLS}
-                        type="radio"
-                        name="tier"
-                        value={tt.value}
-                        checked={tier === tt.value}
-                        onChange={() => setTier(tt.value)}
-                      />
-                      <span className={TICKET_RADIO_CARD_CLS}>
-                        <span className={TICKET_TIER_NAME_CLS}>
-                          {t("ticket_standard")}
-                        </span>
-                        <span className={TICKET_TIER_DESC_CLS}>
-                          {t("ticket_standard_desc")}
-                        </span>
-                        <span className={TICKET_TIER_PRICE_CLS}>
-                          {money(event.base * tt.mult)}
-                        </span>
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
               <div className={`${TICKET_SECTION_CLS} ${TICKET_ROW_CLS}`}>
-                <div>
-                  <span className={TICKET_SECTION_LABEL_CLS}>
-                    {t("ticket_device_count")}
-                  </span>
-                  <div className={TICKET_QTY_CLS}>
-                    <button
-                      type="button"
-                      className={TICKET_QTY_BTN_CLS}
-                      onClick={() => setQty((q) => Math.max(1, q - 1))}
-                      aria-label="−"
-                    >
-                      −
-                    </button>
-                    <span className={TICKET_QTY_VAL_CLS}>{qty}</span>
-                    <button
-                      type="button"
-                      className={TICKET_QTY_BTN_CLS}
-                      onClick={() => setQty((q) => Math.min(10, q + 1))}
-                      aria-label="+"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
                 <div className={TICKET_TOTAL_WRAP_CLS}>
                   <span className={TICKET_SECTION_LABEL_CLS}>
                     {t("ticket_total_pay")}
@@ -2638,7 +2638,89 @@ function TicketModal({
               <p className={TICKET_FINEPRINT_CLS}>{t("ticket_fineprint")}</p>
             </div>
           </div>
-        ) : (
+        ) : step === "qr" && invoice ? (
+          <div className={TICKET_MODAL_SUCCESS_CLS}>
+            <h3 className={TICKET_SUCCESS_TITLE_CLS}>
+              {t("ticket_qr_title")}
+            </h3>
+            <p className={TICKET_SUCCESS_DESC_CLS}>
+              <strong>{event.title}</strong>
+              <br />
+              {money(invoice.price)}
+            </p>
+            {invoice.qr_image && (
+              <img
+                src={
+                  invoice.qr_image.startsWith("data:")
+                    ? invoice.qr_image
+                    : `data:image/png;base64,${invoice.qr_image}`
+                }
+                alt="QPay QR"
+                style={{
+                  width: 220,
+                  height: 220,
+                  borderRadius: 12,
+                  background: "#fff",
+                  padding: 8,
+                  margin: "8px auto",
+                  display: "block",
+                }}
+              />
+            )}
+            {isMobile && (
+              <p className={TICKET_SUCCESS_DESC_CLS}>
+                <small>{t("ticket_qr_hint")}</small>
+              </p>
+            )}
+            <div
+              style={{
+                display: isMobile ? "flex" : "none",
+                flexWrap: "wrap",
+                gap: 8,
+                justifyContent: "center",
+                marginTop: 8,
+              }}
+            >
+              {invoice.urls.map((u) => (
+                <a
+                  key={u.link}
+                  href={u.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`${WATCH_BTN_CLS} ${WATCH_BTN_GHOST_CLS}`}
+                  style={{ minWidth: "auto" }}
+                >
+                  {u.logo && (
+                    <img
+                      src={u.logo}
+                      alt=""
+                      style={{ width: 18, height: 18, marginRight: 6 }}
+                    />
+                  )}
+                  {u.name}
+                </a>
+              ))}
+            </div>
+            <p className={TICKET_SUCCESS_DESC_CLS} style={{ marginTop: 12 }}>
+              <small>
+                ⏳ {t("ticket_qr_waiting")}
+                {qrExpiresAt &&
+                  ` · ${formatRemaining(Math.max(0, qrExpiresAt - now))} ${t("ticket_qr_expires_in")}`}
+              </small>
+            </p>
+            <div className={TICKET_SUCCESS_ACTIONS_CLS}>
+              <button
+                type="button"
+                className={`${WATCH_BTN_CLS} ${WATCH_BTN_PRIMARY_CLS}`}
+                onClick={() => {
+                  void checkPayment();
+                }}
+              >
+                {t("ticket_qr_check_now")}
+              </button>
+            </div>
+          </div>
+        ) : success ? (
           <div className={TICKET_MODAL_SUCCESS_CLS}>
             <div className={TICKET_SUCCESS_ICON_CLS} aria-hidden="true">
               <svg
@@ -2658,7 +2740,6 @@ function TicketModal({
             <p className={TICKET_SUCCESS_DESC_CLS}>
               <strong>{success.title}</strong>
               <br />
-              {success.tierName} · {success.qty} {t("watch_devices")} ·{" "}
               {money(success.total)}
               <br />
               <small>{t("ticket_success_hint")}</small>
@@ -2685,7 +2766,7 @@ function TicketModal({
               </button>
             </div>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );

@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useRequireAuth } from "../auth";
 import UserMenu from "../components/UserMenu";
 import LanguageSwitcher from "../components/LanguageSwitcher";
-import { getOrder, type OrderRecord } from "../data/store";
+import { getMyOrder, type OrderRecord } from "../data/store";
 import {
   WATCH_BTN_CLS,
   WATCH_BTN_GHOST_CLS,
@@ -98,7 +98,7 @@ export default function OrderDetail() {
 
   useEffect(() => {
     if (!code) return;
-    getOrder(code).then((o) => setOrder(o || null));
+    getMyOrder(code).then((o) => setOrder(o || null));
   }, [code]);
 
   const owned = !!order && (!order.user || order.user === session?.identifier);

@@ -3,12 +3,16 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { AuthProvider } from './auth';
-import { seedIfEmpty } from './data/store';
 import './document-head';
 import './i18n';
 import 'virtual:tailwind.css';
 
-seedIfEmpty();
+try {
+  localStorage.removeItem('tsengeldekh_seeded_v1');
+  localStorage.removeItem('tsengeldekh_tickets');
+} catch {
+
+}
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <StrictMode>

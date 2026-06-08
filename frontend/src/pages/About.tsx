@@ -72,7 +72,11 @@ export default function About() {
                 }}
               >
                 <span className="w-14 h-14 rounded-full bg-ink text-white grid place-items-center [&_svg]:w-[22px] [&_svg]:h-[22px] [&_svg]:ml-[3px]">
-                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
                     <path d="M8 5v14l11-7z" />
                   </svg>
                 </span>
@@ -103,7 +107,9 @@ export default function About() {
                   <div className="text-[42px] font-extrabold tracking-[-0.02em] leading-none text-[#1a1a1a] max-[920px]:text-4xl">
                     {s.num}
                   </div>
-                  <div className="text-sm text-[#888] font-medium">{s.label}</div>
+                  <div className="text-sm text-[#888] font-medium">
+                    {s.label}
+                  </div>
                 </div>
               </span>
             ))}

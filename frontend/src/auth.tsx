@@ -108,7 +108,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     const hydrate = async (sb: SbSession | null) => {
-
       if (!sb?.user) {
         if (!cancelled) setSession(null);
         return;
@@ -123,7 +122,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await supabase!.auth.signOut().catch(() => undefined);
         if (!cancelled) setSession(null);
       } else {
-
         console.warn("[auth] /me failed:", res.error, "status:", res.status);
       }
     };
@@ -348,6 +346,4 @@ export function readUsers(): never[] {
   return [];
 }
 
-export function writeUsers(_: unknown[]): void {
-
-}
+export function writeUsers(_: unknown[]): void {}

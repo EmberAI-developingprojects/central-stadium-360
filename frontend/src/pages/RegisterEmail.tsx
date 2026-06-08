@@ -62,7 +62,9 @@ export default function RegisterEmail() {
   const [agree, setAgree] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [alert, setAlert] = useState("");
-  const [submitLabel, setSubmitLabel] = useState<string>(t("auth_register_btn"));
+  const [submitLabel, setSubmitLabel] = useState<string>(
+    t("auth_register_btn"),
+  );
   const [busy, setBusy] = useState(false);
 
   const [step, setStep] = useState<Step>("form");
@@ -77,14 +79,15 @@ export default function RegisterEmail() {
     e.preventDefault();
     setAlert("");
 
-    if (fullname.trim().length < 2) return setAlert(t("auth_err_fullname_required"));
+    if (fullname.trim().length < 2)
+      return setAlert(t("auth_err_fullname_required"));
     const normalized = email.trim().toLowerCase();
     if (!/^[a-z0-9._%+-]+@gmail\.com$/.test(normalized)) {
       return setAlert(t("auth_err_email_only_gmail"));
     }
-    if (password.length < 8)
-      return setAlert(t("auth_err_password_min"));
-    if (password !== confirmPw) return setAlert(t("auth_err_passwords_dont_match"));
+    if (password.length < 8) return setAlert(t("auth_err_password_min"));
+    if (password !== confirmPw)
+      return setAlert(t("auth_err_passwords_dont_match"));
     if (!agree) return setAlert(t("auth_err_must_agree"));
 
     setBusy(true);
@@ -97,9 +100,7 @@ export default function RegisterEmail() {
     if (!res.ok) {
       setBusy(false);
       setSubmitLabel(t("auth_register_btn"));
-      setAlert(
-        explainError(res.error, t("auth_err_register_failed")),
-      );
+      setAlert(explainError(res.error, t("auth_err_register_failed")));
       return;
     }
     setPendingEmail(normalized);
@@ -127,11 +128,7 @@ export default function RegisterEmail() {
     return (
       <div className={PAGE_CLS} style={{ background: PAGE_BG }}>
         <header className={HEADER_CLS}>
-          <Link
-            className={LOGO_CLS}
-            to="/"
-            aria-label={t("auth_logo_aria")}
-          >
+          <Link className={LOGO_CLS} to="/" aria-label={t("auth_logo_aria")}>
             <img
               className={LOGO_IMG_CLS}
               src="/assets/images/brand/logo.png"
@@ -173,7 +170,9 @@ export default function RegisterEmail() {
 
             {verifyAlert && (
               <div
-                className={verifyAlert.kind === "ok" ? REG_ALERT_OK_CLS : REG_ALERT_CLS}
+                className={
+                  verifyAlert.kind === "ok" ? REG_ALERT_OK_CLS : REG_ALERT_CLS
+                }
                 role="alert"
                 style={{ marginTop: 8 }}
               >
@@ -206,11 +205,7 @@ export default function RegisterEmail() {
   return (
     <div className={PAGE_CLS} style={{ background: PAGE_BG }}>
       <header className={HEADER_CLS}>
-        <Link
-          className={LOGO_CLS}
-          to="/"
-          aria-label={t("auth_logo_aria")}
-        >
+        <Link className={LOGO_CLS} to="/" aria-label={t("auth_logo_aria")}>
           <img
             className={LOGO_IMG_CLS}
             src="/assets/images/brand/logo.png"
@@ -312,7 +307,9 @@ export default function RegisterEmail() {
             </label>
 
             <label className={FIELD_CLS}>
-              <span className={LABEL_CLS}>{t("auth_password_confirm_label")}</span>
+              <span className={LABEL_CLS}>
+                {t("auth_password_confirm_label")}
+              </span>
               <input
                 className={INPUT_CLS}
                 type="password"
