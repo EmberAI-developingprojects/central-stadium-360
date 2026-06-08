@@ -443,6 +443,7 @@ function useCountdown(startTime: string | undefined) {
   const totalSec =
     startMs !== null ? Math.max(0, Math.floor((startMs - now) / 1000)) : 0;
   return {
+    now,
     isLive,
     hasTime: startMs !== null,
     days: Math.floor(totalSec / 86400),
@@ -452,14 +453,60 @@ function useCountdown(startTime: string | undefined) {
   };
 }
 
+function useStreamLive(enabled: boolean) {
+  const [live, setLive] = useState(false);
+  const [checked, setChecked] = useState(false);
+  const [startedAt, setStartedAt] = useState<number | null>(null);
+  useEffect(() => {
+    if (!enabled) {
+      setLive(false);
+      setChecked(false);
+      setStartedAt(null);
+      return;
+    }
+    let alive = true;
+    const tick = async () => {
+      const res = await api.getWatchStatus();
+      if (!alive) return;
+      if (res.ok) {
+        setLive(res.data.live);
+        setStartedAt(res.data.startedAt);
+      } else {
+        setLive(false);
+        setStartedAt(null);
+      }
+      setChecked(true);
+    };
+    tick();
+    const id = setInterval(tick, 10000);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
+  }, [enabled]);
+  return {
+    streamLive: live,
+    streamChecked: checked,
+    streamStartedAt: startedAt,
+  };
+}
+
+function formatClock(ms: number): string {
+  const d = new Date(ms);
+  return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+}
+
 function LiveSection({
   featuredEvent,
   ownsFeatured,
   onWatch,
 }: LiveSectionProps) {
   const { t } = useTranslation();
-  const { isLive, hasTime, days, hours, minutes, seconds } = useCountdown(
+  const { now, isLive, hasTime, days, hours, minutes, seconds } = useCountdown(
     featuredEvent.start_time,
+  );
+  const { streamLive, streamChecked } = useStreamLive(
+    ownsFeatured && isLive,
   );
   const d = featuredEvent.start_time
     ? new Date(featuredEvent.start_time)
@@ -483,7 +530,7 @@ function LiveSection({
           ) : (
             <div className="w-full h-full min-h-[300px] bg-[#0a1628]" />
           )}
-          {isLive && (
+          {isLive && streamLive && (
             <span className="absolute top-4 left-4 inline-flex items-center gap-2 bg-[#e53935] text-white text-[11px] font-bold uppercase tracking-[0.14em] rounded-full px-3 py-1.5">
               <span
                 className="w-2 h-2 rounded-full bg-white animate-live-blink"
@@ -548,7 +595,22 @@ function LiveSection({
               </div>
             )}
 
-            {ownsFeatured && isLive && (
+            {ownsFeatured && isLive && streamChecked && !streamLive && (
+              <div className="flex flex-col gap-[3px]">
+                <span className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-white/40">
+                  <span
+                    className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-live-blink shrink-0"
+                    aria-hidden="true"
+                  />
+                  {t("watch_waiting_stream")}
+                </span>
+                <span className="text-[28px] font-black text-white [font-variant-numeric:tabular-nums] tracking-[-0.02em] leading-none max-[420px]:text-[22px]">
+                  {formatClock(now)}
+                </span>
+              </div>
+            )}
+
+            {ownsFeatured && isLive && streamLive && (
               <button
                 type="button"
                 onClick={onWatch}
@@ -606,6 +668,11 @@ function UpcomingSection({
   onWatch,
 }: UpcomingSectionProps) {
   const { t } = useTranslation();
+  const anyPastStart = events.some((ev) => {
+    const d = new Date(ev.start_time);
+    return !Number.isNaN(d.getTime()) && d.getTime() <= Date.now();
+  });
+  const { streamLive } = useStreamLive(anyPastStart);
   if (events.length === 0) return null;
   return (
     <section className="w-full px-6 py-10 max-[920px]:px-5" id="upcoming">
@@ -634,7 +701,8 @@ function UpcomingSection({
             const day = valid ? d.getDate() : "";
             const monthAbbr = valid ? MONTHS_ABBR_MN[d.getMonth()] : "";
             const time = valid ? fmtEventTime(ev.start_time) : "";
-            const evLive = valid && d.getTime() <= Date.now();
+            const evLive =
+              valid && d.getTime() <= Date.now() && streamLive;
             const owned = myTickets.some((t) => t.eventId === ev.id);
             return (
               <article
@@ -752,8 +820,9 @@ type TicketCardProps = {
 
 function TicketCard({ ticket: tk, startTime, onWatch }: TicketCardProps) {
   const { t } = useTranslation();
-  const { isLive, hasTime, days, hours, minutes, seconds } =
+  const { now, isLive, hasTime, days, hours, minutes, seconds } =
     useCountdown(startTime);
+  const { streamLive, streamChecked } = useStreamLive(isLive);
   return (
     <article className={TICKET_STUB_CLS} data-code={tk.code}>
       <div className={TICKET_STUB_COVER_CLS}>
@@ -801,7 +870,7 @@ function TicketCard({ ticket: tk, startTime, onWatch }: TicketCardProps) {
           >
             {t("watch_details")}
           </Link>
-          {isLive && (
+          {isLive && streamLive && (
             <button
               type="button"
               className={`${WATCH_BTN_CLS} ${WATCH_BTN_PRIMARY_CLS} ${TICKET_STUB_BTN_CLS}`}
@@ -813,6 +882,48 @@ function TicketCard({ ticket: tk, startTime, onWatch }: TicketCardProps) {
               />
               {t("watch_watch_live")}
             </button>
+          )}
+          {isLive && streamChecked && !streamLive && (
+            <div
+              style={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                gap: 2,
+                justifyContent: "center",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.12em",
+                  color: "rgba(255,255,255,0.4)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                <span
+                  className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-live-blink flex-none"
+                  aria-hidden="true"
+                />
+                {t("watch_waiting_stream")}
+              </span>
+              <span
+                style={{
+                  fontSize: 18,
+                  fontWeight: 900,
+                  color: "#fff",
+                  fontVariantNumeric: "tabular-nums",
+                  letterSpacing: "-0.01em",
+                  lineHeight: 1,
+                }}
+              >
+                {formatClock(now)}
+              </span>
+            </div>
           )}
           {!isLive && hasTime && (
             <div
@@ -951,6 +1062,7 @@ function ViewerOverlay({
   const [muted, setMuted] = useState(true);
   const [volume, setVolume] = useState(60);
   const [elapsedSec, setElapsedSec] = useState(0);
+  const { streamStartedAt } = useStreamLive(true);
   const [qualityLevels, setQualityLevels] = useState<QualityLevel[]>([]);
   const [qualityIdx, setQualityIdx] = useState(-1);
   const [qualityOpen, setQualityOpen] = useState(false);
@@ -1151,9 +1263,15 @@ function ViewerOverlay({
   }, [is360]);
 
   useEffect(() => {
-    const id = setInterval(() => setElapsedSec((s) => s + 1), 1000);
+    const compute = () => {
+      if (streamStartedAt) {
+        setElapsedSec(Math.max(0, Math.floor((Date.now() - streamStartedAt) / 1000)));
+      }
+    };
+    compute();
+    const id = setInterval(compute, 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [streamStartedAt]);
 
   const toggleStageFs = useCallback(async () => {
     const stage = stageRef.current as FullscreenElement | null;

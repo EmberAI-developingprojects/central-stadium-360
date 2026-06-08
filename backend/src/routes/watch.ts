@@ -84,31 +84,102 @@ function signIvsToken(
   return `${signingInput}.${b64url(rawSig)}`;
 }
 
-watch.get("/token", requireUser, (c) => {
+function buildCamUrls(): { id: string; url: string | null }[] {
   const keyArn = process.env.IVS_PLAYBACK_KEY_ARN ?? "";
   const privateKeyB64 = process.env.IVS_PRIVATE_KEY_BASE64 ?? "";
   const useAuth = Boolean(keyArn && privateKeyB64);
+  const keyDer = useAuth ? Buffer.from(privateKeyB64, "base64") : null;
 
-  let keyDer: Buffer | null = null;
-  if (useAuth) {
-    keyDer = Buffer.from(privateKeyB64, "base64");
-  }
-
-  const cams: WatchCam[] = CAM_DEFS.map((cam) => {
+  return CAM_DEFS.map((cam) => {
     const rawUrl = process.env[`AWS_IVS_${cam.id.toUpperCase()}_URL`] ?? null;
     const channelArn = process.env[`AWS_IVS_${cam.id.toUpperCase()}_ARN`] ?? "";
-
-    if (!rawUrl) return { ...cam, hlsUrl: null };
-
+    if (!rawUrl) return { id: cam.id, url: null };
     if (useAuth && keyDer && channelArn) {
       const token = signIvsToken(channelArn, keyArn, keyDer);
-      return { ...cam, hlsUrl: `${rawUrl}?token=${token}` };
+      return { id: cam.id, url: `${rawUrl}?token=${token}` };
     }
-
-    return { ...cam, hlsUrl: rawUrl };
+    return { id: cam.id, url: rawUrl };
   });
+}
 
+watch.get("/token", requireUser, (c) => {
+  const urls = buildCamUrls();
+  const cams: WatchCam[] = CAM_DEFS.map((cam, i) => ({
+    ...cam,
+    hlsUrl: urls[i]!.url,
+  }));
   return c.json({ ok: true, data: { cams } } as const);
+});
+
+type CamProbe = {
+  id: string;
+  hasUrl: boolean;
+  status: number | null;
+  ok: boolean;
+  error?: string;
+};
+type StatusCache = {
+  live: boolean;
+  checkedAt: number;
+  startedAt: number | null;
+  probes: CamProbe[];
+};
+let statusCache: StatusCache | null = null;
+const STATUS_TTL_MS = 5000;
+
+async function probeHls(
+  id: string,
+  url: string | null,
+): Promise<CamProbe> {
+  if (!url) return { id, hasUrl: false, status: null, ok: false };
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 5000);
+    const res = await fetch(url, {
+      method: "GET",
+      signal: ctrl.signal,
+      redirect: "follow",
+    });
+    clearTimeout(timer);
+    return { id, hasUrl: true, status: res.status, ok: res.ok };
+  } catch (err) {
+    return {
+      id,
+      hasUrl: true,
+      status: null,
+      ok: false,
+      error: (err as Error).message,
+    };
+  }
+}
+
+watch.get("/status", requireUser, async (c) => {
+  const now = Date.now();
+  if (statusCache && now - statusCache.checkedAt < STATUS_TTL_MS) {
+    return c.json({
+      ok: true,
+      data: {
+        live: statusCache.live,
+        checkedAt: statusCache.checkedAt,
+        startedAt: statusCache.startedAt,
+        probes: statusCache.probes,
+      },
+    } as const);
+  }
+
+  const cams = buildCamUrls();
+  const probes = await Promise.all(cams.map((c) => probeHls(c.id, c.url)));
+  const live = probes.some((p) => p.ok);
+  const prevLive = statusCache?.live ?? false;
+  const prevStart = statusCache?.startedAt ?? null;
+  let startedAt: number | null = null;
+  if (live) startedAt = prevLive && prevStart ? prevStart : now;
+  console.log("[watch/status]", { live, startedAt, probes });
+  statusCache = { live, checkedAt: now, startedAt, probes };
+  return c.json({
+    ok: true,
+    data: { live, checkedAt: now, startedAt, probes },
+  } as const);
 });
 
 export default watch;
