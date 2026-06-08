@@ -199,7 +199,6 @@ export default function Dashboard() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-
       <div
         style={{
           display: "flex",
@@ -318,7 +317,6 @@ export default function Dashboard() {
           alignItems: "stretch",
         }}
       >
-
         <div className={ADMIN_CARD_CLS} style={{ padding: "20px 24px" }}>
           <div
             style={{
@@ -634,7 +632,6 @@ function BarChart({ bars, maxVal }: { bars: BarDatum[]; maxVal: number }) {
         style={{ width: "100%", height: H + 24, display: "block" }}
         onMouseLeave={() => setTooltip(null)}
       >
-
         {[0, 0.25, 0.5, 0.75, 1].map((f) => {
           const y = 4 + MAX_H - f * MAX_H;
           return (
@@ -677,7 +674,6 @@ function BarChart({ bars, maxVal }: { bars: BarDatum[]; maxVal: number }) {
               }}
               style={{ cursor: "pointer" }}
             >
-
               <rect
                 x={x}
                 y={4}
@@ -770,7 +766,6 @@ function DonutChart({ percent }: { percent: number }) {
   let offset = 0;
   return (
     <svg viewBox="0 0 180 180" style={{ width: 170, height: 170 }}>
-
       <circle
         cx={cx}
         cy={cy}

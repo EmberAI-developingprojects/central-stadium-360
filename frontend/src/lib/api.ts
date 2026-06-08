@@ -142,6 +142,13 @@ export const api = {
   getWatchToken: () =>
     request<{ cams: WatchCam[] }>("GET", "/api/watch/token"),
 
+  getWatchStatus: () =>
+    request<{
+      live: boolean;
+      checkedAt: number;
+      startedAt: number | null;
+    }>("GET", "/api/watch/status"),
+
   admin: {
     listEvents: () => request<DbEvent[]>("GET", "/api/admin/events"),
     getEvent: (id: string) =>
