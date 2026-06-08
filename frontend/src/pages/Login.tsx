@@ -177,11 +177,7 @@ export default function Login() {
     return (
       <div className={PAGE_CLS} style={{ background: PAGE_BG }}>
         <header className={HEADER_CLS}>
-          <Link
-            className={LOGO_CLS}
-            to="/"
-            aria-label={t("auth_logo_aria")}
-          >
+          <Link className={LOGO_CLS} to="/" aria-label={t("auth_logo_aria")}>
             <img
               className={LOGO_IMG_CLS}
               src="/assets/images/brand/logo.png"
@@ -223,7 +219,9 @@ export default function Login() {
 
             <h1 className={TITLE_CLS}>{t("auth_verify_phone_title")}</h1>
             <p className={SUBTITLE_CLS}>
-              {t("auth_verify_phone_subtitle", { identifier: pendingIdentifier })}
+              {t("auth_verify_phone_subtitle", {
+                identifier: pendingIdentifier,
+              })}
             </p>
 
             <form className={FORM_CLS} onSubmit={onVerifySubmit} noValidate>
@@ -246,7 +244,9 @@ export default function Login() {
 
               {verifyAlert && (
                 <div
-                  className={verifyAlert.kind === "ok" ? REG_ALERT_OK_CLS : REG_ALERT_CLS}
+                  className={
+                    verifyAlert.kind === "ok" ? REG_ALERT_OK_CLS : REG_ALERT_CLS
+                  }
                   role="alert"
                 >
                   {verifyAlert.msg}
@@ -300,11 +300,7 @@ export default function Login() {
     return (
       <div className={PAGE_CLS} style={{ background: PAGE_BG }}>
         <header className={HEADER_CLS}>
-          <Link
-            className={LOGO_CLS}
-            to="/"
-            aria-label={t("auth_logo_aria")}
-          >
+          <Link className={LOGO_CLS} to="/" aria-label={t("auth_logo_aria")}>
             <img
               className={LOGO_IMG_CLS}
               src="/assets/images/brand/logo.png"
@@ -345,7 +341,9 @@ export default function Login() {
 
             <h1 className={TITLE_CLS}>{t("auth_verify_email_title")}</h1>
             <p className={SUBTITLE_CLS}>
-              {t("auth_verify_email_subtitle", { identifier: pendingIdentifier })}
+              {t("auth_verify_email_subtitle", {
+                identifier: pendingIdentifier,
+              })}
             </p>
 
             <div className={REG_ALERT_OK_CLS} role="status">
@@ -354,7 +352,9 @@ export default function Login() {
 
             {verifyAlert && (
               <div
-                className={verifyAlert.kind === "ok" ? REG_ALERT_OK_CLS : REG_ALERT_CLS}
+                className={
+                  verifyAlert.kind === "ok" ? REG_ALERT_OK_CLS : REG_ALERT_CLS
+                }
                 role="alert"
                 style={{ marginTop: 8 }}
               >
@@ -387,11 +387,7 @@ export default function Login() {
   return (
     <div className={PAGE_CLS} style={{ background: PAGE_BG }}>
       <header className={HEADER_CLS}>
-        <Link
-          className={LOGO_CLS}
-          to="/"
-          aria-label={t("auth_logo_aria")}
-        >
+        <Link className={LOGO_CLS} to="/" aria-label={t("auth_logo_aria")}>
           <img
             className={LOGO_IMG_CLS}
             src="/assets/images/brand/logo.png"

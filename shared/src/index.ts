@@ -11,7 +11,7 @@ export interface HealthResponse {
 
 export type UserRole = "user" | "admin";
 export type EventStatus = "upcoming" | "live" | "ended";
-export type TicketStatus = "pending" | "paid" | "cancelled";
+export type TicketStatus = "pending" | "paid" | "cancelled" | "refunded";
 
 export interface DbUser {
   id: string;
@@ -135,6 +135,22 @@ export interface DbTicket {
   qpay_invoice_id: string | null;
   created_at: string;
   paid_at: string | null;
+  refunded_at: string | null;
+}
+
+export interface AdminTicketRow extends DbTicket {
+  user_email: string | null;
+  user_phone: string | null;
+  user_full_name: string | null;
+  event_title: string | null;
+}
+
+export interface AdminTicketStats {
+  revenue: number;
+  count: number;
+  paidCount: number;
+  byEvent: Record<string, number>;
+  last30d: { date: string; total: number }[];
 }
 
 export interface DbSession {

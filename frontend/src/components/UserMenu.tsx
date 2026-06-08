@@ -2,21 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth';
-import type { Session } from '../auth';
-
-const TICKETS_KEY = 'tsengeldekh_tickets';
-
-type Ticket = { user?: string } & Record<string, unknown>;
-
-function ticketCountFor(session: Session | null): number {
-  if (!session) return 0;
-  try {
-    const all = JSON.parse(localStorage.getItem(TICKETS_KEY) || '[]') as Ticket[];
-    return all.filter((t) => !t.user || t.user === session.identifier).length;
-  } catch {
-    return 0;
-  }
-}
+import { api } from '../lib/api';
 
 const TRIGGER_LIGHT_CLS =
   "inline-flex items-center gap-2.5 bg-white rounded-full cursor-pointer text-ink pt-[5px] pr-[14px] pb-[5px] pl-[6px] border border-solid border-[rgba(31,41,55,0.10)] font-[inherit] shrink min-w-0 max-[540px]:gap-2 max-[540px]:pr-[10px] max-[420px]:pr-[6px] [transition:border-color_.15s_ease,box-shadow_.2s_ease,transform_.15s_ease] hover:border-[rgba(34,48,198,0.30)] hover:shadow-[0_6px_18px_-10px_rgba(34,48,198,.45)] [.is-scrolled_&]:bg-[rgba(255,255,255,0.92)]";
@@ -73,8 +59,24 @@ export default function UserMenu({ dark = false }: { dark?: boolean } = {}) {
   const { session, logout } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [ticketCount, setTicketCount] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!session) {
+      setTicketCount(0);
+      return;
+    }
+    let alive = true;
+    api.listMyTickets().then((res) => {
+      if (!alive) return;
+      if (res.ok) setTicketCount(res.data.length);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [session]);
 
   const TRIGGER_CLS = dark ? TRIGGER_DARK_CLS : TRIGGER_LIGHT_CLS;
   const TRIGGER_OPEN_CLS = dark ? TRIGGER_OPEN_DARK_CLS : TRIGGER_OPEN_LIGHT_CLS;
@@ -113,7 +115,6 @@ export default function UserMenu({ dark = false }: { dark?: boolean } = {}) {
   const label = session.fullname || session.identifier;
   const initial = (label || '?').trim().charAt(0).toUpperCase();
   const avatar = session.avatar;
-  const ticketCount = ticketCountFor(session);
 
   const go = (to: string) => {
     setOpen(false);

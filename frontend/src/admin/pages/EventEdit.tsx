@@ -310,7 +310,7 @@ export default function EventEdit() {
                         id="evt-base"
                         type="number"
                         min="0"
-                        step="500"
+                        step="1"
                         value={form.base}
                         onChange={(e) =>
                           update({ base: Number(e.target.value) })

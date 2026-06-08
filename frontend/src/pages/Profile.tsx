@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useAuth, useRequireAuth } from "../auth";
 import { api } from "../lib/api";
@@ -24,9 +24,6 @@ import {
 } from "./_authStyles";
 import { WATCH_PAGE_BG } from "./_watchStyles";
 
-const TICKETS_KEY = "tsengeldekh_tickets";
-
-type Ticket = { user?: string; total?: number };
 type AlertState = { kind: "error" | "ok"; msg: string } | null;
 
 const PROFILE_EYEBROW_OVERRIDE = "!bg-gold-pale !text-[#7C5A1E]";
@@ -77,19 +74,29 @@ export default function Profile() {
     };
   }, []);
 
-  const tickets: Ticket[] = useMemo(() => {
-    if (!session) return [];
-    try {
-      const all = JSON.parse(
-        localStorage.getItem(TICKETS_KEY) || "[]",
-      ) as Ticket[];
-      return all.filter((t) => !t.user || t.user === session.identifier);
-    } catch {
-      return [];
+  const [ticketCount, setTicketCount] = useState(0);
+  const [totalSpent, setTotalSpent] = useState(0);
+  useEffect(() => {
+    if (!session) {
+      setTicketCount(0);
+      setTotalSpent(0);
+      return;
     }
+    let alive = true;
+    api.listMyTickets().then((res) => {
+      if (!alive || !res.ok) return;
+      setTicketCount(res.data.length);
+      setTotalSpent(
+        res.data
+          .filter((t) => t.status === "paid")
+          .reduce((sum, t) => sum + (Number(t.price) || 0), 0),
+      );
+    });
+    return () => {
+      alive = false;
+    };
   }, [session]);
 
-  const totalSpent = tickets.reduce((sum, t) => sum + (t.total || 0), 0);
   const memberSince = createdAt
     ? new Date(createdAt).toLocaleDateString("mn-MN")
     : "—";
@@ -226,7 +233,7 @@ export default function Profile() {
               </div>
               <div className={PROFILE_STAT_ITEM_CLS}>
                 <dt className={PROFILE_STAT_DT_CLS}>Тасалбар</dt>
-                <dd className={PROFILE_STAT_DD_CLS}>{tickets.length}</dd>
+                <dd className={PROFILE_STAT_DD_CLS}>{ticketCount}</dd>
               </div>
               <div className={PROFILE_STAT_ITEM_CLS}>
                 <dt className={PROFILE_STAT_DT_CLS}>Нийт зарцуулсан</dt>

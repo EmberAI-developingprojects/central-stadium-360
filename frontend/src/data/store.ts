@@ -1,4 +1,6 @@
 import type {
+  AdminTicketRow,
+  AdminTicketStats,
   AdminUserRow,
   DbEvent,
   DbHomeHero,
@@ -130,34 +132,24 @@ export type OrdersStats = {
   last30d: { date: string; total: number }[];
 };
 
-const KEYS = {
-  orders: "tsengeldekh_tickets",
-  seeded: "tsengeldekh_seeded_v1",
-} as const;
-
-function readJSON<T>(key: string, fallback: T): T {
-  try {
-    return JSON.parse(
-      localStorage.getItem(key) || JSON.stringify(fallback),
-    ) as T;
-  } catch {
-    return fallback;
-  }
+function ticketToOrder(t: AdminTicketRow): OrderRecord {
+  return {
+    code: t.id,
+    user: t.user_email || t.user_phone || t.user_full_name || t.user_id,
+    eventId: t.event_id,
+    title: t.event_title || "",
+    tier: "standard",
+    tierName: "Стандарт",
+    qty: 1,
+    unitPrice: t.price,
+    total: t.price,
+    purchasedAt: t.paid_at || t.created_at,
+    status: t.status === "refunded" ? "refunded" : "paid",
+    refundedAt: t.refunded_at || undefined,
+    payment: "qpay",
+    paymentName: "QPay",
+  };
 }
-function writeJSON(key: string, value: unknown): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-
-  }
-}
-
-const withDefaultStatus = <T extends { status?: OrderStatus }>(
-  o: T,
-): T & { status: OrderStatus } =>
-  o.status
-    ? (o as T & { status: OrderStatus })
-    : { ...o, status: "paid" as OrderStatus };
 
 function pad2(n: number): string {
   return String(n).padStart(2, "0");
@@ -409,9 +401,20 @@ export async function updateHomeContent(
   return getHomeContent();
 }
 
-export function listOrders(filter: OrderFilter = {}): Promise<OrderRecord[]> {
-  let all = readJSON<OrderRecord[]>(KEYS.orders, []).map(withDefaultStatus);
-  const { q, status, eventId, from, to, user } = filter;
+export async function listOrders(
+  filter: OrderFilter = {},
+): Promise<OrderRecord[]> {
+  const res = await api.admin.listTickets({
+    status: filter.status,
+    eventId: filter.eventId,
+    from: filter.from,
+    to: filter.to,
+  });
+  if (!res.ok) return [];
+  let all = res.data
+    .filter((t) => t.status === "paid" || t.status === "refunded")
+    .map(ticketToOrder);
+  const { q, user } = filter;
   if (q) {
     const needle = q.toLowerCase();
     all = all.filter(
@@ -421,79 +424,92 @@ export function listOrders(filter: OrderFilter = {}): Promise<OrderRecord[]> {
         (o.title || "").toLowerCase().includes(needle),
     );
   }
-  if (status && status !== "all") all = all.filter((o) => o.status === status);
-  if (eventId) all = all.filter((o) => o.eventId === eventId);
   if (user) all = all.filter((o) => o.user === user);
-  if (from) all = all.filter((o) => (o.purchasedAt || "") >= from);
-  if (to) all = all.filter((o) => (o.purchasedAt || "") <= to);
   all.sort((a, b) => (b.purchasedAt || "").localeCompare(a.purchasedAt || ""));
-  return Promise.resolve(all);
+  return all;
 }
 
-export function getOrder(code: string): Promise<OrderRecord | null> {
-  const all = readJSON<OrderRecord[]>(KEYS.orders, []);
-  const found = all.find((o) => o.code === code);
-  return Promise.resolve(found ? withDefaultStatus(found) : null);
+export async function getOrder(code: string): Promise<OrderRecord | null> {
+  const res = await api.admin.getTicket(code);
+  if (!res.ok) return null;
+  if (res.data.status !== "paid" && res.data.status !== "refunded") return null;
+  return ticketToOrder(res.data);
 }
 
-export function createOrder(order: OrderRecord): Promise<OrderRecord> {
-  const all = readJSON<OrderRecord[]>(KEYS.orders, []);
-  all.push(withDefaultStatus(order));
-  writeJSON(KEYS.orders, all);
-  return Promise.resolve(order);
+export async function refundOrder(code: string): Promise<OrderRecord> {
+  const res = await api.admin.refundTicket(code);
+  if (!res.ok) throw new Error(res.error || "Буцаах боломжгүй.");
+  return ticketToOrder(res.data);
 }
 
-export function refundOrder(code: string): Promise<OrderRecord> {
-  const all = readJSON<OrderRecord[]>(KEYS.orders, []);
-  const i = all.findIndex((o) => o.code === code);
-  if (i < 0) return Promise.reject(new Error("Захиалга олдсонгүй."));
-  all[i] = {
-    ...all[i],
-    status: "refunded",
-    refundedAt: new Date().toISOString(),
-  };
-  writeJSON(KEYS.orders, all);
-  return Promise.resolve(all[i]);
+export async function cancelOrder(code: string): Promise<void> {
+  const res = await api.admin.deleteTicket(code);
+  if (!res.ok) throw new Error(res.error || "Устгах боломжгүй.");
 }
 
-export function cancelOrder(code: string): Promise<void> {
-  const all = readJSON<OrderRecord[]>(KEYS.orders, []).filter(
-    (o) => o.code !== code,
+export async function listMyOrders(): Promise<OrderRecord[]> {
+  const [ticketsRes, eventsRes] = await Promise.all([
+    api.listMyTickets(),
+    api.listEvents(),
+  ]);
+  if (!ticketsRes.ok) return [];
+  const eventsById = new Map(
+    (eventsRes.ok ? eventsRes.data : []).map((e) => [e.id, e]),
   );
-  writeJSON(KEYS.orders, all);
-  return Promise.resolve();
+  return ticketsRes.data
+    .filter((t) => t.status === "paid" || t.status === "refunded")
+    .map((t) => {
+      const ev = eventsById.get(t.event_id);
+      return {
+        code: t.id,
+        user: "",
+        eventId: t.event_id,
+        title: ev?.title || "",
+        tier: "standard",
+        tierName: "Стандарт",
+        qty: 1,
+        unitPrice: t.price,
+        total: t.price,
+        purchasedAt: t.paid_at || t.created_at,
+        status: t.status === "refunded" ? "refunded" : ("paid" as OrderStatus),
+        refundedAt: t.refunded_at || undefined,
+        payment: "qpay",
+        paymentName: "QPay",
+        image: ev?.image || undefined,
+        date: ev?.start_time || undefined,
+      } satisfies OrderRecord;
+    })
+    .sort((a, b) =>
+      (b.purchasedAt || "").localeCompare(a.purchasedAt || ""),
+    );
 }
 
-export function ordersStats(): Promise<OrdersStats> {
-  const all = readJSON<OrderRecord[]>(KEYS.orders, []).map(withDefaultStatus);
-  const paid = all.filter((o) => o.status === "paid");
-  const revenue = paid.reduce((s, o) => s + (Number(o.total) || 0), 0);
-  const byTier: Record<string, number> = {};
-  const byEvent: Record<string, number> = {};
-  paid.forEach((o) => {
-    byTier[o.tier] = (byTier[o.tier] || 0) + (Number(o.total) || 0);
-    byEvent[o.eventId] = (byEvent[o.eventId] || 0) + (Number(o.total) || 0);
-  });
+export async function getMyOrder(code: string): Promise<OrderRecord | null> {
+  const orders = await listMyOrders();
+  return orders.find((o) => o.code === code) || null;
+}
 
-  const today = new Date();
-  const last30d: { date: string; total: number }[] = [];
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(today.getDate() - i);
-    const key = d.toISOString().slice(0, 10);
-    const sum = paid
-      .filter((o) => (o.purchasedAt || "").slice(0, 10) === key)
-      .reduce((s, o) => s + (Number(o.total) || 0), 0);
-    last30d.push({ date: key, total: sum });
+export async function ordersStats(): Promise<OrdersStats> {
+  const res = await api.admin.ticketsStats();
+  if (!res.ok) {
+    return {
+      revenue: 0,
+      count: 0,
+      paidCount: 0,
+      byTier: {},
+      byEvent: {},
+      last30d: [],
+    };
   }
-  return Promise.resolve({
-    revenue,
-    count: all.length,
-    paidCount: paid.length,
-    byTier,
-    byEvent,
-    last30d,
-  });
+  const s: AdminTicketStats = res.data;
+  return {
+    revenue: s.revenue,
+    count: s.count,
+    paidCount: s.paidCount,
+    byTier: { standard: s.revenue },
+    byEvent: s.byEvent,
+    last30d: s.last30d,
+  };
 }
 
 function dbToUser(row: AdminUserRow): UserRecord {
@@ -553,17 +569,3 @@ export async function deleteUser(id: string): Promise<void> {
   unwrap(await api.admin.deleteUser(id));
 }
 
-export function seedIfEmpty(): Promise<void> {
-  const orders = readJSON<OrderRecord[]>(KEYS.orders, []);
-  let ordersMutated = false;
-  orders.forEach((o) => {
-    if (!o.status) {
-      o.status = "paid";
-      ordersMutated = true;
-    }
-  });
-  if (ordersMutated) writeJSON(KEYS.orders, orders);
-
-  localStorage.setItem(KEYS.seeded, "1");
-  return Promise.resolve();
-}

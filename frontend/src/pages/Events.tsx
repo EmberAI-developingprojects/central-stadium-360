@@ -6,13 +6,32 @@ import { listEvents } from "../data/store";
 import type { EventRecord } from "../data/store";
 
 const MONTHS_MN = [
-  "1-р сар", "2-р сар", "3-р сар", "4-р сар",
-  "5-р сар", "6-р сар", "7-р сар", "8-р сар",
-  "9-р сар", "10-р сар", "11-р сар", "12-р сар",
+  "1-р сар",
+  "2-р сар",
+  "3-р сар",
+  "4-р сар",
+  "5-р сар",
+  "6-р сар",
+  "7-р сар",
+  "8-р сар",
+  "9-р сар",
+  "10-р сар",
+  "11-р сар",
+  "12-р сар",
 ];
 const MONTHS_ABBR = [
-  "1-р", "2-р", "3-р", "4-р", "5-р", "6-р",
-  "7-р", "8-р", "9-р", "10-р", "11-р", "12-р",
+  "1-р",
+  "2-р",
+  "3-р",
+  "4-р",
+  "5-р",
+  "6-р",
+  "7-р",
+  "8-р",
+  "9-р",
+  "10-р",
+  "11-р",
+  "12-р",
 ];
 
 function formatTime(iso: string): string {
@@ -49,7 +68,8 @@ function groupByMonth(events: EventRecord[]): MonthGroup[] {
   }
   const groups = Array.from(map.values());
   groups.sort((a, b) => a.year - b.year || a.month - b.month);
-  for (const g of groups) g.events.sort((a, b) => a.start_time.localeCompare(b.start_time));
+  for (const g of groups)
+    g.events.sort((a, b) => a.start_time.localeCompare(b.start_time));
   return groups;
 }
 
@@ -174,7 +194,9 @@ export default function Events() {
 
           {error && empty(`Алдаа: ${error}`)}
           {!error && events === null && empty("Уншиж байна…")}
-          {!error && events !== null && groups.length === 0 &&
+          {!error &&
+            events !== null &&
+            groups.length === 0 &&
             empty("Одоогоор бүртгэгдсэн арга хэмжээ байхгүй байна.")}
 
           {groups.map((g) => (
