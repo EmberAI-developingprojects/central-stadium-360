@@ -139,7 +139,7 @@ export default function OrdersList() {
           {(
             [
               ["all", "Бүгд"],
-              ["paid", "Төлбөртэй"],
+              ["paid", "Төлөгдсөн"],
               ["refunded", "Буцаагдсан"],
             ] as Array<[StatusFilter, string]>
           ).map(([key, label]) => (

@@ -261,9 +261,9 @@ export const VIEWER_TITLE_WRAP_CLS = "flex items-center gap-[14px] min-w-0";
 export const VIEWER_TITLE_CLS =
   "text-base font-bold text-white m-0 overflow-hidden text-ellipsis whitespace-nowrap max-w-[50vw] max-[720px]:text-sm max-[720px]:max-w-[60vw]";
 export const VIEWER_LIVE_PILL_CLS =
-  "inline-flex items-center gap-2 text-white text-[11px] font-extrabold rounded-full bg-[#E53935] tracking-[.12em] py-[5px] px-[11px] flex-none [font-variant-numeric:tabular-nums] shadow-[0_0_0_1px_rgba(229,57,53,0.4),0_6px_18px_-8px_rgba(229,57,53,0.7)] [&>span:last-child]:text-[#FCD34D]";
+  "inline-flex items-center gap-2 text-white text-[11px] font-extrabold rounded-full bg-[rgba(229,57,53,0.14)] border border-solid border-[rgba(229,57,53,0.45)] tracking-[.12em] py-[5px] px-[11px] flex-none [font-variant-numeric:tabular-nums] [&>span:last-child]:text-[rgba(255,255,255,0.75)] [&>span:last-child]:font-semibold";
 export const VIEWER_LIVE_PULSE_CLS =
-  "rounded-full bg-white w-[7px] h-[7px] shadow-[0_0_0_0_rgba(255,255,255,0.9)] [animation:live-pulse_1.4s_ease-in-out_infinite]";
+  "rounded-full bg-[#ef4444] w-[7px] h-[7px] shadow-[0_0_0_0_rgba(239,68,68,0.9)] [animation:live-pulse_1.4s_ease-in-out_infinite]";
 
 export const VIEWER_STATS_CLS =
   "inline-flex items-center gap-2 max-[720px]:[grid-column:1/-1] max-[720px]:justify-self-stretch max-[720px]:justify-between";

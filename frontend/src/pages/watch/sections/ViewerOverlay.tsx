@@ -82,6 +82,45 @@ type FullscreenElement = HTMLElement & {
 
 type QualityLevel = { index: number; height: number; label: string };
 
+type ReactionId = "horse" | "archery" | "wrestler";
+
+const REACTIONS: Array<{
+  id: ReactionId;
+  label: string;
+  color: string;
+  path: string;
+}> = [
+  {
+    id: "horse",
+    label: "Морь",
+    color: "#eab308",
+    path: "M4 10c0-4.4 3.6-8 8-8s8 3.6 8 8v12h-4V10c0-2.2-1.8-4-4-4s-4 1.8-4 4v12H4V10z",
+  },
+  {
+    id: "archery",
+    label: "Сур харвах",
+    color: "#0ea5e9",
+    path: "M5 3c-.55 0-1 .45-1 1v16c0 .55.45 1 1 1s1-.45 1-1v-2.5c4-.7 7-4.2 7-7.5s-3-6.8-7-7.5V4c0-.55-.45-1-1-1zM22 12l-5-4v3H8v2h9v3l5-4z",
+  },
+  {
+    id: "wrestler",
+    label: "Бөх",
+    color: "#dc2626",
+    path: "M6.5 2a2.5 2.5 0 100 5 2.5 2.5 0 000-5zm11 0a2.5 2.5 0 100 5 2.5 2.5 0 000-5zM3 12c-.55 0-1 .45-1 1v7c0 .55.45 1 1 1h2.5l1.5-5h.5v5h2v-6c0-1 1-2 2-2s2 1 2 2v6h2v-5h.5l1.5 5H21c.55 0 1-.45 1-1v-7c0-.55-.45-1-1-1-1 0-1.5 0-3 1l-3 1.5h-6L6 13c-1.5-1-2-1-3-1z",
+  },
+];
+
+const REACTION_BY_ID: Record<ReactionId, (typeof REACTIONS)[number]> =
+  REACTIONS.reduce(
+    (acc, r) => {
+      acc[r.id] = r;
+      return acc;
+    },
+    {} as Record<ReactionId, (typeof REACTIONS)[number]>,
+  );
+
+const COOLDOWN_MS = 45_000;
+
 export function ViewerOverlay({
   session,
   featuredEvent,
@@ -118,10 +157,30 @@ export function ViewerOverlay({
       Math.random().toString(36).slice(2, 10),
   );
   const [bubbles, setBubbles] = useState<
-    Array<{ id: number; emoji: string; left: string; duration: string }>
+    Array<{ id: number; reaction: ReactionId; left: string; duration: string }>
   >([]);
   const bubbleIdRef = useRef(0);
   const [camPickerOpen, setCamPickerOpen] = useState(false);
+  const [lastActionAt, setLastActionAt] = useState<number | null>(null);
+  const [, setCooldownTick] = useState(0);
+
+  useEffect(() => {
+    if (lastActionAt === null) return;
+    const remaining = COOLDOWN_MS - (Date.now() - lastActionAt);
+    if (remaining <= 0) return;
+    const id = setInterval(() => setCooldownTick((t) => t + 1), 500);
+    const stop = setTimeout(() => clearInterval(id), remaining + 100);
+    return () => {
+      clearInterval(id);
+      clearTimeout(stop);
+    };
+  }, [lastActionAt]);
+
+  const cooldownLeft = lastActionAt
+    ? Math.max(0, COOLDOWN_MS - (Date.now() - lastActionAt))
+    : 0;
+  const inCooldown = cooldownLeft > 0;
+  const cooldownSecs = Math.ceil(cooldownLeft / 1000);
 
   const activeCam = cams[camIdx] ?? null;
   const is360 = activeCam?.type === "360";
@@ -587,13 +646,15 @@ export function ViewerOverlay({
     } catch {}
   };
 
-  const emitReact = (emoji: string) => {
+  const emitReact = (reaction: ReactionId) => {
+    if (inCooldown) return;
+    setLastActionAt(Date.now());
     for (let i = 0; i < 5; i++) {
       setTimeout(() => {
         const id = ++bubbleIdRef.current;
         const left = 15 + Math.random() * 70 + "%";
         const duration = 1.6 + Math.random() * 0.8 + "s";
-        setBubbles((prev) => [...prev, { id, emoji, left, duration }]);
+        setBubbles((prev) => [...prev, { id, reaction, left, duration }]);
         setTimeout(
           () => setBubbles((prev) => prev.filter((b) => b.id !== id)),
           2500,
@@ -604,6 +665,7 @@ export function ViewerOverlay({
 
   const onChatSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (inCooldown) return;
     const text = chatInput.trim();
     if (!text) return;
     const name = session.fullname || session.identifier || "Та";
@@ -618,6 +680,7 @@ export function ViewerOverlay({
         }),
       );
       setChatInput("");
+      setLastActionAt(Date.now());
     }
   };
 
@@ -890,15 +953,21 @@ export function ViewerOverlay({
           )}
 
           <div className={VIEWER_REACT_FLOAT_CLS} aria-hidden="true">
-            {bubbles.map((b) => (
-              <span
-                key={b.id}
-                className="absolute bottom-20 text-[26px] opacity-0 [animation:reactRise_2s_ease-out_forwards] [will-change:transform,opacity] [filter:drop-shadow(0_4px_8px_rgba(0,0,0,0.5))]"
-                style={{ left: b.left, animationDuration: b.duration }}
-              >
-                {b.emoji}
-              </span>
-            ))}
+            {bubbles.map((b) => {
+              const r = REACTION_BY_ID[b.reaction];
+              return (
+                <svg
+                  key={b.id}
+                  viewBox="0 0 24 24"
+                  fill={r.color}
+                  aria-hidden="true"
+                  className="absolute bottom-20 w-8 h-8 opacity-0 [animation:reactRise_2s_ease-out_forwards] [will-change:transform,opacity] [filter:drop-shadow(0_4px_8px_rgba(0,0,0,0.5))]"
+                  style={{ left: b.left, animationDuration: b.duration }}
+                >
+                  <path d={r.path} />
+                </svg>
+              );
+            })}
           </div>
 
           <div
@@ -1036,15 +1105,15 @@ export function ViewerOverlay({
                 }
                 className={`inline-flex items-center gap-1.5 h-[34px] px-3 rounded-full text-[11px] font-extrabold tracking-[.12em] cursor-pointer border border-solid [transition:background_.15s_ease,color_.15s_ease,border-color_.15s_ease] ${
                   isAtLive
-                    ? "bg-[#E53935] border-[#E53935] text-white cursor-default"
-                    : "bg-[rgba(255,255,255,0.06)] border-[rgba(255,255,255,0.18)] text-[rgba(255,255,255,0.85)] hover:bg-[#E53935] hover:border-[#E53935] hover:text-white"
+                    ? "bg-[rgba(229,57,53,0.14)] border-[rgba(229,57,53,0.45)] text-white cursor-default"
+                    : "bg-[rgba(255,255,255,0.06)] border-[rgba(255,255,255,0.18)] text-[rgba(255,255,255,0.85)] hover:bg-[rgba(229,57,53,0.14)] hover:border-[rgba(229,57,53,0.45)] hover:text-white"
                 }`}
               >
                 <span
-                  className={`w-[7px] h-[7px] rounded-full ${
+                  className={`w-[7px] h-[7px] rounded-full bg-[#ef4444] ${
                     isAtLive
-                      ? "bg-white [animation:live-pulse_1.4s_ease-in-out_infinite]"
-                      : "bg-[#E53935]"
+                      ? "[animation:live-pulse_1.4s_ease-in-out_infinite]"
+                      : ""
                   }`}
                   aria-hidden="true"
                 />
@@ -1057,15 +1126,24 @@ export function ViewerOverlay({
               role="group"
               aria-label="Реакц"
             >
-              {["❤️", "🔥", "👏", "🎉"].map((emoji) => (
+              {REACTIONS.map((r) => (
                 <button
-                  key={emoji}
+                  key={r.id}
                   type="button"
-                  className={VIEWER_REACT_CLS}
-                  aria-label="Реакц"
-                  onClick={() => emitReact(emoji)}
+                  className={`${VIEWER_REACT_CLS} grid place-items-center ${inCooldown ? "opacity-40 cursor-not-allowed hover:bg-transparent hover:scale-100" : ""}`}
+                  aria-label={r.label}
+                  title={inCooldown ? `${cooldownSecs}с дараа` : r.label}
+                  disabled={inCooldown}
+                  onClick={() => emitReact(r.id)}
                 >
-                  {emoji}
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill={r.color}
+                    aria-hidden="true"
+                    className="w-5 h-5"
+                  >
+                    <path d={r.path} />
+                  </svg>
                 </button>
               ))}
             </div>
@@ -1266,17 +1344,24 @@ export function ViewerOverlay({
           >
             <input
               type="text"
-              placeholder={chatConnected ? "Мессеж бичих…" : "Холбогдож байна…"}
+              placeholder={
+                !chatConnected
+                  ? "Холбогдож байна…"
+                  : inCooldown
+                    ? `Дахин ${cooldownSecs}с-ийн дараа илгээнэ`
+                    : "Мессеж бичих…"
+              }
               maxLength={140}
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
-              disabled={!chatConnected}
+              disabled={!chatConnected || inCooldown}
             />
             <button
               type="submit"
               className={VIEWER_CHAT_SEND_CLS}
               aria-label="Илгээх"
-              disabled={!chatConnected || !chatInput.trim()}
+              title={inCooldown ? `${cooldownSecs}с дараа` : "Илгээх"}
+              disabled={!chatConnected || !chatInput.trim() || inCooldown}
             >
               <svg
                 viewBox="0 0 24 24"
