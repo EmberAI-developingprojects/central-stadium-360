@@ -469,6 +469,12 @@ export default function Login() {
                   </svg>
                 </button>
               </span>
+              <Link
+                to="/forgot-password"
+                className="self-end mt-1 text-[12.5px] font-semibold text-brand-blue no-underline [transition:color_.15s_ease] hover:text-brand-blue-soft hover:underline"
+              >
+                {t("auth_forgot_link")}
+              </Link>
             </label>
 
             <div className={REG_ALERT_CLS} role="alert" hidden={!alert}>

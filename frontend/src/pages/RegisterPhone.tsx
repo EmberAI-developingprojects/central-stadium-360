@@ -2,6 +2,7 @@ import { useState, type ChangeEvent, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../auth";
+import OtpInput from "../components/auth/OtpInput";
 import {
   BACK_CLS,
   CARD_CLS,
@@ -205,22 +206,21 @@ export default function RegisterPhone() {
             </p>
 
             <form className={FORM_CLS} onSubmit={onVerifySubmit} noValidate>
-              <label className={FIELD_CLS}>
-                <span className={LABEL_CLS}>{t("auth_verify_code_label")}</span>
-                <input
-                  className={INPUT_CLS}
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  maxLength={8}
-                  placeholder="123456"
+              <div className={FIELD_CLS}>
+                <span className={`${LABEL_CLS} text-center`}>
+                  {t("auth_verify_code_label")}
+                </span>
+                <OtpInput
                   value={code}
-                  onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                  required
+                  onChange={setCode}
+                  length={6}
                   autoFocus
+                  disabled={verifyBusy}
                 />
-                <span className={REG_HINT_CLS}>{t("auth_verify_hint")}</span>
-              </label>
+                <span className={`${REG_HINT_CLS} text-center`}>
+                  {t("auth_verify_hint")}
+                </span>
+              </div>
 
               {verifyAlert && (
                 <div

@@ -11,6 +11,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import RegisterPhone from "./pages/RegisterPhone";
 import RegisterEmail from "./pages/RegisterEmail";
+import ForgotPassword from "./pages/ForgotPassword";
 import Watch from "./pages/Watch";
 import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
@@ -107,6 +108,14 @@ export default function App() {
           element={
             <GuestOnly>
               <RegisterEmail />
+            </GuestOnly>
+          }
+        />
+        <Route
+          path="/forgot-password"
+          element={
+            <GuestOnly>
+              <ForgotPassword />
             </GuestOnly>
           }
         />

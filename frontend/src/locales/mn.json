@@ -164,7 +164,7 @@
   "auth_register_type_aria": "Бүртгэлийн төрөл",
 
   "auth_verify_eyebrow": "Баталгаажуулалт",
-  "auth_verify_phone_title": "Утсаа баталгаажуулах",
+  "auth_verify_phone_title": "Баталгаажуулах код оруулна уу",
   "auth_verify_phone_subtitle": "{{identifier}} дугаар руу 6 оронтой код илгээлээ. Хүлээж аваад доор оруулна уу.",
   "auth_verify_email_title": "Гмэйлээ шалгана уу",
   "auth_verify_email_subtitle": "Бид {{identifier}} хаяг руу баталгаажуулах линк илгээлээ. Линк дээр дарж бүртгэлээ идэвхжүүлээрэй.",
@@ -220,5 +220,19 @@
   "auth_err_passwords_dont_match": "Нууц үг таарахгүй байна.",
   "auth_err_must_agree": "Үйлчилгээний нөхцөлийг зөвшөөрнө үү.",
   "auth_err_not_verified_resend": "Бүртгэлээ баталгаажуулаагүй байна. Кодоо илгээж дуусгана уу.",
-  "auth_err_code_incomplete": "Кодыг бүрэн оруулна уу."
+  "auth_err_code_incomplete": "Кодыг бүрэн оруулна уу.",
+
+  "auth_forgot_link": "Нууц үг мартсан уу?",
+  "auth_forgot_eyebrow": "Нууц үг сэргээх",
+  "auth_forgot_title": "Нууц үг сэргээх",
+  "auth_forgot_subtitle": "Бүртгэлтэй утасны дугаараа оруулна уу. Бид баталгаажуулах SMS код илгээнэ.",
+  "auth_forgot_send_btn": "Код илгээх",
+  "auth_forgot_reset_title": "Шинэ нууц үг тохируулах",
+  "auth_forgot_reset_subtitle": "{{identifier}} дугаар руу илгээсэн кодоо оруулаад шинэ нууц үгээ зохионо уу.",
+  "auth_new_password_label": "Шинэ нууц үг",
+  "auth_forgot_reset_btn": "Нууц үг шинэчлэх",
+  "auth_forgot_reset_done": "Нууц үг шинэчлэгдлээ ✓ Нэвтэрнэ үү.",
+  "auth_err_user_not_found": "Энэ дугаар бүртгэлгүй байна.",
+  "auth_err_forgot_send_failed": "Код илгээхэд алдаа гарлаа.",
+  "auth_err_forgot_reset_failed": "Нууц үг шинэчлэхэд алдаа гарлаа."
 }

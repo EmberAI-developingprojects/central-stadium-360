@@ -65,6 +65,19 @@ const resendSchema = z.object({
   identifier: z.string().trim().min(1),
 });
 
+const forgotSendSchema = z.object({
+  phone: phoneSchema,
+});
+
+const forgotResetSchema = z.object({
+  phone: phoneSchema,
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{4,8}$/, "OTP must be 4–8 digits."),
+  password: passwordSchema,
+});
+
 function getClientIp(c: Context): string {
   return (
     c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ||
@@ -398,6 +411,87 @@ auth.post("/resend-code", async (c) => {
     ok: true,
     data: { kind: cls.kind, identifier: cls.value },
   } as const);
+});
+
+auth.post("/forgot-password/send", async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = forgotSendSchema.safeParse(body);
+  if (!parsed.success) return invalidInput(c, parsed);
+  const { phone } = parsed.data;
+
+  const limited = await applyRateLimits(c, phone);
+  if (limited) return limited;
+
+  const supabase = getSupabaseAnon();
+  if (!supabase) {
+    return c.json(
+      { ok: false, error: "supabase_not_configured" } as const,
+      503,
+    );
+  }
+
+  const { error } = await supabase.auth.signInWithOtp({
+    phone,
+    options: { shouldCreateUser: false },
+  });
+  if (error) {
+    const msg = error.message ?? "";
+    if (/signups.*not allowed|user.*not.*found/i.test(msg)) {
+      return c.json({ ok: false, error: "user_not_found" } as const, 404);
+    }
+    console.error("[auth] forgot send:", error);
+    return c.json(
+      { ok: false, error: msg || "send_failed" } as const,
+      502,
+    );
+  }
+  return c.json({ ok: true, data: { phone } } as const);
+});
+
+auth.post("/forgot-password/reset", async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = forgotResetSchema.safeParse(body);
+  if (!parsed.success) return invalidInput(c, parsed);
+  const { phone, code, password } = parsed.data;
+
+  const supabase = getSupabaseAnon();
+  if (!supabase) {
+    return c.json(
+      { ok: false, error: "supabase_not_configured" } as const,
+      503,
+    );
+  }
+
+  const { data, error } = await supabase.auth.verifyOtp({
+    phone,
+    token: code,
+    type: "sms",
+  });
+  if (error || !data.session || !data.user) {
+    return c.json(
+      { ok: false, error: error?.message ?? "otp_invalid" } as const,
+      401,
+    );
+  }
+
+  const sb = getSupabaseForAccessToken(data.session.access_token);
+  if (!sb) {
+    return c.json(
+      { ok: false, error: "supabase_not_configured" } as const,
+      503,
+    );
+  }
+  const { error: updErr } = await sb.auth.updateUser({ password });
+  if (updErr) {
+    console.error("[auth] forgot reset update:", updErr);
+    return c.json(
+      { ok: false, error: updErr.message ?? "reset_failed" } as const,
+      502,
+    );
+  }
+  await sb.auth.signOut().catch(() => undefined);
+
+  return c.json({ ok: true, data: { phone } } as const);
 });
 
 auth.post("/logout", async (c) => {
