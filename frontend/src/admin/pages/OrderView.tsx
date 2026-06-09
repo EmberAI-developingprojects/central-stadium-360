@@ -20,7 +20,9 @@ import {
 const money = (n: number | undefined): string =>
   (n || 0).toLocaleString("en-US") + "₮";
 
-const formatDateTime = (iso: string | undefined): { date: string; time: string } => {
+const formatDateTime = (
+  iso: string | undefined,
+): { date: string; time: string } => {
   if (!iso) return { date: "—", time: "" };
   const cleaned = iso.replace("T", " ").slice(0, 19);
   const [date = "—", time = ""] = cleaned.split(" ");
@@ -28,7 +30,7 @@ const formatDateTime = (iso: string | undefined): { date: string; time: string }
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  paid: "Төлбөртэй",
+  paid: "Төлөгдсөн",
   refunded: "Буцаагдсан",
 };
 
@@ -92,8 +94,10 @@ export default function OrderView() {
       message: (
         <>
           Захиалгын код:{" "}
-          <strong className="font-semibold text-zinc-900">«{order.code}»</strong>.
-          Төлбөрийг буцааж, тасалбарын эрхийг хүчингүй болгоно.
+          <strong className="font-semibold text-zinc-900">
+            «{order.code}»
+          </strong>
+          . Төлбөрийг буцааж, тасалбарын эрхийг хүчингүй болгоно.
         </>
       ),
       confirmLabel: "Буцаалт хийх",
@@ -119,8 +123,10 @@ export default function OrderView() {
       message: (
         <>
           Захиалгын код:{" "}
-          <strong className="font-semibold text-zinc-900">«{order.code}»</strong>.
-          Энэ үйлдлийг буцаах боломжгүй.
+          <strong className="font-semibold text-zinc-900">
+            «{order.code}»
+          </strong>
+          . Энэ үйлдлийг буцаах боломжгүй.
         </>
       ),
       confirmLabel: "Бүрмөсөн устгах",

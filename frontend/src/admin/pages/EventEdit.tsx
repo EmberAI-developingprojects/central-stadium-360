@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type DragEvent, type FormEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type DragEvent,
+  type FormEvent,
+} from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   createEvent,
@@ -9,13 +15,13 @@ import {
 import type { EventRecord } from "../../data/store";
 import { api } from "../../lib/api";
 import { useConfirm } from "../components/ConfirmDialog";
+import DatePicker from "../components/DatePicker";
 import { useToast } from "../components/Toast";
 import {
   ADMIN_ALERT_CLS,
   ADMIN_BTN_CLS,
   ADMIN_BTN_DANGER_CLS,
   ADMIN_BTN_GHOST_CLS,
-  ADMIN_BTN_PRIMARY_CLS,
   ADMIN_BTN_SM_CLS,
   ADMIN_EMPTY_CLS,
   ADMIN_FIELD_CLS,
@@ -50,21 +56,51 @@ function localInputToIso(local: string): string {
   return d.toISOString();
 }
 
+function isoToDatePart(iso: string): string {
+  return isoToLocalInput(iso).slice(0, 10);
+}
+
+function isoToTimePart(iso: string): string {
+  return isoToLocalInput(iso).slice(11, 16);
+}
+
+function partsToIso(date: string, time: string): string {
+  if (!date) return "";
+  const t = time || "00:00";
+  return localInputToIso(`${date}T${t}`);
+}
+
 const money = (n: number): string => n.toLocaleString("en-US") + "₮";
 
 const CARD_CLS =
-  "bg-white border border-[#ececef] rounded-xl overflow-hidden";
+  "bg-white border border-[#ececef] rounded-2xl overflow-hidden shadow-[0_1px_2px_rgba(24,24,27,0.04)]";
 const CARD_HEAD_CLS =
-  "flex items-start gap-3 px-5 pt-5 pb-3 border-b border-[#f4f4f5]";
-const CARD_HEAD_ICON_CLS =
-  "shrink-0 inline-flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-100 text-zinc-700";
+  "flex items-start gap-3 px-6 pt-5 pb-4 border-b border-[#f4f4f5] bg-gradient-to-b from-[#fafafa] to-white";
+const CARD_HEAD_ICON_BASE =
+  "shrink-0 inline-flex h-10 w-10 items-center justify-center rounded-xl ring-1 ring-inset";
+const CARD_HEAD_ICON_BLUE = `${CARD_HEAD_ICON_BASE} bg-[#eef0fd] text-brand-blue ring-[#dadffb]`;
+const CARD_HEAD_ICON_EMERALD = `${CARD_HEAD_ICON_BASE} bg-emerald-50 text-emerald-600 ring-emerald-100`;
+const CARD_HEAD_ICON_VIOLET = `${CARD_HEAD_ICON_BASE} bg-violet-50 text-violet-600 ring-violet-100`;
 const CARD_HEAD_TITLE_CLS =
-  "text-[14px] font-semibold tracking-[-0.01em] text-zinc-900 m-0 leading-tight";
+  "text-[14.5px] font-semibold tracking-[-0.01em] text-zinc-900 m-0 leading-tight";
 const CARD_HEAD_DESC_CLS =
   "text-[12.5px] text-zinc-500 m-0 mt-0.5 leading-[1.45]";
-const CARD_BODY_CLS = "p-5 flex flex-col gap-5";
+const CARD_BODY_CLS = "p-6 flex flex-col gap-5";
 const TWO_COL_CLS =
   "grid gap-5 [grid-template-columns:repeat(2,minmax(0,1fr))] max-[760px]:[grid-template-columns:1fr]";
+
+function daysUntil(iso: string): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const diffMs = d.getTime() - Date.now();
+  if (diffMs <= 0) return "Эхэлсэн / өнгөрсөн";
+  const days = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+  const hours = Math.floor((diffMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+  if (days > 0) return `${days} өдөр ${hours} цагийн дараа`;
+  const minutes = Math.floor((diffMs % (60 * 60 * 1000)) / (60 * 1000));
+  return `${hours} цаг ${minutes} минутын дараа`;
+}
 
 export default function EventEdit() {
   const { id } = useParams<{ id: string }>();
@@ -133,7 +169,9 @@ export default function EventEdit() {
       title: "Арга хэмжээг устгах уу?",
       message: (
         <>
-          <strong className="font-semibold text-zinc-900">«{form.title}»</strong>{" "}
+          <strong className="font-semibold text-zinc-900">
+            «{form.title}»
+          </strong>{" "}
           бүх захиалга, тасалбарын хамт устгагдана. Энэ үйлдлийг буцаах
           боломжгүй.
         </>
@@ -198,35 +236,62 @@ export default function EventEdit() {
   return (
     <>
       <div className={ADMIN_PAGE_HEADER_CLS}>
-        <div>
-          <h2>{isNew ? "Шинэ арга хэмжээ" : "Арга хэмжээ засах"}</h2>
-          <p>
-            {isNew
-              ? "360° дамжуулалт зарагдах арга хэмжээний дэлгэрэнгүйг үүсгэх."
-              : "Гарчиг, огноо, үнэ, нүүр зураг зэргийг засна."}
-          </p>
+        <div className="flex items-start gap-3">
+          <span
+            className="hidden sm:inline-flex h-11 w-11 items-center justify-center rounded-xl bg-brand-blue-tint text-brand-blue ring-1 ring-inset ring-[#dadffb]"
+            aria-hidden="true"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            </svg>
+          </span>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2>{isNew ? "Шинэ арга хэмжээ" : "Арга хэмжээ засах"}</h2>
+              {isNew}
+            </div>
+            <p>
+              {isNew
+                ? "360° дамжуулалт зарагдах арга хэмжээний дэлгэрэнгүйг үүсгэх."
+                : "Гарчиг, огноо, үнэ, нүүр зураг зэргийг засна."}
+            </p>
+          </div>
         </div>
         <Link
           to="/admin/events"
           className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_GHOST_CLS}`}
         >
-          ← Жагсаалт руу
+          ← Буцах
         </Link>
       </div>
 
-      {error && (
-        <div className={`${ADMIN_ALERT_CLS} mb-4`}>{error}</div>
-      )}
+      {error && <div className={`${ADMIN_ALERT_CLS} mb-4`}>{error}</div>}
 
       <form onSubmit={onSubmit} className="pb-24">
         <div className="grid gap-5 [grid-template-columns:minmax(0,1fr)_360px] max-[1100px]:[grid-template-columns:1fr]">
-
           <div className="flex flex-col gap-5 min-w-0">
-
             <section className={CARD_CLS}>
               <header className={CARD_HEAD_CLS}>
-                <span className={CARD_HEAD_ICON_CLS} aria-hidden="true">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <span className={CARD_HEAD_ICON_BLUE} aria-hidden="true">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                     <polyline points="14 2 14 8 20 8" />
                     <line x1="9" y1="13" x2="15" y2="13" />
@@ -241,55 +306,163 @@ export default function EventEdit() {
                 </div>
               </header>
               <div className={CARD_BODY_CLS}>
-                <div className={ADMIN_FIELD_CLS}>
-                  <label htmlFor="evt-title">Гарчиг *</label>
+                <div
+                  className={`${ADMIN_FIELD_CLS} [&_input]:!h-12 [&_input]:!text-[16px] [&_input]:!font-semibold [&_input]:tracking-[-0.01em]`}
+                >
+                  <label
+                    htmlFor="evt-title"
+                    className="flex items-center justify-between"
+                  >
+                    <span>Гарчиг *</span>
+                    <span className="text-[11px] text-zinc-400 font-normal">
+                      {(form.title || "").length}/120
+                    </span>
+                  </label>
                   <input
                     id="evt-title"
                     value={form.title}
-                    onChange={(e) => update({ title: e.target.value })}
-                    placeholder="Жишээ нь: HU Concert Live 2026"
+                    onChange={(e) =>
+                      update({ title: e.target.value.slice(0, 120) })
+                    }
+                    placeholder="Тоглолтын нэр"
+                    maxLength={120}
                     required
                   />
                 </div>
 
                 <div className={ADMIN_FIELD_CLS}>
-                  <label htmlFor="evt-start">Эхлэх огноо, цаг *</label>
-                  <input
-                    id="evt-start"
-                    type="datetime-local"
-                    value={isoToLocalInput(form.start_time)}
-                    onChange={(e) =>
-                      update({ start_time: localInputToIso(e.target.value) })
-                    }
-                    required
-                  />
+                  <label className="flex items-center gap-1.5">
+                    <svg
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                      className="text-zinc-400"
+                    >
+                      <rect x="3" y="4" width="18" height="18" rx="2" />
+                      <line x1="16" y1="2" x2="16" y2="6" />
+                      <line x1="8" y1="2" x2="8" y2="6" />
+                      <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                    Эхлэх огноо, цаг *
+                  </label>
+                  <div className="grid gap-3 [grid-template-columns:1.4fr_1fr] max-[480px]:[grid-template-columns:1fr]">
+                    <DatePicker
+                      id="evt-start-date"
+                      value={isoToDatePart(form.start_time)}
+                      onChange={(date) =>
+                        update({
+                          start_time: partsToIso(
+                            date,
+                            isoToTimePart(form.start_time),
+                          ),
+                        })
+                      }
+                      placeholder="yyyy.mm.dd"
+                      required
+                    />
+                    <div className="relative">
+                      <input
+                        id="evt-start-time"
+                        type="time"
+                        value={isoToTimePart(form.start_time)}
+                        onChange={(e) =>
+                          update({
+                            start_time: partsToIso(
+                              isoToDatePart(form.start_time),
+                              e.target.value,
+                            ),
+                          })
+                        }
+                        className="!pl-10 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                      />
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
+                      >
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                      </svg>
+                    </div>
+                  </div>
                   {startsAtLabel && (
-                    <span className="text-[11.5px] text-zinc-500">
-                      {startsAtLabel}
-                    </span>
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      <span className="inline-flex items-center gap-1 py-0.5 px-2 rounded-full bg-zinc-100 text-zinc-700 text-[11.5px] font-medium">
+                        {startsAtLabel}
+                      </span>
+                      {daysUntil(form.start_time) && (
+                        <span className="inline-flex items-center gap-1 py-0.5 px-2 rounded-full bg-brand-blue-tint text-brand-blue text-[11.5px] font-medium">
+                          <svg
+                            width="10"
+                            height="10"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                          >
+                            <circle cx="12" cy="12" r="10" />
+                            <polyline points="12 6 12 12 16 14" />
+                          </svg>
+                          {daysUntil(form.start_time)}
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
 
                 <div className={ADMIN_FIELD_CLS}>
-                  <label htmlFor="evt-desc">Тайлбар</label>
+                  <label
+                    htmlFor="evt-desc"
+                    className="flex items-center justify-between"
+                  >
+                    <span>Тайлбар</span>
+                    <span className="text-[11px] text-zinc-400 font-normal">
+                      {(form.desc || "").length}/600
+                    </span>
+                  </label>
                   <textarea
                     id="evt-desc"
                     value={form.desc}
-                    onChange={(e) => update({ desc: e.target.value })}
+                    onChange={(e) =>
+                      update({ desc: e.target.value.slice(0, 600) })
+                    }
                     placeholder="Тоглолтын талаар товч мэдээлэл, онцлох тоглогчид, тусгай мэдэгдэл…"
                     rows={5}
+                    maxLength={600}
                   />
-                  <span className="text-[11.5px] text-zinc-500">
-                    {(form.desc || "").length} тэмдэгт
-                  </span>
                 </div>
               </div>
             </section>
 
             <section className={CARD_CLS}>
               <header className={CARD_HEAD_CLS}>
-                <span className={CARD_HEAD_ICON_CLS} aria-hidden="true">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <span className={CARD_HEAD_ICON_EMERALD} aria-hidden="true">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <line x1="12" y1="1" x2="12" y2="23" />
                     <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
                   </svg>
@@ -304,47 +477,77 @@ export default function EventEdit() {
               <div className={CARD_BODY_CLS}>
                 <div className={TWO_COL_CLS}>
                   <div className={ADMIN_FIELD_CLS}>
-                    <label htmlFor="evt-base">Үндсэн үнэ (₮)</label>
+                    <label htmlFor="evt-base">Үндсэн үнэ</label>
                     <div className="relative">
-                      <input
-                        id="evt-base"
-                        type="number"
-                        min="0"
-                        step="1"
-                        value={form.base}
-                        onChange={(e) =>
-                          update({ base: Number(e.target.value) })
-                        }
-                        className="!pr-10"
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[13px] text-zinc-400 pointer-events-none">
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[15px] font-semibold text-zinc-400 pointer-events-none">
                         ₮
                       </span>
+                      <input
+                        id="evt-base"
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="off"
+                        value={
+                          form.base ? form.base.toLocaleString("en-US") : ""
+                        }
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/\D+/g, "");
+                          update({ base: digits ? Number(digits) : 0 });
+                        }}
+                        className="!h-12 !pl-9 !text-[18px] !font-semibold tabular-nums"
+                        placeholder="0"
+                      />
                     </div>
-                    <span className="text-[11.5px] text-zinc-500">
-                      Тасалбар үзэгчдэд: {money(form.base || 0)}
+                    <span className="text-[11.5px] text-zinc-500 flex items-center gap-1">
+                      <span>Үзэгчдэд харагдах:</span>
+                      <span className="font-semibold text-zinc-700 tabular-nums">
+                        {money(form.base || 0)}
+                      </span>
                     </span>
                   </div>
 
                   <label
-                    className={`flex items-start gap-3 rounded-lg border p-3.5 cursor-pointer transition-colors ${
+                    className={`relative flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition-all ${
                       form.featured
-                        ? "border-zinc-900 bg-zinc-50"
-                        : "border-[#e4e4e7] bg-white hover:bg-zinc-50"
+                        ? "border-brand-blue bg-brand-blue-tint/40 shadow-[0_0_0_3px_rgba(34,48,198,0.08)]"
+                        : "border-[#e4e4e7] bg-white hover:bg-zinc-50 hover:border-zinc-300"
                     }`}
                   >
                     <input
                       type="checkbox"
                       checked={!!form.featured}
                       onChange={(e) => update({ featured: e.target.checked })}
-                      className="mt-0.5 h-4 w-4 accent-zinc-900 cursor-pointer"
+                      className="sr-only peer"
                     />
+                    <span
+                      className={`shrink-0 mt-0.5 inline-flex h-5 w-9 items-center rounded-full p-0.5 transition-colors ${
+                        form.featured ? "bg-brand-blue" : "bg-zinc-300"
+                      }`}
+                      aria-hidden="true"
+                    >
+                      <span
+                        className={`h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
+                          form.featured ? "translate-x-4" : "translate-x-0"
+                        }`}
+                      />
+                    </span>
                     <div className="min-w-0">
-                      <div className="text-[13px] font-semibold text-zinc-900 leading-tight">
+                      <div className="flex items-center gap-1.5 text-[13px] font-semibold text-zinc-900 leading-tight">
+                        <svg
+                          width="13"
+                          height="13"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                          className="text-amber-500"
+                          aria-hidden="true"
+                        >
+                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                        </svg>
                         Featured (Шууд) болгох
                       </div>
-                      <div className="text-[12px] text-zinc-500 mt-0.5 leading-[1.45]">
-                        Watch нүүр хуудаст hero хэсэгт энэ арга хэмжээ онцлогдоно.
+                      <div className="text-[12px] text-zinc-500 mt-1 leading-[1.45]">
+                        Watch нүүр хуудаст hero хэсэгт энэ арга хэмжээ
+                        онцлогдоно.
                       </div>
                     </div>
                   </label>
@@ -353,11 +556,88 @@ export default function EventEdit() {
             </section>
           </div>
 
-          <aside className="min-w-0">
-            <section className={`${CARD_CLS} sticky top-[76px]`}>
+          <aside className="min-w-0 flex flex-col gap-5 sticky top-[76px] self-start">
+            <section className={CARD_CLS}>
               <header className={CARD_HEAD_CLS}>
-                <span className={CARD_HEAD_ICON_CLS} aria-hidden="true">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <span className={CARD_HEAD_ICON_VIOLET} aria-hidden="true">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                </span>
+                <div className="min-w-0">
+                  <h3 className={CARD_HEAD_TITLE_CLS}>Урьдчилан харах</h3>
+                  <p className={CARD_HEAD_DESC_CLS}>Үзэгчдэд харагдах төрх.</p>
+                </div>
+              </header>
+              <div className="p-5">
+                <div className="rounded-xl overflow-hidden border border-[#ececef] bg-zinc-900 text-white shadow-[0_8px_24px_-12px_rgba(31,41,55,0.4)]">
+                  <div
+                    className="w-full aspect-[16/9] bg-zinc-800 bg-center bg-cover bg-no-repeat relative"
+                    style={
+                      form.image
+                        ? { backgroundImage: `url('${form.image}')` }
+                        : undefined
+                    }
+                    aria-hidden="true"
+                  >
+                    {!form.image && (
+                      <div className="absolute inset-0 grid place-items-center text-zinc-500 text-[11.5px]">
+                        Нүүр зураг алга
+                      </div>
+                    )}
+                    {form.featured && (
+                      <span className="absolute top-2.5 left-2.5 inline-flex items-center gap-1 py-1 px-2 rounded-full bg-amber-500/95 text-zinc-900 text-[10.5px] font-bold uppercase tracking-[.08em]">
+                        <svg
+                          width="10"
+                          height="10"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                          aria-hidden="true"
+                        >
+                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                        </svg>
+                        Featured
+                      </span>
+                    )}
+                  </div>
+                  <div className="p-3.5">
+                    <div className="text-[13.5px] font-semibold leading-tight line-clamp-2 min-h-[34px]">
+                      {form.title || "Гарчиг оруулна уу…"}
+                    </div>
+                    <div className="mt-2 flex items-center justify-between text-[11.5px] text-zinc-300">
+                      <span>{startsAtLabel || "Огноо тодорхойгүй"}</span>
+                      <span className="font-semibold text-amber-300 tabular-nums">
+                        {money(form.base || 0)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section className={CARD_CLS}>
+              <header className={CARD_HEAD_CLS}>
+                <span className={CARD_HEAD_ICON_VIOLET} aria-hidden="true">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <rect x="3" y="3" width="18" height="18" rx="2" />
                     <circle cx="8.5" cy="8.5" r="1.5" />
                     <polyline points="21 15 16 10 5 21" />
@@ -429,7 +709,17 @@ export default function EventEdit() {
                     }`}
                   >
                     <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white border border-[#e4e4e7] text-zinc-500">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                         <polyline points="17 8 12 3 7 8" />
                         <line x1="12" y1="3" x2="12" y2="15" />
@@ -437,7 +727,9 @@ export default function EventEdit() {
                     </span>
                     <div className="text-center px-3">
                       <div className="text-[13px] font-semibold text-zinc-800">
-                        {uploading ? "Ачаалж байна…" : "Зураг чирж тавих эсвэл сонгох"}
+                        {uploading
+                          ? "Ачаалж байна…"
+                          : "Зураг чирж тавих эсвэл сонгох"}
                       </div>
                       <div className="text-[11.5px] text-zinc-500 mt-0.5">
                         JPG · PNG · WEBP · GIF, ≤ 5 MB
@@ -447,7 +739,10 @@ export default function EventEdit() {
                 )}
 
                 <div className={ADMIN_FIELD_CLS}>
-                  <label htmlFor="evt-img-url" className="text-[11.5px] uppercase tracking-[0.06em] !text-zinc-500 !font-semibold">
+                  <label
+                    htmlFor="evt-img-url"
+                    className="text-[11.5px] uppercase tracking-[0.06em] !text-zinc-500 !font-semibold"
+                  >
                     эсвэл URL
                   </label>
                   <input
@@ -462,13 +757,48 @@ export default function EventEdit() {
           </aside>
         </div>
 
-        <div className="sticky bottom-0 -mx-8 mt-6 bg-white/95 backdrop-blur-md border-t border-[#ececef] px-8 py-3.5 flex items-center gap-2 z-10">
+        <div className="sticky bottom-0 -mx-8 mt-6 bg-white/95 backdrop-blur-md border-t border-[#ececef] px-8 py-4 flex items-center gap-2.5 z-10 shadow-[0_-8px_24px_-12px_rgba(31,41,55,0.12)]">
           <button
             type="submit"
-            className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_PRIMARY_CLS}`}
+            className="inline-flex items-center justify-center gap-2 h-10 px-5 rounded-lg font-[inherit] text-[13.5px] font-semibold bg-brand-blue text-white border-0 cursor-pointer transition-all shadow-[0_8px_20px_-8px_rgba(34,48,198,0.55)] hover:bg-brand-blue-soft hover:-translate-y-px hover:shadow-[0_12px_24px_-10px_rgba(34,48,198,0.65)] active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none"
             disabled={busy}
           >
-            {busy ? "Хадгалж байна…" : isNew ? "Үүсгэх" : "Хадгалах"}
+            {busy ? (
+              <>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  aria-hidden="true"
+                  className="animate-spin"
+                >
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                </svg>
+                Хадгалж байна…
+              </>
+            ) : (
+              <>
+                {isNew ? "Үүсгэх" : "Хадгалах"}
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                  <polyline points="12 5 19 12 12 19" />
+                </svg>
+              </>
+            )}
           </button>
           <Link
             to="/admin/events"
@@ -482,7 +812,17 @@ export default function EventEdit() {
               className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_DANGER_CLS} ml-auto`}
               onClick={onDelete}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
                 <polyline points="3 6 5 6 21 6" />
                 <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
                 <path d="M10 11v6M14 11v6" />

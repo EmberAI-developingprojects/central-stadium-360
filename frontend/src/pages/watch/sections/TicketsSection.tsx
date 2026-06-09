@@ -181,7 +181,7 @@ function TicketCard({ ticket: tk, startTime, onWatch }: TicketCardProps) {
                   lineHeight: 1,
                 }}
               >
-                {days > 0 ? `${days} өдөр ` : ""}
+                {days > 0 ? `${days} ${t("watch_day_short")} ` : ""}
                 {pad2(hours)}:{pad2(minutes)}:{pad2(seconds)}
               </span>
             </div>

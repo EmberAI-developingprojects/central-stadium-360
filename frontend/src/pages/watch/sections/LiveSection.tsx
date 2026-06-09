@@ -103,7 +103,7 @@ export function LiveSection({
                   {t("watch_starts_in")}
                 </span>
                 <span className="text-[28px] font-black text-white [font-variant-numeric:tabular-nums] tracking-[-0.02em] leading-none max-[420px]:text-[22px]">
-                  {days > 0 ? `${days} өдөр ` : ""}
+                  {days > 0 ? `${days} ${t("watch_day_short")} ` : ""}
                   {pad2(hours)}:{pad2(minutes)}:{pad2(seconds)}
                 </span>
               </div>
