@@ -54,6 +54,24 @@ export async function requireUser(
     if (row) {
       role = row.role;
       phone = row.phone ?? phone;
+    } else {
+      const md = (data.user.user_metadata ?? {}) as { full_name?: string };
+      const authPhone = data.user.phone ? `+${data.user.phone}` : null;
+      const { error: upsertErr } = await admin.from("users").upsert(
+        {
+          id: data.user.id,
+          phone: authPhone,
+          email: data.user.email ?? null,
+          full_name: md.full_name ?? "",
+          role: "user",
+        },
+        { onConflict: "id" },
+      );
+      if (upsertErr) {
+        console.error("[auth] public.users upsert failed:", upsertErr);
+      } else {
+        phone = authPhone ?? phone;
+      }
     }
   }
 
