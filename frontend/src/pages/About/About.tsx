@@ -1,7 +1,7 @@
-import SiteHeader from "../components/SiteHeader";
-import SiteFooter from "../components/SiteFooter";
-import useRevealOnScroll from "../hooks/useRevealOnScroll";
-import { REVEAL_UP_CLS } from "../hooks/_revealCls";
+import SiteHeader from "../../components/SiteHeader";
+import SiteFooter from "../../components/SiteFooter";
+import useRevealOnScroll from "../../hooks/useRevealOnScroll";
+import { REVEAL_UP_CLS } from "../../hooks/_revealCls";
 
 const STATS = [
   { num: "1958", label: "Founded · Байгуулагдсан" },

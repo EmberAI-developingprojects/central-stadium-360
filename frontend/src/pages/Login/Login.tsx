@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useAuth } from "../auth";
+import { useAuth } from "../../auth";
 import {
   BACK_CLS,
   BTN_RESET_STYLE as BACK_BTN_STYLE,
@@ -31,7 +31,7 @@ import {
   SUBMIT_CLS,
   SUBTITLE_CLS,
   TITLE_CLS,
-} from "./_authStyles";
+} from "../_authStyles";
 
 function safeNext(next: string | null): string {
   if (!next) return "/watch";

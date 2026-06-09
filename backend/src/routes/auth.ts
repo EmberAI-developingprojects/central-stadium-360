@@ -179,6 +179,11 @@ auth.post("/register/phone", async (c) => {
     );
   }
 
+  const existingUserId = await findUserIdByPhone(phone);
+  if (existingUserId) {
+    return c.json({ ok: false, error: "already_registered" } as const, 409);
+  }
+
   const { error } = await supabase.auth.signUp({
     phone,
     password,

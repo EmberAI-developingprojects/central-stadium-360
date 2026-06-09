@@ -1,8 +1,8 @@
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useAuth } from "../auth";
-import OtpInput from "../components/auth/OtpInput";
+import { useAuth } from "../../auth";
+import OtpInput from "../../components/auth/OtpInput";
 import {
   BACK_CLS,
   CARD_CLS,
@@ -37,7 +37,7 @@ import {
   SUBMIT_CLS,
   SUBTITLE_CLS,
   TITLE_CLS,
-} from "./_authStyles";
+} from "../_authStyles";
 
 type Step = "form" | "verify";
 
@@ -70,6 +70,7 @@ export default function RegisterPhone() {
   const [agree, setAgree] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [alert, setAlert] = useState("");
+  const [alertCode, setAlertCode] = useState("");
   const [submitLabel, setSubmitLabel] = useState<string>(
     t("auth_register_btn"),
   );
@@ -92,21 +93,26 @@ export default function RegisterPhone() {
     );
   };
 
+  const showAlert = (msg: string, code = "") => {
+    setAlert(msg);
+    setAlertCode(code);
+  };
+
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setAlert("");
+    showAlert("");
 
     if (fullname.trim().length < 2)
-      return setAlert(t("auth_err_fullname_required"));
+      return showAlert(t("auth_err_fullname_required"));
     const digits = phone.replace(/\D/g, "");
-    if (digits.length !== 8) return setAlert(t("auth_err_phone_8_digits"));
+    if (digits.length !== 8) return showAlert(t("auth_err_phone_8_digits"));
     if (!/^[6789]/.test(digits)) {
-      return setAlert(t("auth_err_phone_only_mn"));
+      return showAlert(t("auth_err_phone_only_mn"));
     }
-    if (password.length < 8) return setAlert(t("auth_err_password_min"));
+    if (password.length < 8) return showAlert(t("auth_err_password_min"));
     if (password !== confirmPw)
-      return setAlert(t("auth_err_passwords_dont_match"));
-    if (!agree) return setAlert(t("auth_err_must_agree"));
+      return showAlert(t("auth_err_passwords_dont_match"));
+    if (!agree) return showAlert(t("auth_err_must_agree"));
 
     const identifier = "+976" + digits;
     setBusy(true);
@@ -119,7 +125,10 @@ export default function RegisterPhone() {
     if (!res.ok) {
       setBusy(false);
       setSubmitLabel(t("auth_register_btn"));
-      setAlert(explainError(res.error, t("auth_err_register_failed")));
+      showAlert(
+        explainError(res.error, t("auth_err_register_failed")),
+        res.error,
+      );
       return;
     }
     setPendingPhone(identifier);
@@ -416,9 +425,32 @@ export default function RegisterPhone() {
               <span>{t("auth_terms_label")}</span>
             </label>
 
-            <div className={REG_ALERT_CLS} role="alert" hidden={!alert}>
-              {alert}
-            </div>
+            {alert && (
+              <div className={REG_ALERT_CLS} role="alert">
+                <div>{alert}</div>
+                {alertCode === "already_registered" && (
+                  <Link
+                    to="/login"
+                    className="inline-flex items-center gap-1 mt-1.5 text-[12.5px] font-bold text-brand-blue no-underline hover:underline"
+                  >
+                    {t("auth_err_already_registered_phone_action")}
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                      className="w-3 h-3"
+                    >
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                      <polyline points="12 5 19 12 12 19" />
+                    </svg>
+                  </Link>
+                )}
+              </div>
+            )}
 
             <button type="submit" className={SUBMIT_CLS} disabled={busy}>
               {submitLabel}

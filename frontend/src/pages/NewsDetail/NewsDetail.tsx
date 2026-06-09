@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import SiteHeader from "../components/SiteHeader";
-import SiteFooter from "../components/SiteFooter";
-import { getHomeContent } from "../data/store";
-import type { NewsBlock, NewsItem } from "../data/store";
+import SiteHeader from "../../components/SiteHeader";
+import SiteFooter from "../../components/SiteFooter";
+import { getHomeContent } from "../../data/store";
+import type { NewsBlock, NewsItem } from "../../data/store";
 
 const PAGE_CLS = "min-h-screen bg-white";
 const SECTION_CLS =
