@@ -44,7 +44,9 @@ export default function UsersList() {
     });
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   const stats = useMemo(() => {
     const list = users || [];
@@ -59,11 +61,16 @@ export default function UsersList() {
     const who = u.fullname || u.identifier;
     const nextLabel = next === "admin" ? "Админ" : "Хэрэглэгч";
     const ok = await confirm({
-      title: next === "admin" ? "Хэрэглэгчийг админ болгох уу?" : "Админ эрхийг хасах уу?",
+      title:
+        next === "admin"
+          ? "Хэрэглэгчийг админ болгох уу?"
+          : "Админ эрхийг хасах уу?",
       message: (
         <>
-          <strong className="font-semibold text-zinc-900">«{who}»</strong>
-          {" "}-ийн эрхийг <strong className="font-semibold text-zinc-900">«{nextLabel}»</strong> болгоно.
+          <strong className="font-semibold text-zinc-900">«{who}»</strong> -ийн
+          эрхийг{" "}
+          <strong className="font-semibold text-zinc-900">«{nextLabel}»</strong>{" "}
+          болгоно.
         </>
       ),
       confirmLabel: next === "admin" ? "Админ болгох" : "Эрх хасах",
@@ -92,8 +99,9 @@ export default function UsersList() {
         title: "Хандалтыг хязгаарлах уу?",
         message: (
           <>
-            <strong className="font-semibold text-zinc-900">«{who}»</strong>
-            {" "}хэрэглэгч системд нэвтэрч чадахгүй болно. Та дараа нь буцааж нээж болно.
+            <strong className="font-semibold text-zinc-900">«{who}»</strong>{" "}
+            хэрэглэгч системд нэвтэрч чадахгүй болно. Та дараа нь буцааж нээж
+            болно.
           </>
         ),
         confirmLabel: "Хязгаарлах",
@@ -140,8 +148,18 @@ export default function UsersList() {
           onClick={() => setShowModal(true)}
           style={{ gap: 6, flexShrink: 0 }}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
           Шинэ хэрэглэгч
         </button>
@@ -167,17 +185,13 @@ export default function UsersList() {
           <StatCard
             label="Админ"
             value={stats.admins.toString()}
-            sub={stats.admins > 0 ? "өндөр эрхтэй" : "админ хэрэглэгч алга"}
+            sub={stats.admins > 0 ? "" : "админ хэрэглэгч алга"}
             accent={stats.admins > 0 ? "admin" : undefined}
           />
           <StatCard
             label="Хязгаарлагдсан"
             value={stats.disabled.toString()}
-            sub={
-              stats.disabled > 0
-                ? "нэвтрэх боломжгүй"
-                : "бүгд идэвхтэй"
-            }
+            sub={stats.disabled > 0 ? "нэвтрэх боломжгүй" : "бүгд идэвхтэй"}
             accent={stats.disabled > 0 ? "disabled" : undefined}
           />
         </div>
@@ -233,7 +247,10 @@ export default function UsersList() {
         </div>
         {users && users.length > 0 && (
           <span className="text-[12px] text-zinc-500 ml-auto">
-            Нийт <strong className="font-semibold text-zinc-900">{filtered.length}</strong>
+            Нийт{" "}
+            <strong className="font-semibold text-zinc-900">
+              {filtered.length}
+            </strong>
             {(q || filter !== "all") && ` / ${users.length}`}
           </span>
         )}
@@ -293,9 +310,24 @@ export default function UsersList() {
                             </Link>
                             {u.disabled && (
                               <span className="inline-flex items-center gap-1 shrink-0 rounded-full bg-red-50 border border-red-200 text-red-700 text-[10.5px] font-semibold px-1.5 py-0.5 leading-none">
-                                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <svg
+                                  width="9"
+                                  height="9"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  aria-hidden="true"
+                                >
                                   <circle cx="12" cy="12" r="10" />
-                                  <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                                  <line
+                                    x1="4.93"
+                                    y1="4.93"
+                                    x2="19.07"
+                                    y2="19.07"
+                                  />
                                 </svg>
                                 ХЯЗГААРЛАГДСАН
                               </span>
@@ -310,7 +342,13 @@ export default function UsersList() {
                     <td>
                       {isAdmin ? (
                         <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 text-violet-700 border border-violet-200 text-[11px] font-semibold px-2 py-0.5">
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                          <svg
+                            width="10"
+                            height="10"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                            aria-hidden="true"
+                          >
                             <path d="M12 2l3 7h7l-5.5 4 2 8L12 17l-6.5 4 2-8L2 9h7z" />
                           </svg>
                           Админ
@@ -338,23 +376,41 @@ export default function UsersList() {
                         <button
                           type="button"
                           onClick={() => onToggleRole(u)}
-                          title={isAdmin ? "Админ эрхийг хасах" : "Админ болгох"}
-                          aria-label={isAdmin ? "Админ эрхийг хасах" : "Админ болгох"}
+                          title={
+                            isAdmin ? "Админ эрхийг хасах" : "Админ болгох"
+                          }
+                          aria-label={
+                            isAdmin ? "Админ эрхийг хасах" : "Админ болгох"
+                          }
                           className={`inline-flex h-8 w-8 items-center justify-center rounded-md border transition-colors ${
                             isAdmin
                               ? "border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100"
                               : "border-[#e4e4e7] bg-white text-zinc-600 hover:bg-violet-50 hover:text-violet-700 hover:border-violet-200"
                           }`}
                         >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                          >
                             <path d="M12 2l3 7h7l-5.5 4 2 8L12 17l-6.5 4 2-8L2 9h7z" />
                           </svg>
                         </button>
                         <button
                           type="button"
                           onClick={() => onToggleDisabled(u)}
-                          title={u.disabled ? "Дахин идэвхжүүлэх" : "Хязгаарлах"}
-                          aria-label={u.disabled ? "Дахин идэвхжүүлэх" : "Хязгаарлах"}
+                          title={
+                            u.disabled ? "Дахин идэвхжүүлэх" : "Хязгаарлах"
+                          }
+                          aria-label={
+                            u.disabled ? "Дахин идэвхжүүлэх" : "Хязгаарлах"
+                          }
                           className={`inline-flex h-8 w-8 items-center justify-center rounded-md border transition-colors ${
                             u.disabled
                               ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
@@ -362,11 +418,31 @@ export default function UsersList() {
                           }`}
                         >
                           {u.disabled ? (
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <svg
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              aria-hidden="true"
+                            >
                               <path d="M5 12l5 5L20 7" />
                             </svg>
                           ) : (
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <svg
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              aria-hidden="true"
+                            >
                               <circle cx="12" cy="12" r="10" />
                               <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
                             </svg>
@@ -396,7 +472,13 @@ export default function UsersList() {
   );
 }
 
-function AddUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: (name: string) => void }) {
+function AddUserModal({
+  onClose,
+  onCreated,
+}: {
+  onClose: () => void;
+  onCreated: (name: string) => void;
+}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -426,7 +508,12 @@ function AddUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
   };
 
   return (
-    <div className="fixed inset-0 z-[400] flex items-center justify-center px-4 animate-admin-fade-in" role="dialog" aria-modal="true" aria-labelledby="add-user-title">
+    <div
+      className="fixed inset-0 z-[400] flex items-center justify-center px-4 animate-admin-fade-in"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="add-user-title"
+    >
       <div
         onClick={saving ? undefined : onClose}
         className="absolute inset-0 bg-black/45 backdrop-blur-[3px]"
@@ -434,7 +521,10 @@ function AddUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
       />
       <div className="relative w-full max-w-[440px] rounded-2xl bg-white shadow-[0_24px_64px_rgba(0,0,0,0.18)] p-6 animate-admin-scale-in">
         <div className="flex items-center justify-between mb-5">
-          <h3 id="add-user-title" className="m-0 text-[15px] font-semibold tracking-[-0.01em] text-zinc-900">
+          <h3
+            id="add-user-title"
+            className="m-0 text-[15px] font-semibold tracking-[-0.01em] text-zinc-900"
+          >
             Шинэ хэрэглэгч нэмэх
           </h3>
           <button
@@ -444,8 +534,18 @@ function AddUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
             className="p-1 -m-1 text-zinc-500 hover:text-zinc-900 transition-colors disabled:opacity-50"
             aria-label="Хаах"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </button>
         </div>
@@ -484,7 +584,10 @@ function AddUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
           </div>
           <div className={ADMIN_FIELD_CLS}>
             <label>Эрх</label>
-            <select value={role} onChange={(e) => setRole(e.target.value as UserRole)}>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value as UserRole)}
+            >
               <option value="user">Хэрэглэгч</option>
               <option value="admin">Админ</option>
             </select>
@@ -497,10 +600,19 @@ function AddUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
           )}
 
           <div className="flex gap-2 justify-end mt-1">
-            <button type="button" className={ADMIN_BTN_CLS} onClick={onClose} disabled={saving}>
+            <button
+              type="button"
+              className={ADMIN_BTN_CLS}
+              onClick={onClose}
+              disabled={saving}
+            >
               Болих
             </button>
-            <button type="submit" className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_PRIMARY_CLS}`} disabled={saving}>
+            <button
+              type="submit"
+              className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_PRIMARY_CLS}`}
+              disabled={saving}
+            >
               {saving ? "Нэмж байна…" : "Нэмэх"}
             </button>
           </div>
@@ -534,7 +646,9 @@ function StatCard({
       <span className="text-[11px] text-zinc-500 uppercase tracking-[.06em] font-medium">
         {label}
       </span>
-      <div className={`text-[22px] font-semibold tracking-[-0.02em] leading-none mt-2 ${valueColor}`}>
+      <div
+        className={`text-[22px] font-semibold tracking-[-0.02em] leading-none mt-2 ${valueColor}`}
+      >
         {value}
       </div>
       <div className="text-[11.5px] text-zinc-500 mt-2">{sub}</div>

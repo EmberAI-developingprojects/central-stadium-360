@@ -135,6 +135,20 @@ export const api = {
       input,
     ),
 
+  forgotPasswordSend: (input: { phone: string }) =>
+    request<{ phone: string }>("POST", "/api/auth/forgot-password/send", input),
+
+  forgotPasswordReset: (input: {
+    phone: string;
+    code: string;
+    password: string;
+  }) =>
+    request<{ phone: string }>(
+      "POST",
+      "/api/auth/forgot-password/reset",
+      input,
+    ),
+
   logout: () => request<void>("POST", "/api/auth/logout"),
 
   me: () => request<MeResponse>("GET", "/api/auth/me"),

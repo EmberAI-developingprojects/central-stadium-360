@@ -275,7 +275,7 @@ export default function EventDetail() {
 
               {event.base > 0 && (
                 <div className="text-[12px] text-ink-soft text-center mt-2">
-                  {money(event.base)}-аас эхлэх үнэтэй
+                  Үнэ: {money(event.base)}
                 </div>
               )}
 

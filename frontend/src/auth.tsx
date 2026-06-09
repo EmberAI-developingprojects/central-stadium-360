@@ -61,6 +61,17 @@ type AuthContextValue = {
   ) => Promise<
     { ok: true; kind: "phone" | "email" } | { ok: false; error: string }
   >;
+
+  forgotPasswordSend: (input: {
+    phone: string;
+  }) => Promise<{ ok: true; phone: string } | { ok: false; error: string }>;
+
+  forgotPasswordReset: (input: {
+    phone: string;
+    code: string;
+    password: string;
+  }) => Promise<{ ok: true } | { ok: false; error: string }>;
+
   logout: () => Promise<void>;
 
   updateSession: (patch: Partial<Session>) => Promise<void>;
@@ -222,6 +233,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const forgotPasswordSend = useCallback<
+    AuthContextValue["forgotPasswordSend"]
+  >(async (input) => {
+    const res = await api.forgotPasswordSend(input);
+    if (!res.ok) return { ok: false, error: res.error };
+    return { ok: true, phone: res.data.phone };
+  }, []);
+
+  const forgotPasswordReset = useCallback<
+    AuthContextValue["forgotPasswordReset"]
+  >(async (input) => {
+    const res = await api.forgotPasswordReset(input);
+    if (!res.ok) return { ok: false, error: res.error };
+    return { ok: true };
+  }, []);
+
   const logout = useCallback(async () => {
     if (supabase) {
       await supabase.auth.signOut().catch(() => undefined);
@@ -263,6 +290,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       registerEmail,
       verifyPhone,
       resendCode,
+      forgotPasswordSend,
+      forgotPasswordReset,
       logout,
       updateSession,
       deleteAccount,
@@ -275,6 +304,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       registerEmail,
       verifyPhone,
       resendCode,
+      forgotPasswordSend,
+      forgotPasswordReset,
       logout,
       updateSession,
       deleteAccount,

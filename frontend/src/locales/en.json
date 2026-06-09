@@ -220,5 +220,19 @@
   "auth_err_passwords_dont_match": "Passwords don't match.",
   "auth_err_must_agree": "Please accept the terms of service.",
   "auth_err_not_verified_resend": "Your account is not verified. Please send the code to complete.",
-  "auth_err_code_incomplete": "Please enter the complete code."
+  "auth_err_code_incomplete": "Please enter the complete code.",
+
+  "auth_forgot_link": "Forgot password?",
+  "auth_forgot_eyebrow": "Reset Password",
+  "auth_forgot_title": "Reset Password",
+  "auth_forgot_subtitle": "Enter your registered phone number. We'll send you a verification code by SMS.",
+  "auth_forgot_send_btn": "Send Code",
+  "auth_forgot_reset_title": "Set New Password",
+  "auth_forgot_reset_subtitle": "Enter the code sent to {{identifier}} and choose a new password.",
+  "auth_new_password_label": "New password",
+  "auth_forgot_reset_btn": "Update Password",
+  "auth_forgot_reset_done": "Password updated ✓ Please sign in.",
+  "auth_err_user_not_found": "This phone number is not registered.",
+  "auth_err_forgot_send_failed": "Failed to send the code.",
+  "auth_err_forgot_reset_failed": "Failed to update the password."
 }

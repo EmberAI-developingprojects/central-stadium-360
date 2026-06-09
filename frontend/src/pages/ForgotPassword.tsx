@@ -14,7 +14,6 @@ import {
   FULL_RESET_BTN_STYLE as RESEND_BTN_STYLE,
   HEADER_CLS,
   HOME_CLS,
-  INPUT_CLS,
   LABEL_CLS,
   LOGO_CLS,
   LOGO_IMG_CLS,
@@ -26,13 +25,10 @@ import {
   PWD_WRAP_CLS,
   REG_ALERT_CLS,
   REG_ALERT_OK_CLS,
-  REG_CHECKBOX_CLS,
-  REG_FORM_CLS,
   REG_HINT_CLS,
   REG_INPUT_PHONE_CLS,
   REG_PHONE_PREFIX_CLS,
   REG_PHONE_WRAP_CLS,
-  REG_TERMS_CLS,
   REGISTER_CLS,
   SUBMIT_CLS,
   SUBTITLE_CLS,
@@ -41,15 +37,15 @@ import {
 
 type Step = "form" | "verify";
 
-export default function RegisterPhone() {
+export default function ForgotPassword() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { registerPhone, verifyPhone, resendCode } = useAuth();
+  const { forgotPasswordSend, forgotPasswordReset } = useAuth();
 
   const explainError = (code: string, fallback: string): string => {
     switch (code) {
-      case "already_registered":
-        return t("auth_err_already_registered_phone");
+      case "user_not_found":
+        return t("auth_err_user_not_found");
       case "rate_limited":
         return t("auth_err_rate_limited");
       case "invalid_input":
@@ -63,22 +59,19 @@ export default function RegisterPhone() {
     }
   };
 
-  const [fullname, setFullname] = useState("");
   const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPw, setConfirmPw] = useState("");
-  const [agree, setAgree] = useState(false);
-  const [showPw, setShowPw] = useState(false);
   const [alert, setAlert] = useState("");
-  const [submitLabel, setSubmitLabel] = useState<string>(
-    t("auth_register_btn"),
-  );
   const [busy, setBusy] = useState(false);
+  const [submitLabel, setSubmitLabel] = useState<string>(
+    t("auth_forgot_send_btn"),
+  );
 
   const [step, setStep] = useState<Step>("form");
   const [pendingPhone, setPendingPhone] = useState("");
   const [code, setCode] = useState("");
-  const [verifyBusy, setVerifyBusy] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [resetBusy, setResetBusy] = useState(false);
   const [resendBusy, setResendBusy] = useState(false);
   const [verifyAlert, setVerifyAlert] = useState<{
     kind: "error" | "ok";
@@ -95,40 +88,27 @@ export default function RegisterPhone() {
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setAlert("");
-
-    if (fullname.trim().length < 2)
-      return setAlert(t("auth_err_fullname_required"));
     const digits = phone.replace(/\D/g, "");
     if (digits.length !== 8) return setAlert(t("auth_err_phone_8_digits"));
-    if (!/^[6789]/.test(digits)) {
-      return setAlert(t("auth_err_phone_only_mn"));
-    }
-    if (password.length < 8) return setAlert(t("auth_err_password_min"));
-    if (password !== confirmPw)
-      return setAlert(t("auth_err_passwords_dont_match"));
-    if (!agree) return setAlert(t("auth_err_must_agree"));
+    if (!/^[6789]/.test(digits)) return setAlert(t("auth_err_phone_only_mn"));
 
     const identifier = "+976" + digits;
     setBusy(true);
     setSubmitLabel(t("auth_sending"));
-    const res = await registerPhone({
-      fullName: fullname.trim(),
-      phone: identifier,
-      password,
-    });
+    const res = await forgotPasswordSend({ phone: identifier });
     if (!res.ok) {
       setBusy(false);
-      setSubmitLabel(t("auth_register_btn"));
-      setAlert(explainError(res.error, t("auth_err_register_failed")));
+      setSubmitLabel(t("auth_forgot_send_btn"));
+      setAlert(explainError(res.error, t("auth_err_forgot_send_failed")));
       return;
     }
     setPendingPhone(identifier);
     setStep("verify");
     setBusy(false);
-    setSubmitLabel(t("auth_register_btn"));
+    setSubmitLabel(t("auth_forgot_send_btn"));
   };
 
-  const onVerifySubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const onResetSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setVerifyAlert(null);
     const clean = code.replace(/\D/g, "");
@@ -136,24 +116,32 @@ export default function RegisterPhone() {
       setVerifyAlert({ kind: "error", msg: t("auth_err_code_incomplete") });
       return;
     }
-    setVerifyBusy(true);
-    const res = await verifyPhone({ phone: pendingPhone, code: clean });
-    setVerifyBusy(false);
+    if (newPassword.length < 8) {
+      setVerifyAlert({ kind: "error", msg: t("auth_err_password_min") });
+      return;
+    }
+    setResetBusy(true);
+    const res = await forgotPasswordReset({
+      phone: pendingPhone,
+      code: clean,
+      password: newPassword,
+    });
+    setResetBusy(false);
     if (!res.ok) {
       setVerifyAlert({
         kind: "error",
-        msg: explainError(res.error, t("auth_err_code_wrong")),
+        msg: explainError(res.error, t("auth_err_forgot_reset_failed")),
       });
       return;
     }
-    setVerifyAlert({ kind: "ok", msg: t("auth_verified") });
-    setTimeout(() => navigate("/watch", { replace: true }), 700);
+    setVerifyAlert({ kind: "ok", msg: t("auth_forgot_reset_done") });
+    setTimeout(() => navigate("/login", { replace: true }), 1000);
   };
 
   const onResend = async () => {
     setVerifyAlert(null);
     setResendBusy(true);
-    const res = await resendCode(pendingPhone);
+    const res = await forgotPasswordSend({ phone: pendingPhone });
     setResendBusy(false);
     if (!res.ok) {
       setVerifyAlert({
@@ -176,7 +164,17 @@ export default function RegisterPhone() {
               alt={t("auth_logo_alt")}
             />
           </Link>
-          <Link className={BACK_CLS} to="/login">
+          <button
+            type="button"
+            className={BACK_CLS}
+            onClick={() => {
+              setStep("form");
+              setCode("");
+              setNewPassword("");
+              setVerifyAlert(null);
+            }}
+            style={RESEND_BTN_STYLE}
+          >
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -190,22 +188,22 @@ export default function RegisterPhone() {
               <polyline points="12 19 5 12 12 5" />
             </svg>
             {t("auth_back_login")}
-          </Link>
+          </button>
         </header>
 
         <main className={MAIN_CLS}>
           <section className={CARD_CLS}>
             <span className={EYEBROW_CLS}>
               <span className={EYEBROW_DOT_CLS} aria-hidden="true"></span>
-              {t("auth_verify_eyebrow")}
+              {t("auth_forgot_eyebrow")}
             </span>
 
-            <h1 className={TITLE_CLS}>{t("auth_verify_phone_title")}</h1>
+            <h1 className={TITLE_CLS}>{t("auth_forgot_reset_title")}</h1>
             <p className={SUBTITLE_CLS}>
-              {t("auth_verify_phone_subtitle", { identifier: pendingPhone })}
+              {t("auth_forgot_reset_subtitle", { identifier: pendingPhone })}
             </p>
 
-            <form className={FORM_CLS} onSubmit={onVerifySubmit} noValidate>
+            <form className={FORM_CLS} onSubmit={onResetSubmit} noValidate>
               <div className={FIELD_CLS}>
                 <span className={`${LABEL_CLS} text-center`}>
                   {t("auth_verify_code_label")}
@@ -215,12 +213,49 @@ export default function RegisterPhone() {
                   onChange={setCode}
                   length={6}
                   autoFocus
-                  disabled={verifyBusy}
+                  disabled={resetBusy}
                 />
                 <span className={`${REG_HINT_CLS} text-center`}>
                   {t("auth_verify_hint")}
                 </span>
               </div>
+
+              <label className={FIELD_CLS}>
+                <span className={LABEL_CLS}>{t("auth_new_password_label")}</span>
+                <span className={PWD_WRAP_CLS}>
+                  <input
+                    className={PWD_INPUT_CLS}
+                    type={showPw ? "text" : "password"}
+                    name="new_password"
+                    placeholder="••••••••"
+                    autoComplete="new-password"
+                    minLength={8}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className={PWD_TOGGLE_CLS}
+                    aria-label={showPw ? t("auth_hide_pw") : t("auth_show_pw")}
+                    onClick={() => setShowPw((s) => !s)}
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  </button>
+                </span>
+                <span className={REG_HINT_CLS}>{t("auth_password_hint")}</span>
+              </label>
 
               {verifyAlert && (
                 <div
@@ -233,12 +268,8 @@ export default function RegisterPhone() {
                 </div>
               )}
 
-              <button
-                type="submit"
-                className={SUBMIT_CLS}
-                disabled={verifyBusy}
-              >
-                {verifyBusy ? t("auth_verifying") : t("auth_verify_btn")}
+              <button type="submit" className={SUBMIT_CLS} disabled={resetBusy}>
+                {resetBusy ? t("auth_verifying") : t("auth_forgot_reset_btn")}
                 <svg
                   viewBox="0 0 24 24"
                   fill="none"
@@ -286,7 +317,7 @@ export default function RegisterPhone() {
             alt={t("auth_logo_alt")}
           />
         </Link>
-        <Link className={BACK_CLS} to="/register">
+        <Link className={BACK_CLS} to="/login">
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -299,7 +330,7 @@ export default function RegisterPhone() {
             <line x1="19" y1="12" x2="5" y2="12" />
             <polyline points="12 19 5 12 12 5" />
           </svg>
-          {t("auth_back_choose")}
+          {t("auth_back_login")}
         </Link>
       </header>
 
@@ -307,27 +338,13 @@ export default function RegisterPhone() {
         <section className={CARD_CLS}>
           <span className={EYEBROW_CLS}>
             <span className={EYEBROW_DOT_CLS} aria-hidden="true"></span>
-            {t("auth_register_eyebrow")}
+            {t("auth_forgot_eyebrow")}
           </span>
 
-          <h1 className={TITLE_CLS}>{t("auth_reg_phone_title")}</h1>
-          <p className={SUBTITLE_CLS}>{t("auth_reg_phone_subtitle")}</p>
+          <h1 className={TITLE_CLS}>{t("auth_forgot_title")}</h1>
+          <p className={SUBTITLE_CLS}>{t("auth_forgot_subtitle")}</p>
 
-          <form className={REG_FORM_CLS} onSubmit={onSubmit} noValidate>
-            <label className={FIELD_CLS}>
-              <span className={LABEL_CLS}>{t("auth_fullname_label")}</span>
-              <input
-                className={INPUT_CLS}
-                type="text"
-                name="fullname"
-                placeholder={t("auth_fullname_placeholder")}
-                autoComplete="name"
-                value={fullname}
-                onChange={(e) => setFullname(e.target.value)}
-                required
-              />
-            </label>
-
+          <form className={FORM_CLS} onSubmit={onSubmit} noValidate>
             <label className={FIELD_CLS}>
               <span className={LABEL_CLS}>{t("auth_phone_label")}</span>
               <span className={REG_PHONE_WRAP_CLS}>
@@ -348,72 +365,6 @@ export default function RegisterPhone() {
                 />
               </span>
               <span className={REG_HINT_CLS}>{t("auth_phone_hint")}</span>
-            </label>
-
-            <label className={FIELD_CLS}>
-              <span className={LABEL_CLS}>{t("auth_password_label")}</span>
-              <span className={PWD_WRAP_CLS}>
-                <input
-                  className={PWD_INPUT_CLS}
-                  type={showPw ? "text" : "password"}
-                  name="password"
-                  placeholder="••••••••"
-                  autoComplete="new-password"
-                  minLength={8}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-                <button
-                  type="button"
-                  className={PWD_TOGGLE_CLS}
-                  aria-label={showPw ? t("auth_hide_pw") : t("auth_show_pw")}
-                  onClick={() => setShowPw((s) => !s)}
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
-                </button>
-              </span>
-              <span className={REG_HINT_CLS}>{t("auth_password_hint")}</span>
-            </label>
-
-            <label className={FIELD_CLS}>
-              <span className={LABEL_CLS}>
-                {t("auth_password_confirm_label")}
-              </span>
-              <input
-                className={INPUT_CLS}
-                type="password"
-                name="password_confirm"
-                placeholder="••••••••"
-                autoComplete="new-password"
-                minLength={8}
-                value={confirmPw}
-                onChange={(e) => setConfirmPw(e.target.value)}
-                required
-              />
-            </label>
-
-            <label className={REG_TERMS_CLS}>
-              <input
-                type="checkbox"
-                name="agree"
-                checked={agree}
-                onChange={(e) => setAgree(e.target.checked)}
-                className={REG_CHECKBOX_CLS}
-                required
-              />
-              <span>{t("auth_terms_label")}</span>
             </label>
 
             <div className={REG_ALERT_CLS} role="alert" hidden={!alert}>
@@ -441,11 +392,11 @@ export default function RegisterPhone() {
             <span>{t("auth_or")}</span>
           </div>
 
-          <Link className={REGISTER_CLS} to="/register/email">
-            {t("auth_register_with_email")}
+          <Link className={REGISTER_CLS} to="/login">
+            {t("auth_back_login")}
           </Link>
-          <Link className={HOME_CLS} to="/login">
-            {t("auth_already_registered")}
+          <Link className={HOME_CLS} to="/">
+            {t("auth_back_home")}
           </Link>
         </section>
       </main>
