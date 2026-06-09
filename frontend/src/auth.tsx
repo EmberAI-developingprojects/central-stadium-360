@@ -66,6 +66,11 @@ type AuthContextValue = {
     phone: string;
   }) => Promise<{ ok: true; phone: string } | { ok: false; error: string }>;
 
+  forgotPasswordVerify: (input: {
+    phone: string;
+    code: string;
+  }) => Promise<{ ok: true } | { ok: false; error: string }>;
+
   forgotPasswordReset: (input: {
     phone: string;
     code: string;
@@ -241,6 +246,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { ok: true, phone: res.data.phone };
   }, []);
 
+  const forgotPasswordVerify = useCallback<
+    AuthContextValue["forgotPasswordVerify"]
+  >(async (input) => {
+    const res = await api.forgotPasswordVerify(input);
+    if (!res.ok) return { ok: false, error: res.error };
+    return { ok: true };
+  }, []);
+
   const forgotPasswordReset = useCallback<
     AuthContextValue["forgotPasswordReset"]
   >(async (input) => {
@@ -291,6 +304,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       verifyPhone,
       resendCode,
       forgotPasswordSend,
+      forgotPasswordVerify,
       forgotPasswordReset,
       logout,
       updateSession,
@@ -305,6 +319,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       verifyPhone,
       resendCode,
       forgotPasswordSend,
+      forgotPasswordVerify,
       forgotPasswordReset,
       logout,
       updateSession,

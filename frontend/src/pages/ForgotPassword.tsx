@@ -14,6 +14,7 @@ import {
   FULL_RESET_BTN_STYLE as RESEND_BTN_STYLE,
   HEADER_CLS,
   HOME_CLS,
+  INPUT_CLS,
   LABEL_CLS,
   LOGO_CLS,
   LOGO_IMG_CLS,
@@ -35,12 +36,13 @@ import {
   TITLE_CLS,
 } from "./_authStyles";
 
-type Step = "form" | "verify";
+type Step = "form" | "verify" | "reset";
 
 export default function ForgotPassword() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { forgotPasswordSend, forgotPasswordReset } = useAuth();
+  const { forgotPasswordSend, forgotPasswordVerify, forgotPasswordReset } =
+    useAuth();
 
   const explainError = (code: string, fallback: string): string => {
     switch (code) {
@@ -69,11 +71,18 @@ export default function ForgotPassword() {
   const [step, setStep] = useState<Step>("form");
   const [pendingPhone, setPendingPhone] = useState("");
   const [code, setCode] = useState("");
+  const [verifyBusy, setVerifyBusy] = useState(false);
+  const [verifyAlert, setVerifyAlert] = useState<{
+    kind: "error" | "ok";
+    msg: string;
+  } | null>(null);
+
   const [newPassword, setNewPassword] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [resetBusy, setResetBusy] = useState(false);
   const [resendBusy, setResendBusy] = useState(false);
-  const [verifyAlert, setVerifyAlert] = useState<{
+  const [resetAlert, setResetAlert] = useState<{
     kind: "error" | "ok";
     msg: string;
   } | null>(null);
@@ -108,7 +117,7 @@ export default function ForgotPassword() {
     setSubmitLabel(t("auth_forgot_send_btn"));
   };
 
-  const onResetSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const onVerifySubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setVerifyAlert(null);
     const clean = code.replace(/\D/g, "");
@@ -116,25 +125,51 @@ export default function ForgotPassword() {
       setVerifyAlert({ kind: "error", msg: t("auth_err_code_incomplete") });
       return;
     }
+    setVerifyBusy(true);
+    const res = await forgotPasswordVerify({
+      phone: pendingPhone,
+      code: clean,
+    });
+    setVerifyBusy(false);
+    if (!res.ok) {
+      setVerifyAlert({
+        kind: "error",
+        msg: explainError(res.error, t("auth_err_code_wrong")),
+      });
+      return;
+    }
+    setStep("reset");
+  };
+
+  const onResetSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setResetAlert(null);
     if (newPassword.length < 8) {
-      setVerifyAlert({ kind: "error", msg: t("auth_err_password_min") });
+      setResetAlert({ kind: "error", msg: t("auth_err_password_min") });
+      return;
+    }
+    if (newPassword !== confirmPw) {
+      setResetAlert({
+        kind: "error",
+        msg: t("auth_err_passwords_dont_match"),
+      });
       return;
     }
     setResetBusy(true);
     const res = await forgotPasswordReset({
       phone: pendingPhone,
-      code: clean,
+      code: code.replace(/\D/g, ""),
       password: newPassword,
     });
     setResetBusy(false);
     if (!res.ok) {
-      setVerifyAlert({
+      setResetAlert({
         kind: "error",
         msg: explainError(res.error, t("auth_err_forgot_reset_failed")),
       });
       return;
     }
-    setVerifyAlert({ kind: "ok", msg: t("auth_forgot_reset_done") });
+    setResetAlert({ kind: "ok", msg: t("auth_forgot_reset_done") });
     setTimeout(() => navigate("/login", { replace: true }), 1000);
   };
 
@@ -170,8 +205,128 @@ export default function ForgotPassword() {
             onClick={() => {
               setStep("form");
               setCode("");
-              setNewPassword("");
               setVerifyAlert(null);
+            }}
+            style={RESEND_BTN_STYLE}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <line x1="19" y1="12" x2="5" y2="12" />
+              <polyline points="12 19 5 12 12 5" />
+            </svg>
+            {t("auth_back_login")}
+          </button>
+        </header>
+
+        <main className={MAIN_CLS}>
+          <section className={CARD_CLS}>
+            <span className={EYEBROW_CLS}>
+              <span className={EYEBROW_DOT_CLS} aria-hidden="true"></span>
+              {t("auth_forgot_eyebrow")}
+            </span>
+
+            <h1 className={TITLE_CLS}>{t("auth_verify_phone_title")}</h1>
+            <p className={SUBTITLE_CLS}>
+              {t("auth_verify_phone_subtitle", { identifier: pendingPhone })}
+            </p>
+
+            <form className={FORM_CLS} onSubmit={onVerifySubmit} noValidate>
+              <div className={FIELD_CLS}>
+                <span className={`${LABEL_CLS} text-center`}>
+                  {t("auth_verify_code_label")}
+                </span>
+                <OtpInput
+                  value={code}
+                  onChange={setCode}
+                  length={6}
+                  autoFocus
+                  disabled={verifyBusy}
+                />
+                <span className={`${REG_HINT_CLS} text-center`}>
+                  {t("auth_verify_hint")}
+                </span>
+              </div>
+
+              {verifyAlert && (
+                <div
+                  className={
+                    verifyAlert.kind === "ok" ? REG_ALERT_OK_CLS : REG_ALERT_CLS
+                  }
+                  role="alert"
+                >
+                  {verifyAlert.msg}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                className={SUBMIT_CLS}
+                disabled={verifyBusy}
+              >
+                {verifyBusy ? t("auth_verifying") : t("auth_verify_btn")}
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                  <polyline points="12 5 19 12 12 19" />
+                </svg>
+              </button>
+            </form>
+
+            <div className={DIVIDER_CLS}>
+              <span>{t("auth_or")}</span>
+            </div>
+
+            <button
+              type="button"
+              className={REGISTER_CLS}
+              onClick={onResend}
+              disabled={resendBusy}
+              style={RESEND_BTN_STYLE}
+            >
+              {resendBusy ? t("auth_sending") : t("auth_resend_code")}
+            </button>
+            <Link className={HOME_CLS} to="/login">
+              {t("auth_back_login")}
+            </Link>
+          </section>
+        </main>
+      </div>
+    );
+  }
+
+  if (step === "reset") {
+    return (
+      <div className={PAGE_CLS} style={{ background: PAGE_BG }}>
+        <header className={HEADER_CLS}>
+          <Link className={LOGO_CLS} to="/" aria-label={t("auth_logo_aria")}>
+            <img
+              className={LOGO_IMG_CLS}
+              src="/assets/images/brand/logo.png"
+              alt={t("auth_logo_alt")}
+            />
+          </Link>
+          <button
+            type="button"
+            className={BACK_CLS}
+            onClick={() => {
+              setStep("verify");
+              setResetAlert(null);
+              setNewPassword("");
+              setConfirmPw("");
             }}
             style={RESEND_BTN_STYLE}
           >
@@ -204,24 +359,10 @@ export default function ForgotPassword() {
             </p>
 
             <form className={FORM_CLS} onSubmit={onResetSubmit} noValidate>
-              <div className={FIELD_CLS}>
-                <span className={`${LABEL_CLS} text-center`}>
-                  {t("auth_verify_code_label")}
-                </span>
-                <OtpInput
-                  value={code}
-                  onChange={setCode}
-                  length={6}
-                  autoFocus
-                  disabled={resetBusy}
-                />
-                <span className={`${REG_HINT_CLS} text-center`}>
-                  {t("auth_verify_hint")}
-                </span>
-              </div>
-
               <label className={FIELD_CLS}>
-                <span className={LABEL_CLS}>{t("auth_new_password_label")}</span>
+                <span className={LABEL_CLS}>
+                  {t("auth_new_password_label")}
+                </span>
                 <span className={PWD_WRAP_CLS}>
                   <input
                     className={PWD_INPUT_CLS}
@@ -233,6 +374,7 @@ export default function ForgotPassword() {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     required
+                    autoFocus
                   />
                   <button
                     type="button"
@@ -257,14 +399,31 @@ export default function ForgotPassword() {
                 <span className={REG_HINT_CLS}>{t("auth_password_hint")}</span>
               </label>
 
-              {verifyAlert && (
+              <label className={FIELD_CLS}>
+                <span className={LABEL_CLS}>
+                  {t("auth_password_confirm_label")}
+                </span>
+                <input
+                  className={INPUT_CLS}
+                  type="password"
+                  name="password_confirm"
+                  placeholder="••••••••"
+                  autoComplete="new-password"
+                  minLength={8}
+                  value={confirmPw}
+                  onChange={(e) => setConfirmPw(e.target.value)}
+                  required
+                />
+              </label>
+
+              {resetAlert && (
                 <div
                   className={
-                    verifyAlert.kind === "ok" ? REG_ALERT_OK_CLS : REG_ALERT_CLS
+                    resetAlert.kind === "ok" ? REG_ALERT_OK_CLS : REG_ALERT_CLS
                   }
                   role="alert"
                 >
-                  {verifyAlert.msg}
+                  {resetAlert.msg}
                 </div>
               )}
 
@@ -285,19 +444,6 @@ export default function ForgotPassword() {
               </button>
             </form>
 
-            <div className={DIVIDER_CLS}>
-              <span>{t("auth_or")}</span>
-            </div>
-
-            <button
-              type="button"
-              className={REGISTER_CLS}
-              onClick={onResend}
-              disabled={resendBusy}
-              style={RESEND_BTN_STYLE}
-            >
-              {resendBusy ? t("auth_sending") : t("auth_resend_code")}
-            </button>
             <Link className={HOME_CLS} to="/login">
               {t("auth_back_login")}
             </Link>

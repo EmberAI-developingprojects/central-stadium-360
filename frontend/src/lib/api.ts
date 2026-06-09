@@ -138,6 +138,13 @@ export const api = {
   forgotPasswordSend: (input: { phone: string }) =>
     request<{ phone: string }>("POST", "/api/auth/forgot-password/send", input),
 
+  forgotPasswordVerify: (input: { phone: string; code: string }) =>
+    request<{ phone: string }>(
+      "POST",
+      "/api/auth/forgot-password/verify",
+      input,
+    ),
+
   forgotPasswordReset: (input: {
     phone: string;
     code: string;

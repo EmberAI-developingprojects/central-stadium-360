@@ -6,7 +6,13 @@ import {
   getSupabaseForAccessToken,
 } from "../lib/supabase-anon";
 import { getSupabaseAdmin } from "../lib/supabase";
-import { getIdentifierLimiter, getIpLimiter } from "../lib/redis";
+import {
+  getIdentifierLimiter,
+  getIpLimiter,
+  getRedisClient,
+} from "../lib/redis";
+import { sendSms } from "../lib/sms";
+import { randomInt } from "node:crypto";
 
 const auth = new Hono();
 
@@ -67,6 +73,14 @@ const resendSchema = z.object({
 
 const forgotSendSchema = z.object({
   phone: phoneSchema,
+});
+
+const forgotVerifySchema = z.object({
+  phone: phoneSchema,
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{4,8}$/, "OTP must be 4–8 digits."),
 });
 
 const forgotResetSchema = z.object({
@@ -413,6 +427,65 @@ auth.post("/resend-code", async (c) => {
   } as const);
 });
 
+const RESET_OTP_TTL_SECONDS = 5 * 60;
+const RESET_OTP_PREFIX = "cs360:auth:reset:";
+
+const memoryOtpStore = new Map<string, { code: string; expiresAt: number }>();
+
+async function setResetOtp(phone: string, code: string): Promise<void> {
+  const key = `${RESET_OTP_PREFIX}${phone}`;
+  const redis = getRedisClient();
+  if (redis) {
+    await redis.set(key, code, { ex: RESET_OTP_TTL_SECONDS });
+    return;
+  }
+  memoryOtpStore.set(key, {
+    code,
+    expiresAt: Date.now() + RESET_OTP_TTL_SECONDS * 1000,
+  });
+}
+
+async function getResetOtp(phone: string): Promise<string | null> {
+  const key = `${RESET_OTP_PREFIX}${phone}`;
+  const redis = getRedisClient();
+  if (redis) {
+    return (await redis.get<string>(key)) ?? null;
+  }
+  const entry = memoryOtpStore.get(key);
+  if (!entry) return null;
+  if (entry.expiresAt < Date.now()) {
+    memoryOtpStore.delete(key);
+    return null;
+  }
+  return entry.code;
+}
+
+async function deleteResetOtp(phone: string): Promise<void> {
+  const key = `${RESET_OTP_PREFIX}${phone}`;
+  const redis = getRedisClient();
+  if (redis) {
+    await redis.del(key);
+    return;
+  }
+  memoryOtpStore.delete(key);
+}
+
+async function findUserIdByPhone(phone: string): Promise<string | null> {
+  const admin = getSupabaseAdmin();
+  if (!admin) return null;
+  const candidates = [phone, phone.replace(/^\+/, "")];
+  for (const value of candidates) {
+    const { data } = await admin
+      .from("users")
+      .select("id")
+      .eq("phone", value)
+      .is("deleted_at", null)
+      .maybeSingle<{ id: string }>();
+    if (data?.id) return data.id;
+  }
+  return null;
+}
+
 auth.post("/forgot-password/send", async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const parsed = forgotSendSchema.safeParse(body);
@@ -422,28 +495,44 @@ auth.post("/forgot-password/send", async (c) => {
   const limited = await applyRateLimits(c, phone);
   if (limited) return limited;
 
-  const supabase = getSupabaseAnon();
-  if (!supabase) {
+  const admin = getSupabaseAdmin();
+  if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
       503,
     );
   }
 
-  const { error } = await supabase.auth.signInWithOtp({
-    phone,
-    options: { shouldCreateUser: false },
-  });
-  if (error) {
-    const msg = error.message ?? "";
-    if (/signups.*not allowed|user.*not.*found/i.test(msg)) {
-      return c.json({ ok: false, error: "user_not_found" } as const, 404);
-    }
-    console.error("[auth] forgot send:", error);
+  const userId = await findUserIdByPhone(phone);
+  if (!userId) {
+    return c.json({ ok: false, error: "user_not_found" } as const, 404);
+  }
+
+  const otp = String(randomInt(0, 1_000_000)).padStart(6, "0");
+  await setResetOtp(phone, otp);
+
+  try {
+    await sendSms({ phone, otp });
+  } catch (err) {
+    console.error("[auth] forgot send sms:", err);
     return c.json(
-      { ok: false, error: msg || "send_failed" } as const,
+      { ok: false, error: (err as Error).message ?? "send_failed" } as const,
       502,
     );
+  }
+
+  return c.json({ ok: true, data: { phone } } as const);
+});
+
+auth.post("/forgot-password/verify", async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = forgotVerifySchema.safeParse(body);
+  if (!parsed.success) return invalidInput(c, parsed);
+  const { phone, code } = parsed.data;
+
+  const stored = await getResetOtp(phone);
+  if (!stored || stored !== code) {
+    return c.json({ ok: false, error: "otp_invalid" } as const, 401);
   }
   return c.json({ ok: true, data: { phone } } as const);
 });
@@ -454,34 +543,27 @@ auth.post("/forgot-password/reset", async (c) => {
   if (!parsed.success) return invalidInput(c, parsed);
   const { phone, code, password } = parsed.data;
 
-  const supabase = getSupabaseAnon();
-  if (!supabase) {
+  const admin = getSupabaseAdmin();
+  if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
       503,
     );
   }
 
-  const { data, error } = await supabase.auth.verifyOtp({
-    phone,
-    token: code,
-    type: "sms",
+  const stored = await getResetOtp(phone);
+  if (!stored || stored !== code) {
+    return c.json({ ok: false, error: "otp_invalid" } as const, 401);
+  }
+
+  const userId = await findUserIdByPhone(phone);
+  if (!userId) {
+    return c.json({ ok: false, error: "user_not_found" } as const, 404);
+  }
+
+  const { error: updErr } = await admin.auth.admin.updateUserById(userId, {
+    password,
   });
-  if (error || !data.session || !data.user) {
-    return c.json(
-      { ok: false, error: error?.message ?? "otp_invalid" } as const,
-      401,
-    );
-  }
-
-  const sb = getSupabaseForAccessToken(data.session.access_token);
-  if (!sb) {
-    return c.json(
-      { ok: false, error: "supabase_not_configured" } as const,
-      503,
-    );
-  }
-  const { error: updErr } = await sb.auth.updateUser({ password });
   if (updErr) {
     console.error("[auth] forgot reset update:", updErr);
     return c.json(
@@ -489,8 +571,8 @@ auth.post("/forgot-password/reset", async (c) => {
       502,
     );
   }
-  await sb.auth.signOut().catch(() => undefined);
 
+  await deleteResetOtp(phone);
   return c.json({ ok: true, data: { phone } } as const);
 });
 
