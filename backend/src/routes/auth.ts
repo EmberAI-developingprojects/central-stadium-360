@@ -179,53 +179,48 @@ auth.post("/register/phone", async (c) => {
     );
   }
 
-  const existingUserId = await findUserIdByPhone(phone);
-  if (existingUserId) {
-    const admin = getSupabaseAdmin();
-    if (admin) {
-      const { data: authUser } = await admin.auth.admin.getUserById(
-        existingUserId,
-      );
-      if (authUser?.user?.phone_confirmed_at) {
-        return c.json(
-          { ok: false, error: "already_registered" } as const,
-          409,
-        );
-      }
-    }
-    // Unconfirmed account → resend OTP instead of blocking.
-    const { error: resendErr } = await supabase.auth.resend({
-      type: "sms",
-      phone,
-    });
-    if (resendErr) {
-      console.error("[auth] resend on re-register:", resendErr);
-      return c.json(
-        {
-          ok: false,
-          error: resendErr.message ?? "resend_failed",
-        } as const,
-        502,
-      );
-    }
-    return c.json({ ok: true, data: { phone } } as const);
-  }
-
-  const { error } = await supabase.auth.signUp({
+  const { data: signUpData, error } = await supabase.auth.signUp({
     phone,
     password,
     options: { data: { full_name: fullName } },
   });
+
   if (error) {
-    if (/already.*registered|already.*exists/i.test(error.message ?? "")) {
-      return c.json({ ok: false, error: "already_registered" } as const, 409);
+    const msg = error.message ?? "";
+    console.warn("[auth] signUp phone error:", msg);
+
+    if (/already.*registered|already.*exists/i.test(msg)) {
+      const admin = getSupabaseAdmin();
+      const existingUserId = await findUserIdByPhone(phone);
+      if (admin && existingUserId) {
+        const { data: authUser } =
+          await admin.auth.admin.getUserById(existingUserId);
+        if (authUser?.user?.phone_confirmed_at) {
+          return c.json(
+            { ok: false, error: "already_registered" } as const,
+            409,
+          );
+        }
+      }
+      const { error: resendErr } = await supabase.auth.resend({
+        type: "sms",
+        phone,
+      });
+      if (resendErr) {
+        return c.json(
+          {
+            ok: false,
+            error: resendErr.message ?? "resend_failed",
+          } as const,
+          502,
+        );
+      }
+      return c.json({ ok: true, data: { phone } } as const);
     }
-    console.error("[auth] signUp phone:", error);
-    return c.json(
-      { ok: false, error: error.message ?? "signup_failed" } as const,
-      502,
-    );
+
+    return c.json({ ok: false, error: msg || "signup_failed" } as const, 502);
   }
+
   return c.json({ ok: true, data: { phone } } as const);
 });
 
