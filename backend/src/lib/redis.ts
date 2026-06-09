@@ -12,6 +12,10 @@ function getRedis(): Redis | null {
   return redis;
 }
 
+export function getRedisClient(): Redis | null {
+  return getRedis();
+}
+
 let identifierLimiter: Ratelimit | null = null;
 let ipLimiter: Ratelimit | null = null;
 
