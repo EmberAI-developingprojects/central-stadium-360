@@ -190,7 +190,7 @@ export default function Profile() {
                 type="text"
                 value={fullname}
                 onChange={(e) => setFullname(e.target.value)}
-                placeholder="Жишээ: Б. Болор"
+                placeholder="Нэр"
                 autoComplete="name"
                 required
               />

@@ -102,7 +102,15 @@ function buildCamUrls(): { id: string; url: string | null }[] {
   });
 }
 
+const viewedUserIds = new Set<string>();
+
+export function getViewedUserCount(): number {
+  return viewedUserIds.size;
+}
+
 watch.get("/token", requireUser, (c) => {
+  const user = c.get("user");
+  if (user?.id) viewedUserIds.add(user.id);
   const urls = buildCamUrls();
   const cams: WatchCam[] = CAM_DEFS.map((cam, i) => ({
     ...cam,

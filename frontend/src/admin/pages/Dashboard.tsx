@@ -113,6 +113,11 @@ export default function Dashboard() {
     const uniqueBuyers = new Set(orders.map((o) => o.user)).size;
     const buyerPct =
       users.length > 0 ? Math.round((uniqueBuyers / users.length) * 100) : 0;
+    const viewerCount = stats?.viewerCount ?? 0;
+    const watchedCount = Math.min(viewerCount, uniqueBuyers);
+    const notWatchedCount = Math.max(0, uniqueBuyers - watchedCount);
+    const watchedPct =
+      uniqueBuyers > 0 ? Math.round((watchedCount / uniqueBuyers) * 100) : 0;
 
     const monthlyBars = Array.from({ length: 8 }, (_, i) => {
       const d = new Date(cy, cm - (7 - i), 1);
@@ -164,6 +169,9 @@ export default function Dashboard() {
       revPct: pct(revCurr, revPrev),
       buyerPct,
       uniqueBuyers,
+      watchedCount,
+      notWatchedCount,
+      watchedPct,
       totalRevenue: stats?.revenue ?? 0,
       totalOrders: stats?.count ?? 0,
       monthlyBars,
@@ -278,7 +286,7 @@ export default function Dashboard() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
+          gridTemplateColumns: "repeat(3, 1fr)",
           gap: 14,
         }}
       >
@@ -300,12 +308,6 @@ export default function Dashboard() {
           value={derived.newOrdersCurr.toString()}
           badge={derived.newOrdersPct}
           icon={<IconTicket />}
-        />
-        <StatCard
-          label="Ticket авсан хүмүүсийн хувь"
-          value={money(derived.totalRevenue)}
-          badge={derived.revPct}
-          icon={<IconRevenue />}
         />
       </div>
 
@@ -368,26 +370,86 @@ export default function Dashboard() {
         >
           <div style={{ width: "100%", marginBottom: 12 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: "#111" }}>
-              Ticket авсан хэрэглэгч
+              Тасалбар үзсэн хэрэглэгч
             </div>
             <div style={{ fontSize: 12, color: "#71717a", marginTop: 2 }}>
-              Нийт хэрэглэгчийн хувь
+              Худалдан авагчдын дунд үзсэн / үзээгүй харьцаа
             </div>
           </div>
-          <DonutChart percent={derived.buyerPct} />
+          <DonutChart percent={derived.watchedPct} />
           <div
             style={{
               width: "100%",
-              marginTop: 16,
+              marginTop: 12,
+              display: "flex",
+              flexDirection: "column",
+              gap: 6,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                fontSize: 12,
+                color: "#52525b",
+              }}
+            >
+              <span
+                style={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: 999,
+                  background: "#2230C6",
+                  display: "inline-block",
+                }}
+              />
+              <span style={{ flex: 1 }}>Үзсэн</span>
+              <strong
+                style={{ color: "#111", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}
+              >
+                {derived.watchedCount.toLocaleString()}
+              </strong>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                fontSize: 12,
+                color: "#52525b",
+              }}
+            >
+              <span
+                style={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: 999,
+                  background: "#e4e4e7",
+                  display: "inline-block",
+                }}
+              />
+              <span style={{ flex: 1 }}>Үзээгүй</span>
+              <strong
+                style={{ color: "#111", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}
+              >
+                {derived.notWatchedCount.toLocaleString()}
+              </strong>
+            </div>
+          </div>
+          <div
+            style={{
+              width: "100%",
+              marginTop: 14,
               borderTop: "1px solid #f4f4f5",
-              paddingTop: 14,
+              paddingTop: 12,
               display: "flex",
               justifyContent: "space-between",
             }}
           >
             <div>
               <div style={{ fontSize: 11, color: "#71717a", marginBottom: 3 }}>
-                Борлуулалт
+                Худалдан авагч
               </div>
               <div style={{ fontSize: 18, fontWeight: 700, color: "#111" }}>
                 {derived.uniqueBuyers.toLocaleString()}
@@ -395,10 +457,10 @@ export default function Dashboard() {
             </div>
             <div style={{ textAlign: "right" }}>
               <div style={{ fontSize: 11, color: "#71717a", marginBottom: 3 }}>
-                Нийт орлого
+                Үзсэн харьцаа
               </div>
               <div style={{ fontSize: 18, fontWeight: 700, color: "#111" }}>
-                {money(derived.totalRevenue)}
+                {derived.watchedPct}%
               </div>
             </div>
           </div>

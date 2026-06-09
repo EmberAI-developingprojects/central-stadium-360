@@ -127,6 +127,7 @@ export type OrdersStats = {
   revenue: number;
   count: number;
   paidCount: number;
+  viewerCount: number;
   byTier: Record<string, number>;
   byEvent: Record<string, number>;
   last30d: { date: string; total: number }[];
@@ -496,6 +497,7 @@ export async function ordersStats(): Promise<OrdersStats> {
       revenue: 0,
       count: 0,
       paidCount: 0,
+      viewerCount: 0,
       byTier: {},
       byEvent: {},
       last30d: [],
@@ -506,6 +508,7 @@ export async function ordersStats(): Promise<OrdersStats> {
     revenue: s.revenue,
     count: s.count,
     paidCount: s.paidCount,
+    viewerCount: s.viewerCount,
     byTier: { standard: s.revenue },
     byEvent: s.byEvent,
     last30d: s.last30d,

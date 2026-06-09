@@ -263,16 +263,14 @@ export default function Settings() {
             </button>
           </form>
 
-          <div className={`${DIVIDER_CLS} ${SETTINGS_DIVIDER_OVERRIDE}`}>
-            <span>аюултай бүс</span>
-          </div>
+          <div className={`${DIVIDER_CLS} ${SETTINGS_DIVIDER_OVERRIDE}`}></div>
 
           <p
             className={`${REG_HINT_CLS} ${SETTINGS_HINT_OVERRIDE}`}
             style={{ textAlign: "center", marginTop: 4 }}
           >
-            Бүртгэл устгасны дараа худалдан авсан тасалбарууд тань хадгалагдсаар
-            үлдэх боловч нэвтрэх боломжгүй болно.
+            Бүртгэл устгасны дараа худалдан авсан тасалбарууд тань
+            хадгалагдахгүй болхыг анхаарна уу.
           </p>
           <button
             type="button"
@@ -282,10 +280,6 @@ export default function Settings() {
           >
             Бүртгэл устгах
           </button>
-
-          <Link className={`${HOME_CLS} ${SETTINGS_HOME_OVERRIDE}`} to="/watch">
-            Хувийн булан руу буцах
-          </Link>
         </section>
       </main>
     </div>
