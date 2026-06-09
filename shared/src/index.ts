@@ -149,6 +149,7 @@ export interface AdminTicketStats {
   revenue: number;
   count: number;
   paidCount: number;
+  viewerCount: number;
   byEvent: Record<string, number>;
   last30d: { date: string; total: number }[];
 }

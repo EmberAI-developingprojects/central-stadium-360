@@ -10,6 +10,7 @@ import {
   requireAdmin,
   type AuthEnv,
 } from "../middleware/require-user";
+import { getViewedUserCount } from "./watch";
 
 const adminTickets = new Hono<AuthEnv>();
 
@@ -138,6 +139,7 @@ adminTickets.get("/stats", async (c) => {
     revenue,
     count: rows.length,
     paidCount: paid.length,
+    viewerCount: getViewedUserCount(),
     byEvent,
     last30d,
   };

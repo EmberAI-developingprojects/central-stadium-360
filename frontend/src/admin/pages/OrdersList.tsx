@@ -80,17 +80,11 @@ export default function OrdersList() {
       </div>
 
       {allOrders && allOrders.length > 0 && (
-        <div className="grid gap-3 mb-5 [grid-template-columns:repeat(4,minmax(0,1fr))] max-[980px]:[grid-template-columns:repeat(2,minmax(0,1fr))]">
+        <div className="grid gap-3 mb-5 [grid-template-columns:repeat(2,minmax(0,1fr))] max-[980px]:[grid-template-columns:1fr]">
           <StatCard
             label="Нийт захиалга"
             value={stats.total.toString()}
             sub={`${stats.paid} төлбөртэй · ${stats.refunded} буцаалттай`}
-          />
-          <StatCard
-            label="Орлого"
-            value={money(stats.revenue)}
-            sub="төлбөр төлсөн нийт дүн"
-            accent="paid"
           />
           <StatCard
             label="Буцаалт"
@@ -99,13 +93,6 @@ export default function OrdersList() {
               stats.refunded > 0 ? `${stats.refunded} захиалга` : "буцаалт алга"
             }
             accent={stats.refunded > 0 ? "refunded" : undefined}
-          />
-          <StatCard
-            label="Дундаж захиалга"
-            value={money(
-              stats.paid > 0 ? Math.round(stats.revenue / stats.paid) : 0,
-            )}
-            sub="1 захиалгад"
           />
         </div>
       )}

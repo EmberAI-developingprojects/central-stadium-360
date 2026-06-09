@@ -181,7 +181,34 @@ auth.post("/register/phone", async (c) => {
 
   const existingUserId = await findUserIdByPhone(phone);
   if (existingUserId) {
-    return c.json({ ok: false, error: "already_registered" } as const, 409);
+    const admin = getSupabaseAdmin();
+    if (admin) {
+      const { data: authUser } = await admin.auth.admin.getUserById(
+        existingUserId,
+      );
+      if (authUser?.user?.phone_confirmed_at) {
+        return c.json(
+          { ok: false, error: "already_registered" } as const,
+          409,
+        );
+      }
+    }
+    // Unconfirmed account → resend OTP instead of blocking.
+    const { error: resendErr } = await supabase.auth.resend({
+      type: "sms",
+      phone,
+    });
+    if (resendErr) {
+      console.error("[auth] resend on re-register:", resendErr);
+      return c.json(
+        {
+          ok: false,
+          error: resendErr.message ?? "resend_failed",
+        } as const,
+        502,
+      );
+    }
+    return c.json({ ok: true, data: { phone } } as const);
   }
 
   const { error } = await supabase.auth.signUp({
