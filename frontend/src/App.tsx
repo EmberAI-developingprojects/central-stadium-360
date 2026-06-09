@@ -12,7 +12,7 @@ import Register from "./pages/Register";
 import RegisterPhone from "./pages/RegisterPhone";
 import RegisterEmail from "./pages/RegisterEmail";
 import ForgotPassword from "./pages/ForgotPassword";
-import Watch from "./pages/Watch";
+import Watch from "./pages/watch";
 import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
 import OrderDetail from "./pages/OrderDetail";

@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import SiteHeader from "../components/SiteHeader";
-import SiteFooter from "../components/SiteFooter";
-import StoryVideo from "../components/StoryVideo";
-import useRevealOnScroll from "../hooks/useRevealOnScroll";
-import useSmoothAnchors from "../hooks/useSmoothAnchors";
-import { REVEAL_UP_CLS } from "../hooks/_revealCls";
-import { useGatedNavigate } from "../auth";
-import { getHomeContent, listEvents } from "../data/store";
+import SiteHeader from "../../components/SiteHeader";
+import SiteFooter from "../../components/SiteFooter";
+import StoryVideo from "../../components/StoryVideo";
+import useRevealOnScroll from "../../hooks/useRevealOnScroll";
+import useSmoothAnchors from "../../hooks/useSmoothAnchors";
+import { REVEAL_UP_CLS } from "../../hooks/_revealCls";
+import { useGatedNavigate } from "../../auth";
+import { getHomeContent, listEvents } from "../../data/store";
 import type {
   EventRecord,
   HeroImage,
@@ -16,7 +16,7 @@ import type {
   NewsItem,
   Partner,
   RoadmapItem,
-} from "../data/store";
+} from "../../data/store";
 
 const EMPTY_CONTENT: HomeContent = {
   news: [],

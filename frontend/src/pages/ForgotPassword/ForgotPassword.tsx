@@ -1,8 +1,8 @@
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useAuth } from "../auth";
-import OtpInput from "../components/auth/OtpInput";
+import { useAuth } from "../../auth";
+import OtpInput from "../../components/auth/OtpInput";
 import {
   BACK_CLS,
   CARD_CLS,
@@ -34,7 +34,7 @@ import {
   SUBMIT_CLS,
   SUBTITLE_CLS,
   TITLE_CLS,
-} from "./_authStyles";
+} from "../_authStyles";
 
 type Step = "form" | "verify" | "reset";
 

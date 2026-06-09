@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useRequireAuth } from "../auth";
-import UserMenu from "../components/UserMenu";
-import LanguageSwitcher from "../components/LanguageSwitcher";
-import { getMyOrder, type OrderRecord } from "../data/store";
+import { useRequireAuth } from "../../auth";
+import UserMenu from "../../components/UserMenu";
+import LanguageSwitcher from "../../components/LanguageSwitcher";
+import { getMyOrder, type OrderRecord } from "../../data/store";
 import {
   WATCH_BTN_CLS,
   WATCH_BTN_GHOST_CLS,
@@ -18,7 +18,7 @@ import {
   WATCH_TAB_CLS,
   WATCH_TABS_CLS,
   WATCH_USER_CLS,
-} from "./_watchStyles";
+} from "../_watchStyles";
 
 const PAY_LABEL: Record<string, string> = {
   qpay: "QPay",

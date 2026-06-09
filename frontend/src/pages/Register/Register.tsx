@@ -1,14 +1,14 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { AuthLayout, BackLink } from "../components/auth/AuthLayout";
-import { AuthCard, Divider } from "../components/auth/AuthCard";
-import { ButtonLink } from "../components/ui/Button";
+import { AuthLayout, BackLink } from "../../components/auth/AuthLayout";
+import { AuthCard, Divider } from "../../components/auth/AuthCard";
+import { ButtonLink } from "../../components/ui/Button";
 import {
   REG_TAB_CLS,
   REG_TABS_CLS,
   REG_TAB_LABEL_CLS,
   REG_TAB_SUB_CLS,
-} from "./_authStyles";
+} from "../_authStyles";
 
 export default function Register() {
   const { t } = useTranslation();

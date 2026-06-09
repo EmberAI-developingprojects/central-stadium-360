@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import LanguageSwitcher from "../components/LanguageSwitcher";
-import { getEvent } from "../data/store";
-import type { EventRecord } from "../data/store";
+import LanguageSwitcher from "../../components/LanguageSwitcher";
+import { getEvent } from "../../data/store";
+import type { EventRecord } from "../../data/store";
 
 const MONTHS_MN = [
   "1-р сар",

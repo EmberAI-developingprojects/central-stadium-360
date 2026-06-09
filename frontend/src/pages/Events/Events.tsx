@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import SiteHeader from "../components/SiteHeader";
-import SiteFooter from "../components/SiteFooter";
-import { listEvents } from "../data/store";
-import type { EventRecord } from "../data/store";
+import SiteHeader from "../../components/SiteHeader";
+import SiteFooter from "../../components/SiteFooter";
+import { listEvents } from "../../data/store";
+import type { EventRecord } from "../../data/store";
 
 const MONTHS_MN = [
   "1-р сар",

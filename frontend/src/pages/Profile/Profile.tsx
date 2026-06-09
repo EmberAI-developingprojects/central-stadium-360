@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { useAuth, useRequireAuth } from "../auth";
-import { api } from "../lib/api";
+import { useAuth, useRequireAuth } from "../../auth";
+import { api } from "../../lib/api";
 import {
   BACK_CLS,
   CARD_CLS,
@@ -21,8 +21,8 @@ import {
   REG_HINT_CLS,
   SUBMIT_CLS,
   TITLE_CLS,
-} from "./_authStyles";
-import { WATCH_PAGE_BG } from "./_watchStyles";
+} from "../_authStyles";
+import { WATCH_PAGE_BG } from "../_watchStyles";
 
 type AlertState = { kind: "error" | "ok"; msg: string } | null;
 
