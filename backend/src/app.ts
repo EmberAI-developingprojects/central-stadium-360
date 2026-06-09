@@ -18,7 +18,11 @@ const startedAt = Date.now();
 
 export const app = new Hono().basePath("/api");
 
-app.use("*", logger());
+const requestLogger = logger();
+app.use("*", async (c, next) => {
+  if (c.req.path === "/api/health") return next();
+  return requestLogger(c, next);
+});
 app.use(
   "*",
   cors({

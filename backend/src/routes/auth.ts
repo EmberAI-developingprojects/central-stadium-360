@@ -179,29 +179,52 @@ auth.post("/register/phone", async (c) => {
     );
   }
 
-  const { data: signUpData, error } = await supabase.auth.signUp({
-    phone,
-    password,
-    options: { data: { full_name: fullName } },
-  });
+  const trySignUp = () =>
+    supabase.auth.signUp({
+      phone,
+      password,
+      options: { data: { full_name: fullName } },
+    });
+
+  let { data: signUpData, error } = await trySignUp();
+
+  if (error && /already.*registered|already.*exists/i.test(error.message ?? "")) {
+    const admin = getSupabaseAdmin();
+    if (admin) {
+      const authUserId = await findAuthUserIdByPhone(admin, phone);
+      const publicUserId = await findUserIdByPhone(phone);
+
+      if (authUserId) {
+        const { data: authUser } =
+          await admin.auth.admin.getUserById(authUserId);
+        const isConfirmed = Boolean(authUser?.user?.phone_confirmed_at);
+        const isSoftDeleted = !publicUserId; // public.users either deleted or marked deleted
+
+        if (isConfirmed && !isSoftDeleted) {
+          return c.json(
+            { ok: false, error: "already_registered" } as const,
+            409,
+          );
+        }
+
+        // Stale / deleted auth user blocking re-registration → hard delete + retry.
+        const { error: delErr } =
+          await admin.auth.admin.deleteUser(authUserId);
+        if (delErr) {
+          console.error("[auth] cleanup deleteUser failed:", delErr);
+        } else {
+          console.log("[auth] cleaned up stale auth.users for", phone);
+          ({ data: signUpData, error } = await trySignUp());
+        }
+      }
+    }
+  }
 
   if (error) {
     const msg = error.message ?? "";
     console.warn("[auth] signUp phone error:", msg);
 
     if (/already.*registered|already.*exists/i.test(msg)) {
-      const admin = getSupabaseAdmin();
-      const existingUserId = await findUserIdByPhone(phone);
-      if (admin && existingUserId) {
-        const { data: authUser } =
-          await admin.auth.admin.getUserById(existingUserId);
-        if (authUser?.user?.phone_confirmed_at) {
-          return c.json(
-            { ok: false, error: "already_registered" } as const,
-            409,
-          );
-        }
-      }
       const { error: resendErr } = await supabase.auth.resend({
         type: "sms",
         phone,
@@ -513,6 +536,30 @@ async function findUserIdByPhone(phone: string): Promise<string | null> {
   return null;
 }
 
+async function findAuthUserIdByPhone(
+  admin: ReturnType<typeof getSupabaseAdmin> & object,
+  phone: string,
+): Promise<string | null> {
+  const candidates = [phone, phone.replace(/^\+/, "")];
+  for (let page = 1; page <= 5; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({
+      page,
+      perPage: 200,
+    });
+    if (error) {
+      console.error("[auth] listUsers error:", error);
+      return null;
+    }
+    const users = data?.users ?? [];
+    const match = users.find((u) =>
+      candidates.includes((u.phone ?? "").trim()),
+    );
+    if (match) return match.id;
+    if (users.length < 200) break;
+  }
+  return null;
+}
+
 auth.post("/forgot-password/send", async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const parsed = forgotSendSchema.safeParse(body);
@@ -697,16 +744,16 @@ auth.delete("/account", async (c) => {
     return c.json({ ok: false, error: "delete_failed" } as const, 502);
   }
 
-  const banUntil = new Date(
-    Date.now() + 100 * 365 * 24 * 60 * 60 * 1000,
-  ).toISOString();
-
-  const { error: banErr } = await admin.auth.admin.updateUserById(userId, {
-    ban_duration: "876000h",
-    user_metadata: { deleted_at: banUntil },
-  });
-  if (banErr) {
-    console.error("[auth] delete account ban:", banErr);
+  const { error: delErr } = await admin.auth.admin.deleteUser(userId);
+  if (delErr) {
+    console.error("[auth] delete auth.users failed:", delErr);
+    const banUntil = new Date(
+      Date.now() + 100 * 365 * 24 * 60 * 60 * 1000,
+    ).toISOString();
+    await admin.auth.admin.updateUserById(userId, {
+      ban_duration: "876000h",
+      user_metadata: { deleted_at: banUntil },
+    });
   }
 
   await sb.auth.signOut().catch(() => undefined);
