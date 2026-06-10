@@ -10,6 +10,7 @@ export async function hasValidTicketForEvent(
 ): Promise<boolean> {
   const admin = getSupabaseAdmin();
   if (!admin) return false;
+  const nowIso = new Date().toISOString();
   const { data, error } = await admin
     .from("tickets")
     .select("id")
@@ -17,6 +18,7 @@ export async function hasValidTicketForEvent(
     .eq("event_id", eventId)
     .eq("status", "paid")
     .in("ticket_type", ["live", "replay"])
+    .gt("access_expires_at", nowIso)
     .limit(1)
     .maybeSingle<{ id: string }>();
   if (error) {
@@ -32,6 +34,7 @@ export async function hasPaidTicket(
 ): Promise<boolean> {
   const admin = getSupabaseAdmin();
   if (!admin) return false;
+  const nowIso = new Date().toISOString();
   const { data, error } = await admin
     .from("tickets")
     .select("id")
@@ -39,6 +42,7 @@ export async function hasPaidTicket(
     .eq("event_id", eventId)
     .eq("status", "paid")
     .eq("ticket_type", ticketType)
+    .gt("access_expires_at", nowIso)
     .limit(1)
     .maybeSingle<{ id: string }>();
   if (error) {
@@ -113,12 +117,23 @@ export async function reusePendingInvoice(
   }
 }
 
+const LIVE_ACCESS_WINDOW_DAYS = 30;
+
 export type CreateTicketInvoiceInput = {
   userId: string;
-  event: { id: string; title: string };
+  event: { id: string; title: string; live_end_at?: string | null };
   ticketType: TicketType;
   price: number;
 };
+
+function liveAccessExpiry(liveEndAtIso: string | null | undefined): string | null {
+  if (!liveEndAtIso) return null;
+  const end = new Date(liveEndAtIso).getTime();
+  if (Number.isNaN(end)) return null;
+  return new Date(
+    end + LIVE_ACCESS_WINDOW_DAYS * 24 * 60 * 60 * 1000,
+  ).toISOString();
+}
 
 export type CreateTicketInvoiceResult =
   | { ok: true; data: TicketCreateResponse }
@@ -148,6 +163,8 @@ export async function createTicketInvoice(
   }
 
   const ticketId = randomUUID();
+  const accessExpiresAt =
+    ticketType === "live" ? liveAccessExpiry(event.live_end_at) : null;
   const { error: insertErr } = await admin.from("tickets").insert({
     id: ticketId,
     user_id: userId,
@@ -155,6 +172,7 @@ export async function createTicketInvoice(
     status: "pending",
     ticket_type: ticketType,
     price,
+    access_expires_at: accessExpiresAt,
   });
   if (insertErr) {
     return { ok: false, error: "ticket_insert_failed", status: 500 };
@@ -193,6 +211,7 @@ export async function createTicketInvoice(
     qr_text: invoice.qr_text,
     qr_image: invoice.qr_image,
     urls: invoice.urls,
+    access_expires_at: accessExpiresAt,
   };
   return { ok: true, data };
 }

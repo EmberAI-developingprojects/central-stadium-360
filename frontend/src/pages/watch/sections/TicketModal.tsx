@@ -61,7 +61,9 @@ export function TicketModal({
   const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
   const [alert, setAlert] = useState("");
-  const [checkoutLabel, setCheckoutLabel] = useState<string>(t("ticket_purchase"));
+  const [checkoutLabel, setCheckoutLabel] = useState<string>(
+    t("ticket_purchase"),
+  );
   const [step, setStep] = useState<"form" | "qr" | "success">("form");
   const [invoice, setInvoice] = useState<TicketCreateResponse | null>(null);
   const [qrExpiresAt, setQrExpiresAt] = useState<number | null>(null);
@@ -73,10 +75,11 @@ export function TicketModal({
       : false,
   );
 
-  const { kind, price: total, ctaLabel } = useMemo(
-    () => resolveTicketKind(event, t),
-    [event, t],
-  );
+  const {
+    kind,
+    price: total,
+    ctaLabel,
+  } = useMemo(() => resolveTicketKind(event, t), [event, t]);
   const QR_TTL_MS = 10 * 60 * 1000;
 
   useEffect(() => {
@@ -254,8 +257,7 @@ export function TicketModal({
                         margin: 0,
                       }}
                     >
-                      Нөхөж үзэх хугацаа дууссан тул тасалбар авах
-                      боломжгүй.
+                      {t("ticket_replay_expired_note")}
                     </p>
                   </div>
                   <button
@@ -268,11 +270,27 @@ export function TicketModal({
                 </>
               ) : (
                 <>
+                  {kind === "replay" && (
+                    <div
+                      style={{
+                        background: "rgba(34,48,198,0.10)",
+                        border: "1px solid rgba(34,48,198,0.30)",
+                        borderRadius: 12,
+                        padding: "10px 14px",
+                        fontSize: 12.5,
+                        lineHeight: 1.5,
+                        color: "rgba(255,255,255,0.78)",
+                      }}
+                    >
+                      {t("vod_replay_modal_blurb")}
+                    </div>
+                  )}
+
                   <div className={`${TICKET_SECTION_CLS} ${TICKET_ROW_CLS}`}>
                     <div className={TICKET_TOTAL_WRAP_CLS}>
                       <span className={TICKET_SECTION_LABEL_CLS}>
                         {kind === "replay"
-                          ? "Нөхөж үзэх тасалбарын үнэ"
+                          ? t("ticket_replay_price_label")
                           : t("ticket_total_pay")}
                       </span>
                       <span className={TICKET_TOTAL_CLS}>{money(total)}</span>
@@ -316,7 +334,9 @@ export function TicketModal({
                     disabled={busy || total <= 0}
                   >
                     <span>
-                      {checkoutLabel === t("ticket_purchase") ? ctaLabel : checkoutLabel}
+                      {checkoutLabel === t("ticket_purchase")
+                        ? ctaLabel
+                        : checkoutLabel}
                     </span>
                     <svg
                       viewBox="0 0 24 24"
@@ -331,7 +351,9 @@ export function TicketModal({
                       <polyline points="12 5 19 12 12 19" />
                     </svg>
                   </button>
-                  <p className={TICKET_FINEPRINT_CLS}>{t("ticket_fineprint")}</p>
+                  <p className={TICKET_FINEPRINT_CLS}>
+                    {t("ticket_fineprint")}
+                  </p>
                 </>
               )}
             </div>
@@ -478,9 +500,7 @@ function resolveTicketKind(
   t: (k: string) => string,
 ): { kind: TicketKind; price: number; ctaLabel: string } {
   const now = Date.now();
-  const startMs = event.start_time
-    ? new Date(event.start_time).getTime()
-    : NaN;
+  const startMs = event.start_time ? new Date(event.start_time).getTime() : NaN;
 
   let endMs = NaN;
   if (event.live_end_at) {
@@ -503,24 +523,22 @@ function resolveTicketKind(
   const liveActive = Number.isNaN(endMs) ? true : now < endMs;
 
   if (liveActive) {
-    const price =
-      Number(event.live_price ?? 0) || event.base || 0;
+    const price = Number(event.live_price ?? 0) || event.base || 0;
     return { kind: "live", price, ctaLabel: t("ticket_purchase") };
   }
 
   if (!Number.isNaN(replayUntilMs) && now <= replayUntilMs) {
-    const price =
-      Number(event.replay_price ?? 0) || event.base || 0;
+    const price = Number(event.replay_price ?? 0);
     return {
       kind: "replay",
       price,
-      ctaLabel: "Нөхөж үзэх тасалбар авах",
+      ctaLabel: t("watch_replay_buy_cta"),
     };
   }
 
   return {
     kind: "expired",
     price: 0,
-    ctaLabel: "Нөхөж үзэх хугацаа дууссан",
+    ctaLabel: t("watch_replay_expired"),
   };
 }

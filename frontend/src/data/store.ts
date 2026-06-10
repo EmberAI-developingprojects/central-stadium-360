@@ -46,6 +46,7 @@ export type OrderRecord = {
   purchasedAt: string;
   status: OrderStatus;
   refundedAt?: string;
+  accessExpiresAt?: string | null;
   image?: string;
   date?: string;
   payment?: string;
@@ -154,6 +155,7 @@ function ticketToOrder(t: AdminTicketRow): OrderRecord {
     purchasedAt: t.paid_at || t.created_at,
     status: t.status === "refunded" ? "refunded" : "paid",
     refundedAt: t.refunded_at || undefined,
+    accessExpiresAt: t.access_expires_at,
     payment: "qpay",
     paymentName: "QPay",
   };
@@ -524,6 +526,7 @@ export async function listMyOrders(): Promise<OrderRecord[]> {
         purchasedAt: t.paid_at || t.created_at,
         status: t.status === "refunded" ? "refunded" : ("paid" as OrderStatus),
         refundedAt: t.refunded_at || undefined,
+        accessExpiresAt: t.access_expires_at,
         payment: "qpay",
         paymentName: "QPay",
         image: ev?.image || undefined,

@@ -45,7 +45,7 @@ tickets.post("/create", async (c) => {
 
   const { data: event, error: evErr } = await admin
     .from("events")
-    .select("id, title, status, price, live_price, replay_price")
+    .select("id, title, status, price, live_price, replay_price, live_end_at")
     .eq("id", event_id)
     .maybeSingle<{
       id: string;
@@ -54,6 +54,7 @@ tickets.post("/create", async (c) => {
       price: number;
       live_price: number;
       replay_price: number;
+      live_end_at: string | null;
     }>();
   if (evErr) {
     return c.json({ ok: false, error: "internal_error" } as const, 500);
@@ -96,7 +97,11 @@ tickets.post("/create", async (c) => {
 
   const res = await createTicketInvoice({
     userId: user.id,
-    event: { id: event.id, title: event.title },
+    event: {
+      id: event.id,
+      title: event.title,
+      live_end_at: event.live_end_at,
+    },
     ticketType: ticket_type,
     price,
   });

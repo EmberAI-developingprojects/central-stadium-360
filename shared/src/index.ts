@@ -156,6 +156,7 @@ export interface DbTicket {
   created_at: string;
   paid_at: string | null;
   refunded_at: string | null;
+  access_expires_at: string | null;
 }
 
 export interface DbRecording {
@@ -219,6 +220,7 @@ export interface TicketCreateResponse {
   qr_image: string;
   urls: QPayInvoiceLink[];
   reused?: boolean;
+  access_expires_at?: string | null;
 }
 
 export interface PaymentStatus {

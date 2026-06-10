@@ -35,10 +35,18 @@ payments.post("/qpay-callback", async (c) => {
 
   const { data: ticket, error: tErr } = await admin
     .from("tickets")
-    .select("id, status, qpay_invoice_id, price")
+    .select("id, status, qpay_invoice_id, price, ticket_type, access_expires_at")
     .eq("id", ticketId)
     .maybeSingle<
-      Pick<DbTicket, "id" | "status" | "qpay_invoice_id" | "price">
+      Pick<
+        DbTicket,
+        | "id"
+        | "status"
+        | "qpay_invoice_id"
+        | "price"
+        | "ticket_type"
+        | "access_expires_at"
+      >
     >();
   if (tErr) {
     return c.json({ ok: false, error: "internal_error" } as const, 500);
@@ -67,9 +75,21 @@ payments.post("/qpay-callback", async (c) => {
     return c.json({ ok: false, error: "underpaid" } as const, 409);
   }
 
+  const nowDate = new Date();
+  const nowIso = nowDate.toISOString();
+  const updatePatch: {
+    status: "paid";
+    paid_at: string;
+    access_expires_at?: string;
+  } = { status: "paid", paid_at: nowIso };
+  if (ticket.ticket_type === "replay" && !ticket.access_expires_at) {
+    updatePatch.access_expires_at = new Date(
+      nowDate.getTime() + 30 * 24 * 60 * 60 * 1000,
+    ).toISOString();
+  }
   const { data: updated, error: upErr } = await admin
     .from("tickets")
-    .update({ status: "paid", paid_at: new Date().toISOString() })
+    .update(updatePatch)
     .eq("id", ticketId)
     .eq("status", "pending")
     .select("id, status, paid_at")
@@ -107,12 +127,21 @@ statusRoute.get("/:invoiceId", async (c) => {
 
   const { data: ticket } = await admin
     .from("tickets")
-    .select("id, user_id, status, price, qpay_invoice_id, paid_at")
+    .select(
+      "id, user_id, status, price, qpay_invoice_id, paid_at, ticket_type, access_expires_at",
+    )
     .eq("qpay_invoice_id", invoiceId)
     .maybeSingle<
       Pick<
         DbTicket,
-        "id" | "user_id" | "status" | "price" | "qpay_invoice_id" | "paid_at"
+        | "id"
+        | "user_id"
+        | "status"
+        | "price"
+        | "qpay_invoice_id"
+        | "paid_at"
+        | "ticket_type"
+        | "access_expires_at"
       >
     >();
 
@@ -143,9 +172,21 @@ statusRoute.get("/:invoiceId", async (c) => {
   }
 
   if (isPaid(check) && check.paid_amount >= ticket.price) {
+    const nowDate = new Date();
+    const nowIso = nowDate.toISOString();
+    const updatePatch: {
+      status: "paid";
+      paid_at: string;
+      access_expires_at?: string;
+    } = { status: "paid", paid_at: nowIso };
+    if (ticket.ticket_type === "replay" && !ticket.access_expires_at) {
+      updatePatch.access_expires_at = new Date(
+        nowDate.getTime() + 30 * 24 * 60 * 60 * 1000,
+      ).toISOString();
+    }
     const { data: updated } = await admin
       .from("tickets")
-      .update({ status: "paid", paid_at: new Date().toISOString() })
+      .update(updatePatch)
       .eq("id", ticket.id)
       .eq("status", "pending")
       .select("paid_at")
