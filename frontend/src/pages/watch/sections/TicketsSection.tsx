@@ -41,20 +41,58 @@ type TicketCardProps = {
   ticket: OrderRecord;
   startTime: string | undefined;
   liveEndAt: string | null | undefined;
+  replayAvailableUntil: string | null | undefined;
   onWatch: () => void;
 };
 
-function TicketCard({ ticket: tk, startTime, liveEndAt, onWatch }: TicketCardProps) {
+const LIVE_FALLBACK_MS = 3 * 60 * 60 * 1000;
+const REPLAY_FALLBACK_DAYS = 30;
+type TicketKind = "live" | "replay" | "expired";
+
+function resolveKind(
+  startTime: string | undefined,
+  liveEndAt: string | null | undefined,
+  replayUntil: string | null | undefined,
+): TicketKind {
+  const now = Date.now();
+  const startMs = startTime ? new Date(startTime).getTime() : NaN;
+
+  let endMs = NaN;
+  if (liveEndAt) {
+    const v = new Date(liveEndAt).getTime();
+    if (!Number.isNaN(v)) endMs = v;
+  }
+  if (Number.isNaN(endMs) && !Number.isNaN(startMs)) {
+    endMs = startMs + LIVE_FALLBACK_MS;
+  }
+
+  if (Number.isNaN(endMs) || now < endMs) return "live";
+
+  let replayUntilMs = NaN;
+  if (replayUntil) {
+    const v = new Date(replayUntil).getTime();
+    if (!Number.isNaN(v)) replayUntilMs = v;
+  }
+  if (Number.isNaN(replayUntilMs)) {
+    replayUntilMs = endMs + REPLAY_FALLBACK_DAYS * 24 * 60 * 60 * 1000;
+  }
+
+  if (now <= replayUntilMs) return "replay";
+  return "expired";
+}
+
+function TicketCard({
+  ticket: tk,
+  startTime,
+  liveEndAt,
+  replayAvailableUntil,
+  onWatch,
+}: TicketCardProps) {
   const { t } = useTranslation();
   const { isLive, hasTime, days, hours, minutes, seconds } =
     useCountdown(startTime);
-  const inLiveWindow = (() => {
-    if (!isLive) return false;
-    if (!liveEndAt) return true;
-    const end = new Date(liveEndAt).getTime();
-    if (Number.isNaN(end)) return true;
-    return Date.now() < end;
-  })();
+  const kind = resolveKind(startTime, liveEndAt, replayAvailableUntil);
+  const inLiveWindow = isLive && kind === "live";
   const { streamLive, streamChecked } = useStreamLive(inLiveWindow);
   return (
     <article className={TICKET_STUB_CLS} data-code={tk.code}>
@@ -135,6 +173,39 @@ function TicketCard({ ticket: tk, startTime, liveEndAt, onWatch }: TicketCardPro
                 aria-hidden="true"
               />
               {t("watch_waiting_stream")}
+            </span>
+          )}
+          {kind === "replay" && (
+            <Link
+              to={`/watch/${tk.eventId}/vod`}
+              className={`${WATCH_BTN_CLS} ${WATCH_BTN_PRIMARY_CLS} ${TICKET_STUB_BTN_CLS}`}
+            >
+              <span
+                className="w-1.5 h-1.5 rounded-full bg-white flex-none"
+                aria-hidden="true"
+              />
+              Нөхөж үзэх
+            </Link>
+          )}
+          {kind === "expired" && (
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.12em",
+                color: "rgba(255,255,255,0.4)",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                flex: 1,
+              }}
+            >
+              <span
+                className="w-1.5 h-1.5 rounded-full bg-white/30 flex-none"
+                aria-hidden="true"
+              />
+              Нөхөж үзэх хугацаа дууссан
             </span>
           )}
           {!isLive && hasTime && (
@@ -235,6 +306,7 @@ export function TicketsSection({
                 ticket={tk}
                 startTime={ev?.start_time}
                 liveEndAt={ev?.live_end_at}
+                replayAvailableUntil={ev?.replay_available_until}
                 onWatch={onWatch}
               />
             );

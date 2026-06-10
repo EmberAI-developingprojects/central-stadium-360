@@ -254,7 +254,7 @@ export function TicketModal({
                         margin: 0,
                       }}
                     >
-                      Архивын хугацаа дууссан тул нөхөж үзэх тасалбар авах
+                      Нөхөж үзэх хугацаа дууссан тул тасалбар авах
                       боломжгүй.
                     </p>
                   </div>
@@ -521,6 +521,6 @@ function resolveTicketKind(
   return {
     kind: "expired",
     price: 0,
-    ctaLabel: "Архивын хугацаа дууссан",
+    ctaLabel: "Нөхөж үзэх хугацаа дууссан",
   };
 }

@@ -108,7 +108,7 @@ export function LiveSection({
                   className="w-1.5 h-1.5 rounded-full bg-white/30 shrink-0"
                   aria-hidden="true"
                 />
-                Архивын хугацаа дууссан
+                Нөхөж үзэх хугацаа дууссан
               </span>
             )}
 
@@ -140,7 +140,7 @@ export function LiveSection({
                   className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0"
                   aria-hidden="true"
                 />
-                Архив үзэх боломжтой
+                Нөхөж үзэх боломжтой
               </span>
             )}
 
@@ -150,7 +150,7 @@ export function LiveSection({
                   className="w-1.5 h-1.5 rounded-full bg-white/30 shrink-0"
                   aria-hidden="true"
                 />
-                Архивын хугацаа дууссан
+                Нөхөж үзэх хугацаа дууссан
               </span>
             )}
 
@@ -180,9 +180,7 @@ const LIVE_FALLBACK_MS = 3 * 60 * 60 * 1000;
 
 function resolveSaleKind(event: TicketModalEvent): SaleKind {
   const now = Date.now();
-  const startMs = event.start_time
-    ? new Date(event.start_time).getTime()
-    : NaN;
+  const startMs = event.start_time ? new Date(event.start_time).getTime() : NaN;
 
   let endMs = NaN;
   if (event.live_end_at) {

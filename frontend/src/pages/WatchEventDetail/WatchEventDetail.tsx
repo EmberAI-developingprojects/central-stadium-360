@@ -2,8 +2,42 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "../../components/LanguageSwitcher";
-import { getEvent } from "../../data/store";
+import { getEvent, listMyOrders } from "../../data/store";
 import type { EventRecord } from "../../data/store";
+import { useAuth } from "../../auth";
+
+const LIVE_FALLBACK_MS = 3 * 60 * 60 * 1000;
+const REPLAY_FALLBACK_DAYS = 30;
+
+type AccessKind = "live" | "replay" | "expired";
+
+function resolveAccessKind(ev: EventRecord): AccessKind {
+  const now = Date.now();
+  const startMs = ev.start_time ? new Date(ev.start_time).getTime() : NaN;
+
+  let endMs = NaN;
+  if (ev.live_end_at) {
+    const v = new Date(ev.live_end_at).getTime();
+    if (!Number.isNaN(v)) endMs = v;
+  }
+  if (Number.isNaN(endMs) && !Number.isNaN(startMs)) {
+    endMs = startMs + LIVE_FALLBACK_MS;
+  }
+
+  if (Number.isNaN(endMs) || now < endMs) return "live";
+
+  let replayUntil = NaN;
+  if (ev.replay_available_until) {
+    const v = new Date(ev.replay_available_until).getTime();
+    if (!Number.isNaN(v)) replayUntil = v;
+  }
+  if (Number.isNaN(replayUntil)) {
+    replayUntil = endMs + REPLAY_FALLBACK_DAYS * 24 * 60 * 60 * 1000;
+  }
+
+  if (now <= replayUntil) return "replay";
+  return "expired";
+}
 
 const MONTHS_MN = [
   "1-р сар",
@@ -52,11 +86,13 @@ const money = (n: number) => n.toLocaleString("en-US") + "₮";
 
 export default function WatchEventDetail() {
   const { t, i18n } = useTranslation();
+  const { session } = useAuth();
   const lang: "mn" | "en" = i18n.language === "en" ? "en" : "mn";
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [event, setEvent] = useState<EventRecord | null>(null);
   const [loading, setLoading] = useState(true);
+  const [ownsTicket, setOwnsTicket] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -66,10 +102,25 @@ export default function WatchEventDetail() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  useEffect(() => {
+    if (!id || !session?.identifier) {
+      setOwnsTicket(false);
+      return;
+    }
+    listMyOrders().then((orders) => {
+      setOwnsTicket(
+        orders.some((o) => o.eventId === id && o.status === "paid"),
+      );
+    });
+  }, [id, session?.identifier]);
+
   const dt = event ? fmtDate(event.start_time, lang) : null;
-  const isLive = event?.start_time
-    ? new Date(event.start_time).getTime() <= Date.now()
-    : false;
+  const access = event ? resolveAccessKind(event) : "live";
+  const startMs = event?.start_time
+    ? new Date(event.start_time).getTime()
+    : NaN;
+  const hasStarted = !Number.isNaN(startMs) && startMs <= Date.now();
+  const isLive = hasStarted && access === "live";
 
   return (
     <div className="min-h-screen bg-[#071526] text-white">
@@ -200,27 +251,63 @@ export default function WatchEventDetail() {
                 </div>
               )}
 
-              <Link
-                to="/watch"
-                className="flex items-center justify-center gap-2 w-full rounded-xl text-white font-bold text-[13px] sm:text-[14px] tracking-[0.1em] uppercase no-underline py-3.5 sm:py-4 px-5 sm:px-6 transition-colors bg-blue-600 hover:bg-blue-700"
-              >
-                {t("event_detail_buy")}
-                <svg
-                  width="15"
-                  height="15"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="shrink-0"
+              {ownsTicket ? (
+                access === "expired" ? (
+                  <div className="flex items-center justify-center gap-2 w-full rounded-xl text-white/55 font-bold text-[13px] sm:text-[14px] tracking-[0.1em] uppercase py-3.5 sm:py-4 px-5 sm:px-6 bg-white/[0.06] border border-white/10 cursor-not-allowed">
+                    Нөхөж хугацаа дууссан
+                  </div>
+                ) : (
+                  <Link
+                    to={
+                      access === "replay" ? `/watch/${event.id}/vod` : "/watch"
+                    }
+                    className="flex items-center justify-center gap-2 w-full rounded-xl text-white font-bold text-[13px] sm:text-[14px] tracking-[0.1em] uppercase no-underline py-3.5 sm:py-4 px-5 sm:px-6 transition-colors bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    <svg
+                      width="15"
+                      height="15"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="shrink-0"
+                    >
+                      <polygon points="5 3 19 12 5 21 5 3" />
+                    </svg>
+                    {access === "replay" ? "Нөхөж үзэх" : "Үзэх"}
+                  </Link>
+                )
+              ) : access === "expired" ? (
+                <div className="flex items-center justify-center gap-2 w-full rounded-xl text-white/55 font-bold text-[13px] sm:text-[14px] tracking-[0.1em] uppercase py-3.5 sm:py-4 px-5 sm:px-6 bg-white/[0.06] border border-white/10 cursor-not-allowed">
+                  Нөхөж хугацаа дууссан
+                </div>
+              ) : (
+                <Link
+                  to="/watch"
+                  className="flex items-center justify-center gap-2 w-full rounded-xl text-white font-bold text-[13px] sm:text-[14px] tracking-[0.1em] uppercase no-underline py-3.5 sm:py-4 px-5 sm:px-6 transition-colors bg-blue-600 hover:bg-blue-700"
                 >
-                  <path d="M2 9a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z" />
-                </svg>
-              </Link>
+                  {access === "replay"
+                    ? "Нөхөж үзэх тасалбар"
+                    : t("event_detail_buy")}
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="shrink-0"
+                  >
+                    <path d="M2 9a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z" />
+                  </svg>
+                </Link>
+              )}
 
-              {event.base > 0 && (
+              {!ownsTicket && event.base > 0 && (
                 <div className="text-[12px] sm:text-[13px] text-white/40 mt-2.5 text-center">
                   {money(event.base)}
                   {t("event_detail_starting_from")}
