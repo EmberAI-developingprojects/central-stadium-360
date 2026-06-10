@@ -69,6 +69,33 @@ function fmtDate(iso: string | null | undefined): string {
   });
 }
 
+const LIVE_FALLBACK_MS = 3 * 60 * 60 * 1000;
+
+function deriveEventStatus(ev: EventRecord): EventStatus {
+  const now = Date.now();
+  const startMs = ev.start_time ? new Date(ev.start_time).getTime() : NaN;
+
+  if (!Number.isNaN(startMs) && now < startMs) return "upcoming";
+
+  let endMs = NaN;
+  if (ev.live_end_at) {
+    const v = new Date(ev.live_end_at).getTime();
+    if (!Number.isNaN(v)) endMs = v;
+  }
+  if (Number.isNaN(endMs) && !Number.isNaN(startMs)) {
+    endMs = startMs + LIVE_FALLBACK_MS;
+  }
+
+  if (!Number.isNaN(endMs) && now < endMs) return "live";
+
+  if (ev.replay_available_until) {
+    const until = new Date(ev.replay_available_until).getTime();
+    if (!Number.isNaN(until) && now > until) return "expired";
+  }
+
+  return "ended";
+}
+
 function fmtDuration(secs: number | null | undefined): string {
   if (!secs || !Number.isFinite(secs)) return "—";
   const h = Math.floor(secs / 3600);
@@ -166,7 +193,7 @@ export default function EventDetail() {
     );
   }
 
-  const status = event.status;
+  const status = deriveEventStatus(event);
   const readyCount = recordings.filter((r) => r.status === "ready").length;
 
   return (
@@ -260,7 +287,10 @@ export default function EventDetail() {
         </header>
         <div className={CARD_BODY_CLS}>
           <dl className="grid gap-4 [grid-template-columns:repeat(2,minmax(0,1fr))] max-[640px]:[grid-template-columns:1fr]">
-            <DetailRow label="Шууд эхлэх" value={fmtDate(event.live_start_at)} />
+            <DetailRow
+              label="Шууд эхлэх"
+              value={fmtDate(event.live_start_at ?? event.start_time)}
+            />
             <DetailRow label="Шууд дуусах" value={fmtDate(event.live_end_at)} />
             <DetailRow
               label="Архивын хугацаа"

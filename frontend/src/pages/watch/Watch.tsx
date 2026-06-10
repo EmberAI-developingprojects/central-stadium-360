@@ -68,6 +68,10 @@ export default function Watch() {
       base: ev.base,
       start_time: ev.start_time,
       desc: ev.desc,
+      live_price: ev.live_price,
+      replay_price: ev.replay_price,
+      live_end_at: ev.live_end_at,
+      replay_available_until: ev.replay_available_until,
     };
   }, [events]);
 
