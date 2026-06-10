@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useState,
   type MouseEvent as ReactMouseEvent,
 } from "react";
@@ -60,9 +61,7 @@ export function TicketModal({
   const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
   const [alert, setAlert] = useState("");
-  const [checkoutLabel, setCheckoutLabel] = useState<string>(
-    t("ticket_purchase"),
-  );
+  const [checkoutLabel, setCheckoutLabel] = useState<string>(t("ticket_purchase"));
   const [step, setStep] = useState<"form" | "qr" | "success">("form");
   const [invoice, setInvoice] = useState<TicketCreateResponse | null>(null);
   const [qrExpiresAt, setQrExpiresAt] = useState<number | null>(null);
@@ -74,7 +73,10 @@ export function TicketModal({
       : false,
   );
 
-  const total = event.base;
+  const { kind, price: total, ctaLabel } = useMemo(
+    () => resolveTicketKind(event, t),
+    [event, t],
+  );
   const QR_TTL_MS = 10 * 60 * 1000;
 
   useEffect(() => {
@@ -93,7 +95,11 @@ export function TicketModal({
   }, []);
 
   const issueInvoice = useCallback(async (): Promise<boolean> => {
-    const res = await api.createTicket({ event_id: event.id });
+    if (kind === "expired") return false;
+    const res = await api.createTicket({
+      event_id: event.id,
+      ticket_type: kind,
+    });
     if (!res.ok) {
       setAlert(`${t("ticket_error")} (${res.error})`);
       return false;
@@ -101,7 +107,7 @@ export function TicketModal({
     setInvoice(res.data);
     setQrExpiresAt(Date.now() + QR_TTL_MS);
     return true;
-  }, [event.id, t, QR_TTL_MS]);
+  }, [event.id, kind, t, QR_TTL_MS]);
 
   const checkout = async () => {
     setAlert("");
@@ -231,66 +237,103 @@ export function TicketModal({
             </div>
 
             <div className={TICKET_MODAL_FORM_CLS}>
-              <div className={`${TICKET_SECTION_CLS} ${TICKET_ROW_CLS}`}>
-                <div className={TICKET_TOTAL_WRAP_CLS}>
-                  <span className={TICKET_SECTION_LABEL_CLS}>
-                    {t("ticket_total_pay")}
-                  </span>
-                  <span className={TICKET_TOTAL_CLS}>{money(total)}</span>
-                </div>
-              </div>
+              {kind === "expired" ? (
+                <>
+                  <div className={`${TICKET_SECTION_CLS}`}>
+                    <span
+                      className={TICKET_SECTION_LABEL_CLS}
+                      style={{ marginBottom: 6 }}
+                    >
+                      {ctaLabel}
+                    </span>
+                    <p
+                      style={{
+                        fontSize: 13,
+                        lineHeight: 1.55,
+                        color: "rgba(255,255,255,0.65)",
+                        margin: 0,
+                      }}
+                    >
+                      Архивын хугацаа дууссан тул нөхөж үзэх тасалбар авах
+                      боломжгүй.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className={`${WATCH_BTN_CLS} ${WATCH_BTN_GHOST_CLS} ${TICKET_CHECKOUT_CLS}`}
+                    onClick={onClose}
+                  >
+                    <span>{t("ticket_close")}</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className={`${TICKET_SECTION_CLS} ${TICKET_ROW_CLS}`}>
+                    <div className={TICKET_TOTAL_WRAP_CLS}>
+                      <span className={TICKET_SECTION_LABEL_CLS}>
+                        {kind === "replay"
+                          ? "Нөхөж үзэх тасалбарын үнэ"
+                          : t("ticket_total_pay")}
+                      </span>
+                      <span className={TICKET_TOTAL_CLS}>{money(total)}</span>
+                    </div>
+                  </div>
 
-              <div
-                className={TICKET_SECTION_CLS}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 12,
-                }}
-              >
-                <span
-                  className={TICKET_SECTION_LABEL_CLS}
-                  style={{ marginBottom: 0 }}
-                >
-                  {t("ticket_payment")}
-                </span>
-                <span
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 700,
-                    color: "rgba(255,255,255,0.85)",
-                  }}
-                >
-                  {t("ticket_qpay_label")}
-                </span>
-              </div>
+                  <div
+                    className={TICKET_SECTION_CLS}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 12,
+                    }}
+                  >
+                    <span
+                      className={TICKET_SECTION_LABEL_CLS}
+                      style={{ marginBottom: 0 }}
+                    >
+                      {t("ticket_payment")}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: "rgba(255,255,255,0.85)",
+                      }}
+                    >
+                      {t("ticket_qpay_label")}
+                    </span>
+                  </div>
 
-              <div className={TICKET_ALERT_CLS} hidden={!alert}>
-                {alert}
-              </div>
+                  <div className={TICKET_ALERT_CLS} hidden={!alert}>
+                    {alert}
+                  </div>
 
-              <button
-                type="button"
-                className={`${WATCH_BTN_CLS} ${WATCH_BTN_PRIMARY_CLS} ${TICKET_CHECKOUT_CLS}`}
-                onClick={checkout}
-                disabled={busy}
-              >
-                <span>{checkoutLabel}</span>
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.4"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                  <polyline points="12 5 19 12 12 19" />
-                </svg>
-              </button>
-              <p className={TICKET_FINEPRINT_CLS}>{t("ticket_fineprint")}</p>
+                  <button
+                    type="button"
+                    className={`${WATCH_BTN_CLS} ${WATCH_BTN_PRIMARY_CLS} ${TICKET_CHECKOUT_CLS}`}
+                    onClick={checkout}
+                    disabled={busy || total <= 0}
+                  >
+                    <span>
+                      {checkoutLabel === t("ticket_purchase") ? ctaLabel : checkoutLabel}
+                    </span>
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                      <polyline points="12 5 19 12 12 19" />
+                    </svg>
+                  </button>
+                  <p className={TICKET_FINEPRINT_CLS}>{t("ticket_fineprint")}</p>
+                </>
+              )}
             </div>
           </div>
         ) : step === "qr" && invoice ? (
@@ -423,4 +466,61 @@ export function TicketModal({
       </div>
     </div>
   );
+}
+
+type TicketKind = "live" | "replay" | "expired";
+
+const REPLAY_FALLBACK_DAYS = 30;
+const LIVE_FALLBACK_MS = 3 * 60 * 60 * 1000;
+
+function resolveTicketKind(
+  event: TicketModalEvent,
+  t: (k: string) => string,
+): { kind: TicketKind; price: number; ctaLabel: string } {
+  const now = Date.now();
+  const startMs = event.start_time
+    ? new Date(event.start_time).getTime()
+    : NaN;
+
+  let endMs = NaN;
+  if (event.live_end_at) {
+    const v = new Date(event.live_end_at).getTime();
+    if (!Number.isNaN(v)) endMs = v;
+  }
+  if (Number.isNaN(endMs) && !Number.isNaN(startMs)) {
+    endMs = startMs + LIVE_FALLBACK_MS;
+  }
+
+  let replayUntilMs = NaN;
+  if (event.replay_available_until) {
+    const v = new Date(event.replay_available_until).getTime();
+    if (!Number.isNaN(v)) replayUntilMs = v;
+  }
+  if (Number.isNaN(replayUntilMs) && !Number.isNaN(endMs)) {
+    replayUntilMs = endMs + REPLAY_FALLBACK_DAYS * 24 * 60 * 60 * 1000;
+  }
+
+  const liveActive = Number.isNaN(endMs) ? true : now < endMs;
+
+  if (liveActive) {
+    const price =
+      Number(event.live_price ?? 0) || event.base || 0;
+    return { kind: "live", price, ctaLabel: t("ticket_purchase") };
+  }
+
+  if (!Number.isNaN(replayUntilMs) && now <= replayUntilMs) {
+    const price =
+      Number(event.replay_price ?? 0) || event.base || 0;
+    return {
+      kind: "replay",
+      price,
+      ctaLabel: "Нөхөж үзэх тасалбар авах",
+    };
+  }
+
+  return {
+    kind: "expired",
+    price: 0,
+    ctaLabel: "Архивын хугацаа дууссан",
+  };
 }

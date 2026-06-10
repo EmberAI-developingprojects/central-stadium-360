@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import type { EventRecord, OrderRecord } from "../../../data/store";
 import { useCountdown } from "../hooks/useCountdown";
 import { useStreamLive } from "../hooks/useStreamLive";
-import { formatClock, money, pad2 } from "../utils";
+import { money, pad2 } from "../utils";
 import {
   TICKET_STUB_ACTIONS_CLS,
   TICKET_STUB_BARCODE_CLS,
@@ -40,14 +40,22 @@ type TicketsSectionProps = {
 type TicketCardProps = {
   ticket: OrderRecord;
   startTime: string | undefined;
+  liveEndAt: string | null | undefined;
   onWatch: () => void;
 };
 
-function TicketCard({ ticket: tk, startTime, onWatch }: TicketCardProps) {
+function TicketCard({ ticket: tk, startTime, liveEndAt, onWatch }: TicketCardProps) {
   const { t } = useTranslation();
-  const { now, isLive, hasTime, days, hours, minutes, seconds } =
+  const { isLive, hasTime, days, hours, minutes, seconds } =
     useCountdown(startTime);
-  const { streamLive, streamChecked } = useStreamLive(isLive);
+  const inLiveWindow = (() => {
+    if (!isLive) return false;
+    if (!liveEndAt) return true;
+    const end = new Date(liveEndAt).getTime();
+    if (Number.isNaN(end)) return true;
+    return Date.now() < end;
+  })();
+  const { streamLive, streamChecked } = useStreamLive(inLiveWindow);
   return (
     <article className={TICKET_STUB_CLS} data-code={tk.code}>
       <div className={TICKET_STUB_COVER_CLS}>
@@ -95,7 +103,7 @@ function TicketCard({ ticket: tk, startTime, onWatch }: TicketCardProps) {
           >
             {t("watch_details")}
           </Link>
-          {isLive && streamLive && (
+          {inLiveWindow && streamLive && (
             <button
               type="button"
               className={`${WATCH_BTN_CLS} ${WATCH_BTN_PRIMARY_CLS} ${TICKET_STUB_BTN_CLS}`}
@@ -108,47 +116,26 @@ function TicketCard({ ticket: tk, startTime, onWatch }: TicketCardProps) {
               {t("watch_watch_live")}
             </button>
           )}
-          {isLive && streamChecked && !streamLive && (
-            <div
+          {inLiveWindow && streamChecked && !streamLive && (
+            <span
               style={{
+                fontSize: 10,
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.12em",
+                color: "rgba(255,255,255,0.4)",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
                 flex: 1,
-                display: "flex",
-                flexDirection: "column",
-                gap: 2,
-                justifyContent: "center",
               }}
             >
               <span
-                style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.12em",
-                  color: "rgba(255,255,255,0.4)",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                }}
-              >
-                <span
-                  className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-live-blink flex-none"
-                  aria-hidden="true"
-                />
-                {t("watch_waiting_stream")}
-              </span>
-              <span
-                style={{
-                  fontSize: 18,
-                  fontWeight: 900,
-                  color: "#fff",
-                  fontVariantNumeric: "tabular-nums",
-                  letterSpacing: "-0.01em",
-                  lineHeight: 1,
-                }}
-              >
-                {formatClock(now)}
-              </span>
-            </div>
+                className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-live-blink flex-none"
+                aria-hidden="true"
+              />
+              {t("watch_waiting_stream")}
+            </span>
           )}
           {!isLive && hasTime && (
             <div
@@ -247,6 +234,7 @@ export function TicketsSection({
                 key={tk.code}
                 ticket={tk}
                 startTime={ev?.start_time}
+                liveEndAt={ev?.live_end_at}
                 onWatch={onWatch}
               />
             );

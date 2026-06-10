@@ -225,8 +225,10 @@ export const api = {
       startedAt: number | null;
     }>("GET", "/api/watch/status"),
 
-  createTicket: (input: { event_id: string }) =>
-    request<TicketCreateResponse>("POST", "/api/tickets/create", input),
+  createTicket: (input: {
+    event_id: string;
+    ticket_type?: "live" | "replay";
+  }) => request<TicketCreateResponse>("POST", "/api/tickets/create", input),
 
   getPaymentStatus: (invoiceId: string) =>
     request<PaymentStatus>(

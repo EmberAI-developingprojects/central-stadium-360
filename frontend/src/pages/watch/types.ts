@@ -8,6 +8,10 @@ export type TicketModalEvent = {
   base: number;
   start_time?: string;
   desc?: string;
+  live_price?: number;
+  replay_price?: number;
+  live_end_at?: string | null;
+  replay_available_until?: string | null;
 };
 
 export type ChatMessage = {

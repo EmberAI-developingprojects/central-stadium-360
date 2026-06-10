@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useCountdown } from "../hooks/useCountdown";
 import { useStreamLive } from "../hooks/useStreamLive";
 import { MONTHS_ABBR_EN } from "../constants";
-import { formatClock, pad2 } from "../utils";
+import { pad2 } from "../utils";
 import type { TicketModalEvent } from "../types";
 
 type LiveSectionProps = {
@@ -18,10 +18,14 @@ export function LiveSection({
   onWatch,
 }: LiveSectionProps) {
   const { t } = useTranslation();
-  const { now, isLive, hasTime, days, hours, minutes, seconds } = useCountdown(
+  const { isLive, hasTime, days, hours, minutes, seconds } = useCountdown(
     featuredEvent.start_time,
   );
-  const { streamLive, streamChecked } = useStreamLive(ownsFeatured && isLive);
+  const saleKind = resolveSaleKind(featuredEvent);
+  const inLiveWindow = isLive && saleKind === "live";
+  const { streamLive, streamChecked } = useStreamLive(
+    ownsFeatured && inLiveWindow,
+  );
   const d = featuredEvent.start_time
     ? new Date(featuredEvent.start_time)
     : null;
@@ -75,7 +79,7 @@ export function LiveSection({
               {t("watch_details")}
             </Link>
 
-            {!ownsFeatured && (
+            {!ownsFeatured && saleKind !== "expired" && (
               <button
                 type="button"
                 onClick={onWatch}
@@ -93,8 +97,19 @@ export function LiveSection({
                 >
                   <path d="M2 9a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z" />
                 </svg>
-                {t("watch_buy_ticket")}
+                {saleKind === "replay"
+                  ? "Нөхөж үзэх тасалбар"
+                  : t("watch_buy_ticket")}
               </button>
+            )}
+            {!ownsFeatured && saleKind === "expired" && (
+              <span className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-white/40">
+                <span
+                  className="w-1.5 h-1.5 rounded-full bg-white/30 shrink-0"
+                  aria-hidden="true"
+                />
+                Архивын хугацаа дууссан
+              </span>
             )}
 
             {ownsFeatured && !isLive && hasTime && (
@@ -109,22 +124,37 @@ export function LiveSection({
               </div>
             )}
 
-            {ownsFeatured && isLive && streamChecked && !streamLive && (
-              <div className="flex flex-col gap-[3px]">
-                <span className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-white/40">
-                  <span
-                    className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-live-blink shrink-0"
-                    aria-hidden="true"
-                  />
-                  {t("watch_waiting_stream")}
-                </span>
-                <span className="text-[28px] font-black text-white [font-variant-numeric:tabular-nums] tracking-[-0.02em] leading-none max-[420px]:text-[22px]">
-                  {formatClock(now)}
-                </span>
-              </div>
+            {ownsFeatured && inLiveWindow && streamChecked && !streamLive && (
+              <span className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-white/40">
+                <span
+                  className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-live-blink shrink-0"
+                  aria-hidden="true"
+                />
+                {t("watch_waiting_stream")}
+              </span>
             )}
 
-            {ownsFeatured && isLive && streamLive && (
+            {ownsFeatured && saleKind === "replay" && (
+              <span className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-white/60">
+                <span
+                  className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0"
+                  aria-hidden="true"
+                />
+                Архив үзэх боломжтой
+              </span>
+            )}
+
+            {ownsFeatured && saleKind === "expired" && (
+              <span className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-white/40">
+                <span
+                  className="w-1.5 h-1.5 rounded-full bg-white/30 shrink-0"
+                  aria-hidden="true"
+                />
+                Архивын хугацаа дууссан
+              </span>
+            )}
+
+            {ownsFeatured && inLiveWindow && streamLive && (
               <button
                 type="button"
                 onClick={onWatch}
@@ -142,4 +172,38 @@ export function LiveSection({
       </div>
     </section>
   );
+}
+
+type SaleKind = "live" | "replay" | "expired";
+const REPLAY_FALLBACK_DAYS = 30;
+const LIVE_FALLBACK_MS = 3 * 60 * 60 * 1000;
+
+function resolveSaleKind(event: TicketModalEvent): SaleKind {
+  const now = Date.now();
+  const startMs = event.start_time
+    ? new Date(event.start_time).getTime()
+    : NaN;
+
+  let endMs = NaN;
+  if (event.live_end_at) {
+    const v = new Date(event.live_end_at).getTime();
+    if (!Number.isNaN(v)) endMs = v;
+  }
+  if (Number.isNaN(endMs) && !Number.isNaN(startMs)) {
+    endMs = startMs + LIVE_FALLBACK_MS;
+  }
+
+  if (Number.isNaN(endMs) || now < endMs) return "live";
+
+  let replayUntilMs = NaN;
+  if (event.replay_available_until) {
+    const v = new Date(event.replay_available_until).getTime();
+    if (!Number.isNaN(v)) replayUntilMs = v;
+  }
+  if (Number.isNaN(replayUntilMs)) {
+    replayUntilMs = endMs + REPLAY_FALLBACK_DAYS * 24 * 60 * 60 * 1000;
+  }
+
+  if (now <= replayUntilMs) return "replay";
+  return "expired";
 }

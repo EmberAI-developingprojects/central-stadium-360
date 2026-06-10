@@ -77,6 +77,24 @@ function partsToIso(date: string, time: string): string {
   return localInputToIso(`${date}T${t}`);
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function daysBetween(fromIso: string | null, toIso: string | null): string {
+  if (!fromIso || !toIso) return "";
+  const from = new Date(fromIso).getTime();
+  const to = new Date(toIso).getTime();
+  if (Number.isNaN(from) || Number.isNaN(to)) return "";
+  const days = Math.round((to - from) / DAY_MS);
+  return days > 0 ? String(days) : "";
+}
+
+function addDaysIso(iso: string | null, days: number): string | null {
+  if (!iso) return null;
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return null;
+  return new Date(t + days * DAY_MS).toISOString();
+}
+
 const money = (n: number): string => n.toLocaleString("en-US") + "₮";
 
 const CARD_CLS =
@@ -466,6 +484,81 @@ export default function EventEdit() {
                 </div>
 
                 <div className={ADMIN_FIELD_CLS}>
+                  <label className="flex items-center gap-1.5">
+                    <svg
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                      className="text-zinc-400"
+                    >
+                      <rect x="3" y="4" width="18" height="18" rx="2" />
+                      <line x1="16" y1="2" x2="16" y2="6" />
+                      <line x1="8" y1="2" x2="8" y2="6" />
+                      <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                    Дуусах огноо, цаг
+                  </label>
+                  <div className="grid gap-3 [grid-template-columns:1.4fr_1fr] max-[480px]:[grid-template-columns:1fr]">
+                    <DatePicker
+                      id="evt-end-date"
+                      value={isoToDatePart(form.live_end_at ?? "")}
+                      onChange={(date) => {
+                        const iso = date
+                          ? partsToIso(
+                              date,
+                              isoToTimePart(form.live_end_at ?? ""),
+                            )
+                          : "";
+                        update({ live_end_at: iso || null });
+                      }}
+                      placeholder="yyyy.mm.dd"
+                      allowPast
+                    />
+                    <div className="relative">
+                      <input
+                        id="evt-end-time"
+                        type="time"
+                        value={isoToTimePart(form.live_end_at ?? "")}
+                        onChange={(e) => {
+                          const datePart = isoToDatePart(
+                            form.live_end_at ?? "",
+                          );
+                          if (!datePart) return;
+                          const iso = partsToIso(datePart, e.target.value);
+                          update({ live_end_at: iso || null });
+                        }}
+                        className="!pl-10 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                      />
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
+                      >
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                      </svg>
+                    </div>
+                  </div>
+                  <small className="text-zinc-500 text-[12px]">
+                    Шууд эфирийн дуусах товлосон цаг. Үүнээс хойш архивын
+                    цонх эхэлнэ.
+                  </small>
+                </div>
+
+                <div className={ADMIN_FIELD_CLS}>
                   <label
                     htmlFor="evt-desc"
                     className="flex items-center justify-between"
@@ -516,7 +609,81 @@ export default function EventEdit() {
               <div className={CARD_BODY_CLS}>
                 <div className={TWO_COL_CLS}>
                   <div className={ADMIN_FIELD_CLS}>
-                    <label htmlFor="evt-base">Үндсэн үнэ</label>
+                    <label htmlFor="evt-live-price">Шууд тасалбар (₮)</label>
+                    <input
+                      id="evt-live-price"
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      value={form.live_price || ""}
+                      onChange={(e) => {
+                        const v = Number(e.target.value) || 0;
+                        update({ live_price: v, base: v });
+                      }}
+                      placeholder="0"
+                      className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0"
+                    />
+                  </div>
+                  <div className={ADMIN_FIELD_CLS}>
+                    <label htmlFor="evt-replay-price">Нөхөж үзэх (₮)</label>
+                    <input
+                      id="evt-replay-price"
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      value={form.replay_price || ""}
+                      onChange={(e) =>
+                        update({
+                          replay_price: Number(e.target.value) || 0,
+                        })
+                      }
+                      placeholder="0"
+                      className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0"
+                    />
+                  </div>
+                </div>
+
+                <div className={ADMIN_FIELD_CLS}>
+                  <label htmlFor="evt-replay-days">
+                    Хэд хоногийн турш вэб-с нөхөж үзэх боломжтой?
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="evt-replay-days"
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      step={1}
+                      value={daysBetween(
+                        form.live_end_at,
+                        form.replay_available_until,
+                      )}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/[^0-9]/g, "");
+                        const n = raw === "" ? 0 : Number(raw);
+                        update({
+                          replay_available_until:
+                            n > 0 ? addDaysIso(form.live_end_at, n) : null,
+                        });
+                      }}
+                      placeholder="Хэд хоногийн турш нөхөж үзэх боломжтой өдрийн тоог оруул"
+                      className="!pr-16 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0"
+                      disabled={!form.live_end_at}
+                    />
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[12.5px] text-zinc-500">
+                      хоног
+                    </span>
+                  </div>
+                  {!form.live_end_at && (
+                    <small className="text-zinc-500 text-[12px]">
+                      Эхлээд "Дуусах огноо"-г сонгоно уу.
+                    </small>
+                  )}
+                </div>
+
+                <div className={TWO_COL_CLS}>
+                  <div className={ADMIN_FIELD_CLS}>
+                    <label htmlFor="evt-base">Үндсэн үнэ (legacy)</label>
                     <div className="relative">
                       <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[15px] font-semibold text-zinc-400 pointer-events-none">
                         ₮
