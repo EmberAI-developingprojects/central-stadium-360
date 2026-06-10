@@ -47,7 +47,7 @@ const statusLabel: Record<EventStatus, string> = {
   upcoming: "Удахгүй",
   live: "Шууд эфирт",
   ended: "Дууссан",
-  archived: "Архивлагдсан",
+  archived: "Нөхөж үзэх боломжтой",
   expired: "Хугацаа дууссан",
 };
 
@@ -259,7 +259,7 @@ export default function EventDetail() {
           </div>
         </div>
         <div className={STAT_CARD_CLS}>
-          <div className={STAT_LABEL_CLS}>Архив тасалбар</div>
+          <div className={STAT_LABEL_CLS}>Нөхөж үзэх тасалбар</div>
           <div className={STAT_VALUE_CLS}>{stats.replayCount}</div>
           <div className="text-[12px] text-zinc-500 mt-1">
             {money(event.replay_price)} / ширхэг
@@ -281,7 +281,7 @@ export default function EventDetail() {
           <div>
             <h3 className={CARD_HEAD_TITLE_CLS}>Дэлгэрэнгүй</h3>
             <p className={CARD_HEAD_DESC_CLS}>
-              Хуваарь, үнэ, архивын хугацаа.
+              Хуваарь, үнэ, нөхөж үзэх хугацаа.
             </p>
           </div>
         </header>
@@ -293,7 +293,7 @@ export default function EventDetail() {
             />
             <DetailRow label="Шууд дуусах" value={fmtDate(event.live_end_at)} />
             <DetailRow
-              label="Архивын хугацаа"
+              label="Нөхөж үзэх хугацаа"
               value={fmtDate(event.replay_available_until)}
             />
             <DetailRow label="Төлөв" value={statusLabel[status]} />

@@ -18,12 +18,12 @@
   "nav_contact": "Contact",
   "nav_technology": "Technology",
 
-  "archive_title": "Replay archive",
+  "archive_title": "Catch up",
   "archive_subtitle": "Past events in full — pick your camera angle and watch back.",
-  "archive_empty": "No archived events yet.",
+  "archive_empty": "No replays available yet.",
   "archive_loading": "Loading…",
-  "archive_watch_replay": "Watch replay",
-  "archive_buy_replay": "Buy replay",
+  "archive_watch_replay": "Watch again",
+  "archive_buy_replay": "Replay ticket",
   "archive_recordings_count": "{{count}} cameras",
 
   "vod_loading": "Loading…",

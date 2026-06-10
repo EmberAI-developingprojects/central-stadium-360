@@ -178,7 +178,7 @@ function ShellChrome({
         ) : (
           <Link
             to="/archive"
-            aria-label="Архив"
+            aria-label="Нөхөж үзэх"
             className="w-[38px] h-[38px] rounded-full text-white grid place-items-center bg-[rgba(255,255,255,0.08)] border border-solid border-[rgba(255,255,255,0.1)] no-underline [&_svg]:w-[18px] [&_svg]:h-[18px]"
           >
             <svg

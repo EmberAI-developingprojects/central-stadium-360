@@ -327,7 +327,7 @@ export default function EventsList() {
                 <th>Арга хэмжээ</th>
                 <th>Огноо</th>
                 <th>Төлөв</th>
-                <th style={{ textAlign: "right" }}>Шууд / Архив</th>
+                <th style={{ textAlign: "right" }}>Шууд / Нөхөж үзэх</th>
                 <th style={{ textAlign: "center" }}>Бичлэг</th>
                 <th style={{ textAlign: "center" }}>Зарагдсан</th>
                 <th style={{ textAlign: "center" }}>★</th>
