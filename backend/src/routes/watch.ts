@@ -182,7 +182,6 @@ watch.get("/status", requireUser, async (c) => {
   const prevStart = statusCache?.startedAt ?? null;
   let startedAt: number | null = null;
   if (live) startedAt = prevLive && prevStart ? prevStart : now;
-  console.log("[watch/status]", { live, startedAt, probes });
   statusCache = { live, checkedAt: now, startedAt, probes };
   return c.json({
     ok: true,

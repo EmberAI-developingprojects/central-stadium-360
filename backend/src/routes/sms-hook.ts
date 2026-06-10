@@ -96,7 +96,6 @@ hook.post("/sms-hook", async (c) => {
     });
     return c.json({ ok: true, data: result } as const);
   } catch (err) {
-    console.error("[sms-hook] dispatch failed:", err);
     return c.json(
       {
         ok: false,

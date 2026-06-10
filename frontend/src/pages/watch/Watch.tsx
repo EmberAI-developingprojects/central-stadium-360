@@ -193,12 +193,7 @@ export default function Watch() {
           }
         />
 
-        <UpcomingSection
-          events={events}
-          myTickets={myTickets}
-          onBuy={openTicketModal}
-          onWatch={openViewer}
-        />
+        <UpcomingSection events={events} myTickets={myTickets} />
 
         <TicketsSection
           tickets={myTickets}

@@ -134,11 +134,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (res.ok) {
         setSession(sessionFromSupabase(sb.user, res.data));
       } else if (res.status === 403 && res.error === "account_deleted") {
-        console.warn("[auth] /me reported account_deleted; signing out");
         await supabase!.auth.signOut().catch(() => undefined);
         if (!cancelled) setSession(null);
-      } else {
-        console.warn("[auth] /me failed:", res.error, "status:", res.status);
       }
     };
 

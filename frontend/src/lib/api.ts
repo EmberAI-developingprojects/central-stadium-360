@@ -8,9 +8,11 @@ import type {
   DbHomePartner,
   DbHomeRoadmap,
   DbHomeService,
+  DbRecording,
   DbTicket,
   EventInput,
   EventPatch,
+  EventStatus,
   HomeContentResponse,
   HomeContentSection,
   PaymentStatus,
@@ -109,6 +111,32 @@ export type WatchCam = {
   hlsUrl: string | null;
 };
 
+export type ArchivedEvent = {
+  id: string;
+  name: string;
+  date: string;
+  thumbnail_url: string | null;
+  replay_price: number;
+  recording_count: number;
+};
+
+export type VODEventDetail = {
+  id: string;
+  name: string;
+  date: string;
+  description: string | null;
+  thumbnail_url: string | null;
+  replay_price: number;
+  status: EventStatus;
+  has_access: boolean;
+  recordings: DbRecording[];
+};
+
+export type SignedRecordingUrl = {
+  url: string;
+  expires_at: string;
+};
+
 export const api = {
   registerPhone: (input: {
     fullName: string;
@@ -164,6 +192,27 @@ export const api = {
 
   listEvents: () => request<DbEvent[]>("GET", "/api/events"),
 
+  listArchivedEvents: () =>
+    request<ArchivedEvent[]>("GET", "/api/events/archived"),
+
+  getEventForVOD: (id: string) =>
+    request<VODEventDetail>(
+      "GET",
+      `/api/events/${encodeURIComponent(id)}/replay`,
+    ),
+
+  signRecordingUrl: (id: string) =>
+    request<SignedRecordingUrl>(
+      "POST",
+      `/api/recordings/${encodeURIComponent(id)}/sign-url`,
+    ),
+
+  buyReplay: (eventId: string) =>
+    request<TicketCreateResponse>(
+      "POST",
+      `/api/events/${encodeURIComponent(eventId)}/buy-replay`,
+    ),
+
   getHomeContent: () => request<HomeContentResponse>("GET", "/api/content"),
 
   getWatchToken: () =>
@@ -188,7 +237,11 @@ export const api = {
   listMyTickets: () => request<DbTicket[]>("GET", "/api/tickets/my"),
 
   admin: {
-    listEvents: () => request<DbEvent[]>("GET", "/api/admin/events"),
+    listEvents: () =>
+      request<(DbEvent & { recording_count: number })[]>(
+        "GET",
+        "/api/admin/events",
+      ),
     getEvent: (id: string) =>
       request<DbEvent>("GET", `/api/admin/events/${id}`),
     createEvent: (input: EventInput) =>
@@ -199,6 +252,28 @@ export const api = {
       request<{ id: string }>("DELETE", `/api/admin/events/${id}`),
     featureEvent: (id: string) =>
       request<DbEvent>("POST", `/api/admin/events/${id}/feature`),
+
+    listEventRecordings: (eventId: string) =>
+      request<DbRecording[]>(
+        "GET",
+        `/api/admin/events/${encodeURIComponent(eventId)}/recordings`,
+      ),
+    createRecording: (input: {
+      event_id: string;
+      camera_number: number;
+      channel_arn?: string | null;
+      s3_bucket?: string | null;
+      s3_key_prefix?: string | null;
+      master_playlist_path?: string | null;
+      duration_seconds?: number | null;
+      recording_started_at?: string | null;
+      recording_ended_at?: string | null;
+    }) => request<DbRecording>("POST", "/api/admin/recordings", input),
+    listChannelArns: () =>
+      request<{ camera_number: number; arn: string | null }[]>(
+        "GET",
+        "/api/admin/recordings/channel-arns",
+      ),
 
     replaceContentSection: (
       section: HomeContentSection,

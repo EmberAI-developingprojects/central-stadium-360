@@ -22,6 +22,13 @@ export type EventRecord = {
   base: number;
   featured: boolean;
   start_time: string;
+  status: import("@cs360/shared").EventStatus;
+  live_price: number;
+  replay_price: number;
+  live_start_at: string | null;
+  live_end_at: string | null;
+  replay_available_until: string | null;
+  thumbnail_url: string | null;
 };
 
 export type OrderStatus = "paid" | "refunded";
@@ -182,6 +189,13 @@ function dbToEvent(row: DbEvent): EventRecord {
     base: row.price,
     featured: row.featured,
     start_time: row.start_time,
+    status: row.status,
+    live_price: Number(row.live_price ?? 0),
+    replay_price: Number(row.replay_price ?? 0),
+    live_start_at: row.live_start_at,
+    live_end_at: row.live_end_at,
+    replay_available_until: row.replay_available_until,
+    thumbnail_url: row.thumbnail_url,
   };
 }
 
@@ -203,6 +217,13 @@ export async function listEvents(): Promise<EventRecord[]> {
   return rows.map(dbToEvent);
 }
 
+export type AdminEventRecord = EventRecord & { recording_count: number };
+
+export async function listAdminEvents(): Promise<AdminEventRecord[]> {
+  const rows = unwrap(await api.admin.listEvents());
+  return rows.map((r) => ({ ...dbToEvent(r), recording_count: r.recording_count }));
+}
+
 export async function getEvent(id: string): Promise<EventRecord | null> {
   const pub = await api.listEvents();
   if (!pub.ok) return null;
@@ -211,7 +232,7 @@ export async function getEvent(id: string): Promise<EventRecord | null> {
 }
 
 function toEventInput(input: EventInput) {
-  return {
+  const body: Record<string, unknown> = {
     title: (input.title ?? "").trim(),
     description: input.desc ?? null,
     start_time:
@@ -223,12 +244,29 @@ function toEventInput(input: EventInput) {
     image: input.image ?? null,
     featured: !!input.featured,
   };
+  if (input.live_price !== undefined)
+    body.live_price = Number(input.live_price) || 0;
+  if (input.replay_price !== undefined)
+    body.replay_price = Number(input.replay_price) || 0;
+  if (input.live_start_at !== undefined)
+    body.live_start_at = input.live_start_at;
+  if (input.live_end_at !== undefined) body.live_end_at = input.live_end_at;
+  if (input.replay_available_until !== undefined)
+    body.replay_available_until = input.replay_available_until;
+  if (input.thumbnail_url !== undefined)
+    body.thumbnail_url = input.thumbnail_url;
+  if (input.status !== undefined) body.status = input.status;
+  return body;
 }
 
 export async function createEvent(input: EventInput): Promise<EventRecord> {
   const payload = toEventInput(input);
   if (!payload.title) throw new Error("Гарчиг шаардлагатай.");
-  const row = unwrap(await api.admin.createEvent(payload));
+  const row = unwrap(
+    await api.admin.createEvent(
+      payload as unknown as import("@cs360/shared").EventInput,
+    ),
+  );
   return dbToEvent(row);
 }
 
@@ -243,6 +281,18 @@ export async function updateEvent(
   if (patch.featured !== undefined) body.featured = !!patch.featured;
   if (patch.base !== undefined) body.price = Number(patch.base) || 0;
   if (patch.start_time !== undefined) body.start_time = patch.start_time;
+  if (patch.live_price !== undefined)
+    body.live_price = Number(patch.live_price) || 0;
+  if (patch.replay_price !== undefined)
+    body.replay_price = Number(patch.replay_price) || 0;
+  if (patch.live_start_at !== undefined)
+    body.live_start_at = patch.live_start_at;
+  if (patch.live_end_at !== undefined) body.live_end_at = patch.live_end_at;
+  if (patch.replay_available_until !== undefined)
+    body.replay_available_until = patch.replay_available_until;
+  if (patch.thumbnail_url !== undefined)
+    body.thumbnail_url = patch.thumbnail_url;
+  if (patch.status !== undefined) body.status = patch.status;
   const row = unwrap(await api.admin.updateEvent(id, body));
   return dbToEvent(row);
 }

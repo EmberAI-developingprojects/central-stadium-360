@@ -3,6 +3,7 @@ import type {
   AdminTicketRow,
   AdminTicketStats,
   TicketStatus,
+  TicketType,
 } from "@cs360/shared";
 import { getSupabaseAdmin } from "../lib/supabase";
 import {
@@ -22,6 +23,7 @@ type RawTicketRow = {
   user_id: string;
   event_id: string;
   status: TicketStatus;
+  ticket_type: TicketType;
   price: number;
   qpay_invoice_id: string | null;
   created_at: string;
@@ -36,7 +38,7 @@ type RawTicketRow = {
 };
 
 const SELECT_COLS = `
-  id,user_id,event_id,status,price,qpay_invoice_id,created_at,paid_at,refunded_at,
+  id,user_id,event_id,status,ticket_type,price,qpay_invoice_id,created_at,paid_at,refunded_at,
   users:users(email,phone,full_name),
   events:events(title)
 `.replace(/\s+/g, "");
@@ -47,6 +49,7 @@ function toRow(r: RawTicketRow): AdminTicketRow {
     user_id: r.user_id,
     event_id: r.event_id,
     status: r.status,
+    ticket_type: r.ticket_type,
     price: r.price,
     qpay_invoice_id: r.qpay_invoice_id,
     created_at: r.created_at,
@@ -86,7 +89,6 @@ adminTickets.get("/", async (c) => {
 
   const { data, error } = await query;
   if (error) {
-    console.error("[admin-tickets] list:", error);
     return c.json({ ok: false, error: error.message } as const, 500);
   }
 
@@ -106,7 +108,6 @@ adminTickets.get("/stats", async (c) => {
     .from("tickets")
     .select("status,price,event_id,paid_at,created_at");
   if (error) {
-    console.error("[admin-tickets] stats:", error);
     return c.json({ ok: false, error: error.message } as const, 500);
   }
   const rows = (data ?? []) as {
@@ -161,7 +162,6 @@ adminTickets.get("/:id", async (c) => {
     .eq("id", id)
     .maybeSingle();
   if (error) {
-    console.error("[admin-tickets] get:", error);
     return c.json({ ok: false, error: error.message } as const, 500);
   }
   if (!data) return c.json({ ok: false, error: "not_found" } as const, 404);
@@ -183,7 +183,6 @@ adminTickets.post("/:id/refund", async (c) => {
     .eq("id", id)
     .maybeSingle<{ id: string; status: TicketStatus }>();
   if (selErr) {
-    console.error("[admin-tickets] refund select:", selErr);
     return c.json({ ok: false, error: selErr.message } as const, 500);
   }
   if (!existing)
@@ -200,7 +199,6 @@ adminTickets.post("/:id/refund", async (c) => {
     })
     .eq("id", id);
   if (updErr) {
-    console.error("[admin-tickets] refund update:", updErr);
     return c.json({ ok: false, error: updErr.message } as const, 500);
   }
 
@@ -224,7 +222,6 @@ adminTickets.delete("/:id", async (c) => {
   const id = c.req.param("id");
   const { error } = await admin.from("tickets").delete().eq("id", id);
   if (error) {
-    console.error("[admin-tickets] delete:", error);
     return c.json({ ok: false, error: error.message } as const, 500);
   }
   return c.json({ ok: true, data: { id } } as const);
