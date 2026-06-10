@@ -38,6 +38,13 @@ const EMPTY: EventRecord = {
   base: 0,
   featured: false,
   start_time: "",
+  status: "upcoming",
+  live_price: 0,
+  replay_price: 0,
+  live_start_at: null,
+  live_end_at: null,
+  replay_available_until: null,
+  thumbnail_url: null,
 };
 
 function isoToLocalInput(iso: string): string {
@@ -89,17 +96,31 @@ const CARD_BODY_CLS = "p-6 flex flex-col gap-5";
 const TWO_COL_CLS =
   "grid gap-5 [grid-template-columns:repeat(2,minmax(0,1fr))] max-[760px]:[grid-template-columns:1fr]";
 
-function daysUntil(iso: string): string | null {
+type TimingStatus = {
+  isPast: boolean;
+  label: string;
+};
+
+function timingStatus(iso: string): TimingStatus | null {
   if (!iso) return null;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
   const diffMs = d.getTime() - Date.now();
-  if (diffMs <= 0) return "Эхэлсэн / өнгөрсөн";
+  if (diffMs <= 0) {
+    const past = -diffMs;
+    const days = Math.floor(past / (24 * 60 * 60 * 1000));
+    const hours = Math.floor((past % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+    if (days > 0)
+      return { isPast: true, label: `${days} өдөр ${hours} цагийн өмнө` };
+    const minutes = Math.floor((past % (60 * 60 * 1000)) / (60 * 1000));
+    return { isPast: true, label: `${hours} цаг ${minutes} минутын өмнө` };
+  }
   const days = Math.floor(diffMs / (24 * 60 * 60 * 1000));
   const hours = Math.floor((diffMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
-  if (days > 0) return `${days} өдөр ${hours} цагийн дараа`;
+  if (days > 0)
+    return { isPast: false, label: `${days} өдөр ${hours} цагийн дараа` };
   const minutes = Math.floor((diffMs % (60 * 60 * 1000)) / (60 * 1000));
-  return `${hours} цаг ${minutes} минутын дараа`;
+  return { isPast: false, label: `${hours} цаг ${minutes} минутын дараа` };
 }
 
 export default function EventEdit() {
@@ -365,6 +386,7 @@ export default function EventEdit() {
                       }
                       placeholder="yyyy.mm.dd"
                       required
+                      allowPast
                     />
                     <div className="relative">
                       <input
@@ -398,32 +420,49 @@ export default function EventEdit() {
                       </svg>
                     </div>
                   </div>
-                  {startsAtLabel && (
-                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                      <span className="inline-flex items-center gap-1 py-0.5 px-2 rounded-full bg-zinc-100 text-zinc-700 text-[11.5px] font-medium">
-                        {startsAtLabel}
-                      </span>
-                      {daysUntil(form.start_time) && (
-                        <span className="inline-flex items-center gap-1 py-0.5 px-2 rounded-full bg-brand-blue-tint text-brand-blue text-[11.5px] font-medium">
-                          <svg
-                            width="10"
-                            height="10"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            aria-hidden="true"
-                          >
-                            <circle cx="12" cy="12" r="10" />
-                            <polyline points="12 6 12 12 16 14" />
-                          </svg>
-                          {daysUntil(form.start_time)}
-                        </span>
-                      )}
-                    </div>
-                  )}
+                  {startsAtLabel &&
+                    (() => {
+                      const status = timingStatus(form.start_time);
+                      return (
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                          <span className="inline-flex items-center gap-1 py-0.5 px-2 rounded-full bg-zinc-100 text-zinc-700 text-[11.5px] font-medium">
+                            {startsAtLabel}
+                          </span>
+                          {status && (
+                            <span
+                              className={
+                                status.isPast
+                                  ? "inline-flex items-center gap-1 py-0.5 px-2 rounded-full bg-zinc-200 text-zinc-700 text-[11.5px] font-semibold"
+                                  : "inline-flex items-center gap-1 py-0.5 px-2 rounded-full bg-emerald-50 text-emerald-700 text-[11.5px] font-semibold"
+                              }
+                            >
+                              {status.isPast
+                                ? "Өнгөрсөн арга хэмжээ"
+                                : "Удахгүй болох"}
+                            </span>
+                          )}
+                          {status && (
+                            <span className="inline-flex items-center gap-1 py-0.5 px-2 rounded-full bg-brand-blue-tint text-brand-blue text-[11.5px] font-medium">
+                              <svg
+                                width="10"
+                                height="10"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                aria-hidden="true"
+                              >
+                                <circle cx="12" cy="12" r="10" />
+                                <polyline points="12 6 12 12 16 14" />
+                              </svg>
+                              {status.label}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
                 </div>
 
                 <div className={ADMIN_FIELD_CLS}>

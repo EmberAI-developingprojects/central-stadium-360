@@ -210,10 +210,7 @@ auth.post("/register/phone", async (c) => {
         // Stale / deleted auth user blocking re-registration → hard delete + retry.
         const { error: delErr } =
           await admin.auth.admin.deleteUser(authUserId);
-        if (delErr) {
-          console.error("[auth] cleanup deleteUser failed:", delErr);
-        } else {
-          console.log("[auth] cleaned up stale auth.users for", phone);
+        if (!delErr) {
           ({ data: signUpData, error } = await trySignUp());
         }
       }
@@ -222,7 +219,6 @@ auth.post("/register/phone", async (c) => {
 
   if (error) {
     const msg = error.message ?? "";
-    console.warn("[auth] signUp phone error:", msg);
 
     if (/already.*registered|already.*exists/i.test(msg)) {
       const { error: resendErr } = await supabase.auth.resend({
@@ -280,7 +276,6 @@ auth.post("/register/email", async (c) => {
     if (/already.*registered|already.*exists/i.test(error.message ?? "")) {
       return c.json({ ok: false, error: "already_registered" } as const, 409);
     }
-    console.error("[auth] signUp email:", error);
     return c.json(
       { ok: false, error: error.message ?? "signup_failed" } as const,
       502,
@@ -447,7 +442,6 @@ auth.post("/resend-code", async (c) => {
       phone: cls.value,
     });
     if (error) {
-      console.error("[auth] resend sms:", error);
       return c.json(
         { ok: false, error: error.message ?? "resend_failed" } as const,
         502,
@@ -463,7 +457,6 @@ auth.post("/resend-code", async (c) => {
       options: { emailRedirectTo: redirectTo },
     });
     if (error) {
-      console.error("[auth] resend email:", error);
       return c.json(
         { ok: false, error: error.message ?? "resend_failed" } as const,
         502,
@@ -547,7 +540,6 @@ async function findAuthUserIdByPhone(
       perPage: 200,
     });
     if (error) {
-      console.error("[auth] listUsers error:", error);
       return null;
     }
     const users = data?.users ?? [];
@@ -588,7 +580,6 @@ auth.post("/forgot-password/send", async (c) => {
   try {
     await sendSms({ phone, otp });
   } catch (err) {
-    console.error("[auth] forgot send sms:", err);
     return c.json(
       { ok: false, error: (err as Error).message ?? "send_failed" } as const,
       502,
@@ -639,7 +630,6 @@ auth.post("/forgot-password/reset", async (c) => {
     password,
   });
   if (updErr) {
-    console.error("[auth] forgot reset update:", updErr);
     return c.json(
       { ok: false, error: updErr.message ?? "reset_failed" } as const,
       502,
@@ -740,13 +730,11 @@ auth.delete("/account", async (c) => {
     })
     .eq("id", userId);
   if (dbErr) {
-    console.error("[auth] delete account update:", dbErr);
     return c.json({ ok: false, error: "delete_failed" } as const, 502);
   }
 
   const { error: delErr } = await admin.auth.admin.deleteUser(userId);
   if (delErr) {
-    console.error("[auth] delete auth.users failed:", delErr);
     const banUntil = new Date(
       Date.now() + 100 * 365 * 24 * 60 * 60 * 1000,
     ).toISOString();

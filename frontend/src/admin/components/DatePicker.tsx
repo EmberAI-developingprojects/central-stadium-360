@@ -8,6 +8,7 @@ type Props = {
   id?: string;
   required?: boolean;
   className?: string;
+  allowPast?: boolean;
 };
 
 const WEEKDAYS = ["Дав", "Мяг", "Лха", "Пүр", "Баа", "Бям", "Ням"];
@@ -62,6 +63,7 @@ export default function DatePicker({
   id,
   required,
   className,
+  allowPast = false,
 }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -171,7 +173,7 @@ export default function DatePicker({
   const todayYmd = toYmd(today);
 
   const pick = (d: Date) => {
-    if (d.getTime() < today.getTime()) return;
+    if (!allowPast && d.getTime() < today.getTime()) return;
     onChange(toYmd(d));
     setOpen(false);
   };
@@ -275,23 +277,26 @@ export default function DatePicker({
               const isToday = ymd === todayYmd;
               const isWeekend = idx % 7 >= 5;
               const isPast = cell.date.getTime() < today.getTime();
+              const disabled = isPast && !allowPast;
               return (
                 <button
                   key={ymd}
                   type="button"
                   onClick={() => pick(cell.date)}
-                  disabled={isPast}
-                  aria-disabled={isPast}
+                  disabled={disabled}
+                  aria-disabled={disabled}
                   className={`h-9 grid place-items-center text-[13px] rounded-md tabular-nums transition-all ${
-                    isPast
+                    disabled
                       ? "text-zinc-300 cursor-not-allowed line-through decoration-zinc-200"
                       : isSelected
                         ? "bg-brand-blue text-white font-semibold shadow-[0_4px_10px_-4px_rgba(34,48,198,0.6)]"
                         : isToday
                           ? "bg-brand-blue-tint text-brand-blue font-semibold hover:bg-brand-blue/15"
-                          : isWeekend
-                            ? "text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900"
-                            : "text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900"
+                          : isPast
+                            ? "text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
+                            : isWeekend
+                              ? "text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900"
+                              : "text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900"
                   }`}
                 >
                   {cell.day}

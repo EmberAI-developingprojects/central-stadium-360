@@ -50,7 +50,6 @@ adminUploads.post("/image", async (c) => {
     upsert: false,
   });
   if (error) {
-    console.error("[admin-uploads] upload failed:", error);
     return c.json({ ok: false, error: error.message } as const, 500);
   }
 

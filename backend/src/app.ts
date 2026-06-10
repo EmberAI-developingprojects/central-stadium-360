@@ -12,6 +12,8 @@ import adminContent, { publicContent } from "./routes/admin-content";
 import adminUsers from "./routes/admin-users";
 import adminUploads from "./routes/admin-uploads";
 import adminTickets from "./routes/admin-tickets";
+import adminRecordings from "./routes/admin-recordings";
+import recordings from "./routes/recordings";
 import watch from "./routes/watch";
 
 const startedAt = Date.now();
@@ -41,6 +43,8 @@ app.route("/admin/content", adminContent);
 app.route("/admin/users", adminUsers);
 app.route("/admin/uploads", adminUploads);
 app.route("/admin/tickets", adminTickets);
+app.route("/admin/recordings", adminRecordings);
+app.route("/recordings", recordings);
 app.route("/content", publicContent);
 app.route("/watch", watch);
 
@@ -55,8 +59,7 @@ app.get("/health", (c) => {
 
 app.notFound((c) => c.json({ ok: false, error: "not_found" }, 404));
 
-app.onError((err, c) => {
-  console.error(err);
+app.onError((_err, c) => {
   return c.json({ ok: false, error: "internal_error" }, 500);
 });
 

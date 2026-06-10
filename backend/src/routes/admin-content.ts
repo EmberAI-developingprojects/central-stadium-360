@@ -138,7 +138,6 @@ adminContent.put("/:section", async (c) => {
       .upsert(rows, { onConflict: "slot" })
       .select("slot,image_url,alt");
     if (error) {
-      console.error("[admin-content] upsert home_hero failed:", error);
       return c.json({ ok: false, error: error.message } as const, 500);
     }
     return c.json({ ok: true, data: data ?? [] } as const);
@@ -149,7 +148,6 @@ adminContent.put("/:section", async (c) => {
     .delete()
     .not("id", "is", null);
   if (delErr) {
-    console.error(`[admin-content] wipe ${table} failed:`, delErr);
     return c.json({ ok: false, error: delErr.message } as const, 500);
   }
 
@@ -185,7 +183,6 @@ adminContent.put("/:section", async (c) => {
   }
 
   if (insErr) {
-    console.error(`[admin-content] insert ${table} failed:`, insErr);
     return c.json({ ok: false, error: insErr.message } as const, 500);
   }
   return c.json({ ok: true, data: data ?? [] } as const);
@@ -250,16 +247,8 @@ publicContent.get("/", async (c) => {
 
   for (const r of [news, partners, roadmap, services]) {
     if (r.error) {
-      console.error("[content] select failed:", r.error);
       return c.json({ ok: false, error: r.error.message } as const, 500);
     }
-  }
-
-  if (hero.error) {
-    console.warn(
-      "[content] home_hero query failed (migration pending?):",
-      hero.error.message,
-    );
   }
 
   const newsNormalized: DbHomeNews[] = (news.data ?? []).map((r) => ({

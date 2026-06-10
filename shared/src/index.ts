@@ -10,8 +10,15 @@ export interface HealthResponse {
 }
 
 export type UserRole = "user" | "admin";
-export type EventStatus = "upcoming" | "live" | "ended";
+export type EventStatus =
+  | "upcoming"
+  | "live"
+  | "ended"
+  | "archived"
+  | "expired";
 export type TicketStatus = "pending" | "paid" | "cancelled" | "refunded";
+export type TicketType = "live" | "replay";
+export type RecordingStatus = "recording" | "processing" | "ready" | "expired";
 
 export interface DbUser {
   id: string;
@@ -34,6 +41,12 @@ export interface DbEvent {
   status: EventStatus;
   start_time: string;
   price: number;
+  live_price: number;
+  replay_price: number;
+  live_start_at: string | null;
+  live_end_at: string | null;
+  replay_available_until: string | null;
+  thumbnail_url: string | null;
   image: string | null;
   featured: boolean;
   created_at: string;
@@ -45,6 +58,12 @@ export type EventInput = {
   status?: EventStatus;
   start_time: string;
   price: number;
+  live_price?: number;
+  replay_price?: number;
+  live_start_at?: string | null;
+  live_end_at?: string | null;
+  replay_available_until?: string | null;
+  thumbnail_url?: string | null;
   image?: string | null;
   featured?: boolean;
 };
@@ -131,12 +150,30 @@ export interface DbTicket {
   user_id: string;
   event_id: string;
   status: TicketStatus;
+  ticket_type: TicketType;
   price: number;
   qpay_invoice_id: string | null;
   created_at: string;
   paid_at: string | null;
   refunded_at: string | null;
 }
+
+export interface DbRecording {
+  id: string;
+  event_id: string;
+  camera_number: number;
+  channel_arn: string | null;
+  s3_bucket: string | null;
+  s3_key_prefix: string | null;
+  master_playlist_path: string | null;
+  duration_seconds: number | null;
+  recording_started_at: string | null;
+  recording_ended_at: string | null;
+  status: RecordingStatus;
+  created_at: string;
+}
+
+export type Recording = DbRecording;
 
 export interface AdminTicketRow extends DbTicket {
   user_email: string | null;
@@ -181,6 +218,7 @@ export interface TicketCreateResponse {
   qr_text: string;
   qr_image: string;
   urls: QPayInvoiceLink[];
+  reused?: boolean;
 }
 
 export interface PaymentStatus {

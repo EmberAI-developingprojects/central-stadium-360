@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   deleteEvent,
-  listEvents,
+  listAdminEvents,
   listOrders,
   setFeaturedEvent,
 } from "../../data/store";
-import type { EventRecord } from "../../data/store";
+import type { AdminEventRecord } from "../../data/store";
+import type { EventStatus } from "@cs360/shared";
 import { useConfirm } from "../components/ConfirmDialog";
 import { useToast } from "../components/Toast";
 import {
@@ -19,23 +20,46 @@ import {
   ADMIN_TABLE_WRAP_CLS,
 } from "../_adminStyles";
 
-type StatusKind = "live" | "upcoming" | "past";
-type StatusFilter = "all" | StatusKind;
+type StatusKind = EventStatus;
+type StatusFilter = "all" | "live" | "upcoming" | "ended" | "archived";
+
+const matchesFilter = (status: StatusKind, filter: StatusFilter): boolean => {
+  if (filter === "all") return true;
+  if (filter === "ended") return status === "ended" || status === "expired";
+  return status === filter;
+};
 
 const money = (n: number | undefined): string =>
   (n || 0).toLocaleString("en-US") + "₮";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-function computeStatus(startIso: string | undefined): StatusKind {
-  if (!startIso) return "upcoming";
-  const start = new Date(startIso).getTime();
-  if (Number.isNaN(start)) return "upcoming";
+function deriveStatus(event: AdminEventRecord): StatusKind {
   const now = Date.now();
-  if (now < start) return "upcoming";
+  const startIso = event.start_time;
+  const start = startIso ? new Date(startIso).getTime() : NaN;
 
-  if (now - start < 3 * 60 * 60 * 1000) return "live";
-  return "past";
+  if (!Number.isNaN(start) && now < start) return "upcoming";
+
+  let endMs: number | null = null;
+  if (event.live_end_at) {
+    const e = new Date(event.live_end_at).getTime();
+    if (!Number.isNaN(e)) endMs = e;
+  }
+  if (endMs === null && !Number.isNaN(start)) {
+    endMs = start + 3 * 60 * 60 * 1000;
+  }
+
+  if (endMs !== null && now < endMs) return "live";
+
+  if (event.replay_available_until) {
+    const until = new Date(event.replay_available_until).getTime();
+    if (!Number.isNaN(until) && now > until) return "expired";
+  }
+
+  if (event.recording_count > 0) return "archived";
+
+  return "ended";
 }
 
 function formatDate(startIso: string | undefined, fallback: string): {
@@ -59,7 +83,7 @@ function formatDate(startIso: string | undefined, fallback: string): {
 }
 
 function relativeFrom(startIso: string | undefined, status: StatusKind): string {
-  if (!startIso || status === "past") return "";
+  if (!startIso || status === "ended" || status === "archived" || status === "expired") return "";
   const start = new Date(startIso).getTime();
   if (Number.isNaN(start)) return "";
   const diff = start - Date.now();
@@ -79,14 +103,14 @@ function relativeFrom(startIso: string | undefined, status: StatusKind): string 
 export default function EventsList() {
   const confirm = useConfirm();
   const toast = useToast();
-  const [events, setEvents] = useState<EventRecord[] | null>(null);
+  const [events, setEvents] = useState<AdminEventRecord[] | null>(null);
   const [salesByEvent, setSalesByEvent] = useState<Record<string, number>>({});
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [pendingFeatureId, setPendingFeatureId] = useState<string | null>(null);
 
   const load = () => {
-    Promise.all([listEvents(), listOrders({ status: "paid" })]).then(
+    Promise.all([listAdminEvents(), listOrders({ status: "paid" })]).then(
       ([evts, orders]) => {
         setEvents(evts);
         const map: Record<string, number> = {};
@@ -142,7 +166,7 @@ export default function EventsList() {
   const enriched = useMemo(() => {
     return (events || []).map((e) => ({
       event: e,
-      status: computeStatus(e.start_time),
+      status: deriveStatus(e),
       sales: salesByEvent[e.id] || 0,
     }));
   }, [events, salesByEvent]);
@@ -162,7 +186,7 @@ export default function EventsList() {
 
   const filtered = useMemo(() => {
     return enriched.filter((r) => {
-      if (statusFilter !== "all" && r.status !== statusFilter) return false;
+      if (!matchesFilter(r.status, statusFilter)) return false;
       if (!q) return true;
       const needle = q.toLowerCase();
       return (r.event.title || "").toLowerCase().includes(needle);
@@ -257,7 +281,8 @@ export default function EventsList() {
                 ["all", "Бүгд"],
                 ["live", "Шууд"],
                 ["upcoming", "Удахгүй"],
-                ["past", "Дууссан"],
+                ["ended", "Дууссан"],
+                ["archived", "Нөхөж үзэх боломжтой"],
               ] as Array<[StatusFilter, string]>
             ).map(([key, label]) => (
               <button
@@ -302,7 +327,8 @@ export default function EventsList() {
                 <th>Арга хэмжээ</th>
                 <th>Огноо</th>
                 <th>Төлөв</th>
-                <th style={{ textAlign: "right" }}>Үндсэн үнэ</th>
+                <th style={{ textAlign: "right" }}>Шууд / Архив</th>
+                <th style={{ textAlign: "center" }}>Бичлэг</th>
                 <th style={{ textAlign: "center" }}>Зарагдсан</th>
                 <th style={{ textAlign: "center" }}>★</th>
                 <th style={{ width: 1 }} />
@@ -375,7 +401,23 @@ export default function EventsList() {
                       <StatusBadge status={status} hint={relative} />
                     </td>
                     <td style={{ textAlign: "right" }} className="tabular-nums text-zinc-900 font-medium">
-                      {money(e.base)}
+                      <div>{money(e.live_price || e.base)}</div>
+                      <div className="text-[11.5px] text-zinc-500 mt-0.5">
+                        {e.replay_price > 0 ? money(e.replay_price) : "—"}
+                      </div>
+                    </td>
+                    <td style={{ textAlign: "center" }} className="tabular-nums">
+                      <span
+                        className={
+                          e.recording_count >= 4
+                            ? "text-emerald-700 font-semibold"
+                            : e.recording_count > 0
+                              ? "text-amber-600 font-medium"
+                              : "text-zinc-400"
+                        }
+                      >
+                        {e.recording_count}/4
+                      </span>
                     </td>
                     <td style={{ textAlign: "center" }} className="tabular-nums">
                       {sales > 0 ? (
@@ -496,15 +538,13 @@ function StatCard({
 function StatusBadge({ status, hint }: { status: StatusKind; hint: string }) {
   if (status === "live") {
     return (
-      <div className="inline-flex flex-col gap-0.5">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 text-red-700 border border-red-200 text-[11px] font-semibold px-2 py-0.5 w-fit">
-          <span className="relative inline-flex h-1.5 w-1.5">
-            <span className="absolute inset-0 rounded-full bg-red-500 opacity-75 animate-ping" />
-            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-red-500" />
-          </span>
-          ШУУД
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 text-red-700 border border-red-200 text-[11px] font-semibold px-2 py-0.5 w-fit">
+        <span className="relative inline-flex h-1.5 w-1.5">
+          <span className="absolute inset-0 rounded-full bg-red-500 opacity-75 animate-ping" />
+          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-red-500" />
         </span>
-      </div>
+        ШУУД
+      </span>
     );
   }
   if (status === "upcoming") {
@@ -513,10 +553,15 @@ function StatusBadge({ status, hint }: { status: StatusKind; hint: string }) {
         <span className="inline-flex items-center rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-semibold px-2 py-0.5 w-fit">
           Удахгүй
         </span>
-        {hint && (
-          <span className="text-[11px] text-zinc-500">{hint}</span>
-        )}
+        {hint && <span className="text-[11px] text-zinc-500">{hint}</span>}
       </div>
+    );
+  }
+  if (status === "archived") {
+    return (
+      <span className="inline-flex items-center rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-[11px] font-semibold px-2 py-0.5 w-fit">
+        Нөхөж үзэх боломжтой
+      </span>
     );
   }
   return (

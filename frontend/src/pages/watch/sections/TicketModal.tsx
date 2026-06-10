@@ -95,7 +95,6 @@ export function TicketModal({
   const issueInvoice = useCallback(async (): Promise<boolean> => {
     const res = await api.createTicket({ event_id: event.id });
     if (!res.ok) {
-      console.error("[checkout] createTicket failed", res);
       setAlert(`${t("ticket_error")} (${res.error})`);
       return false;
     }

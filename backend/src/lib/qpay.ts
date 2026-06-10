@@ -153,6 +153,22 @@ async function qpayPost<T>(path: string, body: unknown): Promise<T> {
   return (await res.json()) as T;
 }
 
+async function qpayGet<T>(path: string): Promise<T> {
+  const { baseUrl } = env();
+  const token = await getAccessToken();
+  const res = await fetch(`${baseUrl}${path}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`qpay_${path}_failed:${res.status}:${text}`);
+  }
+  return (await res.json()) as T;
+}
+
 export async function createInvoice(
   input: CreateInvoiceInput,
 ): Promise<CreateInvoiceResult> {
@@ -169,6 +185,25 @@ export async function createInvoice(
   };
 
   const data = await qpayPost<QPayCreateInvoiceApi>("/v2/invoice", payload);
+  return {
+    invoice_id: data.invoice_id,
+    qr_text: data.qr_text,
+    qr_image: data.qr_image,
+    urls: (data.urls ?? []).map((u) => ({
+      name: u.name ?? "Bank",
+      description: u.description,
+      logo: u.logo,
+      link: u.link,
+    })),
+  };
+}
+
+export async function getInvoice(
+  invoiceId: string,
+): Promise<CreateInvoiceResult> {
+  const data = await qpayGet<QPayCreateInvoiceApi>(
+    `/v2/invoice/${encodeURIComponent(invoiceId)}`,
+  );
   return {
     invoice_id: data.invoice_id,
     qr_text: data.qr_text,

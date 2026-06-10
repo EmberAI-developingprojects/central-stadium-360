@@ -95,6 +95,4 @@ export function attachChatServer(httpServer: UpgradableServer): void {
   }, 25_000);
 
   wss.on("close", () => clearInterval(interval));
-
-  console.log(`[chat-ws] attached at ws://…${CHAT_PATH}`);
 }

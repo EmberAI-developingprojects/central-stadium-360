@@ -30,7 +30,6 @@ async function attachBanStatus(rows: DbUser[]): Promise<AdminUserRow[]> {
     perPage: 1000,
   });
   if (error) {
-    console.error("[admin-users] listUsers:", error);
     return rows.map((r) => ({ ...r, banned: false }));
   }
   const banUntilById = new Map<string, string | null>();
@@ -60,7 +59,6 @@ adminUsers.get("/", async (c) => {
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
   if (error) {
-    console.error("[admin-users] list:", error);
     return c.json({ ok: false, error: error.message } as const, 500);
   }
   const rows = (data ?? []) as DbUser[];
@@ -83,7 +81,6 @@ adminUsers.get("/:id", async (c) => {
     .eq("id", id)
     .maybeSingle<DbUser>();
   if (error) {
-    console.error("[admin-users] get:", error);
     return c.json({ ok: false, error: error.message } as const, 500);
   }
   if (!data) {
@@ -122,7 +119,6 @@ adminUsers.patch("/:id/role", async (c) => {
       .eq("role", "admin")
       .is("deleted_at", null);
     if (cntErr) {
-      console.error("[admin-users] count admins:", cntErr);
       return c.json({ ok: false, error: cntErr.message } as const, 500);
     }
     if ((count ?? 0) <= 1 && isSelf(c, id)) {
@@ -137,7 +133,6 @@ adminUsers.patch("/:id/role", async (c) => {
     .select(SELECT_COLS)
     .maybeSingle<DbUser>();
   if (error) {
-    console.error("[admin-users] update role:", error);
     return c.json({ ok: false, error: error.message } as const, 500);
   }
   if (!data) {
@@ -241,7 +236,6 @@ adminUsers.patch("/:id/disabled", async (c) => {
     ban_duration: banDuration,
   });
   if (error) {
-    console.error("[admin-users] ban toggle:", error);
     return c.json({ ok: false, error: error.message } as const, 500);
   }
 
@@ -251,7 +245,6 @@ adminUsers.patch("/:id/disabled", async (c) => {
     .eq("id", id)
     .maybeSingle<DbUser>();
   if (selErr) {
-    console.error("[admin-users] reselect:", selErr);
     return c.json({ ok: false, error: selErr.message } as const, 500);
   }
   if (!row) {
@@ -284,16 +277,12 @@ adminUsers.delete("/:id", async (c) => {
     })
     .eq("id", id);
   if (updErr) {
-    console.error("[admin-users] soft delete:", updErr);
     return c.json({ ok: false, error: updErr.message } as const, 500);
   }
 
-  const { error: banErr } = await admin.auth.admin.updateUserById(id, {
+  await admin.auth.admin.updateUserById(id, {
     ban_duration: "876000h",
   });
-  if (banErr) {
-    console.error("[admin-users] ban after delete:", banErr);
-  }
 
   return c.json({ ok: true, data: { id } } as const);
 });

@@ -121,24 +121,27 @@ export default function WatchEventDetail() {
 
       {event && (
         <>
-          <div className="relative w-full overflow-hidden bg-[#0a1628] aspect-[16/10] sm:aspect-[2/1] md:aspect-[21/9] min-h-[220px] max-h-[480px]">
+          <div className="relative w-full overflow-hidden bg-[#0a1628] flex items-center justify-center min-h-[320px] max-h-[78vh]">
             {event.image && (
-              <img
-                src={event.image}
-                alt={event.title}
-                className="w-full h-full object-cover block"
-              />
+              <>
+                <img
+                  src={event.image}
+                  alt=""
+                  aria-hidden="true"
+                  className="absolute inset-0 w-full h-full object-cover block scale-110 blur-2xl opacity-60"
+                  loading="eager"
+                />
+                <img
+                  src={event.image}
+                  alt={event.title}
+                  className="relative max-w-full block"
+                  style={{ maxHeight: "78vh", height: "auto", width: "auto" }}
+                  loading="eager"
+                />
+              </>
             )}
-
-            <div className="absolute inset-0 bg-gradient-to-b from-[rgba(7,21,38,0.15)] via-[rgba(7,21,38,0.55)] to-[rgba(7,21,38,0.95)]" />
-
-            <div className="absolute bottom-0 left-0 right-0 px-4 pb-5 pt-8 sm:px-6 sm:pb-6 md:px-12 md:pb-10 max-w-[900px]">
-              <h1 className="m-0 text-[26px] sm:text-[34px] md:text-[44px] lg:text-[56px] font-black uppercase tracking-[-0.01em] leading-[1.05] text-white [text-shadow:0_2px_24px_rgba(0,0,0,0.6)]">
-                {event.title}
-              </h1>
-            </div>
             {isLive && (
-              <div className="absolute top-3 left-3 sm:top-4 sm:left-6 md:top-5 md:left-12 inline-flex items-center gap-1.5 bg-[#e53935] text-white text-[10px] sm:text-[11px] font-bold tracking-[0.14em] uppercase rounded-full py-1 px-2.5 sm:py-1.5 sm:px-3">
+              <div className="absolute top-3 left-3 sm:top-4 sm:left-6 md:top-5 md:left-12 inline-flex items-center gap-1.5 bg-[#e53935] text-white text-[10px] sm:text-[11px] font-bold tracking-[0.14em] uppercase rounded-full py-1 px-2.5 sm:py-1.5 sm:px-3 z-10">
                 <span className="w-[7px] h-[7px] rounded-full bg-white [animation:pulse_1.4s_ease-in-out_infinite]" />
                 LIVE
               </div>

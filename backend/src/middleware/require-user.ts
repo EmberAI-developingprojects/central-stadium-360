@@ -67,9 +67,7 @@ export async function requireUser(
         },
         { onConflict: "id" },
       );
-      if (upsertErr) {
-        console.error("[auth] public.users upsert failed:", upsertErr);
-      } else {
+      if (!upsertErr) {
         phone = authPhone ?? phone;
       }
     }

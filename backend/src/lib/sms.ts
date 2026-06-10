@@ -1,9 +1,4 @@
-export type SmsProvider =
-  | "dev"
-  | "twilio"
-  | "mobicom"
-  | "skytel"
-  | "callpro";
+export type SmsProvider = "dev" | "twilio" | "mobicom" | "skytel" | "callpro";
 
 export interface SmsMessage {
   phone: string;
@@ -44,15 +39,9 @@ function defaultText(otp: string): string {
 }
 
 async function sendViaDev(msg: SmsMessage): Promise<SmsResult> {
-  const text = msg.text ?? defaultText(msg.otp);
-
-  console.log(
-    `\n────────── [DEV SMS] no SMS_PROVIDER configured ──────────\n` +
-      `to:   ${msg.phone}\n` +
-      `otp:  ${msg.otp}\n` +
-      `body: ${text}\n` +
-      `──────────────────────────────────────────────────────────\n`,
-  );
+  const _text = msg.text ?? defaultText(msg.otp);
+  void _text;
+  void msg;
   return {
     ok: true,
     provider: "dev",

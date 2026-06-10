@@ -2,9 +2,10 @@ import { useEffect, type ReactNode } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth, RequireAdmin } from "./auth";
 import Home from "./pages/Home";
-import About from "./pages/About";
 import Events from "./pages/Events";
 import EventDetail from "./pages/EventDetail";
+import Technology from "./pages/Technology";
+import WatchVOD from "./pages/WatchVOD";
 import WatchEventDetail from "./pages/WatchEventDetail";
 import NewsDetail from "./pages/NewsDetail";
 import Login from "./pages/Login";
@@ -20,6 +21,8 @@ import AdminLayout from "./admin/AdminLayout";
 import Dashboard from "./admin/pages/Dashboard";
 import EventsList from "./admin/pages/EventsList";
 import EventEdit from "./admin/pages/EventEdit";
+import EventCreate from "./admin/pages/EventCreate";
+import AdminEventDetail from "./admin/pages/EventDetail";
 import OrdersList from "./admin/pages/OrdersList";
 import OrderView from "./admin/pages/OrderView";
 import UsersList from "./admin/pages/UsersList";
@@ -75,9 +78,9 @@ export default function App() {
             </GuestOnly>
           }
         />
-        <Route path="/about" element={<About />} />
         <Route path="/events" element={<Events />} />
         <Route path="/events/:id" element={<EventDetail />} />
+        <Route path="/technology" element={<Technology />} />
         <Route path="/news/:id" element={<NewsDetail />} />
         <Route
           path="/login"
@@ -121,6 +124,7 @@ export default function App() {
         />
         <Route path="/watch" element={<Watch />} />
         <Route path="/watch/events/:id" element={<WatchEventDetail />} />
+        <Route path="/watch/:eventId/vod" element={<WatchVOD />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/orders/:code" element={<OrderDetail />} />
@@ -134,8 +138,9 @@ export default function App() {
         >
           <Route index element={<Dashboard />} />
           <Route path="events" element={<EventsList />} />
-          <Route path="events/new" element={<EventEdit />} />
-          <Route path="events/:id" element={<EventEdit />} />
+          <Route path="events/new" element={<EventCreate />} />
+          <Route path="events/:id" element={<AdminEventDetail />} />
+          <Route path="events/:id/edit" element={<EventEdit />} />
           <Route path="orders" element={<OrdersList />} />
           <Route path="orders/:code" element={<OrderView />} />
           <Route path="users" element={<UsersList />} />

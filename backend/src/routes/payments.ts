@@ -22,7 +22,6 @@ payments.post("/qpay-callback", async (c) => {
     );
   }
   if (!verifyTicketSignature(ticketId, sig, secret)) {
-    console.warn("[payments] callback signature mismatch", { ticketId });
     return c.json({ ok: false, error: "bad_signature" } as const, 401);
   }
 
@@ -42,7 +41,6 @@ payments.post("/qpay-callback", async (c) => {
       Pick<DbTicket, "id" | "status" | "qpay_invoice_id" | "price">
     >();
   if (tErr) {
-    console.error("[payments] ticket lookup failed:", tErr);
     return c.json({ ok: false, error: "internal_error" } as const, 500);
   }
   if (!ticket || !ticket.qpay_invoice_id) {
@@ -59,19 +57,13 @@ payments.post("/qpay-callback", async (c) => {
   let check;
   try {
     check = await checkInvoicePayment(ticket.qpay_invoice_id);
-  } catch (err) {
-    console.error("[payments] qpay check failed:", err);
+  } catch (_err) {
     return c.json({ ok: false, error: "qpay_check_failed" } as const, 502);
   }
   if (!isPaid(check)) {
     return c.json({ ok: false, error: "not_paid" } as const, 409);
   }
   if (check.paid_amount < ticket.price) {
-    console.warn("[payments] underpayment", {
-      ticketId,
-      expected: ticket.price,
-      paid: check.paid_amount,
-    });
     return c.json({ ok: false, error: "underpaid" } as const, 409);
   }
 
@@ -83,7 +75,6 @@ payments.post("/qpay-callback", async (c) => {
     .select("id, status, paid_at")
     .maybeSingle();
   if (upErr) {
-    console.error("[payments] update failed:", upErr);
     return c.json({ ok: false, error: "internal_error" } as const, 500);
   }
   if (!updated) {
@@ -147,8 +138,7 @@ statusRoute.get("/:invoiceId", async (c) => {
   let check;
   try {
     check = await checkInvoicePayment(ticket.qpay_invoice_id);
-  } catch (err) {
-    console.error("[payments] status check failed:", err);
+  } catch (_err) {
     return c.json({ ok: false, error: "qpay_check_failed" } as const, 502);
   }
 

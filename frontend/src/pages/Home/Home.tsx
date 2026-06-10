@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import SiteHeader from "../../components/SiteHeader";
 import SiteFooter from "../../components/SiteFooter";
@@ -427,21 +427,39 @@ function Stats() {
 type UpcomingProps = { gatedGo: (to: string) => void; events: EventRecord[] };
 
 function Upcoming({ gatedGo, events }: UpcomingProps) {
-  const upcoming = events.map((e) => {
-    const [d, y] = (e.date || "").split("·").map((s) => s.trim());
-    return {
-      id: e.id,
-      src: e.image,
-      alt: e.title,
-      date: d || e.date,
-      year: y || "",
-    };
-  });
+  const upcoming = events
+    .filter((e) => {
+      const ts = new Date(e.start_time).getTime();
+      return !Number.isNaN(ts) && ts >= Date.now();
+    })
+    .sort(
+      (a, b) =>
+        new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),
+    )
+    .map((e) => {
+      const [d, y] = (e.date || "").split("·").map((s) => s.trim());
+      return {
+        id: e.id,
+        src: e.image,
+        alt: e.title,
+        date: d || e.date,
+        year: y || "",
+      };
+    });
 
   const [idx, setIdx] = useState(0);
   const [progress, setProgress] = useState(0);
+  const [ratios, setRatios] = useState<Record<number, number>>({});
   const stageRef = useRef<HTMLDivElement>(null);
   const intervalMs = 5500;
+  const activeRatio = ratios[idx];
+  const STAGE_MAX_HEIGHT = 560;
+  const stageAspectStyle: CSSProperties = activeRatio
+    ? {
+        aspectRatio: String(activeRatio),
+        maxWidth: `${STAGE_MAX_HEIGHT * activeRatio}px`,
+      }
+    : { aspectRatio: "1920 / 648" };
 
   useEffect(() => {
     if (upcoming.length === 0) return;
@@ -535,8 +553,6 @@ function Upcoming({ gatedGo, events }: UpcomingProps) {
     setProgress(0);
   };
 
-  const upBtnBase =
-    "inline-flex items-center gap-2 rounded-full font-bold text-xs uppercase no-underline cursor-pointer py-3 px-[22px] tracking-[0.12em] border border-solid border-transparent [transition:background_0.18s_ease,color_0.18s_ease,transform_0.18s_ease] max-[720px]:py-2.5 max-[720px]:px-4 max-[720px]:text-[11px]";
   const upNavBase =
     "absolute top-1/2 w-12 h-12 rounded-full text-white inline-flex items-center justify-center border-0 z-[3] cursor-pointer [transform:translateY(-50%)] bg-[rgba(255,255,255,0.12)] [backdrop-filter:blur(8px)] [-webkit-backdrop-filter:blur(8px)] [transition:background_0.18s_ease,color_0.18s_ease,transform_0.18s_ease] hover:bg-brand-blue hover:text-white hover:[transform:translateY(-50%)_scale(1.06)] [&_svg]:w-[22px] [&_svg]:h-[22px] max-[720px]:w-10 max-[720px]:h-10";
   const upThumbBase =
@@ -554,19 +570,12 @@ function Upcoming({ gatedGo, events }: UpcomingProps) {
           className={`flex items-end justify-between gap-4 mb-8 flex-wrap ${REVEAL_UP_CLS}`}
         >
           <div>
-            <span className="inline-flex items-center gap-2.5 text-[13px] font-bold uppercase text-brand-blue mb-3 tracking-[0.18em]">
-              <span
-                className="w-2.5 h-2.5 rounded-full animate-live-blink bg-[#E53935] shadow-[0_0_0_0_rgba(229,57,53,0.6)] flex-none"
-                aria-hidden="true"
-              ></span>
-              Live · Удахгүй болох
-            </span>
             <h2 className="text-left text-[32px] font-extrabold text-ink m-0 tracking-[-0.01em] leading-[1.15] max-[600px]:text-2xl">
               Шууд дамжуулах арга хэмжээнүүд
             </h2>
           </div>
-          <a
-            href="#"
+          <Link
+            to="/events"
             className="text-[13px] font-bold uppercase text-ink no-underline inline-flex items-center gap-2 pb-1 tracking-[0.06em] border-b-2 border-solid border-transparent [transition:color_0.18s_ease,border-color_0.18s_ease,gap_0.18s_ease] hover:text-brand-blue hover:gap-3 hover:border-brand-blue [&_svg]:w-[14px] [&_svg]:h-[14px]"
           >
             Бүх арга хэмжээ үзэх
@@ -582,20 +591,23 @@ function Upcoming({ gatedGo, events }: UpcomingProps) {
               <path d="M5 12h14" />
               <path d="M13 6l6 6-6 6" />
             </svg>
-          </a>
+          </Link>
         </div>
 
         <div
-          className={`relative rounded-[18px] overflow-hidden bg-ink [aspect-ratio:1920/648] shadow-[0_30px_60px_-30px_rgba(15,23,42,0.5)] [isolation:isolate] ${REVEAL_UP_CLS}`}
+          className={`relative rounded-[18px] overflow-hidden bg-ink shadow-[0_30px_60px_-30px_rgba(15,23,42,0.5)] [isolation:isolate] mx-auto w-full [transition:aspect-ratio_300ms_ease,max-width_300ms_ease] ${REVEAL_UP_CLS}`}
           ref={stageRef}
+          style={stageAspectStyle}
         >
           <div className="absolute inset-0">
             {upcoming.map((u, i) => {
               const active = i === idx;
               return (
-                <article
+                <Link
                   key={u.id || u.alt}
-                  className={`absolute inset-0 [transition:opacity_700ms_cubic-bezier(.4,0,.2,1),transform_9s_linear] ${active ? "opacity-100 pointer-events-auto [transform:scale(1.04)]" : "opacity-0 pointer-events-none [transform:scale(1)]"}`}
+                  to={u.id ? `/events/${u.id}` : "#"}
+                  aria-label={u.alt}
+                  className={`absolute inset-0 block no-underline [transition:opacity_700ms_cubic-bezier(.4,0,.2,1),transform_9s_linear] ${active ? "opacity-100 pointer-events-auto [transform:scale(1.04)]" : "opacity-0 pointer-events-none [transform:scale(1)]"}`}
                   data-up={i}
                 >
                   <img
@@ -603,6 +615,14 @@ function Upcoming({ gatedGo, events }: UpcomingProps) {
                     src={u.src}
                     alt={u.alt}
                     loading={i === 0 ? "eager" : "lazy"}
+                    onLoad={(e) => {
+                      const img = e.currentTarget;
+                      if (!img.naturalWidth || !img.naturalHeight) return;
+                      const r = img.naturalWidth / img.naturalHeight;
+                      setRatios((prev) =>
+                        prev[i] === r ? prev : { ...prev, [i]: r },
+                      );
+                    }}
                   />
                   <div className="absolute flex items-end justify-between gap-4 flex-wrap text-white z-[2] inset-x-0 bottom-0 top-auto p-[clamp(16px,2.5vw,28px)] [background:linear-gradient(180deg,transparent_0%,rgba(15,23,42,0.88)_100%)] max-[720px]:py-[14px] max-[720px]:px-4 max-[720px]:gap-2.5">
                     <div className="inline-flex items-center gap-2.5 flex-wrap">
@@ -618,7 +638,7 @@ function Upcoming({ gatedGo, events }: UpcomingProps) {
                       </span>
                     </div>
                   </div>
-                </article>
+                </Link>
               );
             })}
           </div>
@@ -669,24 +689,25 @@ function Upcoming({ gatedGo, events }: UpcomingProps) {
 
         <ol
           className={`mt-4 mb-0 mx-0 grid gap-[14px] list-none p-0 grid-cols-4 max-[720px]:grid-cols-2 ${REVEAL_UP_CLS}`}
-          role="tablist"
           aria-label="Арга хэмжээ сонгох"
         >
           {upcoming.map((u, i) => {
             const active = i === idx;
             return (
               <li key={u.id || u.alt}>
-                <button
-                  onClick={() => go(i)}
+                <Link
+                  to={u.id ? `/events/${u.id}` : "#"}
                   className={`${upThumbBase}${active ? " " + upThumbActive : ""}`}
                   aria-label={u.alt}
+                  onMouseEnter={() => go(i)}
+                  onFocus={() => go(i)}
                 >
                   <img
                     className={`w-full h-full object-cover block ${active ? "[filter:none]" : "[filter:saturate(.7)_brightness(.85)]"} [transition:filter_0.18s_ease,transform_600ms_ease]`}
                     src={u.src}
                     alt=""
                   />
-                </button>
+                </Link>
               </li>
             );
           })}
