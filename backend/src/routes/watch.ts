@@ -133,7 +133,7 @@ type StatusCache = {
   probes: CamProbe[];
 };
 let statusCache: StatusCache | null = null;
-const STATUS_TTL_MS = 5000;
+const STATUS_TTL_MS = 25_000;
 
 async function probeHls(
   id: string,
