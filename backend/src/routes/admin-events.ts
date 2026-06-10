@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import type { DbEvent, DbRecording } from "@cs360/shared";
 import { getSupabaseAdmin } from "../lib/supabase";
+import { discoverRecordingsForEvent } from "../lib/recordings";
 import {
   requireUser,
   requireAdmin,
@@ -258,6 +259,38 @@ adminEvents.get("/:id/recordings", async (c) => {
     return c.json({ ok: false, error: error.message } as const, 500);
   }
   return c.json({ ok: true, data: (data ?? []) as DbRecording[] } as const);
+});
+
+adminEvents.post("/:id/rediscover", async (c) => {
+  const admin = getSupabaseAdmin();
+  if (!admin) {
+    return c.json(
+      { ok: false, error: "supabase_not_configured" } as const,
+      503,
+    );
+  }
+  const id = c.req.param("id");
+  const { data: event, error: evErr } = await admin
+    .from("events")
+    .select("id,live_start_at,live_end_at")
+    .eq("id", id)
+    .maybeSingle<
+      Pick<DbEvent, "id" | "live_start_at" | "live_end_at">
+    >();
+  if (evErr) {
+    return c.json({ ok: false, error: evErr.message } as const, 500);
+  }
+  if (!event) {
+    return c.json({ ok: false, error: "not_found" } as const, 404);
+  }
+  if (!event.live_start_at || !event.live_end_at) {
+    return c.json(
+      { ok: false, error: "missing_live_window" } as const,
+      409,
+    );
+  }
+  const discovered = await discoverRecordingsForEvent(event);
+  return c.json({ ok: true, data: discovered } as const);
 });
 
 export default adminEvents;

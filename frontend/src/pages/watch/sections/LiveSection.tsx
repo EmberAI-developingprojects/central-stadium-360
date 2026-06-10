@@ -71,19 +71,12 @@ export function LiveSection({
               {featuredEvent.desc}
             </p>
           )}
-          <div className="mt-8 flex flex-wrap items-center gap-3 max-[720px]:mt-6 max-[420px]:gap-2">
-            <Link
-              to={`/watch/events/${featuredEvent.id}`}
-              className="inline-flex items-center justify-center h-11 px-5 rounded-sm bg-white text-[#071526] text-[12px] font-bold uppercase tracking-[0.1em] no-underline [transition:background_.15s_ease,transform_.15s_ease] hover:bg-[rgba(255,255,255,0.88)] hover:-translate-y-px whitespace-nowrap max-[420px]:flex-1 max-[420px]:px-3 max-[420px]:text-[11px] max-[420px]:tracking-[0.06em]"
-            >
-              {t("watch_details")}
-            </Link>
-
+          <div className="mt-9 flex flex-wrap items-center gap-3 max-[720px]:mt-6 max-[420px]:flex-col max-[420px]:items-stretch max-[420px]:gap-2.5">
             {!ownsFeatured && saleKind !== "expired" && (
               <button
                 type="button"
                 onClick={onWatch}
-                className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-sm bg-transparent border-2 border-solid border-white text-white text-[12px] font-bold uppercase tracking-[0.1em] cursor-pointer font-[inherit] [transition:background_.15s_ease,transform_.15s_ease] hover:bg-[rgba(255,255,255,0.1)] hover:-translate-y-px whitespace-nowrap max-[420px]:flex-1 max-[420px]:px-3 max-[420px]:text-[11px] max-[420px]:tracking-[0.06em] max-[420px]:gap-1.5"
+                className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-sm bg-white text-[#071526] text-[12px] font-bold uppercase tracking-[0.1em] cursor-pointer font-[inherit] [transition:background_.15s_ease,transform_.15s_ease,box-shadow_.2s_ease] shadow-[0_8px_24px_-12px_rgba(255,255,255,0.4)] hover:bg-[rgba(255,255,255,0.88)] hover:-translate-y-px hover:shadow-[0_12px_28px_-10px_rgba(255,255,255,0.5)] whitespace-nowrap max-[420px]:px-3 max-[420px]:text-[11px] max-[420px]:tracking-[0.08em]"
               >
                 <svg
                   className="w-3.5 h-3.5 shrink-0"
@@ -95,20 +88,28 @@ export function LiveSection({
                   strokeLinejoin="round"
                   aria-hidden="true"
                 >
-                  <path d="M2 9a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z" />
+                  <path d="M20 12V8a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v4a2 2 0 0 1 0 4v4a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-4a2 2 0 0 1 0-4z" />
+                  <line x1="9" y1="6" x2="9" y2="18" strokeDasharray="2 3" />
                 </svg>
                 {saleKind === "replay"
-                  ? "Нөхөж үзэх тасалбар"
+                  ? t("watch_buy_replay_ticket")
                   : t("watch_buy_ticket")}
               </button>
             )}
+
+            <Link
+              to={`/watch/events/${featuredEvent.id}`}
+              className="inline-flex items-center justify-center h-11 px-5 rounded-sm bg-transparent border border-solid border-[rgba(255,255,255,0.30)] text-white text-[12px] font-bold uppercase tracking-[0.1em] no-underline [transition:background_.15s_ease,border-color_.15s_ease,transform_.15s_ease] hover:bg-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.5)] hover:-translate-y-px whitespace-nowrap max-[420px]:px-3 max-[420px]:text-[11px] max-[420px]:tracking-[0.08em]"
+            >
+              {t("watch_details")}
+            </Link>
             {!ownsFeatured && saleKind === "expired" && (
               <span className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-white/40">
                 <span
                   className="w-1.5 h-1.5 rounded-full bg-white/30 shrink-0"
                   aria-hidden="true"
                 />
-                Нөхөж үзэх хугацаа дууссан
+                {t("watch_replay_expired")}
               </span>
             )}
 
@@ -140,7 +141,7 @@ export function LiveSection({
                   className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0"
                   aria-hidden="true"
                 />
-                Нөхөж үзэх боломжтой
+                {t("watch_replay_available")}
               </span>
             )}
 
@@ -150,7 +151,7 @@ export function LiveSection({
                   className="w-1.5 h-1.5 rounded-full bg-white/30 shrink-0"
                   aria-hidden="true"
                 />
-                Нөхөж үзэх хугацаа дууссан
+                {t("watch_replay_expired")}
               </span>
             )}
 

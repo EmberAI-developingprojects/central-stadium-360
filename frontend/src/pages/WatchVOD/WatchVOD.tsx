@@ -82,24 +82,61 @@ export default function WatchVOD() {
   const [event, setEvent] = useState<VODEventDetail | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [previousTicketExpired, setPreviousTicketExpired] = useState(false);
 
-  const fetchEvent = useCallback(async () => {
-    if (!eventId) return;
-    setLoading(true);
-    const res = await api.getEventForVOD(eventId);
-    if (res.ok) {
-      setEvent(res.data);
-      setLoadError(null);
-    } else {
-      setEvent(null);
-      setLoadError(res.error);
-    }
-    setLoading(false);
-  }, [eventId]);
+  const fetchEvent = useCallback(
+    async (silent = false) => {
+      if (!eventId) return;
+      if (!silent) setLoading(true);
+      const res = await api.getEventForVOD(eventId);
+      if (res.ok) {
+        setEvent(res.data);
+        setLoadError(null);
+      } else {
+        setEvent(null);
+        setLoadError(res.error);
+      }
+      if (!silent) setLoading(false);
+    },
+    [eventId],
+  );
 
   useEffect(() => {
     void fetchEvent();
   }, [fetchEvent]);
+
+  // Auto-retry every 30s while recordings are still being processed.
+  useEffect(() => {
+    if (!event?.recordings_pending) return;
+    const id = setInterval(() => {
+      void fetchEvent(true);
+    }, 30000);
+    return () => clearInterval(id);
+  }, [event?.recordings_pending, fetchEvent]);
+
+  // When access is denied, check if user had a previously-paid (now expired)
+  // ticket so the paywall can show a helpful message rather than a generic CTA.
+  useEffect(() => {
+    if (!eventId || !event || event.has_access) {
+      setPreviousTicketExpired(false);
+      return;
+    }
+    let alive = true;
+    api.listMyTickets().then((res) => {
+      if (!alive || !res.ok) return;
+      const now = Date.now();
+      const hadExpired = res.data.some((t) => {
+        if (t.event_id !== eventId) return false;
+        if (t.status !== "paid") return false;
+        if (!t.access_expires_at) return false;
+        return new Date(t.access_expires_at).getTime() <= now;
+      });
+      setPreviousTicketExpired(hadExpired);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [eventId, event]);
 
   if (loading) {
     return (
@@ -132,7 +169,19 @@ export default function WatchVOD() {
   if (!event.has_access) {
     return (
       <ShellChrome title={event.name} onBack={() => navigate("/archive")}>
-        <ReplayPaywall event={event} onPaid={fetchEvent} />
+        <ReplayPaywall
+          event={event}
+          onPaid={() => void fetchEvent()}
+          previousTicketExpired={previousTicketExpired}
+        />
+      </ShellChrome>
+    );
+  }
+
+  if (event.recordings_pending) {
+    return (
+      <ShellChrome title={event.name} onBack={() => navigate("/archive")}>
+        <RecordingsPending />
       </ShellChrome>
     );
   }
@@ -141,6 +190,26 @@ export default function WatchVOD() {
     <ShellChrome title={event.name} onBack={() => navigate("/archive")}>
       <VODViewer event={event} />
     </ShellChrome>
+  );
+}
+
+function RecordingsPending() {
+  const { t } = useTranslation();
+  return (
+    <div className="max-w-[520px] mx-auto px-5 py-20 text-center">
+      <div
+        className="mx-auto mb-6 w-14 h-14 rounded-full border-[3px] border-solid border-white/20 border-t-white/85"
+        style={{ animation: "vodSpin 0.9s linear infinite" }}
+        aria-hidden="true"
+      />
+      <h2 className="text-white text-[20px] font-bold m-0 mb-3 leading-[1.25]">
+        {t("vod_processing_title")}
+      </h2>
+      <p className="text-[rgba(255,255,255,0.6)] text-[14px] leading-[1.6] m-0">
+        {t("vod_processing_desc")}
+      </p>
+      <style>{`@keyframes vodSpin { to { transform: rotate(360deg); } }`}</style>
+    </div>
   );
 }
 

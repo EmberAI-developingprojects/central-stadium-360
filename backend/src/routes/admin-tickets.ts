@@ -29,6 +29,7 @@ type RawTicketRow = {
   created_at: string;
   paid_at: string | null;
   refunded_at: string | null;
+  access_expires_at: string | null;
   users: {
     email: string | null;
     phone: string | null;
@@ -38,7 +39,7 @@ type RawTicketRow = {
 };
 
 const SELECT_COLS = `
-  id,user_id,event_id,status,ticket_type,price,qpay_invoice_id,created_at,paid_at,refunded_at,
+  id,user_id,event_id,status,ticket_type,price,qpay_invoice_id,created_at,paid_at,refunded_at,access_expires_at,
   users:users(email,phone,full_name),
   events:events(title)
 `.replace(/\s+/g, "");
@@ -55,6 +56,7 @@ function toRow(r: RawTicketRow): AdminTicketRow {
     created_at: r.created_at,
     paid_at: r.paid_at,
     refunded_at: r.refunded_at,
+    access_expires_at: r.access_expires_at,
     user_email: r.users?.email ?? null,
     user_phone: r.users?.phone ?? null,
     user_full_name: r.users?.full_name ?? null,

@@ -3,10 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { TicketCreateResponse } from "@cs360/shared";
 import { useAuth } from "../auth";
 import { api, type VODEventDetail } from "../lib/api";
-import {
-  WATCH_BTN_CLS,
-  WATCH_BTN_PRIMARY_CLS,
-} from "../pages/_watchStyles";
+import { WATCH_BTN_CLS, WATCH_BTN_PRIMARY_CLS } from "../pages/_watchStyles";
 
 const dateFmt = (iso: string) => {
   const d = new Date(iso);
@@ -24,9 +21,14 @@ const moneyFmt = (n: number) =>
 type ReplayPaywallProps = {
   event: VODEventDetail;
   onPaid: () => void;
+  previousTicketExpired?: boolean;
 };
 
-export default function ReplayPaywall({ event, onPaid }: ReplayPaywallProps) {
+export default function ReplayPaywall({
+  event,
+  onPaid,
+  previousTicketExpired = false,
+}: ReplayPaywallProps) {
   const { t, i18n } = useTranslation();
   const { session } = useAuth();
   const [invoice, setInvoice] = useState<TicketCreateResponse | null>(null);
@@ -114,21 +116,64 @@ export default function ReplayPaywall({ event, onPaid }: ReplayPaywallProps) {
         <div className="p-6 max-[540px]:p-5 flex flex-col gap-5">
           <div>
             <h2 className="text-white text-[20px] font-bold m-0 leading-[1.25]">
-              {t("vod_buy_title")}
+              {previousTicketExpired
+                ? t("paywall_expired_title")
+                : t("vod_buy_title")}
             </h2>
             <p className="mt-2 text-[rgba(255,255,255,0.65)] text-[14px] leading-[1.55] m-0">
-              {t("vod_buy_desc")}
+              {previousTicketExpired
+                ? t("paywall_expired_desc")
+                : t("vod_buy_desc")}
             </p>
           </div>
 
-          <div className="flex items-center justify-between gap-4 py-3 border-y border-solid border-[rgba(255,255,255,0.08)]">
-            <span className="text-[rgba(255,255,255,0.55)] text-[12.5px] font-bold uppercase tracking-[.14em]">
-              {t("vod_buy_title")}
-            </span>
+          {previousTicketExpired && (
+            <div className="rounded-[10px] bg-[rgba(245,158,11,0.10)] border border-solid border-[rgba(245,158,11,0.35)] text-[#fed7aa] text-[12.5px] py-2.5 px-3.5 leading-[1.5]">
+              {t("paywall_expired_note")}
+            </div>
+          )}
+
+          <div className="flex items-center justify-between gap-4 py-4 px-4 rounded-2xl bg-[rgba(255,255,255,0.04)] border border-solid border-[rgba(255,255,255,0.08)]">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[rgba(255,255,255,0.55)] text-[11px] font-bold uppercase tracking-[.16em]">
+                {t("vod_buy_title")}
+              </span>
+              <span className="text-[rgba(255,255,255,0.45)] text-[12px]">
+                {t("vod_replay_subtitle")}
+              </span>
+            </div>
             <span className="text-white text-[22px] font-extrabold tabular-nums">
               {moneyFmt(event.replay_price)}
             </span>
           </div>
+
+          <ul className="m-0 p-0 list-none flex flex-col gap-2 text-[rgba(255,255,255,0.7)] text-[13px] leading-[1.55]">
+            {(
+              [
+                "vod_replay_perk_days",
+                "vod_replay_perk_cameras",
+                "vod_replay_perk_devices",
+              ] as const
+            ).map((key) => (
+              <li key={key} className="flex items-start gap-2">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-emerald-400 shrink-0 mt-0.5"
+                  aria-hidden="true"
+                >
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                <span>{t(key)}</span>
+              </li>
+            ))}
+          </ul>
 
           {error && (
             <div className="rounded-[10px] bg-[rgba(229,57,53,0.12)] border border-solid border-[rgba(229,57,53,0.45)] text-[#fecaca] text-[13px] py-2.5 px-3.5">

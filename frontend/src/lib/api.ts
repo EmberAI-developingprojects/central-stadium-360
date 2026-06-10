@@ -130,6 +130,7 @@ export type VODEventDetail = {
   status: EventStatus;
   has_access: boolean;
   recordings: DbRecording[];
+  recordings_pending?: boolean;
 };
 
 export type SignedRecordingUrl = {
@@ -259,6 +260,11 @@ export const api = {
       request<DbRecording[]>(
         "GET",
         `/api/admin/events/${encodeURIComponent(eventId)}/recordings`,
+      ),
+    rediscoverRecordings: (eventId: string) =>
+      request<DbRecording[]>(
+        "POST",
+        `/api/admin/events/${encodeURIComponent(eventId)}/rediscover`,
       ),
     createRecording: (input: {
       event_id: string;

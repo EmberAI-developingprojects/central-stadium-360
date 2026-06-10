@@ -58,8 +58,10 @@ export function UpcomingSection({ events, myTickets }: UpcomingSectionProps) {
         {active.length > 0 && (
           <EventRow
             icon="upcoming"
-            title="Шууд / Удахгүй болох арга хэмжээ"
-            subtitle={`${active.length} ${t("watch_events_section").toString()}`}
+            title={t("watch_section_active_title")}
+            subtitle={t("watch_section_active_subtitle", {
+              count: active.length,
+            })}
             events={active}
             ownedIds={ownedIds}
             onNavigate={(id) => navigate(`/watch/events/${id}`)}
@@ -69,8 +71,10 @@ export function UpcomingSection({ events, myTickets }: UpcomingSectionProps) {
         {ended.length > 0 && (
           <EventRow
             icon="ended"
-            title="Дууссан тоглолт"
-            subtitle={`${ended.length} Дууссан тоглолт`}
+            title={t("watch_section_ended_title")}
+            subtitle={t("watch_section_ended_subtitle", {
+              count: ended.length,
+            })}
             events={ended}
             ownedIds={ownedIds}
             onNavigate={(id) => navigate(`/watch/events/${id}`)}
@@ -234,7 +238,7 @@ function EventCard({
               className="w-1.5 h-1.5 rounded-full bg-white animate-live-blink"
               aria-hidden="true"
             />
-            LIVE
+            {t("watch_card_live")}
           </span>
         ) : isPast ? (
           <span className="absolute top-2.5 left-2.5 inline-flex items-center gap-1 py-0.5 px-2 rounded-full bg-zinc-900/75 text-white text-[10.5px] font-bold uppercase tracking-[0.08em] [backdrop-filter:blur(4px)]">
@@ -253,7 +257,7 @@ function EventCard({
               <path d="M3 4v5h5" />
               <path d="M12 7v5l3 2" />
             </svg>
-            Дууссан
+            {t("watch_card_ended")}
           </span>
         ) : (
           <span className="absolute top-2.5 left-2.5 inline-flex items-center gap-1.5 py-0.5 pl-1.5 pr-2 rounded-full bg-white/90 text-[#1a1a1a] text-[10.5px] font-bold uppercase tracking-[0.08em] [backdrop-filter:blur(4px)] shadow-sm">
@@ -261,7 +265,7 @@ function EventCard({
               <span className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-70" />
               <span className="relative inline-flex w-2 h-2 rounded-full bg-emerald-500" />
             </span>
-            Удахгүй
+            {t("watch_card_upcoming")}
           </span>
         )}
         {owned && (

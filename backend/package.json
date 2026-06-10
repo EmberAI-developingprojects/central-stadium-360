@@ -10,6 +10,7 @@
     "start": "node dist/dev.js"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1065.0",
     "@aws-sdk/cloudfront-signer": "^3.1064.0",
     "@cs360/shared": "workspace:*",
     "@hono/node-server": "^1.13.7",

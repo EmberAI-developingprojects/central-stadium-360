@@ -10,6 +10,7 @@ import {
   reusePendingInvoice,
 } from "../lib/tickets";
 import { requireUser, type AuthEnv } from "../middleware/require-user";
+import { discoverRecordingsForEvent } from "../lib/recordings";
 
 const events = new Hono<AuthEnv>();
 
@@ -25,7 +26,7 @@ events.get("/", async (c) => {
   const { data, error } = await supabase
     .from("events")
     .select(
-      "id,title,description,status,start_time,price,image,featured,created_at",
+      "id,title,description,status,start_time,price,live_price,replay_price,live_start_at,live_end_at,replay_available_until,thumbnail_url,image,featured,created_at",
     )
     .order("start_time", { ascending: true });
 
@@ -52,6 +53,7 @@ type ArchivedRaw = {
   thumbnail_url: string | null;
   image: string | null;
   replay_price: number;
+  live_end_at: string | null;
   recordings: { count: number }[] | { count: number } | null;
 };
 
@@ -63,15 +65,18 @@ events.get("/archived", async (c) => {
       503,
     );
   }
-  const nowIso = new Date().toISOString();
+  const now = new Date();
+  const nowIso = now.toISOString();
+  const archiveReadyIso = new Date(now.getTime() - 10 * 60 * 1000).toISOString();
   const { data, error } = await supabase
     .from("events")
     .select(
-      "id,title,start_time,thumbnail_url,image,replay_price,recordings(count)",
+      "id,title,start_time,thumbnail_url,image,replay_price,live_end_at,recordings(count)",
     )
-    .eq("status", "archived")
+    .not("live_end_at", "is", null)
+    .lt("live_end_at", archiveReadyIso)
     .gt("replay_available_until", nowIso)
-    .order("start_time", { ascending: false });
+    .order("live_end_at", { ascending: false });
   if (error) {
     return c.json({ ok: false, error: error.message } as const, 500);
   }
@@ -101,6 +106,7 @@ export type VODEventDetail = {
   status: EventStatus;
   has_access: boolean;
   recordings: DbRecording[];
+  recordings_pending: boolean;
 };
 
 type EventDetailRaw = Pick<
@@ -114,7 +120,11 @@ type EventDetailRaw = Pick<
   | "thumbnail_url"
   | "image"
   | "replay_available_until"
+  | "live_start_at"
+  | "live_end_at"
 >;
+
+const ARCHIVE_GRACE_MS = 10 * 60 * 1000;
 
 const RECORDING_COLS =
   "id,event_id,camera_number,channel_arn,s3_bucket,s3_key_prefix,master_playlist_path,duration_seconds,recording_started_at,recording_ended_at,status,created_at";
@@ -144,7 +154,7 @@ events.get("/:id/replay", async (c) => {
   const { data: event, error } = await supabase
     .from("events")
     .select(
-      "id,title,description,start_time,status,replay_price,thumbnail_url,image,replay_available_until",
+      "id,title,description,start_time,status,replay_price,thumbnail_url,image,replay_available_until,live_start_at,live_end_at",
     )
     .eq("id", id)
     .maybeSingle<EventDetailRaw>();
@@ -155,10 +165,16 @@ events.get("/:id/replay", async (c) => {
     return c.json({ ok: false, error: "not_found" } as const, 404);
   }
 
-  const expired = event.replay_available_until
-    ? new Date(event.replay_available_until).getTime() <= Date.now()
+  const now = Date.now();
+  const liveEndMs = event.live_end_at
+    ? new Date(event.live_end_at).getTime()
+    : NaN;
+  const archiveReady =
+    !Number.isNaN(liveEndMs) && liveEndMs + ARCHIVE_GRACE_MS < now;
+  const replayExpired = event.replay_available_until
+    ? new Date(event.replay_available_until).getTime() <= now
     : false;
-  if (event.status !== "archived" || expired) {
+  if (!archiveReady || replayExpired) {
     return c.json({ ok: false, error: "not_found" } as const, 404);
   }
 
@@ -179,6 +195,17 @@ events.get("/:id/replay", async (c) => {
       return c.json({ ok: false, error: recErr.message } as const, 500);
     }
     recordings = (recRows ?? []) as DbRecording[];
+
+    // Lazy auto-discovery: if no recordings have been cached yet, scan S3
+    // and persist whatever we find. Cheap (one event per first viewer hit).
+    if (recordings.length === 0) {
+      const discovered = await discoverRecordingsForEvent(event);
+      if (discovered.length > 0) {
+        recordings = discovered
+          .filter((r) => r.status === "ready")
+          .sort((a, b) => a.camera_number - b.camera_number);
+      }
+    }
   }
 
   const detail: VODEventDetail = {
@@ -191,6 +218,7 @@ events.get("/:id/replay", async (c) => {
     status: event.status,
     has_access: hasAccess,
     recordings,
+    recordings_pending: hasAccess && recordings.length === 0,
   };
   return c.json({ ok: true, data: detail } as const);
 });

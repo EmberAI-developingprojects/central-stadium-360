@@ -28,8 +28,7 @@ const STAT_CARD_CLS =
   "bg-white border border-[#ececef] rounded-xl p-4 shadow-[0_1px_2px_rgba(24,24,27,0.04)]";
 const STAT_LABEL_CLS =
   "text-[11.5px] uppercase tracking-[0.08em] font-semibold text-zinc-500";
-const STAT_VALUE_CLS =
-  "mt-2 text-[20px] font-bold text-zinc-900 tabular-nums";
+const STAT_VALUE_CLS = "mt-2 text-[20px] font-bold text-zinc-900 tabular-nums";
 
 const REC_ROW_CLS =
   "flex items-start gap-4 py-4 px-5 border-b border-[#f4f4f5] last:border-b-0";
@@ -125,6 +124,8 @@ function dbToRecord(row: import("@cs360/shared").DbEvent): EventRecord {
   };
 }
 
+const REDISCOVER_GRACE_MS = 10 * 60 * 1000;
+
 export default function EventDetail() {
   const { id } = useParams<{ id: string }>();
   const [event, setEvent] = useState<EventRecord | null>(null);
@@ -133,6 +134,8 @@ export default function EventDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [dialogCam, setDialogCam] = useState<number | null>(null);
+  const [rediscovering, setRediscovering] = useState(false);
+  const [rediscoverMsg, setRediscoverMsg] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     if (!id) return;
@@ -171,6 +174,20 @@ export default function EventDetail() {
     for (const r of recordings) map.set(r.camera_number, r);
     return map;
   }, [recordings]);
+
+  const onRediscover = useCallback(async () => {
+    if (!id || rediscovering) return;
+    setRediscovering(true);
+    setRediscoverMsg(null);
+    const res = await api.admin.rediscoverRecordings(id);
+    setRediscovering(false);
+    if (!res.ok) {
+      setRediscoverMsg(`Алдаа: ${res.error}`);
+      return;
+    }
+    setRediscoverMsg(`${res.data.length}/4 камерын бичлэг олдлоо.`);
+    void refresh();
+  }, [id, rediscovering, refresh]);
 
   if (loading && !event) {
     return <div className={ADMIN_EMPTY_CLS}>Уншиж байна…</div>;
@@ -259,7 +276,7 @@ export default function EventDetail() {
           </div>
         </div>
         <div className={STAT_CARD_CLS}>
-          <div className={STAT_LABEL_CLS}>Нөхөж үзэх тасалбар</div>
+          <div className={STAT_LABEL_CLS}>Нөхөж үзэх</div>
           <div className={STAT_VALUE_CLS}>{stats.replayCount}</div>
           <div className="text-[12px] text-zinc-500 mt-1">
             {money(event.replay_price)} / ширхэг
@@ -306,16 +323,17 @@ export default function EventDetail() {
           <div>
             <h3 className={CARD_HEAD_TITLE_CLS}>Бичлэгүүд</h3>
             <p className={CARD_HEAD_DESC_CLS}>
-              4 камер бүрийн S3 зам, бичлэгийн мэдээлэл.
+              Тоглолт дуусснаас 10 минутын дараа S3-аас автоматаар олдоно.
             </p>
           </div>
           <span className="text-[12.5px] text-zinc-500 tabular-nums">
-            {readyCount}/4 нэмэгдсэн
+            {readyCount}/4 олдсон
           </span>
         </header>
         <div>
           {[1, 2, 3, 4].map((cam) => {
             const rec = byCamera.get(cam);
+            const camStatus = recordingCameraStatus(event, rec);
             return (
               <div key={cam} className={REC_ROW_CLS}>
                 <span className="inline-flex items-center justify-center h-9 w-9 rounded-lg bg-brand-blue-tint text-brand-blue ring-1 ring-inset ring-[#dadffb] font-semibold text-[13px] shrink-0">
@@ -326,11 +344,7 @@ export default function EventDetail() {
                     <span className="text-[14px] font-semibold text-zinc-900">
                       Камер {cam}
                     </span>
-                    {rec && (
-                      <span className="inline-flex items-center py-0.5 px-2 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-100">
-                        {rec.status}
-                      </span>
-                    )}
+                    <RecordingStatusBadge state={camStatus} />
                   </div>
                   {rec ? (
                     <div className="mt-1.5 grid gap-1 text-[12.5px] text-zinc-600">
@@ -342,30 +356,69 @@ export default function EventDetail() {
                         <span>
                           Үргэлжлэл: {fmtDuration(rec.duration_seconds)}
                         </span>
-                        <span>Эхэлсэн: {fmtDate(rec.recording_started_at)}</span>
+                        <span>
+                          Эхэлсэн: {fmtDate(rec.recording_started_at)}
+                        </span>
                         <span>Дууссан: {fmtDate(rec.recording_ended_at)}</span>
                       </div>
                     </div>
                   ) : (
                     <p className="mt-1 text-[12.5px] text-zinc-500 m-0">
-                      Бичлэг нэмэгдээгүй.
+                      {camStatus === "pending"
+                        ? "Дуусахыг хүлээж байна."
+                        : camStatus === "not_found"
+                          ? "Бичлэг олдоогүй. Дахин хайх товч дарж шалгана уу."
+                          : "Хайж байна…"}
                     </p>
                   )}
                 </div>
-                {!rec && (
-                  <button
-                    type="button"
-                    onClick={() => setDialogCam(cam)}
-                    className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_PRIMARY_CLS} shrink-0`}
-                  >
-                    + Нэмэх
-                  </button>
-                )}
               </div>
             );
           })}
         </div>
+        {(canRediscover(event, readyCount) || rediscoverMsg) && (
+          <div className="flex items-center justify-between gap-3 flex-wrap px-5 py-4 border-t border-[#f4f4f5] bg-zinc-50/60">
+            <div className="text-[12.5px] text-zinc-600">
+              {rediscoverMsg ??
+                "Зарим камерт бичлэг олдсонгүй. AWS S3-аас дахин хайхыг оролдоно уу."}
+            </div>
+            {canRediscover(event, readyCount) && (
+              <button
+                type="button"
+                onClick={onRediscover}
+                disabled={rediscovering}
+                className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_GHOST_CLS} shrink-0`}
+              >
+                {rediscovering ? "Хайж байна…" : "Дахин хайх"}
+              </button>
+            )}
+          </div>
+        )}
       </section>
+
+      <details className="mt-4 rounded-2xl border border-[#ececef] bg-white/60 [&_summary]:cursor-pointer [&_summary]:list-none">
+        <summary className="px-6 py-4 text-[12.5px] font-semibold text-zinc-500 uppercase tracking-[0.06em] hover:text-zinc-700">
+          Дэвшилтэт · Бичлэгийг гараар нэмэх
+        </summary>
+        <div className="px-6 pb-5 pt-2 border-t border-[#f4f4f5]">
+          <p className="text-[12.5px] text-zinc-500 m-0 mb-3">
+            Автомат хайлт амжилтгүй болсон тохиолдолд камер тус бүрд S3 замаар
+            гараар нэмж болно.
+          </p>
+          <div className="grid gap-2 [grid-template-columns:repeat(4,minmax(0,1fr))] max-[640px]:[grid-template-columns:repeat(2,minmax(0,1fr))]">
+            {[1, 2, 3, 4].map((cam) => (
+              <button
+                key={cam}
+                type="button"
+                onClick={() => setDialogCam(cam)}
+                className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_GHOST_CLS}`}
+              >
+                Камер {cam}
+              </button>
+            ))}
+          </div>
+        </div>
+      </details>
 
       <RecordingFormDialog
         open={dialogCam !== null}
@@ -377,6 +430,50 @@ export default function EventDetail() {
         }}
       />
     </>
+  );
+}
+
+type CameraRecordingState = "ready" | "pending" | "not_found";
+
+function recordingCameraStatus(
+  event: EventRecord,
+  rec: DbRecording | undefined,
+): CameraRecordingState {
+  if (rec) return "ready";
+  if (!event.live_end_at) return "pending";
+  const endMs = new Date(event.live_end_at).getTime();
+  if (Number.isNaN(endMs)) return "pending";
+  if (Date.now() < endMs + REDISCOVER_GRACE_MS) return "pending";
+  return "not_found";
+}
+
+function canRediscover(event: EventRecord, readyCount: number): boolean {
+  if (readyCount >= 4) return false;
+  if (!event.live_end_at) return false;
+  const endMs = new Date(event.live_end_at).getTime();
+  if (Number.isNaN(endMs)) return false;
+  return Date.now() >= endMs + REDISCOVER_GRACE_MS;
+}
+
+function RecordingStatusBadge({ state }: { state: CameraRecordingState }) {
+  const cls =
+    state === "ready"
+      ? "bg-emerald-50 text-emerald-700 ring-emerald-100"
+      : state === "pending"
+        ? "bg-amber-50 text-amber-700 ring-amber-100"
+        : "bg-zinc-100 text-zinc-600 ring-zinc-200";
+  const label =
+    state === "ready"
+      ? "Бэлэн"
+      : state === "pending"
+        ? "Хүлээгдэж байна"
+        : "Олдсонгүй";
+  return (
+    <span
+      className={`inline-flex items-center py-0.5 px-2 rounded-full text-[11px] font-medium ring-1 ring-inset ${cls}`}
+    >
+      {label}
+    </span>
   );
 }
 

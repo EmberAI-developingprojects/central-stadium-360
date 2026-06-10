@@ -81,6 +81,16 @@ function resolveKind(
   return "expired";
 }
 
+function fmtDateMn(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("mn-MN", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+  });
+}
+
 function TicketCard({
   ticket: tk,
   startTime,
@@ -132,6 +142,29 @@ function TicketCard({
               {tk.paymentName || tk.payment}
             </dd>
           </div>
+          {tk.accessExpiresAt && (
+            <div>
+              <dt className={TICKET_STUB_META_DT_CLS}>
+                {t("ticket_card_access_label")}
+              </dt>
+              <dd
+                className={TICKET_STUB_META_DD_CLS}
+                style={
+                  new Date(tk.accessExpiresAt).getTime() <= Date.now()
+                    ? { color: "rgba(255,255,255,0.45)" }
+                    : undefined
+                }
+              >
+                {new Date(tk.accessExpiresAt).getTime() <= Date.now()
+                  ? t("ticket_card_access_expired", {
+                      date: fmtDateMn(tk.accessExpiresAt),
+                    })
+                  : t("ticket_card_access_until", {
+                      date: fmtDateMn(tk.accessExpiresAt),
+                    })}
+              </dd>
+            </div>
+          )}
         </dl>
         <div className={TICKET_STUB_BARCODE_CLS} aria-hidden="true"></div>
         <div className={TICKET_STUB_ACTIONS_CLS}>
@@ -184,7 +217,7 @@ function TicketCard({
                 className="w-1.5 h-1.5 rounded-full bg-white flex-none"
                 aria-hidden="true"
               />
-              Нөхөж үзэх
+              {t("ticket_card_watch_replay")}
             </Link>
           )}
           {kind === "expired" && (
@@ -205,7 +238,7 @@ function TicketCard({
                 className="w-1.5 h-1.5 rounded-full bg-white/30 flex-none"
                 aria-hidden="true"
               />
-              Нөхөж үзэх хугацаа дууссан
+              {t("watch_replay_expired")}
             </span>
           )}
           {!isLive && hasTime && (
