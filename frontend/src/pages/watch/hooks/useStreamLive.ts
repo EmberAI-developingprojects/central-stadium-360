@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { api } from "../../../lib/api";
 
+const POLL_WAITING_MS = 30_000;
+const POLL_LIVE_MS = 60_000;
+
 export function useStreamLive(enabled: boolean) {
   const [live, setLive] = useState(false);
   const [checked, setChecked] = useState(false);
@@ -13,23 +16,30 @@ export function useStreamLive(enabled: boolean) {
       return;
     }
     let alive = true;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const schedule = (isLive: boolean) => {
+      if (!alive) return;
+      const next = isLive ? POLL_LIVE_MS : POLL_WAITING_MS;
+      timer = setTimeout(tick, next);
+    };
+
     const tick = async () => {
+      if (!alive) return;
       const res = await api.getWatchStatus();
       if (!alive) return;
-      if (res.ok) {
-        setLive(res.data.live);
-        setStartedAt(res.data.startedAt);
-      } else {
-        setLive(false);
-        setStartedAt(null);
-      }
+      const isLive = res.ok ? res.data.live : false;
+      const newStart = res.ok ? res.data.startedAt : null;
+      setLive(isLive);
+      setStartedAt(newStart);
       setChecked(true);
+      schedule(isLive);
     };
-    tick();
-    const id = setInterval(tick, 10000);
+
+    void tick();
     return () => {
       alive = false;
-      clearInterval(id);
+      if (timer) clearTimeout(timer);
     };
   }, [enabled]);
   return {
