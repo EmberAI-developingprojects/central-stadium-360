@@ -36,3 +36,4 @@ frontend/public/tinymce/
 frontend.rar
 *.rar
 *.zip
+env-vars.yaml
