@@ -82,6 +82,8 @@ services:
         sync: false
       - key: PUBLIC_BACKEND_URL
         sync: false
+      - key: KIOSK_API_KEY
+        sync: false
       - key: BACKEND_URL
         sync: false
       - key: FRONTEND_URL
