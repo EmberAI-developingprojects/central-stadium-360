@@ -16,6 +16,7 @@ import type { EventRecord } from "../../data/store";
 import { api } from "../../lib/api";
 import { useConfirm } from "../components/ConfirmDialog";
 import DatePicker from "../components/DatePicker";
+import EventZonesEditor from "../components/EventZonesEditor";
 import { useToast } from "../components/Toast";
 import {
   ADMIN_ALERT_CLS,
@@ -760,6 +761,8 @@ export default function EventEdit() {
                 </div>
               </div>
             </section>
+
+            {!isNew && id && <EventZonesEditor eventId={id} />}
           </div>
 
           <aside className="min-w-0 flex flex-col gap-5 sticky top-[76px] self-start">

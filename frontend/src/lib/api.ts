@@ -10,9 +10,12 @@ import type {
   DbHomeService,
   DbRecording,
   DbTicket,
+  DbZone,
   EventInput,
   EventPatch,
   EventStatus,
+  ZoneInput,
+  ZonePatch,
   HomeContentResponse,
   HomeContentSection,
   PaymentStatus,
@@ -255,6 +258,30 @@ export const api = {
       request<{ id: string }>("DELETE", `/api/admin/events/${id}`),
     featureEvent: (id: string) =>
       request<DbEvent>("POST", `/api/admin/events/${id}/feature`),
+
+    // In-person capacity zones (kiosk ticketing).
+    listZones: (eventId: string) =>
+      request<DbZone[]>(
+        "GET",
+        `/api/admin/events/${encodeURIComponent(eventId)}/zones`,
+      ),
+    createZone: (eventId: string, input: ZoneInput) =>
+      request<DbZone>(
+        "POST",
+        `/api/admin/events/${encodeURIComponent(eventId)}/zones`,
+        input,
+      ),
+    updateZone: (eventId: string, zoneId: string, patch: ZonePatch) =>
+      request<DbZone>(
+        "PATCH",
+        `/api/admin/events/${encodeURIComponent(eventId)}/zones/${encodeURIComponent(zoneId)}`,
+        patch,
+      ),
+    deleteZone: (eventId: string, zoneId: string) =>
+      request<{ id: string }>(
+        "DELETE",
+        `/api/admin/events/${encodeURIComponent(eventId)}/zones/${encodeURIComponent(zoneId)}`,
+      ),
 
     listEventRecordings: (eventId: string) =>
       request<DbRecording[]>(
