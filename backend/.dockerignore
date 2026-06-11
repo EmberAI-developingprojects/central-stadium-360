@@ -1,0 +1,17 @@
+node_modules
+**/node_modules
+.env
+.env.local
+.env.*.local
+secrets/
+frontend/
+admin/
+.git/
+.gitignore
+.DS_Store
+*.log
+README.md
+docs/
+.vscode/
+.idea/
+*.md
