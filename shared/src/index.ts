@@ -230,3 +230,144 @@ export interface PaymentStatus {
   paid_at: string | null;
   paid_amount: number;
 }
+
+// ---------------------------------------------------------------------------
+// In-person (kiosk) ticketing — physical admission tickets sold at the stadium
+// kiosk for the same events. Capacity zones, anonymous orders, e-barimt.
+// ---------------------------------------------------------------------------
+
+export type PaymentMethod = "qpay" | "card";
+export type VenueTicketStatus = "valid" | "used" | "void";
+
+export interface DbZone {
+  id: string;
+  event_id: string;
+  name_mn: string;
+  name_en: string;
+  desc_mn: string | null;
+  desc_en: string | null;
+  price: number;
+  capacity: number;
+  sold: number;
+  color: string | null;
+  sort_order: number;
+  created_at: string;
+}
+
+export type ZoneInput = {
+  name_mn: string;
+  name_en: string;
+  desc_mn?: string | null;
+  desc_en?: string | null;
+  price: number;
+  capacity: number;
+  color?: string | null;
+  sort_order?: number;
+};
+
+export type ZonePatch = Partial<ZoneInput>;
+
+/** A zone as the kiosk sees it — capacity expanded into availability. */
+export interface KioskZone extends DbZone {
+  available: number;
+}
+
+/** One line of a kiosk order, stored on venue_orders.items. */
+export interface VenueOrderItem {
+  zone_id: string;
+  zone_name_mn: string;
+  zone_name_en: string;
+  qty: number;
+  unit_price: number;
+}
+
+export interface DbVenueOrder {
+  id: string;
+  event_id: string;
+  reference: string;
+  status: TicketStatus;
+  items: VenueOrderItem[];
+  total: number;
+  payment_method: PaymentMethod | null;
+  qpay_invoice_id: string | null;
+  paid_at: string | null;
+  buyer_phone: string | null;
+  ebarimt_id: string | null;
+  ebarimt_qr_data: string | null;
+  ebarimt_lottery: string | null;
+  kiosk_id: string | null;
+  created_at: string;
+}
+
+export interface DbVenueTicket {
+  id: string;
+  order_id: string;
+  zone_id: string;
+  code: string;
+  status: VenueTicketStatus;
+  used_at: string | null;
+  created_at: string;
+}
+
+/** Event + its in-person zones, returned to the kiosk catalog. */
+export interface KioskEvent {
+  id: string;
+  title: string;
+  description: string | null;
+  status: EventStatus;
+  start_time: string;
+  image: string | null;
+  thumbnail_url: string | null;
+  zones: KioskZone[];
+}
+
+export interface KioskOrderItemInput {
+  zone_id: string;
+  qty: number;
+}
+
+export interface KioskCreateOrderInput {
+  event_id: string;
+  items: KioskOrderItemInput[];
+  method: PaymentMethod;
+  buyer_phone?: string | null;
+  kiosk_id?: string | null;
+}
+
+export interface KioskCreateOrderResponse {
+  order_id: string;
+  reference: string;
+  total: number;
+  /** Present for the QPay rail — the QR to display. */
+  qr_text?: string;
+  qr_image?: string;
+  urls?: QPayInvoiceLink[];
+}
+
+export interface KioskEbarimt {
+  qrData: string;
+  lottery: string;
+}
+
+export interface KioskTicketOut {
+  code: string;
+  zone_name_mn: string;
+  zone_name_en: string;
+}
+
+export interface KioskOrderStatus {
+  order_id: string;
+  reference: string;
+  status: TicketStatus;
+  total: number;
+  paid_at: string | null;
+  tickets: KioskTicketOut[];
+  ebarimt: KioskEbarimt | null;
+}
+
+/** Posted by the kiosk after the card terminal + POSAPI complete (card rail). */
+export interface KioskCardResultInput {
+  approved: boolean;
+  payment_ref?: string;
+  ebarimt?: KioskEbarimt;
+}
