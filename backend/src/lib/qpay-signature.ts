@@ -36,3 +36,15 @@ export function buildCallbackUrl(
   const params = new URLSearchParams({ ticket: ticketId, sig });
   return `${base}/api/payments/qpay-callback?${params.toString()}`;
 }
+
+/** Callback URL for an in-person kiosk order (signed the same way). */
+export function buildKioskCallbackUrl(
+  backendUrl: string,
+  orderId: string,
+  secret: string,
+): string {
+  const base = backendUrl.replace(/\/$/, "");
+  const sig = signTicket(orderId, secret);
+  const params = new URLSearchParams({ order: orderId, sig });
+  return `${base}/api/kiosk/qpay-callback?${params.toString()}`;
+}

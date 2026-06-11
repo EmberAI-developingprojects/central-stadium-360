@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { z } from "zod";
-import type { DbEvent, DbRecording } from "@cs360/shared";
+import type { DbEvent, DbRecording, DbZone } from "@cs360/shared";
 import { getSupabaseAdmin } from "../lib/supabase";
 import { discoverRecordingsForEvent } from "../lib/recordings";
 import {
@@ -291,6 +291,110 @@ adminEvents.post("/:id/rediscover", async (c) => {
   }
   const discovered = await discoverRecordingsForEvent(event);
   return c.json({ ok: true, data: discovered } as const);
+});
+
+// ---------------------------------------------------------------------------
+// In-person capacity zones (VIP/Premium/GA) — set price + capacity per event.
+// ---------------------------------------------------------------------------
+const ZONE_COLS =
+  "id,event_id,name_mn,name_en,desc_mn,desc_en,price,capacity,sold,color,sort_order,created_at";
+
+const zoneCreateSchema = z.object({
+  name_mn: z.string().trim().min(1),
+  name_en: z.string().trim().min(1),
+  desc_mn: z.string().nullable().optional(),
+  desc_en: z.string().nullable().optional(),
+  price: z.number().int().min(0),
+  capacity: z.number().int().min(0),
+  color: z.string().nullable().optional(),
+  sort_order: z.number().int().optional(),
+});
+
+const zonePatchSchema = zoneCreateSchema.partial();
+
+adminEvents.get("/:id/zones", async (c) => {
+  const admin = getSupabaseAdmin();
+  if (!admin) {
+    return c.json({ ok: false, error: "supabase_not_configured" } as const, 503);
+  }
+  const { data, error } = await admin
+    .from("zones")
+    .select(ZONE_COLS)
+    .eq("event_id", c.req.param("id"))
+    .order("sort_order", { ascending: true });
+  if (error) {
+    return c.json({ ok: false, error: error.message } as const, 500);
+  }
+  return c.json({ ok: true, data: (data ?? []) as DbZone[] } as const);
+});
+
+adminEvents.post("/:id/zones", async (c) => {
+  const admin = getSupabaseAdmin();
+  if (!admin) {
+    return c.json({ ok: false, error: "supabase_not_configured" } as const, 503);
+  }
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = zoneCreateSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json(
+      { ok: false, error: "invalid_input", details: parsed.error.flatten() } as const,
+      400,
+    );
+  }
+  const { data, error } = await admin
+    .from("zones")
+    .insert({ ...parsed.data, event_id: c.req.param("id") })
+    .select(ZONE_COLS)
+    .single<DbZone>();
+  if (error) {
+    return c.json({ ok: false, error: error.message } as const, 500);
+  }
+  return c.json({ ok: true, data } as const);
+});
+
+adminEvents.on(["PATCH", "PUT"], "/:id/zones/:zoneId", async (c) => {
+  const admin = getSupabaseAdmin();
+  if (!admin) {
+    return c.json({ ok: false, error: "supabase_not_configured" } as const, 503);
+  }
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = zonePatchSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json(
+      { ok: false, error: "invalid_input", details: parsed.error.flatten() } as const,
+      400,
+    );
+  }
+  const { data, error } = await admin
+    .from("zones")
+    .update(parsed.data)
+    .eq("id", c.req.param("zoneId"))
+    .eq("event_id", c.req.param("id"))
+    .select(ZONE_COLS)
+    .maybeSingle<DbZone>();
+  if (error) {
+    return c.json({ ok: false, error: error.message } as const, 500);
+  }
+  if (!data) {
+    return c.json({ ok: false, error: "not_found" } as const, 404);
+  }
+  return c.json({ ok: true, data } as const);
+});
+
+adminEvents.delete("/:id/zones/:zoneId", async (c) => {
+  const admin = getSupabaseAdmin();
+  if (!admin) {
+    return c.json({ ok: false, error: "supabase_not_configured" } as const, 503);
+  }
+  const { error } = await admin
+    .from("zones")
+    .delete()
+    .eq("id", c.req.param("zoneId"))
+    .eq("event_id", c.req.param("id"));
+  if (error) {
+    return c.json({ ok: false, error: error.message } as const, 500);
+  }
+  return c.json({ ok: true, data: { id: c.req.param("zoneId") } } as const);
 });
 
 export default adminEvents;

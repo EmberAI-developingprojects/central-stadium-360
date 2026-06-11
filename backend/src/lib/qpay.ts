@@ -238,3 +238,34 @@ export function isPaid(check: PaymentCheckResult): boolean {
     (r) => String(r.payment_status).toUpperCase() === "PAID",
   );
 }
+
+/** payment_id of the first PAID row, or null. Needed to issue the e-barimt. */
+export function paidPaymentId(check: PaymentCheckResult): string | null {
+  const row = check.rows.find(
+    (r) => String(r.payment_status).toUpperCase() === "PAID",
+  );
+  return row ? String(row.payment_id) : null;
+}
+
+export interface EbarimtCreateResult {
+  id: string;
+  ebarimt_qr_data: string;
+  ebarimt_lottery: string;
+  ebarimt_status: string; // "REGISTERED"
+}
+
+/**
+ * Issue the E-Barimt fiscal receipt for a paid QPay payment. QPay registers it
+ * with the tax authority and returns the receipt QR + lottery number.
+ * (E-Barimt for QPay payments is done here, cloud-side; the card-terminal rail
+ * issues its receipt via the on-box POSAPI instead.)
+ */
+export async function createEbarimt(
+  paymentId: string,
+  receiverType: "CITIZEN" | "COMPANY" = "CITIZEN",
+): Promise<EbarimtCreateResult> {
+  return qpayPost<EbarimtCreateResult>("/v2/ebarimt/create", {
+    payment_id: paymentId,
+    ebarimt_receiver_type: receiverType,
+  });
+}
