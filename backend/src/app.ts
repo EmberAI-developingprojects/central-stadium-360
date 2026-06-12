@@ -61,7 +61,13 @@ app.get("/health", (c) => {
 
 app.notFound((c) => c.json({ ok: false, error: "not_found" }, 404));
 
-app.onError((_err, c) => {
+app.onError((err, c) => {
+  console.error(
+    "[onError]",
+    c.req.method,
+    c.req.path,
+    err instanceof Error ? err.stack ?? err.message : err,
+  );
   return c.json({ ok: false, error: "internal_error" }, 500);
 });
 
