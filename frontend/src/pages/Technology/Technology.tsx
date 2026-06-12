@@ -6,575 +6,358 @@ import { REVEAL_UP_CLS } from "../../hooks/_revealCls";
 
 const FEATURES = [
   {
-    title: "360° бүрэн зургийн өнцөг",
-    desc: "Тоглолтын талбайн дунд байрлуулсан панорам камер нь хэвтээ 360° ба босоо чиглэлд бүтэн зургийг бичиж, үзэгчид өөрсдөө хүссэн өнцгөөр харах боломжтой.",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <circle cx="12" cy="12" r="9" />
-        <ellipse cx="12" cy="12" rx="9" ry="3.5" />
-        <path d="M3 12c4 4 14 4 18 0" />
-      </svg>
-    ),
-  },
-  {
-    title: "4 камер · HD чанар",
-    desc: "Сонгодог өнцгүүдийг хамарсан 3 камер дээр нэмэлтээр 360° панорам камер ажиллаж, нийт 4 урсгалыг үзэгчид зэрэг харах боломжийг олгоно.",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <rect x="2" y="6" width="14" height="12" rx="2" />
-        <path d="M16 10l5-3v10l-5-3z" />
-      </svg>
-    ),
-  },
-  {
-    title: "Доод хоцролттой шууд эфир",
-    desc: "AWS IVS дэд бүтцэд тулгуурлан секундын доод хоцролтоор шууд дамжуулах ба гар утас, таблет, компьютер дээр жигд тоглоно.",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d="M2 12a10 10 0 0 1 20 0" />
-        <path d="M5 12a7 7 0 0 1 14 0" />
-        <path d="M8 12a4 4 0 0 1 8 0" />
-        <circle cx="12" cy="12" r="1.5" fill="currentColor" />
-      </svg>
-    ),
-  },
-  {
-    title: "Интерактив өнцөг сонголт",
-    desc: "Үзэгч хулгана, хуруугаараа дэлгэцийг чирэн дурын чиглэлд эргүүлж, өөрийн сонгосон өнцгөөр тоглолтыг үзнэ.",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d="M3 12a9 9 0 0 1 15-6.7" />
-        <path d="M21 12a9 9 0 0 1-15 6.7" />
-        <polyline points="18 3 18 8 13 8" />
-        <polyline points="6 21 6 16 11 16" />
-      </svg>
-    ),
-  },
-  {
-    title: "Орон зайн дуу",
-    desc: "Талбайн дотор байрлуулсан микрофоны массив нь үзэгчид талбай дээр сууж буй мэт мэдрэмжийг бүрдүүлэх орон зайн дууг бичнэ.",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d="M9 18V6l9-3v13" />
-        <circle cx="6" cy="18" r="3" />
-        <circle cx="15" cy="16" r="3" />
-      </svg>
-    ),
-  },
-  {
-    title: "Нөхөж үзэх боломж",
-    desc: "Шууд эфир дуусахад VOD горимоор хадгалагдаж, нөхөж үзэх тасалбартай үзэгчид хүссэн үедээ тоглолтоо буцаан үзэх боломжтой.",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <rect x="3" y="4" width="18" height="4" rx="1" />
-        <path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8" />
-        <line x1="10" y1="12" x2="14" y2="12" />
-      </svg>
-    ),
-  },
-];
-
-const STEPS = [
-  {
     n: "01",
-    title: "Талбайн дунд камерын суурилуулалт",
-    desc: "Мэргэжлийн баг тоглолтын өмнө талбайн стратегийн цэгүүдэд 4 камерыг байршуулна. Нэг нь панорам (360°) линз бүхий гол камер.",
-    tag: "CAPTURE",
+    title: "360° бүрэн зургийн өнцөг",
+    desc: "Талбайн дунд байрлуулсан панорам линз нь хэвтээ 360° ба босоо чиглэлд бүтэн дүрсийг бичиж, үзэгчид өөрсдөө хүссэн өнцгөөр харах эрх чөлөөтэй.",
+    meta: "Eq. 12K-source · ERP-360 проекц",
   },
   {
     n: "02",
-    title: "AWS IVS-руу шууд дамжуулалт",
-    desc: "Камер бүрийн дүрсийг бодит цаг хугацаанд кодлоод AWS Interactive Video Service-руу хэт бага хоцролттой push хийнэ.",
-    tag: "INGEST",
+    title: "4 камер · UHD урсгал",
+    desc: "Сонгодог гурван тэнхлэгийн өнцөг дээр нэмэлтээр 360° панорам камер ажиллаж, нийт дөрвөн урсгалыг үзэгч зэрэгцүүлэн харна.",
+    meta: "3× HD + 1× 360° · H.264/HLS",
   },
   {
     n: "03",
-    title: "Браузерт WebGL рендер",
-    desc: "Three.js ашиглан 360° дүрсийг бөмбөрцөг гадарга дээр буулгаж, хэрэглэгчийн харах өнцгийг бодит цагт renderлэнэ.",
-    tag: "RENDER",
+    title: "Доод хоцролттой шууд эфир",
+    desc: "AWS IVS дэд бүтцэд тулгуурлан секундын доод хоцролтоор шууд дамжуулж, гар утас, таблет, компьютер дээр жигд тоглоно.",
+    meta: "Avg. ~720 мс хоцролт",
   },
   {
     n: "04",
+    title: "Интерактив өнцөг сонголт",
+    desc: "Үзэгч хулгана, хуруугаараа дэлгэцийг чирэн дурын чиглэлд эргүүлж, өөрийн сонгосон өнцгөөр тоглолтыг үзнэ.",
+    meta: "Touch / mouse / gyro",
+  },
+  {
+    n: "05",
+    title: "Орон зайн дуу",
+    desc: "Талбайн дотор байрлуулсан микрофоны массив нь үзэгчид талбай дээр сууж буй мэт мэдрэмжийг бүрдүүлэх орон зайн дууг бичнэ.",
+    meta: "Ambisonic · 4-сувгийн микс",
+  },
+  {
+    n: "06",
+    title: "Нөхөж үзэх (VOD)",
+    desc: "Шууд эфир дуусахад VOD горимд автоматаар архивлагдаж, нөхөж үзэх тасалбартай үзэгч хүссэн үедээ үзнэ.",
+    meta: "HLS · 72 цагийн доторх онлайн архив",
+  },
+];
+
+const PIPELINE = [
+  {
+    n: "01",
+    label: "CAPTURE",
+    title: "Талбайн дунд камерын суурилуулалт",
+    desc: "Мэргэжлийн баг тоглолтын өмнө талбайн стратегийн цэгүүдэд 4 камерыг байршуулна. Нэг нь панорам (360°) линз бүхий гол камер.",
+    spec: "4× камер · 1× 360° бүрэлдэхүүн",
+  },
+  {
+    n: "02",
+    label: "INGEST",
+    title: "AWS IVS-руу шууд дамжуулалт",
+    desc: "Камер бүрийн дүрсийг бодит цаг хугацаанд кодлоод AWS Interactive Video Service-руу хэт бага хоцролттой push хийнэ.",
+    spec: "RTMP → IVS · adaptive bitrate",
+  },
+  {
+    n: "03",
+    label: "RENDER",
+    title: "Браузерт WebGL рендер",
+    desc: "Three.js ашиглан 360° дүрсийг бөмбөрцөг гадарга дээр буулгаж, хэрэглэгчийн харах өнцгийг бодит цагт renderлэнэ.",
+    spec: "Three.js · WebGL2 · 60fps target",
+  },
+  {
+    n: "04",
+    label: "REPLAY",
     title: "VOD горимд автомат архив",
     desc: "Шууд эфир дуусмагц бичлэг HLS форматаар хадгалагдаж, нөхөж үзэх тасалбартай үзэгч хүссэн үедээ үзнэ.",
-    tag: "REPLAY",
+    spec: "HLS · S3 архив · 72 цаг онлайн",
   },
 ];
 
 const TECH_STYLE = `
-  @keyframes techOrbitSlow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-  @keyframes techOrbitMed  { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
-  @keyframes techOrbitFast { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-  @keyframes techGlowPulse {
-    0%, 100% { opacity: .85; filter: drop-shadow(0 0 18px rgba(96,165,250,.55)); }
-    50%      { opacity: 1;   filter: drop-shadow(0 0 36px rgba(129,140,248,.85)); }
+  @keyframes techDot { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+  @keyframes techSweep {
+    0%   { transform: rotate(0deg);   opacity: 0; }
+    8%   { opacity: 1; }
+    92%  { opacity: 1; }
+    100% { transform: rotate(360deg); opacity: 0; }
   }
-  @keyframes techScan {
-    0%   { transform: translateY(-110%); opacity: 0; }
-    8%   { opacity: .9; }
-    92%  { opacity: .9; }
-    100% { transform: translateY(110%); opacity: 0; }
-  }
-  @keyframes techDataFlow {
-    from { stroke-dashoffset: 60; }
-    to   { stroke-dashoffset: 0; }
-  }
-  @keyframes techDotPulse {
-    0%, 100% { transform: scale(1);   box-shadow: 0 0 0 0   rgba(74,222,128,.65); }
-    50%      { transform: scale(1.15); box-shadow: 0 0 0 10px rgba(74,222,128,0);  }
-  }
-  @keyframes techMarkerPulse {
-    0%, 100% { opacity: .55; transform: scale(1); }
-    50%      { opacity: 1;   transform: scale(1.15); }
-  }
-  .tech-orbit-slow { animation: techOrbitSlow 30s linear infinite; }
-  .tech-orbit-med  { animation: techOrbitMed  22s linear infinite; }
-  .tech-orbit-fast { animation: techOrbitFast 14s linear infinite; }
-  .tech-glow-pulse { animation: techGlowPulse 3.4s ease-in-out infinite; }
-  .tech-scan       { animation: techScan 5.2s linear infinite; }
-  .tech-data-flow  { stroke-dasharray: 6 6; animation: techDataFlow 1.6s linear infinite; }
-  .tech-dot-pulse  { animation: techDotPulse 1.8s ease-out infinite; }
-  .tech-marker     { animation: techMarkerPulse 2.4s ease-in-out infinite; }
-  .tech-grid-bg {
-    background-image:
-      linear-gradient(rgba(99,102,241,0.07) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(99,102,241,0.07) 1px, transparent 1px);
-    background-size: 56px 56px;
-  }
+  @keyframes techDash { from { stroke-dashoffset: 24; } to { stroke-dashoffset: 0; } }
+  .tech-dot     { animation: techDot 1.8s ease-in-out infinite; }
+  .tech-sweep   { transform-origin: 50% 50%; animation: techSweep 7s linear infinite; }
+  .tech-dash    { stroke-dasharray: 4 4; animation: techDash 1.6s linear infinite; }
   @media (prefers-reduced-motion: reduce) {
-    .tech-orbit-slow, .tech-orbit-med, .tech-orbit-fast,
-    .tech-glow-pulse, .tech-scan, .tech-data-flow,
-    .tech-dot-pulse, .tech-marker { animation: none !important; }
+    .tech-dot, .tech-sweep, .tech-dash { animation: none !important; }
   }
 `;
 
-const SECTION_DARK_CLS =
-  "relative overflow-hidden bg-[#05071a] text-white py-24 px-6 max-[920px]:py-16 max-[920px]:px-5";
+const PAGE_BG = "bg-[#0b0c10]";
+const SECTION_PAD = "py-28 px-6 max-[920px]:py-20 max-[920px]:px-5";
 
-const EYEBROW_CLS =
-  "inline-flex items-center gap-2 rounded-full bg-white/[0.06] border border-white/10 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.22em] text-white/80 [&_svg]:w-3 [&_svg]:h-3";
+const KICKER_CLS =
+  "inline-flex items-center gap-2.5 text-[11px] font-semibold uppercase tracking-[0.28em] text-white/55 [&_.bar]:inline-block [&_.bar]:w-6 [&_.bar]:h-px [&_.bar]:bg-white/30";
+
+const SECTION_INDEX_CLS =
+  "text-[11px] font-mono font-medium tracking-[0.2em] text-white/40 tabular-nums";
+
+const RULE_CLS = "border-t border-white/10";
 
 export default function Technology() {
   useRevealOnScroll();
 
   return (
-    <div className="min-h-screen bg-[#05071a]">
+    <div className={`min-h-screen ${PAGE_BG} text-white selection:bg-white selection:text-[#0b0c10]`}>
       <style dangerouslySetInnerHTML={{ __html: TECH_STYLE }} />
       <SiteHeader />
 
-      {/* ───────────────────────── HERO ───────────────────────── */}
-      <section className={SECTION_DARK_CLS}>
-        {/* deep-space gradient + grid + scanlines */}
+      {/* ───────────── HERO ───────────── */}
+      <section className={`relative overflow-hidden ${PAGE_BG} ${SECTION_PAD} pt-16 max-[920px]:pt-12`}>
+        {/* faint engineering grid */}
         <div
           aria-hidden="true"
-          className="absolute inset-0 pointer-events-none"
+          className="absolute inset-0 pointer-events-none opacity-[0.18]"
           style={{
-            background:
-              "radial-gradient(1200px 600px at 18% 12%, rgba(56,76,255,0.32), transparent 60%), radial-gradient(900px 600px at 82% 88%, rgba(129,140,248,0.28), transparent 60%), linear-gradient(180deg, #04061a 0%, #070b2b 60%, #04061a 100%)",
-          }}
-        />
-        <div aria-hidden="true" className="absolute inset-0 tech-grid-bg opacity-[0.55] pointer-events-none [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)]" />
-        <div
-          aria-hidden="true"
-          className="absolute left-0 right-0 h-[160px] pointer-events-none tech-scan"
-          style={{
-            background:
-              "linear-gradient(180deg, transparent 0%, rgba(129,140,248,0.18) 50%, transparent 100%)",
+            backgroundImage:
+              "linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px)",
+            backgroundSize: "72px 72px",
+            maskImage: "radial-gradient(ellipse at 50% 40%, black, transparent 70%)",
+            WebkitMaskImage: "radial-gradient(ellipse at 50% 40%, black, transparent 70%)",
           }}
         />
 
-        <div className="max-w-screen-page mx-auto relative z-[1] grid items-center gap-14 [grid-template-columns:1.05fr_1fr] max-[1080px]:[grid-template-columns:1fr] max-[1080px]:gap-10">
-          {/* LEFT: copy */}
-          <div>
-            <span className={`${EYEBROW_CLS} mb-7 ${REVEAL_UP_CLS}`} data-stagger="1">
-              <span className="relative inline-flex w-2 h-2 rounded-full bg-emerald-400 tech-dot-pulse" />
-              LIVE · 360° BROADCAST PLATFORM
-            </span>
+        <div className="relative max-w-screen-page mx-auto">
+          {/* magazine-style header bar */}
+          <div className={`flex items-center justify-between mb-12 ${REVEAL_UP_CLS}`} data-stagger="1">
+            <div className={KICKER_CLS}>
+              <span className="bar" />
+              Vol.01 — Технологийн дэвшил
+            </div>
+            <div className={SECTION_INDEX_CLS}>
+              ※ 360° / LIVE / WEBGL
+            </div>
+          </div>
+          <div className={RULE_CLS} />
 
-            <h1
-              className={`text-[clamp(36px,5.4vw,64px)] font-extrabold leading-[1.02] tracking-[-0.025em] m-0 mb-6 ${REVEAL_UP_CLS}`}
-              data-stagger="2"
-            >
-              Талбайн дунд{" "}
-              <span className="bg-gradient-to-r from-[#a5b4fc] via-[#818cf8] to-[#22d3ee] bg-clip-text text-transparent">
-                360°
-              </span>{" "}
-              шууд дамжуулалтын{" "}
-              <span className="relative inline-block">
-                шинэ систем
-                <span
-                  aria-hidden="true"
-                  className="absolute left-0 right-0 -bottom-2 h-[3px] rounded-full"
-                  style={{
-                    background:
-                      "linear-gradient(90deg, transparent, #6366f1 30%, #22d3ee 70%, transparent)",
-                  }}
-                />
-              </span>
-            </h1>
-
-            <p
-              className={`text-[17px] leading-[1.7] text-white/70 m-0 mb-8 max-w-[620px] ${REVEAL_UP_CLS}`}
-              data-stagger="3"
-            >
-              Төв Цэнгэлдэх Хүрээлэн анх удаа Монголд нэвтрүүлж буй 360° камер,
-              бага хоцролттой шууд дамжуулалт, WebGL рендерийн нэгдсэн платформ.
-              Үзэгч бүр өөрийн сонгосон өнцгөөс, талбайд сууж буй мэт мэдрэмжээр
-              үзнэ.
-            </p>
-
-            <div className={`flex flex-wrap gap-3 ${REVEAL_UP_CLS}`} data-stagger="4">
-              <Link
-                to="/events"
-                className="group inline-flex items-center gap-2 rounded-full bg-white text-[#05071a] text-[14px] font-bold no-underline px-6 py-3.5 shadow-[0_10px_40px_-12px_rgba(165,180,252,0.85)] hover:shadow-[0_18px_48px_-12px_rgba(165,180,252,1)] [transition:transform_.18s_ease,box-shadow_.25s_ease] hover:-translate-y-0.5"
+          <div className="grid items-end gap-16 mt-12 [grid-template-columns:1.15fr_1fr] max-[1080px]:[grid-template-columns:1fr] max-[1080px]:gap-12">
+            {/* LEFT — typographic */}
+            <div>
+              <h1
+                className={`font-extrabold tracking-[-0.035em] leading-[0.94] m-0 ${REVEAL_UP_CLS}`}
+                data-stagger="2"
+                style={{ fontSize: "clamp(48px, 7vw, 96px)" }}
               >
-                Удахгүй болох тоглолтууд
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="[transition:transform_.18s_ease] group-hover:translate-x-0.5">
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                  <polyline points="12 5 19 12 12 19" />
-                </svg>
-              </Link>
-              <a
-                href="#pipeline"
-                className="inline-flex items-center gap-2 rounded-full bg-white/[0.06] border border-white/15 text-white text-[14px] font-semibold no-underline px-6 py-3.5 hover:bg-white/[0.12] hover:border-white/25 [transition:background_.18s_ease,border-color_.18s_ease]"
+                Талбайн<br />
+                <span className="italic font-light text-white/70">дунд&nbsp;байгаа</span>{" "}
+                <span className="inline-flex items-baseline">
+                  <span>камер.</span>
+                </span>
+                <br />
+                Үзэгч бүрд{" "}
+                <span className="relative inline-block">
+                  өөрийн өнцөг.
+                  <span
+                    aria-hidden="true"
+                    className="absolute left-0 right-0 -bottom-1 h-[2px] bg-white/80"
+                  />
+                </span>
+              </h1>
+
+              <p
+                className={`mt-10 max-w-[560px] text-[16.5px] leading-[1.7] text-white/65 m-0 ${REVEAL_UP_CLS}`}
+                data-stagger="3"
               >
-                Хэрхэн ажилладаг вэ?
-              </a>
+                Төв Цэнгэлдэх Хүрээлэн анх удаа Монголд нэвтрүүлж буй 360° камер
+                ба бага хоцролттой шууд дамжуулалтын платформ. Үзэгч нь зөвхөн
+                дамжуулагчийн сонгосон өнцгөөр биш, өөрийн хүссэн чиглэлд харах
+                эрх чөлөөтэй.
+              </p>
+
+              <div className={`flex flex-wrap items-center gap-5 mt-10 ${REVEAL_UP_CLS}`} data-stagger="4">
+                <Link
+                  to="/events"
+                  className="group inline-flex items-center gap-3 rounded-none bg-white text-[#0b0c10] text-[13.5px] font-semibold no-underline px-6 py-4 [transition:transform_.18s_ease,background_.18s_ease] hover:bg-white/90"
+                >
+                  Удахгүй болох тоглолтууд
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="[transition:transform_.18s_ease] group-hover:translate-x-1">
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                    <polyline points="12 5 19 12 12 19" />
+                  </svg>
+                </Link>
+                <a
+                  href="#pipeline"
+                  className="inline-flex items-center gap-2 text-[13.5px] font-semibold text-white/80 no-underline border-b border-white/30 pb-1 hover:text-white hover:border-white [transition:color_.15s_ease,border-color_.15s_ease]"
+                >
+                  Хэрхэн ажилладагийг үзэх
+                </a>
+              </div>
+            </div>
+
+            {/* RIGHT — 360° camera visual with editorial framing */}
+            <div className={`relative ${REVEAL_UP_CLS}`} data-stagger="3">
+              <Camera360Visual />
+              <div className="mt-4 flex items-center justify-between text-[10.5px] font-mono uppercase tracking-[0.2em] text-white/40">
+                <span>FIG. 01 — Insta360 X-series · Dual-fisheye</span>
+                <span>8K · 30fps</span>
+              </div>
             </div>
           </div>
 
-          {/* RIGHT: holographic 360° camera visualisation */}
-          <div
-            className={`relative aspect-square w-full max-w-[560px] mx-auto ${REVEAL_UP_CLS}`}
-            data-stagger="3"
-          >
-            {/* outer glow */}
-            <div
-              aria-hidden="true"
-              className="absolute inset-[12%] rounded-full tech-glow-pulse"
-              style={{
-                background:
-                  "radial-gradient(circle, rgba(99,102,241,0.45) 0%, rgba(34,211,238,0.18) 40%, transparent 70%)",
-              }}
-            />
-
-            {/* orbit ring — outer (markers = 4 cameras) */}
-            <div className="absolute inset-0 grid place-items-center">
-              <div className="relative w-[92%] h-[92%] rounded-full border border-white/15 tech-orbit-slow">
-                {/* 4 camera markers */}
-                {[0, 90, 180, 270].map((deg, i) => (
-                  <div
-                    key={deg}
-                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 tech-marker"
-                    style={{
-                      transform: `translate(-50%,-50%) rotate(${deg}deg) translateY(calc(-50% + 4px))`,
-                      animationDelay: `${i * 0.4}s`,
-                    }}
-                  >
-                    <div className="flex items-center gap-2 -rotate-[var(--r,0deg)]" style={{ ["--r" as never]: `${deg}deg` }}>
-                      <span className="w-3 h-3 rounded-full bg-[#a5b4fc] shadow-[0_0_18px_rgba(165,180,252,0.85)]" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* orbit ring — middle (dashed, reversed) */}
-            <div className="absolute inset-0 grid place-items-center">
-              <div
-                className="w-[72%] h-[72%] rounded-full border border-dashed border-[#22d3ee]/40 tech-orbit-med"
-                style={{ boxShadow: "inset 0 0 60px rgba(34,211,238,0.08)" }}
-              />
-            </div>
-
-            {/* orbit ring — inner (fast) */}
-            <div className="absolute inset-0 grid place-items-center">
-              <div className="relative w-[54%] h-[54%] rounded-full border border-white/25 tech-orbit-fast">
-                <span className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-white shadow-[0_0_14px_rgba(255,255,255,0.95)]" />
-              </div>
-            </div>
-
-            {/* core sphere */}
-            <div className="absolute inset-0 grid place-items-center">
-              <div
-                className="relative w-[34%] h-[34%] rounded-full grid place-items-center"
-                style={{
-                  background:
-                    "radial-gradient(circle at 30% 30%, #6366f1 0%, #1e1b4b 60%, #0b0b2b 100%)",
-                  boxShadow:
-                    "0 0 80px rgba(99,102,241,0.6), inset 0 0 30px rgba(255,255,255,0.08), inset 0 -10px 30px rgba(0,0,0,0.5)",
-                }}
-              >
-                <div className="text-center">
-                  <div className="text-[clamp(28px,4.4vw,46px)] font-black tracking-[-0.03em] leading-none text-white">
-                    360°
-                  </div>
-                  <div className="text-[10px] font-bold tracking-[0.28em] text-white/60 mt-1">
-                    PANORAMIC
-                  </div>
+          {/* ledger-style inline stats */}
+          <div className={`mt-20 ${REVEAL_UP_CLS}`} data-stagger="4">
+            <div className={RULE_CLS} />
+            <dl className="grid [grid-template-columns:repeat(4,minmax(0,1fr))] max-[760px]:[grid-template-columns:repeat(2,minmax(0,1fr))]">
+              {[
+                { v: "360", u: "°", l: "Бүрэн өнцөг" },
+                { v: "4", u: "ch", l: "Зэрэгцээ урсгал" },
+                { v: "4K", u: "", l: "UHD чанар" },
+                { v: "~720", u: "ms", l: "Дундаж хоцролт" },
+              ].map((s, i) => (
+                <div
+                  key={s.l}
+                  className={`py-7 px-1 ${i !== 0 ? "border-l border-white/10 max-[760px]:border-l-0" : ""} ${i >= 2 ? "max-[760px]:border-t max-[760px]:border-white/10" : ""} ${i === 2 ? "max-[760px]:border-l max-[760px]:border-white/10" : ""}`}
+                >
+                  <dt className="text-[10.5px] font-mono uppercase tracking-[0.22em] text-white/40 mb-3">
+                    {s.l}
+                  </dt>
+                  <dd className="m-0 flex items-baseline gap-1">
+                    <span
+                      className="font-extrabold tracking-[-0.04em] tabular-nums leading-none text-white"
+                      style={{ fontSize: "clamp(40px, 4.6vw, 64px)" }}
+                    >
+                      {s.v}
+                    </span>
+                    {s.u && (
+                      <span className="text-[16px] font-medium text-white/45 tabular-nums">
+                        {s.u}
+                      </span>
+                    )}
+                  </dd>
                 </div>
-                {/* highlight */}
-                <span
-                  aria-hidden="true"
-                  className="absolute top-3 left-4 w-10 h-10 rounded-full bg-white/25 blur-xl"
-                />
-              </div>
-            </div>
-
-            {/* floating spec chips */}
-            <div className="absolute -top-2 right-2 max-[480px]:hidden">
-              <div className="rounded-xl bg-white/[0.06] border border-white/10 backdrop-blur-md px-3 py-2 text-[11px] font-bold tracking-[0.16em] text-white/85">
-                4K · UHD
-              </div>
-            </div>
-            <div className="absolute bottom-4 left-0 max-[480px]:hidden">
-              <div className="rounded-xl bg-white/[0.06] border border-white/10 backdrop-blur-md px-3 py-2 text-[11px] font-bold tracking-[0.16em] text-white/85 flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 tech-dot-pulse" />
-                LIVE · &lt; 1s
-              </div>
-            </div>
-            <div className="absolute top-1/2 -left-2 max-[480px]:hidden">
-              <div className="rounded-xl bg-white/[0.06] border border-white/10 backdrop-blur-md px-3 py-2 text-[11px] font-bold tracking-[0.16em] text-white/85">
-                WebGL
-              </div>
-            </div>
-            <div className="absolute top-1/2 -right-2 max-[480px]:hidden">
-              <div className="rounded-xl bg-white/[0.06] border border-white/10 backdrop-blur-md px-3 py-2 text-[11px] font-bold tracking-[0.16em] text-white/85">
-                AWS · IVS
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* STATS STRIP */}
-        <div className="relative z-[1] max-w-screen-page mx-auto mt-16 max-[920px]:mt-12">
-          <div
-            className={`grid [grid-template-columns:repeat(4,minmax(0,1fr))] max-[760px]:[grid-template-columns:repeat(2,minmax(0,1fr))] rounded-2xl bg-white/[0.04] border border-white/10 backdrop-blur-md overflow-hidden ${REVEAL_UP_CLS}`}
-          >
-            {[
-              { v: "360°", l: "Бүрэн өнцөг" },
-              { v: "4", l: "Зэрэг урсгал" },
-              { v: "4K", l: "UHD чанар" },
-              { v: "<1s", l: "Хоцролт" },
-            ].map((s, i) => (
-              <div
-                key={s.l}
-                className={`px-6 py-7 text-center ${i !== 0 ? "border-l border-white/10 max-[760px]:border-l-0" : ""} ${i === 2 ? "max-[760px]:border-l max-[760px]:border-white/10" : ""} ${i >= 2 ? "max-[760px]:border-t max-[760px]:border-white/10" : ""}`}
-              >
-                <div className="text-[clamp(28px,3.6vw,40px)] font-black tracking-[-0.02em] tabular-nums bg-gradient-to-b from-white to-[#a5b4fc] bg-clip-text text-transparent">
-                  {s.v}
-                </div>
-                <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-white/55 mt-1">
-                  {s.l}
-                </div>
-              </div>
-            ))}
+              ))}
+            </dl>
+            <div className={RULE_CLS} />
           </div>
         </div>
       </section>
 
-      {/* ───────────────────────── FEATURES ───────────────────────── */}
-      <section className="relative overflow-hidden bg-[#05071a] text-white py-24 px-6 max-[920px]:py-16 max-[920px]:px-5">
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 pointer-events-none opacity-60"
-          style={{
-            background:
-              "radial-gradient(800px 500px at 90% 10%, rgba(56,76,255,0.18), transparent 60%), radial-gradient(700px 500px at 5% 90%, rgba(34,211,238,0.14), transparent 60%)",
-          }}
-        />
-        <div className="relative z-[1] max-w-screen-page mx-auto">
-          <div className={`max-w-[760px] mb-14 ${REVEAL_UP_CLS}`} data-stagger="1">
-            <span className={`${EYEBROW_CLS} mb-5`}>
-              <span className="w-1.5 h-1.5 rounded-full bg-[#a5b4fc]" />
-              ОНЦЛОГ
-            </span>
-            <h2 className="text-[clamp(30px,3.8vw,46px)] font-extrabold tracking-[-0.02em] leading-[1.08] m-0 mb-4">
-              Юу нь өөр вэ?
-            </h2>
-            <p className="text-[16.5px] leading-[1.7] text-white/65 m-0">
-              Сонгодог нэг өнцгийн дамжуулалтаас ялгарах олон давуу талтай. Үзэгч
-              нь зөвхөн дамжуулагчийн сонгосон өнцгөөр биш, тоглолтын дур зоргын
-              өнцөг рүү харах эрх чөлөөтэй.
+      {/* ───────────── FEATURES (editorial list) ───────────── */}
+      <section className={`relative ${PAGE_BG} ${SECTION_PAD}`}>
+        <div className="relative max-w-screen-page mx-auto">
+          <div className={`grid gap-12 [grid-template-columns:340px_1fr] max-[920px]:[grid-template-columns:1fr] max-[920px]:gap-8 mb-16 ${REVEAL_UP_CLS}`} data-stagger="1">
+            <div>
+              <div className={`${KICKER_CLS} mb-6`}>
+                <span className="bar" />
+                §02 · Онцлог
+              </div>
+              <h2
+                className="font-extrabold tracking-[-0.03em] leading-[1.02] m-0"
+                style={{ fontSize: "clamp(34px, 4.4vw, 56px)" }}
+              >
+                Юу нь өөр вэ?
+              </h2>
+            </div>
+            <p className="text-[16.5px] leading-[1.75] text-white/65 m-0 max-w-[640px] [align-self:end]">
+              Сонгодог нэг өнцгийн дамжуулалт нь дамжуулагчийн сонгосон харагдацыг
+              хязгаарладаг. Энд харин үзэгч өөрөө талбайн дотор зогсож буй мэт,
+              өөрийн хүссэн чиглэлд эргэн харах эрхтэй. Доорхи зургаан зүйл нь
+              энэ системийг өмнөх загвараас ялгана.
             </p>
           </div>
 
-          <div className="grid gap-5 [grid-template-columns:repeat(3,minmax(0,1fr))] max-[920px]:[grid-template-columns:repeat(2,minmax(0,1fr))] max-[600px]:[grid-template-columns:1fr]">
+          <div className={RULE_CLS} />
+          <div className="grid [grid-template-columns:repeat(2,minmax(0,1fr))] max-[760px]:[grid-template-columns:1fr]">
             {FEATURES.map((f, i) => (
               <article
-                key={f.title}
-                className={`group relative rounded-2xl bg-white/[0.04] border border-white/10 backdrop-blur-md p-6 overflow-hidden [transition:transform_.2s_ease,border-color_.2s_ease,background_.2s_ease] hover:-translate-y-1 hover:border-[#a5b4fc]/40 hover:bg-white/[0.06] ${REVEAL_UP_CLS}`}
-                data-stagger={(i % 3) + 1}
+                key={f.n}
+                className={`relative px-1 py-9 ${i % 2 === 0 ? "[border-right:1px_solid_rgba(255,255,255,0.10)] max-[760px]:[border-right:none] pr-10 max-[920px]:pr-6" : "pl-10 max-[920px]:pl-6 max-[760px]:pl-1"} ${i > 1 ? "border-t border-white/10" : ""} ${i === 1 ? "max-[760px]:border-t max-[760px]:border-white/10" : ""} ${REVEAL_UP_CLS}`}
+                data-stagger={(i % 2) + 1}
               >
-                {/* hover glow */}
-                <div
-                  aria-hidden="true"
-                  className="absolute -top-24 -right-24 w-56 h-56 rounded-full opacity-0 group-hover:opacity-100 [transition:opacity_.3s_ease] pointer-events-none"
-                  style={{
-                    background:
-                      "radial-gradient(circle, rgba(99,102,241,0.35) 0%, transparent 70%)",
-                  }}
-                />
-                <div className="relative">
-                  <div
-                    className="inline-flex items-center justify-center w-12 h-12 rounded-xl mb-5 text-white [&_svg]:w-[22px] [&_svg]:h-[22px]"
-                    style={{
-                      background:
-                        "linear-gradient(135deg, rgba(99,102,241,0.35), rgba(34,211,238,0.25))",
-                      boxShadow:
-                        "inset 0 0 0 1px rgba(165,180,252,0.35), 0 8px 24px -8px rgba(99,102,241,0.6)",
-                    }}
-                  >
-                    {f.icon}
-                  </div>
-                  <h3 className="text-[17px] font-bold tracking-[-0.01em] text-white m-0 mb-2">
-                    {f.title}
-                  </h3>
-                  <p className="text-[14.5px] leading-[1.65] text-white/65 m-0">
-                    {f.desc}
-                  </p>
+                <div className="flex items-baseline justify-between mb-4 gap-4">
+                  <span className="text-[11px] font-mono tracking-[0.2em] text-white/45">
+                    № {f.n}
+                  </span>
+                  <span className="text-[10.5px] font-mono uppercase tracking-[0.18em] text-white/35 text-right">
+                    {f.meta}
+                  </span>
                 </div>
+                <h3 className="text-[22px] font-bold tracking-[-0.018em] leading-[1.2] text-white m-0 mb-3 max-w-[420px]">
+                  {f.title}
+                </h3>
+                <p className="text-[15px] leading-[1.7] text-white/65 m-0 max-w-[520px]">
+                  {f.desc}
+                </p>
               </article>
             ))}
           </div>
+          <div className={RULE_CLS} />
         </div>
       </section>
 
-      {/* ───────────────────────── PIPELINE ───────────────────────── */}
-      <section
-        id="pipeline"
-        className="relative overflow-hidden bg-[#04061a] text-white py-24 px-6 max-[920px]:py-16 max-[920px]:px-5"
-      >
-        <div aria-hidden="true" className="absolute inset-0 tech-grid-bg opacity-30 pointer-events-none [mask-image:radial-gradient(ellipse_at_center,black,transparent_70%)]" />
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(900px 500px at 50% 0%, rgba(34,211,238,0.12), transparent 60%)",
-          }}
-        />
-        <div className="relative z-[1] max-w-screen-page mx-auto">
-          <div className={`max-w-[760px] mb-14 ${REVEAL_UP_CLS}`} data-stagger="1">
-            <span className={`${EYEBROW_CLS} mb-5`}>
-              <span className="w-1.5 h-1.5 rounded-full bg-[#22d3ee]" />
-              PIPELINE
-            </span>
-            <h2 className="text-[clamp(30px,3.8vw,46px)] font-extrabold tracking-[-0.02em] leading-[1.08] m-0 mb-4">
-              Камераас дэлгэц хүртэлх замнал
-            </h2>
-            <p className="text-[16.5px] leading-[1.7] text-white/65 m-0">
+      {/* ───────────── PIPELINE (technical timeline) ───────────── */}
+      <section id="pipeline" className={`relative ${PAGE_BG} ${SECTION_PAD}`}>
+        <div className="relative max-w-screen-page mx-auto">
+          <div className={`grid gap-12 [grid-template-columns:340px_1fr] max-[920px]:[grid-template-columns:1fr] max-[920px]:gap-8 mb-16 ${REVEAL_UP_CLS}`} data-stagger="1">
+            <div>
+              <div className={`${KICKER_CLS} mb-6`}>
+                <span className="bar" />
+                §03 · Pipeline
+              </div>
+              <h2
+                className="font-extrabold tracking-[-0.03em] leading-[1.02] m-0"
+                style={{ fontSize: "clamp(34px, 4.4vw, 56px)" }}
+              >
+                Камераас<br />дэлгэц хүртэл
+              </h2>
+            </div>
+            <p className="text-[16.5px] leading-[1.75] text-white/65 m-0 max-w-[640px] [align-self:end]">
               Талбайд байршуулсан камераас гар утсан дээрх дэлгэц хүртэл дүрс
-              хэрхэн дамжих вэ — дөрвөн алхамаар.
+              хэрхэн дамжих вэ — дөрвөн алхамын техникийн товчоо.
             </p>
           </div>
 
-          {/* horizontal animated data flow (desktop) */}
-          <div className="relative max-[1080px]:hidden">
-            <svg
-              aria-hidden="true"
-              className="absolute inset-x-0 top-[88px] w-full h-[6px] pointer-events-none"
-              viewBox="0 0 100 1"
-              preserveAspectRatio="none"
-            >
-              <line
-                x1="2" y1="0.5" x2="98" y2="0.5"
-                stroke="rgba(165,180,252,0.18)" strokeWidth="0.4"
-              />
-              <line
-                x1="2" y1="0.5" x2="98" y2="0.5"
-                stroke="url(#flow)" strokeWidth="0.6"
-                className="tech-data-flow"
-                pathLength={60}
-              />
-              <defs>
-                <linearGradient id="flow" x1="0" x2="1" y1="0" y2="0">
-                  <stop offset="0%" stopColor="#6366f1" />
-                  <stop offset="50%" stopColor="#22d3ee" />
-                  <stop offset="100%" stopColor="#a5b4fc" />
-                </linearGradient>
-              </defs>
-            </svg>
-
-            <ol className="relative grid gap-6 list-none m-0 p-0 [grid-template-columns:repeat(4,minmax(0,1fr))]">
-              {STEPS.map((s, i) => (
-                <li
-                  key={s.n}
-                  className={`relative ${REVEAL_UP_CLS}`}
-                  data-stagger={(i % 4) + 1}
-                >
-                  {/* node circle */}
-                  <div className="relative mx-auto mb-6 w-[180px] flex items-center justify-center">
-                    <div
-                      className="relative w-[180px] h-[180px] rounded-full grid place-items-center"
-                      style={{
-                        background:
-                          "radial-gradient(circle at 30% 30%, rgba(99,102,241,0.4), rgba(11,13,40,0.95) 70%)",
-                        boxShadow:
-                          "inset 0 0 0 1px rgba(165,180,252,0.35), 0 16px 60px -20px rgba(99,102,241,0.7)",
-                      }}
-                    >
-                      <div
-                        aria-hidden="true"
-                        className="absolute inset-3 rounded-full border border-dashed border-white/15 tech-orbit-med"
-                      />
-                      <div className="text-center px-4">
-                        <div className="text-[10px] font-bold tracking-[0.28em] text-[#a5b4fc] mb-1">
-                          {s.tag}
-                        </div>
-                        <div className="text-[44px] font-black tracking-[-0.04em] tabular-nums leading-none text-white">
-                          {s.n}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="text-center max-w-[260px] mx-auto">
-                    <h3 className="text-[16px] font-bold tracking-[-0.01em] text-white m-0 mb-2">
-                      {s.title}
-                    </h3>
-                    <p className="text-[13.5px] leading-[1.6] text-white/60 m-0">
-                      {s.desc}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </div>
-
-          {/* vertical stacked (tablet / mobile) */}
-          <ol className="hidden max-[1080px]:flex flex-col gap-5 list-none m-0 p-0">
-            {STEPS.map((s, i) => (
+          {/* Timeline: index column + content column with hairlines and connector */}
+          <ol className="relative list-none m-0 p-0">
+            <div className={RULE_CLS} />
+            {PIPELINE.map((s) => (
               <li
                 key={s.n}
-                className={`relative rounded-2xl bg-white/[0.04] border border-white/10 backdrop-blur-md p-6 flex gap-5 items-start ${REVEAL_UP_CLS}`}
-                data-stagger={(i % 4) + 1}
+                className={`relative grid items-start gap-10 [grid-template-columns:200px_1fr_220px] max-[1080px]:[grid-template-columns:140px_1fr] max-[1080px]:gap-6 max-[760px]:[grid-template-columns:1fr] py-10 border-b border-white/10 ${REVEAL_UP_CLS}`}
+                data-stagger="1"
               >
-                <div
-                  className="flex-none w-[80px] h-[80px] rounded-2xl grid place-items-center"
-                  style={{
-                    background:
-                      "radial-gradient(circle at 30% 30%, rgba(99,102,241,0.45), rgba(11,13,40,0.95) 70%)",
-                    boxShadow:
-                      "inset 0 0 0 1px rgba(165,180,252,0.35), 0 12px 40px -16px rgba(99,102,241,0.7)",
-                  }}
-                >
-                  <div className="text-center">
-                    <div className="text-[9px] font-bold tracking-[0.24em] text-[#a5b4fc]">
-                      {s.tag}
-                    </div>
-                    <div className="text-[26px] font-black tracking-[-0.03em] tabular-nums leading-none text-white">
-                      {s.n}
-                    </div>
-                  </div>
+                {/* index */}
+                <div className="flex items-start gap-4">
+                  <span
+                    className="font-extrabold tabular-nums tracking-[-0.04em] leading-none text-white"
+                    style={{ fontSize: "clamp(56px, 5.6vw, 80px)" }}
+                  >
+                    {s.n}
+                  </span>
+                  <span className="mt-2 text-[10.5px] font-mono uppercase tracking-[0.24em] text-white/45 max-[760px]:mt-1">
+                    {s.label}
+                  </span>
                 </div>
-                <div className="min-w-0">
-                  <h3 className="text-[16px] font-bold tracking-[-0.01em] text-white m-0 mb-2">
+
+                {/* content */}
+                <div>
+                  <h3 className="text-[24px] font-bold tracking-[-0.018em] leading-[1.2] text-white m-0 mb-3 max-w-[560px]">
                     {s.title}
                   </h3>
-                  <p className="text-[14px] leading-[1.6] text-white/65 m-0">
+                  <p className="text-[15px] leading-[1.7] text-white/65 m-0 max-w-[640px]">
                     {s.desc}
                   </p>
+                </div>
+
+                {/* spec */}
+                <div className="text-right max-[1080px]:hidden">
+                  <div className="text-[10.5px] font-mono uppercase tracking-[0.2em] text-white/35 mb-2">
+                    Spec
+                  </div>
+                  <div className="text-[12.5px] font-mono text-white/65 leading-[1.6]">
+                    {s.spec}
+                  </div>
+                </div>
+                <div className="hidden max-[1080px]:block max-[760px]:mt-1 text-[11px] font-mono text-white/45">
+                  {s.spec}
                 </div>
               </li>
             ))}
@@ -582,42 +365,32 @@ export default function Technology() {
         </div>
       </section>
 
-      {/* ───────────────────────── CTA ───────────────────────── */}
-      <section className="relative overflow-hidden bg-[#04061a] text-white py-20 px-6 max-[920px]:py-14 max-[920px]:px-5">
-        <div className="max-w-screen-page mx-auto">
-          <div
-            className={`relative overflow-hidden rounded-3xl px-10 py-14 max-[920px]:px-7 max-[920px]:py-12 grid items-center gap-8 [grid-template-columns:1.4fr_1fr] max-[920px]:[grid-template-columns:1fr] ${REVEAL_UP_CLS}`}
-            style={{
-              background:
-                "radial-gradient(900px 500px at 0% 50%, rgba(99,102,241,0.35), transparent 60%), radial-gradient(900px 500px at 100% 50%, rgba(34,211,238,0.25), transparent 60%), linear-gradient(135deg, #0b0e36 0%, #0a0c2a 100%)",
-              boxShadow:
-                "inset 0 0 0 1px rgba(165,180,252,0.18), 0 30px 80px -30px rgba(99,102,241,0.5)",
-            }}
-          >
-            <div aria-hidden="true" className="absolute inset-0 tech-grid-bg opacity-25 [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)]" />
-            <div className="relative z-[1]">
-              <h2 className="text-[clamp(26px,3.2vw,38px)] font-extrabold tracking-[-0.02em] leading-[1.1] m-0 mb-3">
-                Дараагийн тоглолтыг 360°-аар туршаад үзээрэй
-              </h2>
-              <p className="text-[16px] leading-[1.65] text-white/75 m-0">
-                Удахгүй болох арга хэмжээний жагсаалтаас тасалбар авч, өөрийн
-                сонгосон өнцгөөр шууд эфирт нэгдээрэй.
-              </p>
-            </div>
-            <div className="relative z-[1] flex flex-wrap gap-3 max-[920px]:justify-start [justify-self:end]">
+      {/* ───────────── CTA ───────────── */}
+      <section className={`relative ${PAGE_BG} pb-28 px-6 pt-12 max-[920px]:pb-20 max-[920px]:px-5`}>
+        <div className="relative max-w-screen-page mx-auto">
+          <div className={`grid items-end gap-10 [grid-template-columns:1.3fr_1fr] max-[920px]:[grid-template-columns:1fr] ${REVEAL_UP_CLS}`}>
+            <h2
+              className="font-extrabold tracking-[-0.035em] leading-[0.98] m-0"
+              style={{ fontSize: "clamp(38px, 5.4vw, 72px)" }}
+            >
+              Дараагийн тоглолтыг{" "}
+              <span className="italic font-light text-white/65">360°-аар</span>{" "}
+              туршаад үзээрэй.
+            </h2>
+            <div className="flex flex-wrap gap-5 items-center [justify-self:end] max-[920px]:[justify-self:start]">
               <Link
                 to="/events"
-                className="inline-flex items-center gap-2 rounded-full bg-white text-[#05071a] text-[14px] font-bold no-underline px-6 py-3.5 shadow-[0_12px_40px_-14px_rgba(255,255,255,0.7)] hover:-translate-y-0.5 [transition:transform_.18s_ease]"
+                className="group inline-flex items-center gap-3 bg-white text-[#0b0c10] text-[13.5px] font-semibold no-underline px-6 py-4 hover:bg-white/90 [transition:background_.15s_ease]"
               >
                 Тасалбар авах
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="[transition:transform_.18s_ease] group-hover:translate-x-1">
                   <line x1="5" y1="12" x2="19" y2="12" />
                   <polyline points="12 5 19 12 12 19" />
                 </svg>
               </Link>
               <Link
                 to="/#contact"
-                className="inline-flex items-center gap-2 rounded-full bg-white/[0.06] border border-white/15 text-white text-[14px] font-semibold no-underline px-6 py-3.5 hover:bg-white/[0.12] hover:border-white/25 [transition:background_.18s_ease,border-color_.18s_ease]"
+                className="inline-flex items-center gap-2 text-[13.5px] font-semibold text-white/80 no-underline border-b border-white/30 pb-1 hover:text-white hover:border-white [transition:color_.15s_ease,border-color_.15s_ease]"
               >
                 Холбоо барих
               </Link>
@@ -627,6 +400,223 @@ export default function Technology() {
       </section>
 
       <SiteFooter />
+    </div>
+  );
+}
+
+/* ───────────── 360° camera visual (illustration + annotations) ───────────── */
+/* To swap in a real photograph, drop a file at /public/assets/images/tech/camera-360.png
+   and the <img> tag below will overlay the SVG illustration. */
+function Camera360Visual() {
+  return (
+    <figure className="relative w-full aspect-[4/3] m-0 border border-white/10 bg-[#0e1015] overflow-hidden">
+      {/* corner tick marks */}
+      {[
+        "top-2 left-2 border-l border-t",
+        "top-2 right-2 border-r border-t",
+        "bottom-2 left-2 border-l border-b",
+        "bottom-2 right-2 border-r border-b",
+      ].map((c) => (
+        <span key={c} aria-hidden="true" className={`absolute w-3 h-3 border-white/30 ${c}`} />
+      ))}
+
+      {/* faint engineering grid */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 opacity-[0.6] pointer-events-none"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(255,255,255,0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.045) 1px, transparent 1px)",
+          backgroundSize: "24px 24px",
+          maskImage:
+            "radial-gradient(ellipse at 50% 55%, transparent 18%, black 70%)",
+          WebkitMaskImage:
+            "radial-gradient(ellipse at 50% 55%, transparent 18%, black 70%)",
+        }}
+      />
+
+      {/* SVG illustration of an Insta360-style camera */}
+      <svg
+        viewBox="0 0 400 300"
+        className="absolute inset-0 w-full h-full"
+        aria-label="360° панорам камер"
+      >
+        <defs>
+          {/* body metal */}
+          <linearGradient id="cam-body" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0%"   stopColor="#1c1f27" />
+            <stop offset="42%"  stopColor="#2c3140" />
+            <stop offset="58%"  stopColor="#2c3140" />
+            <stop offset="100%" stopColor="#15171d" />
+          </linearGradient>
+          {/* body top-edge highlight */}
+          <linearGradient id="cam-bezel" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%"   stopColor="rgba(255,255,255,0.18)" />
+            <stop offset="40%"  stopColor="rgba(255,255,255,0)" />
+          </linearGradient>
+          {/* lens dome glass */}
+          <radialGradient id="cam-lens" cx="35%" cy="30%" r="80%">
+            <stop offset="0%"   stopColor="#3a4566" />
+            <stop offset="35%"  stopColor="#171b2a" />
+            <stop offset="70%"  stopColor="#0a0c14" />
+            <stop offset="100%" stopColor="#05060c" />
+          </radialGradient>
+          {/* lens inner iris */}
+          <radialGradient id="cam-iris" cx="50%" cy="50%" r="50%">
+            <stop offset="0%"   stopColor="#1a2240" />
+            <stop offset="65%"  stopColor="#070a18" />
+            <stop offset="100%" stopColor="#000" />
+          </radialGradient>
+          {/* lens specular highlight */}
+          <radialGradient id="cam-highlight" cx="50%" cy="50%" r="50%">
+            <stop offset="0%"   stopColor="rgba(255,255,255,0.85)" />
+            <stop offset="60%"  stopColor="rgba(255,255,255,0.1)" />
+            <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+          </radialGradient>
+          {/* soft shadow under camera */}
+          <radialGradient id="cam-shadow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%"   stopColor="rgba(0,0,0,0.75)" />
+            <stop offset="100%" stopColor="rgba(0,0,0,0)" />
+          </radialGradient>
+        </defs>
+
+        {/* drop shadow on floor */}
+        <ellipse cx="200" cy="270" rx="78" ry="8" fill="url(#cam-shadow)" />
+
+        {/* CAMERA BODY (vertical) */}
+        <g>
+          {/* main body */}
+          <rect
+            x="168" y="62" width="64" height="208" rx="14"
+            fill="url(#cam-body)"
+            stroke="rgba(255,255,255,0.12)" strokeWidth="0.8"
+          />
+          {/* top bevel highlight */}
+          <rect x="168" y="62" width="64" height="30" rx="14" fill="url(#cam-bezel)" />
+
+          {/* power button (side) */}
+          <rect x="230" y="135" width="3" height="14" rx="1.5" fill="#0a0c14" />
+          <rect x="230" y="135" width="3" height="14" rx="1.5" fill="rgba(255,255,255,0.06)" />
+
+          {/* top REC LED */}
+          <circle cx="200" cy="78" r="2.4" fill="#22c55e" className="tech-dot" />
+          <circle cx="200" cy="78" r="4.5" fill="none" stroke="rgba(34,197,94,0.35)" strokeWidth="0.5" />
+
+          {/* lens hood ring */}
+          <circle cx="200" cy="148" r="46" fill="none" stroke="rgba(255,255,255,0.10)" strokeWidth="1.2" />
+          <circle cx="200" cy="148" r="44" fill="#0c0e16" stroke="rgba(255,255,255,0.18)" strokeWidth="0.6" />
+
+          {/* lens dome glass */}
+          <circle cx="200" cy="148" r="40" fill="url(#cam-lens)" />
+          {/* outer iris ring */}
+          <circle cx="200" cy="148" r="32" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="0.5" />
+          {/* iris */}
+          <circle cx="200" cy="148" r="28" fill="url(#cam-iris)" />
+          {/* aperture blades hint */}
+          <circle cx="200" cy="148" r="22" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="0.4" />
+          <circle cx="200" cy="148" r="14" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="0.4" />
+          <circle cx="200" cy="148" r="6" fill="#05060c" stroke="rgba(255,255,255,0.18)" strokeWidth="0.4" />
+          {/* specular highlight */}
+          <ellipse cx="186" cy="134" rx="14" ry="9" fill="url(#cam-highlight)" />
+          {/* tiny pinpoint */}
+          <circle cx="183" cy="131" r="1.4" fill="rgba(255,255,255,0.9)" />
+
+          {/* lens label engraving */}
+          <text x="200" y="200" textAnchor="middle" fontFamily="ui-monospace,monospace" fontSize="6" letterSpacing="2" fill="rgba(255,255,255,0.32)">
+            360° · ƒ/1.9
+          </text>
+
+          {/* status mini-screen */}
+          <rect x="180" y="216" width="40" height="26" rx="3"
+            fill="#06070d" stroke="rgba(255,255,255,0.10)" strokeWidth="0.6" />
+          <text x="200" y="234" textAnchor="middle" fontFamily="ui-monospace,monospace" fontSize="8.5" letterSpacing="1.5" fontWeight="700" fill="#ffffff">
+            REC
+          </text>
+
+          {/* tripod thread */}
+          <rect x="190" y="266" width="20" height="6" rx="1.5"
+            fill="#0a0c14" stroke="rgba(255,255,255,0.14)" strokeWidth="0.5" />
+          <line x1="194" y1="269" x2="206" y2="269" stroke="rgba(255,255,255,0.15)" strokeWidth="0.4" />
+        </g>
+
+        {/* leader lines from labels to camera parts */}
+        <g stroke="rgba(255,255,255,0.28)" strokeWidth="0.5" fill="none">
+          {/* top-left LED */}
+          <path d="M 60 70  L 130 70  L 195 78" />
+          <circle cx="60"  cy="70" r="1.5" fill="rgba(255,255,255,0.6)" />
+          {/* top-right 8K */}
+          <path d="M 340 70  L 270 70  L 232 96" />
+          <circle cx="340" cy="70" r="1.5" fill="rgba(255,255,255,0.6)" />
+          {/* mid-left dual lens */}
+          <path d="M 60 140  L 130 140  L 160 148" />
+          <circle cx="60"  cy="140" r="1.5" fill="rgba(255,255,255,0.6)" />
+          {/* mid-right aperture */}
+          <path d="M 340 148  L 280 148  L 245 148" />
+          <circle cx="340" cy="148" r="1.5" fill="rgba(255,255,255,0.6)" />
+          {/* bottom-left screen */}
+          <path d="M 60 232  L 130 232  L 180 229" />
+          <circle cx="60"  cy="232" r="1.5" fill="rgba(255,255,255,0.6)" />
+          {/* bottom-right mount */}
+          <path d="M 340 268  L 270 268  L 215 268" />
+          <circle cx="340" cy="268" r="1.5" fill="rgba(255,255,255,0.6)" />
+        </g>
+
+        {/* axis tag */}
+        <text x="8" y="14" fontFamily="ui-monospace,monospace" fontSize="8" fill="rgba(255,255,255,0.35)">
+          FIG. 01
+        </text>
+      </svg>
+
+      {/* OPTIONAL: real photograph overlay — drop image at this path to override the illustration.
+          The <img> simply won't render if the file is missing (broken-image hidden). */}
+      <img
+        src="/assets/images/tech/camera-360.png"
+        alt=""
+        aria-hidden="true"
+        onError={(e) => {
+          (e.currentTarget as HTMLImageElement).style.display = "none";
+        }}
+        className="absolute inset-0 w-full h-full object-contain p-8 pointer-events-none"
+      />
+
+      {/* HTML callouts (crisp text, positioned to leader endpoints) */}
+      <Callout cls="left-[4%] top-[18%]"  label="REC LED" note="Live indicator" align="left" />
+      <Callout cls="right-[4%] top-[18%]" label="8K · UHD" note="30 / 60 fps"     align="right" />
+      <Callout cls="left-[4%] top-[44%]"  label="DUAL LENS" note="Front + rear"   align="left" />
+      <Callout cls="right-[4%] top-[44%]" label="ƒ/1.9"     note="200° FOV"       align="right" />
+      <Callout cls="left-[4%] top-[74%]"  label="OLED"      note="Status screen"  align="left" />
+      <Callout cls="right-[4%] top-[88%]" label="1/4″ — 20" note="Mount thread"   align="right" />
+
+      {/* LIVE recording badge — top centre */}
+      <div className="absolute top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-2 px-2.5 py-1 border border-white/15 bg-black/40 backdrop-blur-sm">
+        <span className="w-1.5 h-1.5 rounded-full bg-red-500 tech-dot" />
+        <span className="text-[9.5px] font-mono uppercase tracking-[0.24em] text-white/85">
+          LIVE · REC
+        </span>
+      </div>
+    </figure>
+  );
+}
+
+function Callout({
+  cls,
+  label,
+  note,
+  align,
+}: {
+  cls: string;
+  label: string;
+  note: string;
+  align: "left" | "right";
+}) {
+  return (
+    <div className={`absolute ${cls} max-w-[120px] ${align === "right" ? "text-right" : "text-left"}`}>
+      <div className="text-[10.5px] font-mono uppercase tracking-[0.2em] text-white font-semibold">
+        {label}
+      </div>
+      <div className="text-[10px] font-mono uppercase tracking-[0.16em] text-white/45 mt-0.5">
+        {note}
+      </div>
     </div>
   );
 }
