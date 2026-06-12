@@ -554,7 +554,7 @@ export default function EventEdit() {
                     </div>
                   </div>
                   <small className="text-zinc-500 text-[12px]">
-                    Шууд эфирийн дуусах товлосон цаг. Үүнээс хойш нөхөж үзэх
+                    Шууд дамжуулалт дуусах товлосон цаг. Үүнээс хойш нөхөж үзэх
                     цонх эхэлнэ.
                   </small>
                 </div>

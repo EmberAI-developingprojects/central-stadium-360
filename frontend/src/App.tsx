@@ -5,6 +5,8 @@ import Home from "./pages/Home";
 import Events from "./pages/Events";
 import EventDetail from "./pages/EventDetail";
 import Technology from "./pages/Technology";
+import PetitionsOverview from "./pages/PetitionsOverview";
+import TransparencyDocument from "./pages/TransparencyDocument";
 import WatchVOD from "./pages/WatchVOD";
 import WatchEventDetail from "./pages/WatchEventDetail";
 import NewsDetail from "./pages/NewsDetail";
@@ -81,6 +83,8 @@ export default function App() {
         <Route path="/events" element={<Events />} />
         <Route path="/events/:id" element={<EventDetail />} />
         <Route path="/technology" element={<Technology />} />
+        <Route path="/transparency/petitions" element={<PetitionsOverview />} />
+        <Route path="/transparency/:slug" element={<TransparencyDocument />} />
         <Route path="/news/:id" element={<NewsDetail />} />
         <Route
           path="/login"

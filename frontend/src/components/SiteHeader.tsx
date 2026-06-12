@@ -98,14 +98,22 @@ const buildNavGroups = (t: (k: string) => string): NavGroup[] => [
     label: t("nav_transparency"),
     href: "/#certificates",
     children: [
-      { label: t("nav_transparency_report"), href: "/#certificates" },
-      { label: t("nav_transparency_resolution"), href: "/#certificates" },
-      { label: t("nav_transparency_petition"), href: "/#contact" },
-      { label: t("nav_transparency_hr"), href: "/#certificates" },
-      { label: t("nav_transparency_selection"), href: "/#certificates" },
-      { label: t("nav_transparency_evaluation"), href: "/#certificates" },
-      { label: t("nav_transparency_ethics"), href: "/#certificates" },
-      { label: t("nav_transparency_recommendations"), href: "/#certificates" },
+      { label: t("nav_transparency_mission"), href: "/transparency/mission" },
+      { label: t("nav_transparency_report"), href: "/transparency/report-2025" },
+      { label: t("nav_transparency_resolution"), href: "/transparency/resolution" },
+      { label: t("nav_transparency_petition"), href: "/transparency/petitions" },
+      { label: t("nav_transparency_hr"), href: "/transparency/hr-policy" },
+      {
+        label: t("nav_transparency_vacancies"),
+        href: "https://www.zangia.mn/company/National-Stadium-of-Mongolia",
+      },
+      { label: t("nav_transparency_selection"), href: "/transparency/selection" },
+      { label: t("nav_transparency_evaluation"), href: "/transparency/evaluation" },
+      {
+        label: t("nav_transparency_glass_account"),
+        href: "https://shilendans.gov.mn/organization/96933?ry=2025&group=5",
+      },
+      { label: t("nav_transparency_recommendations"), href: "/transparency/recommendations" },
     ],
   },
   { label: t("nav_legal"), href: "/#certificates" },
@@ -217,28 +225,40 @@ export default function SiteHeader() {
                   </svg>
                 </Link>
                 <div className={DROPDOWN_CLS} role="menu">
-                  <Link className={DROPDOWN_A_CLS} to="/#certificates">
+                  <Link className={DROPDOWN_A_CLS} to="/transparency/mission">
+                    {t("nav_transparency_mission")}
+                  </Link>
+                  <Link className={DROPDOWN_A_CLS} to="/transparency/report-2025">
                     {t("nav_transparency_report")}
                   </Link>
-                  <Link className={DROPDOWN_A_CLS} to="/#certificates">
+                  <Link className={DROPDOWN_A_CLS} to="/transparency/resolution">
                     {t("nav_transparency_resolution")}
                   </Link>
-                  <Link className={DROPDOWN_A_CLS} to="/#contact">
+                  <Link className={DROPDOWN_A_CLS} to="/transparency/petitions">
                     {t("nav_transparency_petition")}
                   </Link>
-                  <Link className={DROPDOWN_A_CLS} to="/#certificates">
+                  <Link className={DROPDOWN_A_CLS} to="/transparency/hr-policy">
                     {t("nav_transparency_hr")}
                   </Link>
-                  <Link className={DROPDOWN_A_CLS} to="/#certificates">
+                  <a
+                    className={DROPDOWN_A_CLS}
+                    href="https://www.zangia.mn/company/National-Stadium-of-Mongolia"
+                  >
+                    {t("nav_transparency_vacancies")}
+                  </a>
+                  <Link className={DROPDOWN_A_CLS} to="/transparency/selection">
                     {t("nav_transparency_selection")}
                   </Link>
-                  <Link className={DROPDOWN_A_CLS} to="/#certificates">
+                  <Link className={DROPDOWN_A_CLS} to="/transparency/evaluation">
                     {t("nav_transparency_evaluation")}
                   </Link>
-                  <Link className={DROPDOWN_A_CLS} to="/#certificates">
-                    {t("nav_transparency_ethics")}
-                  </Link>
-                  <Link className={DROPDOWN_A_CLS} to="/#certificates">
+                  <a
+                    className={DROPDOWN_A_CLS}
+                    href="https://shilendans.gov.mn/organization/96933?ry=2025&group=5"
+                  >
+                    {t("nav_transparency_glass_account")}
+                  </a>
+                  <Link className={DROPDOWN_A_CLS} to="/transparency/recommendations">
                     {t("nav_transparency_recommendations")}
                   </Link>
                 </div>
@@ -262,25 +282,6 @@ export default function SiteHeader() {
 
             <div className={HEADER_AUTH_CLS}>
               <LanguageSwitcher />
-              {session && session.identifier ? (
-                <UserMenu />
-              ) : (
-                <Link to="/login" className={AUTH_BTN_CLS} aria-label={t("nav_login")}>
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                  >
-                    <circle cx="12" cy="8" r="4" />
-                    <path d="M4 21a8 8 0 0116 0" />
-                  </svg>
-                  <span>{t("nav_login")}</span>
-                </Link>
-              )}
               <button
                 type="button"
                 className={HAMBURGER_BTN_CLS}
@@ -303,6 +304,25 @@ export default function SiteHeader() {
                   <line x1="3" y1="18" x2="21" y2="18" />
                 </svg>
               </button>
+              {session && session.identifier ? (
+                <UserMenu />
+              ) : (
+                <Link to="/login" className={AUTH_BTN_CLS} aria-label={t("nav_login")}>
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <circle cx="12" cy="8" r="4" />
+                    <path d="M4 21a8 8 0 0116 0" />
+                  </svg>
+                  <span>{t("nav_login")}</span>
+                </Link>
+              )}
             </div>
           </nav>
         </div>
@@ -407,16 +427,31 @@ export default function SiteHeader() {
                       : "0px",
                   }}
                 >
-                  {group.children.map((child) => (
-                    <Link
-                      key={child.label}
-                      to={child.href}
-                      className={DRAWER_SUBLINK_CLS}
-                      onClick={closeDrawer}
-                    >
-                      {child.label}
-                    </Link>
-                  ))}
+                  {group.children.map((child) => {
+                    const isExternal = /^https?:\/\//i.test(child.href);
+                    if (isExternal) {
+                      return (
+                        <a
+                          key={child.label}
+                          href={child.href}
+                          className={DRAWER_SUBLINK_CLS}
+                          onClick={closeDrawer}
+                        >
+                          {child.label}
+                        </a>
+                      );
+                    }
+                    return (
+                      <Link
+                        key={child.label}
+                        to={child.href}
+                        className={DRAWER_SUBLINK_CLS}
+                        onClick={closeDrawer}
+                      >
+                        {child.label}
+                      </Link>
+                    );
+                  })}
                 </div>
               </li>
             );
