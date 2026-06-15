@@ -119,7 +119,6 @@ const buildNavGroups = (t: (k: string) => string): NavGroup[] => [
   },
   { label: t("nav_legal"), href: "/#certificates" },
   { label: t("nav_news"), href: "/#news" },
-  { label: t("nav_contact"), href: "/#contact" },
 ];
 
 export default function SiteHeader() {
@@ -277,11 +276,6 @@ export default function SiteHeader() {
               <li>
                 <Link to="/#news" className={NAV_LINK_A_CLS}>
                   {t("nav_news")}
-                </Link>
-              </li>
-              <li>
-                <Link to="/#contact" className={NAV_LINK_A_CLS}>
-                  {t("nav_contact")}
                 </Link>
               </li>
             </ul>
