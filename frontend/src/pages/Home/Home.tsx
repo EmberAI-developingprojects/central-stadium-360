@@ -49,7 +49,7 @@ export default function Home() {
   return (
     <>
       <SiteHeader />
-      <Hero gatedGo={gatedGo} images={content.hero} />
+      <FeaturedNewsHero items={content.news} />
       <Highlights />
       <Stats />
       <Upcoming gatedGo={gatedGo} events={events} />
@@ -1319,6 +1319,115 @@ function News({ items = [] }: { items: NewsItem[] }) {
               </Link>
             </article>
           ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function newsExcerpt(item: NewsItem, max = 220): string {
+  const fromBlocks = item.blocks
+    ?.filter((b) => b.type === "text")
+    .map((b) => b.value)
+    .join(" ")
+    .trim();
+  const raw = (fromBlocks || item.body || "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (raw.length <= max) return raw;
+  return raw.slice(0, max).replace(/\s+\S*$/, "") + "…";
+}
+
+function pickFeaturedNews(items: NewsItem[]): NewsItem | null {
+  if (!items || items.length === 0) return null;
+  const featured = items
+    .filter((n) => n.featured)
+    .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+  if (featured.length > 0) return featured[0];
+  const sorted = [...items].sort((a, b) =>
+    (b.createdAt || "").localeCompare(a.createdAt || ""),
+  );
+  return sorted[0] ?? null;
+}
+
+function FeaturedNewsHero({ items }: { items: NewsItem[] }) {
+  const featured = pickFeaturedNews(items);
+  if (!featured) return null;
+  const excerpt = newsExcerpt(featured);
+
+  return (
+    <section
+      className="relative w-full overflow-hidden bg-black text-white isolate -mt-[64px] max-[920px]:-mt-[56px]"
+      id="featured-news"
+      aria-label="Онцлох мэдээ"
+    >
+      <div className="relative w-full min-h-[calc(100vh+64px)] min-h-[calc(100dvh+64px)] max-[920px]:min-h-[calc(100vh+56px)] max-[920px]:min-h-[calc(100dvh+56px)]">
+        {featured.image ? (
+          <img
+            src={featured.image}
+            alt={featured.title}
+            loading="eager"
+            className="absolute inset-0 w-full h-full object-cover object-center"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-[#1a1f3a] to-[#0b0e1f]" />
+        )}
+
+        <div
+          className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.35)_0%,rgba(0,0,0,0.45)_50%,rgba(0,0,0,0.75)_100%)]"
+          aria-hidden="true"
+        />
+
+        <div className="absolute inset-0 grid place-items-center px-6 py-16 max-[640px]:px-5 max-[640px]:py-12">
+          <div className="max-w-[860px] text-center">
+            <span className="inline-flex items-center gap-2 mb-6 px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-sm text-[11px] tracking-[0.18em] uppercase font-semibold text-white/95 max-[640px]:mb-5 max-[640px]:text-[10px]">
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M4 11a9 9 0 0 1 9 9" />
+                <path d="M4 4a16 16 0 0 1 16 16" />
+                <circle cx="5" cy="19" r="1" />
+              </svg>
+              Мэдээ мэдээлэл
+            </span>
+            <h1 className="m-0 text-gold-pale font-extrabold uppercase leading-[1.16] tracking-[0.015em] text-[44px] max-[920px]:text-[32px] max-[640px]:text-[24px] drop-shadow-[0_2px_14px_rgba(0,0,0,0.55)] [text-shadow:0_1px_0_rgba(0,0,0,0.25)]">
+              {featured.title}
+            </h1>
+            {excerpt && (
+              <p className="mt-6 mx-auto max-w-[680px] text-white/85 text-[15px] leading-[1.7] max-[640px]:text-[13px] max-[640px]:mt-5 max-[640px]:leading-[1.6]">
+                {excerpt}
+              </p>
+            )}
+            <Link
+              to={`/news/${featured.id}`}
+              className="inline-flex items-center gap-2 mt-9 px-7 py-3.5 rounded-full border border-white/75 text-white text-[13px] font-semibold tracking-[0.16em] uppercase no-underline hover:bg-white hover:text-ink hover:border-white transition-colors duration-200 max-[640px]:mt-7 max-[640px]:px-6 max-[640px]:py-3 max-[640px]:text-[11.5px]"
+            >
+              Дэлгэрэнгүй үзэх
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <line x1="5" y1="12" x2="19" y2="12" />
+                <polyline points="12 5 19 12 12 19" />
+              </svg>
+            </Link>
+          </div>
         </div>
       </div>
     </section>

@@ -10,6 +10,7 @@ import kiosk from "./routes/kiosk";
 import smsHook from "./routes/sms-hook";
 import adminEvents from "./routes/admin-events";
 import adminContent, { publicContent } from "./routes/admin-content";
+import adminHistory, { publicHistory } from "./routes/history";
 import adminUsers from "./routes/admin-users";
 import adminUploads from "./routes/admin-uploads";
 import adminTickets from "./routes/admin-tickets";
@@ -48,6 +49,8 @@ app.route("/admin/tickets", adminTickets);
 app.route("/admin/recordings", adminRecordings);
 app.route("/recordings", recordings);
 app.route("/content", publicContent);
+app.route("/history", publicHistory);
+app.route("/admin/history", adminHistory);
 app.route("/watch", watch);
 
 app.get("/health", (c) => {

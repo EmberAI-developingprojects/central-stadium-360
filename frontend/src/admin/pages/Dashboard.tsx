@@ -1,7 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { listOrders, listUsers, ordersStats } from "../../data/store";
-import type { OrderRecord, OrdersStats, UserRecord } from "../../data/store";
+import {
+  listEvents,
+  listOrders,
+  listUsers,
+  ordersStats,
+} from "../../data/store";
+import type {
+  EventRecord,
+  OrderRecord,
+  OrdersStats,
+  UserRecord,
+} from "../../data/store";
 import {
   ADMIN_BADGE_CLS,
   ADMIN_BTN_CLS,
@@ -72,17 +82,20 @@ export default function Dashboard() {
   const [stats, setStats] = useState<OrdersStats | null>(null);
   const [orders, setOrders] = useState<OrderRecord[]>([]);
   const [users, setUsers] = useState<UserRecord[]>([]);
+  const [events, setEvents] = useState<EventRecord[]>([]);
   const [period, setPeriod] = useState<PeriodKey>("month");
   const [chartPeriod, setChartPeriod] = useState<"week" | "month">("month");
+  const [selectedEventId, setSelectedEventId] = useState<string>("all");
 
   useEffect(() => {
     let alive = true;
-    Promise.all([ordersStats(), listOrders(), listUsers()]).then(
-      ([s, o, u]) => {
+    Promise.all([ordersStats(), listOrders(), listUsers(), listEvents()]).then(
+      ([s, o, u, ev]) => {
         if (!alive) return;
         setStats(s);
         setOrders(o);
         setUsers(u);
+        setEvents(ev);
       },
     );
     return () => {
@@ -95,6 +108,14 @@ export default function Dashboard() {
   const cy = now.getFullYear();
   const pm = cm === 0 ? 11 : cm - 1;
   const py = cm === 0 ? cy - 1 : cy;
+
+  const chartOrders = useMemo(
+    () =>
+      selectedEventId === "all"
+        ? orders
+        : orders.filter((o) => o.eventId === selectedEventId),
+    [orders, selectedEventId],
+  );
 
   const derived = useMemo(() => {
     const inMonth = (iso: string, m: number, y: number) => {
@@ -123,7 +144,9 @@ export default function Dashboard() {
       const d = new Date(cy, cm - (7 - i), 1);
       const mo = d.getMonth();
       const yr = d.getFullYear();
-      const mo_orders = orders.filter((o) => inMonth(o.purchasedAt, mo, yr));
+      const mo_orders = chartOrders.filter((o) =>
+        inMonth(o.purchasedAt, mo, yr),
+      );
       return {
         label: MONTHS_ABBR[mo],
         month: mo,
@@ -139,7 +162,7 @@ export default function Dashboard() {
       endD.setDate(endD.getDate() - (7 - i - 1) * 7);
       const startD = new Date(endD);
       startD.setDate(startD.getDate() - 6);
-      const wk_orders = orders.filter((o) => {
+      const wk_orders = chartOrders.filter((o) => {
         const d = new Date(o.purchasedAt);
         return d >= startD && d <= endD;
       });
@@ -179,7 +202,75 @@ export default function Dashboard() {
       recentUsers,
       recentOrders,
     };
-  }, [orders, users, stats]);
+  }, [orders, users, stats, chartOrders, cm, cy, pm, py, now]);
+
+  const selectableEvents = useMemo(() => {
+    const nowMs = Date.now();
+    const runtimeStatus = (e: EventRecord): EventRecord["status"] => {
+      const start = e.start_time ? new Date(e.start_time).getTime() : NaN;
+      if (!Number.isNaN(start) && nowMs < start) return "upcoming";
+      let endMs: number | null = null;
+      if (e.live_end_at) {
+        const t = new Date(e.live_end_at).getTime();
+        if (!Number.isNaN(t)) endMs = t;
+      }
+      if (endMs === null && !Number.isNaN(start)) {
+        endMs = start + 3 * 60 * 60 * 1000;
+      }
+      if (endMs !== null && nowMs < endMs) return "live";
+      if (e.replay_available_until) {
+        const until = new Date(e.replay_available_until).getTime();
+        if (!Number.isNaN(until) && nowMs > until) return "expired";
+      }
+      return e.status === "archived" ? "archived" : "ended";
+    };
+
+    const enriched = events.map((e) => ({ ...e, runtime: runtimeStatus(e) }));
+    const eligible = enriched.filter(
+      (e) =>
+        e.runtime === "live" ||
+        e.runtime === "ended" ||
+        e.runtime === "expired" ||
+        e.runtime === "archived",
+    );
+    const orderCountByEvent = new Map<string, number>();
+    const revenueByEvent = new Map<string, number>();
+    for (const o of orders) {
+      orderCountByEvent.set(
+        o.eventId,
+        (orderCountByEvent.get(o.eventId) ?? 0) + 1,
+      );
+      revenueByEvent.set(
+        o.eventId,
+        (revenueByEvent.get(o.eventId) ?? 0) + o.total,
+      );
+    }
+    return eligible
+      .map((e) => ({
+        ...e,
+        ticketCount: orderCountByEvent.get(e.id) ?? 0,
+        revenue: revenueByEvent.get(e.id) ?? 0,
+      }))
+      .sort((a, b) => {
+        if (a.runtime === "live" && b.runtime !== "live") return -1;
+        if (b.runtime === "live" && a.runtime !== "live") return 1;
+        return (b.start_time || "").localeCompare(a.start_time || "");
+      });
+  }, [events, orders]);
+
+  const selectedEvent = useMemo(
+    () => selectableEvents.find((e) => e.id === selectedEventId) ?? null,
+    [selectableEvents, selectedEventId],
+  );
+
+  const selectedSummary = useMemo(
+    () => ({
+      ticketCount: chartOrders.length,
+      revenue: chartOrders.reduce((s, o) => s + o.total, 0),
+      buyerCount: new Set(chartOrders.map((o) => o.user)).size,
+    }),
+    [chartOrders],
+  );
 
   const bars =
     chartPeriod === "month" ? derived.monthlyBars : derived.weeklyBars;
@@ -240,24 +331,7 @@ export default function Dashboard() {
             flexShrink: 0,
           }}
         >
-          <select
-            value={period}
-            onChange={(e) => setPeriod(e.target.value as PeriodKey)}
-            style={{
-              height: 36,
-              padding: "0 10px",
-              borderRadius: 8,
-              border: "1px solid #e4e4e7",
-              fontSize: 13,
-              background: "#fff",
-              color: "#111",
-              fontFamily: "inherit",
-            }}
-          >
-            <option value="week">This Week</option>
-            <option value="month">This Month</option>
-            <option value="year">This Year</option>
-          </select>
+          <PeriodDropdown value={period} onChange={setPeriod} />
           <button
             type="button"
             className={ADMIN_BTN_CLS}
@@ -278,7 +352,7 @@ export default function Dashboard() {
               <polyline points="7 10 12 15 17 10" />
               <line x1="12" y1="15" x2="12" y2="3" />
             </svg>
-            Export CSV
+            CSV татах
           </button>
         </div>
       </div>
@@ -323,9 +397,10 @@ export default function Dashboard() {
           <div
             style={{
               display: "flex",
-              alignItems: "center",
+              alignItems: "flex-start",
               justifyContent: "space-between",
-              marginBottom: 16,
+              gap: 12,
+              marginBottom: 14,
             }}
           >
             <div>
@@ -333,29 +408,159 @@ export default function Dashboard() {
                 Ticket борлуулалт
               </div>
               <div style={{ fontSize: 12, color: "#71717a", marginTop: 2 }}>
-                Сар / 7 хоногоор шүүж харна
+                {selectedEvent
+                  ? selectedEvent.title
+                  : "Бүх тоглолтын нийт борлуулалт"}
               </div>
             </div>
-            <select
-              value={chartPeriod}
-              onChange={(e) =>
-                setChartPeriod(e.target.value as "week" | "month")
-              }
+            <div
               style={{
-                height: 32,
-                padding: "0 8px",
-                borderRadius: 7,
-                border: "1px solid #e4e4e7",
-                fontSize: 12,
-                background: "#fff",
-                color: "#111",
-                fontFamily: "inherit",
+                display: "inline-flex",
+                padding: 3,
+                borderRadius: 8,
+                background: "#f4f4f5",
+                gap: 2,
               }}
             >
-              <option value="month">By Month</option>
-              <option value="week">By Week</option>
-            </select>
+              {(["month", "week"] as const).map((p) => {
+                const active = chartPeriod === p;
+                return (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setChartPeriod(p)}
+                    style={{
+                      height: 26,
+                      padding: "0 12px",
+                      borderRadius: 6,
+                      border: "none",
+                      cursor: "pointer",
+                      fontSize: 12,
+                      fontWeight: 500,
+                      fontFamily: "inherit",
+                      background: active ? "#fff" : "transparent",
+                      color: active ? "#111" : "#71717a",
+                      boxShadow: active ? "0 1px 2px rgba(0,0,0,0.06)" : "none",
+                      transition: "all .15s ease",
+                    }}
+                  >
+                    {p === "month" ? "Сараар" : "Долоо хоногоор"}
+                  </button>
+                );
+              })}
+            </div>
           </div>
+
+          <div
+            style={{
+              borderTop: "1px solid #f4f4f5",
+              paddingTop: 12,
+              marginBottom: 14,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 8,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: "#71717a",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                }}
+              >
+                Тоглолтоор шүүх
+              </div>
+              {selectedEventId !== "all" && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedEventId("all")}
+                  style={{
+                    border: "none",
+                    background: "transparent",
+                    color: "#2230C6",
+                    fontSize: 11,
+                    fontWeight: 500,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                    padding: 0,
+                  }}
+                >
+                  Цэвэрлэх
+                </button>
+              )}
+            </div>
+            <div
+              style={{
+                display: "flex",
+                gap: 6,
+                overflowX: "auto",
+                paddingBottom: 4,
+              }}
+            >
+              <EventChip
+                label="Бүгд"
+                active={selectedEventId === "all"}
+                onClick={() => setSelectedEventId("all")}
+              />
+              {selectableEvents.length === 0 ? (
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "#a1a1aa",
+                    padding: "6px 10px",
+                  }}
+                >
+                  Шууд / дууссан тоглолт байхгүй
+                </div>
+              ) : (
+                selectableEvents.map((e) => (
+                  <EventChip
+                    key={e.id}
+                    label={e.title}
+                    badge={e.runtime === "live" ? "ШУУД" : null}
+                    active={selectedEventId === e.id}
+                    onClick={() => setSelectedEventId(e.id)}
+                  />
+                ))
+              )}
+            </div>
+          </div>
+
+          {selectedEventId !== "all" && (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(3, 1fr)",
+                gap: 10,
+                marginBottom: 14,
+                padding: "12px 14px",
+                background: "#fafafa",
+                borderRadius: 10,
+                border: "1px solid #f4f4f5",
+              }}
+            >
+              <SummaryStat
+                label="Зарагдсан ticket"
+                value={selectedSummary.ticketCount.toLocaleString()}
+              />
+              <SummaryStat
+                label="Орлого"
+                value={money(selectedSummary.revenue)}
+              />
+              <SummaryStat
+                label="Худалдан авагч"
+                value={selectedSummary.buyerCount.toLocaleString()}
+              />
+            </div>
+          )}
+
           <BarChart bars={bars} maxVal={maxBar} />
         </div>
 
@@ -406,7 +611,11 @@ export default function Dashboard() {
               />
               <span style={{ flex: 1 }}>Үзсэн</span>
               <strong
-                style={{ color: "#111", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}
+                style={{
+                  color: "#111",
+                  fontWeight: 700,
+                  fontVariantNumeric: "tabular-nums",
+                }}
               >
                 {derived.watchedCount.toLocaleString()}
               </strong>
@@ -431,7 +640,11 @@ export default function Dashboard() {
               />
               <span style={{ flex: 1 }}>Үзээгүй</span>
               <strong
-                style={{ color: "#111", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}
+                style={{
+                  color: "#111",
+                  fontWeight: 700,
+                  fontVariantNumeric: "tabular-nums",
+                }}
               >
                 {derived.notWatchedCount.toLocaleString()}
               </strong>
@@ -517,7 +730,7 @@ export default function Dashboard() {
             <thead>
               <tr>
                 <th>Хэрэглэгч</th>
-                <th>Контакт</th>
+                <th>Хаяг</th>
                 <th>Эрх</th>
                 <th>Бүртгүүлсэн</th>
               </tr>
@@ -873,6 +1086,299 @@ function DonutChart({ percent }: { percent: number }) {
         Ticket авсан
       </text>
     </svg>
+  );
+}
+
+const PERIOD_OPTIONS: { value: PeriodKey; label: string; hint: string }[] = [
+  { value: "week", label: "Сүүлийн 7 хоног", hint: "Долоо хоногоор" },
+  { value: "month", label: "Энэ сар", hint: "Сараар" },
+  { value: "year", label: "Энэ жил", hint: "Жилээр" },
+];
+
+function PeriodDropdown({
+  value,
+  onChange,
+}: {
+  value: PeriodKey;
+  onChange: (v: PeriodKey) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDocClick = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDocClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDocClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const current = PERIOD_OPTIONS.find((o) => o.value === value);
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 8,
+          height: 36,
+          padding: "0 12px",
+          borderRadius: 8,
+          border: open ? "1px solid #2230C6" : "1px solid #e4e4e7",
+          background: "#fff",
+          color: "#111",
+          fontSize: 13,
+          fontWeight: 500,
+          fontFamily: "inherit",
+          cursor: "pointer",
+          boxShadow: open
+            ? "0 0 0 3px rgba(34,48,198,0.1)"
+            : "0 1px 2px rgba(0,0,0,0.02)",
+          transition: "all .15s ease",
+        }}
+      >
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{ color: "#71717a" }}
+        >
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+          <line x1="16" y1="2" x2="16" y2="6" />
+          <line x1="8" y1="2" x2="8" y2="6" />
+          <line x1="3" y1="10" x2="21" y2="10" />
+        </svg>
+        <span>{current?.label}</span>
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{
+            color: "#71717a",
+            transform: open ? "rotate(180deg)" : "rotate(0deg)",
+            transition: "transform .15s ease",
+          }}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+
+      {open && (
+        <div
+          role="listbox"
+          style={{
+            position: "absolute",
+            top: "calc(100% + 6px)",
+            right: 0,
+            minWidth: 200,
+            padding: 4,
+            background: "#fff",
+            border: "1px solid #ececef",
+            borderRadius: 10,
+            boxShadow:
+              "0 8px 24px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04)",
+            zIndex: 50,
+          }}
+        >
+          {PERIOD_OPTIONS.map((opt) => {
+            const active = opt.value === value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                role="option"
+                aria-selected={active}
+                onClick={() => {
+                  onChange(opt.value);
+                  setOpen(false);
+                }}
+                onMouseEnter={(e) => {
+                  if (!active)
+                    (e.currentTarget as HTMLButtonElement).style.background =
+                      "#f4f4f5";
+                }}
+                onMouseLeave={(e) => {
+                  if (!active)
+                    (e.currentTarget as HTMLButtonElement).style.background =
+                      "transparent";
+                }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  width: "100%",
+                  padding: "8px 10px",
+                  border: "none",
+                  borderRadius: 7,
+                  background: active ? "#eef0fc" : "transparent",
+                  color: active ? "#2230C6" : "#111",
+                  fontSize: 13,
+                  fontWeight: active ? 600 : 500,
+                  fontFamily: "inherit",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  transition: "background .12s ease",
+                }}
+              >
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <span>{opt.label}</span>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 400,
+                      color: active ? "#4451DC" : "#a1a1aa",
+                      marginTop: 1,
+                    }}
+                  >
+                    {opt.hint}
+                  </span>
+                </div>
+                {active && (
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EventChip({
+  label,
+  active,
+  onClick,
+  badge = null,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+  badge?: string | null;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={label}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        height: 30,
+        padding: "0 12px",
+        borderRadius: 999,
+        border: active ? "1px solid #2230C6" : "1px solid #e4e4e7",
+        background: active ? "#2230C6" : "#fff",
+        color: active ? "#fff" : "#52525b",
+        fontSize: 12,
+        fontWeight: 500,
+        fontFamily: "inherit",
+        whiteSpace: "nowrap",
+        cursor: "pointer",
+        transition: "all .15s ease",
+        flexShrink: 0,
+        maxWidth: 220,
+      }}
+    >
+      {badge && (
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
+            fontSize: 9,
+            fontWeight: 700,
+            letterSpacing: "0.05em",
+            color: active ? "#fff" : "#dc2626",
+          }}
+        >
+          <span
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: 999,
+              background: active ? "#fff" : "#dc2626",
+              display: "inline-block",
+            }}
+          />
+          {badge}
+        </span>
+      )}
+      <span
+        style={{
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+          maxWidth: 180,
+        }}
+      >
+        {label}
+      </span>
+    </button>
+  );
+}
+
+function SummaryStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <div
+        style={{
+          fontSize: 10,
+          fontWeight: 600,
+          textTransform: "uppercase",
+          letterSpacing: "0.06em",
+          color: "#71717a",
+          marginBottom: 4,
+        }}
+      >
+        {label}
+      </div>
+      <div
+        style={{
+          fontSize: 16,
+          fontWeight: 700,
+          color: "#111",
+          letterSpacing: "-0.01em",
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        {value}
+      </div>
+    </div>
   );
 }
 

@@ -216,7 +216,7 @@ export default function UsersList() {
           </svg>
           <input
             type="search"
-            placeholder="Нэр / контактаар хайх…"
+            placeholder="Нэр / Хаягаар хайх…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             className="!pl-9"

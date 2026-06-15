@@ -29,9 +29,10 @@ type NavItem = {
 const NAV: NavItem[] = [
   { to: "/admin", end: true, label: "Хяналт", icon: IconGrid },
   { to: "/admin/events", label: "Арга хэмжээ", icon: IconCalendar },
-  { to: "/admin/orders", label: "Захиалга", icon: IconReceipt },
+  { to: "/admin/orders", label: " Борлуулалт", icon: IconReceipt },
   { to: "/admin/users", label: "Хэрэглэгч", icon: IconUsers },
   { to: "/admin/content", label: "Контент", icon: IconLayout },
+  { to: "/admin/history", label: "Түүхэн хэсэг", icon: IconHistory },
 ];
 
 const PAGE_TITLES: Record<string, string> = {
@@ -41,6 +42,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin/orders": "Захиалга",
   "/admin/users": "Хэрэглэгч",
   "/admin/content": "Контент засварлагч",
+  "/admin/history": "Түүхэн хэсэг",
 };
 
 export default function AdminLayout() {
@@ -245,6 +247,23 @@ function IconLayout() {
       <rect x="3" y="3" width="18" height="18" rx="2" />
       <line x1="3" y1="9" x2="21" y2="9" />
       <line x1="9" y1="21" x2="9" y2="9" />
+    </svg>
+  );
+}
+function IconHistory() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+      <polyline points="3 3 3 8 8 8" />
+      <polyline points="12 7 12 12 15 14" />
     </svg>
   );
 }
