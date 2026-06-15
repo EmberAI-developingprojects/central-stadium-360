@@ -13,6 +13,7 @@ import type {
 import {
   ADMIN_ACTIONS_CLS,
   ADMIN_BADGE_CLS,
+  ADMIN_BADGE_FEATURED_CLS,
   ADMIN_BADGE_PAID_CLS,
   ADMIN_BTN_CLS,
   ADMIN_BTN_DANGER_CLS,
@@ -82,6 +83,7 @@ export default function Content() {
   const [content, setContent] = useState<HomeContent | null>(null);
   const [busy, setBusy] = useState(false);
   const [savedAt, setSavedAt] = useState(0);
+  const [editingNewsId, setEditingNewsId] = useState<string | null>(null);
 
   useEffect(() => {
     getHomeContent().then(setContent);
@@ -126,8 +128,11 @@ export default function Content() {
     );
 
   const addItem = () => {
-    if (tab === "news") updateSectionNews([...content.news, NEW_ITEM.news()]);
-    else if (tab === "partners")
+    if (tab === "news") {
+      const next = NEW_ITEM.news();
+      updateSectionNews([...content.news, next]);
+      setEditingNewsId(next.id);
+    } else if (tab === "partners")
       updateSectionPartners([...content.partners, NEW_ITEM.partners()]);
     else if (tab === "members")
       updateSectionMembers([...content.members, NEW_ITEM.members()]);
@@ -219,13 +224,12 @@ export default function Content() {
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {tab === "news" &&
             content.news.map((it) => (
-              <div key={it.id} className={ADMIN_CARD_CLS}>
-                <NewsRow
-                  item={it}
-                  onChange={(p) => updateNews(it.id, p)}
-                  onRemove={() => removeItem(it.id)}
-                />
-              </div>
+              <NewsListItem
+                key={it.id}
+                item={it}
+                onEdit={() => setEditingNewsId(it.id)}
+                onRemove={() => removeItem(it.id)}
+              />
             ))}
           {tab === "partners" &&
             content.partners.map((it) => (
@@ -249,7 +253,227 @@ export default function Content() {
             ))}
         </div>
       )}
+
+      {editingNewsId &&
+        (() => {
+          const editing = content.news.find((n) => n.id === editingNewsId);
+          if (!editing) return null;
+          return (
+            <NewsEditModal
+              item={editing}
+              busy={busy}
+              onChange={(p) => updateNews(editing.id, p)}
+              onRemove={() => {
+                removeItem(editing.id);
+                setEditingNewsId(null);
+              }}
+              onSave={async (latest) => {
+                const next = content.news.map((n) =>
+                  n.id === latest.id ? latest : n,
+                );
+                setBusy(true);
+                try {
+                  await updateHomeContent({ news: next });
+                  setContent({ ...content, news: next });
+                  setSavedAt(Date.now());
+                  toast.success("Мэдээ хадгалагдлаа.");
+                  setEditingNewsId(null);
+                } catch (e) {
+                  toast.error(
+                    (e as Error).message || "Хадгалах боломжгүй.",
+                  );
+                } finally {
+                  setBusy(false);
+                }
+              }}
+              onClose={() => setEditingNewsId(null)}
+            />
+          );
+        })()}
     </>
+  );
+}
+
+function NewsListItem({
+  item,
+  onEdit,
+  onRemove,
+}: {
+  item: NewsItem;
+  onEdit: () => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-4 p-3 pr-4 bg-white border border-[#ececef] rounded-xl hover:border-zinc-300 transition-colors">
+      <div className="w-16 h-12 rounded-md bg-zinc-100 grid place-items-center text-zinc-400 overflow-hidden flex-shrink-0">
+        {item.image ? (
+          <img
+            src={item.image}
+            alt=""
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <circle cx="9" cy="9" r="2" />
+            <path d="M21 15l-5-5L5 21" />
+          </svg>
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-0.5">
+          {item.label && (
+            <span className="text-[10.5px] font-bold tracking-[0.08em] uppercase text-zinc-500">
+              {item.label}
+            </span>
+          )}
+          {item.featured && (
+            <span className={`${ADMIN_BADGE_CLS} ${ADMIN_BADGE_FEATURED_CLS}`}>
+              Онцлох
+            </span>
+          )}
+        </div>
+        <div className="text-[14px] font-semibold text-zinc-900 truncate">
+          {item.title || "(Гарчиггүй мэдээ)"}
+        </div>
+      </div>
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <button
+          type="button"
+          className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS}`}
+          onClick={onEdit}
+        >
+          Засах
+        </button>
+        <button
+          type="button"
+          className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS} ${ADMIN_BTN_DANGER_CLS}`}
+          onClick={onRemove}
+        >
+          Устгах
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function NewsEditModal({
+  item,
+  busy,
+  onChange,
+  onRemove,
+  onSave,
+  onClose,
+}: {
+  item: NewsItem;
+  busy: boolean;
+  onChange: (p: Partial<NewsItem>) => void;
+  onRemove: () => void;
+  onSave: (item: NewsItem) => Promise<void> | void;
+  onClose: () => void;
+}) {
+  const [draft, setDraft] = useState<NewsItem>(item);
+
+  useEffect(() => {
+    setDraft(item);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item.id]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !busy) onClose();
+    };
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [onClose, busy]);
+
+  const patch = (p: Partial<NewsItem>) => {
+    setDraft((d) => ({ ...d, ...p }));
+    onChange(p);
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[300] grid place-items-center px-4 py-6 bg-[rgba(15,23,42,0.55)] backdrop-blur-sm"
+      onClick={() => !busy && onClose()}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Мэдээ засварлах"
+    >
+      <div
+        className="relative w-full max-w-[920px] max-h-[92vh] bg-white rounded-2xl shadow-[0_30px_80px_rgba(0,0,0,0.25)] overflow-hidden flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-3 p-6 pb-4 border-b border-[#ececef]">
+          <div className="min-w-0">
+            <h3 className="m-0 text-[16px] font-semibold text-zinc-900 tracking-[-0.01em] truncate">
+              {draft.title || "Шинэ мэдээ"}
+            </h3>
+            <p className="m-0 mt-0.5 text-[12.5px] text-zinc-500">
+              Засвараа дуусгаад "Хадгалах" товчийг дарна уу.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Хаах"
+            disabled={busy}
+            className="grid place-items-center w-8 h-8 rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 transition-colors flex-shrink-0 disabled:opacity-50"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6">
+          <NewsRow item={draft} onChange={patch} onRemove={onRemove} />
+        </div>
+
+        <div className="flex items-center justify-end gap-2 px-6 py-3.5 border-t border-[#ececef] bg-[#fafafa]">
+          <button
+            type="button"
+            className={ADMIN_BTN_CLS}
+            onClick={onClose}
+            disabled={busy}
+          >
+            Болих
+          </button>
+          <button
+            type="button"
+            className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_PRIMARY_CLS}`}
+            onClick={() => onSave(draft)}
+            disabled={busy}
+          >
+            {busy ? "Хадгалж байна…" : "Хадгалах"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

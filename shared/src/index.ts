@@ -125,6 +125,18 @@ export interface DbHomeHero {
   alt: string;
 }
 
+export interface DbHistoryFigure {
+  id: string;
+  name: string;
+  role: string;
+  year_start: string;
+  year_end: string;
+  image: string | null;
+  bio: string;
+  sort_order: number;
+  created_at: string;
+}
+
 export type HomeContentSection = "news" | "partners" | "roadmap" | "services" | "hero";
 
 export interface HomeContentResponse {

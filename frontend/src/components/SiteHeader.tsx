@@ -6,10 +6,11 @@ import UserMenu from "./UserMenu";
 import LanguageSwitcher from "./LanguageSwitcher";
 
 const HEADER_BASE_CLS =
-  "w-full px-4 pb-0 sticky top-0 z-[100] [backdrop-filter:blur(18px)_saturate(160%)] [-webkit-backdrop-filter:blur(18px)_saturate(160%)] border-b border-solid border-[rgba(31,41,55,0.08)] [transition:background_0.25s_ease,box-shadow_0.25s_ease] max-[920px]:px-3";
-const HEADER_BG_CLS = "bg-[rgba(255,255,255,0.55)]";
+  "w-full px-4 pb-0 sticky top-0 z-[100] [backdrop-filter:blur(16px)_saturate(160%)] [-webkit-backdrop-filter:blur(16px)_saturate(160%)] border-b border-solid [transition:background_0.25s_ease,box-shadow_0.25s_ease,border-color_0.25s_ease] max-[920px]:px-3";
+const HEADER_BG_CLS =
+  "bg-[rgba(255,255,255,0.06)] border-[rgba(255,255,255,0.12)]";
 const HEADER_SCROLLED_CLS =
-  "!bg-[rgba(255,255,255,0.78)] shadow-[0_8px_24px_-16px_rgba(31,41,55,0.18)]";
+  "!bg-[rgba(255,255,255,0.35)] !border-[rgba(255,255,255,0.22)] shadow-[0_8px_24px_-16px_rgba(31,41,55,0.18)]";
 
 const HEADER_INNER_CLS = "max-w-screen-page mx-auto";
 
@@ -203,6 +204,11 @@ export default function SiteHeader() {
               <li>
                 <Link to="/technology" className={NAV_LINK_A_CLS}>
                   {t("nav_technology")}
+                </Link>
+              </li>
+              <li>
+                <Link to="/history" className={NAV_LINK_A_CLS}>
+                  Түүхэн хэсэг
                 </Link>
               </li>
               <li className={HAS_DROPDOWN_LI_CLS}>

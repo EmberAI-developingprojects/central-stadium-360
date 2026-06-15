@@ -8,31 +8,6 @@ import { REVEAL_UP_CLS } from "../../hooks/_revealCls";
 import { listEvents } from "../../data/store";
 import type { EventRecord } from "../../data/store";
 
-const MONTHS_ABBR = [
-  "1-р",
-  "2-р",
-  "3-р",
-  "4-р",
-  "5-р",
-  "6-р",
-  "7-р",
-  "8-р",
-  "9-р",
-  "10-р",
-  "11-р",
-  "12-р",
-];
-
-function formatTime(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  const h = d.getHours();
-  const m = d.getMinutes();
-  const ampm = h >= 12 ? "PM" : "AM";
-  const h12 = h % 12 || 12;
-  return `${h12}:${m.toString().padStart(2, "0")} ${ampm}`;
-}
-
 type YearGroup = {
   key: string;
   year: number;
@@ -71,9 +46,9 @@ function EventCard({
 }) {
   const d = new Date(ev.start_time);
   const valid = !Number.isNaN(d.getTime());
+  const monthNum = valid ? d.getMonth() + 1 : "";
   const day = valid ? d.getDate() : "";
-  const monthAbbr = valid ? MONTHS_ABBR[d.getMonth()] : "";
-  const time = valid ? formatTime(ev.start_time) : "";
+  const dateLabel = valid ? `${monthNum}-р сарын ${day}` : "";
 
   const staggerAttr =
     stagger !== undefined
@@ -84,18 +59,14 @@ function EventCard({
     <Link
       to={`/events/${ev.id}`}
       {...staggerAttr}
-      className={`${REVEAL_UP_CLS} flex flex-col rounded-[14px] overflow-hidden bg-white border border-solid border-[rgba(31,41,55,0.08)] no-underline group shadow-[0_4px_16px_rgba(0,0,0,0.04)] [transition:opacity_700ms_cubic-bezier(.2,.8,.2,1),transform_700ms_cubic-bezier(.2,.8,.2,1),box-shadow_.25s_ease] hover:-translate-y-1.5 hover:shadow-[0_24px_44px_-14px_rgba(34,48,198,0.22)]`}
+      className={`${REVEAL_UP_CLS} flex flex-col no-underline group [transition:opacity_700ms_cubic-bezier(.2,.8,.2,1),transform_700ms_cubic-bezier(.2,.8,.2,1)]`}
     >
-      <div className="relative w-full aspect-[16/9] overflow-hidden bg-surface-1 flex-none">
+      <div className="relative w-full aspect-[16/9] overflow-hidden rounded-[14px] bg-surface-1 flex-none">
         {ev.image ? (
           <img
             src={ev.image}
             alt={ev.title}
-            className={`w-full h-full object-cover block [transition:transform_.55s_cubic-bezier(.2,.8,.2,1),filter_.4s_ease] group-hover:scale-[1.05] ${
-              isPast
-                ? "grayscale-[55%] opacity-90 group-hover:grayscale-0 group-hover:opacity-100"
-                : ""
-            }`}
+            className="w-full h-full object-cover block [transition:transform_.55s_cubic-bezier(.2,.8,.2,1)] group-hover:scale-[1.04]"
             loading="lazy"
           />
         ) : (
@@ -115,66 +86,38 @@ function EventCard({
           </div>
         )}
 
-        {isPast ? (
-          <span className="absolute top-2.5 left-2.5 inline-flex items-center gap-1 py-0.5 px-2 rounded-full bg-zinc-900/75 text-white text-[10.5px] font-bold uppercase tracking-[0.08em] backdrop-blur-sm">
-            <svg
-              width="10"
-              height="10"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M3 12a9 9 0 1 0 9-9" />
-              <path d="M3 4v5h5" />
-              <path d="M12 7v5l3 2" />
-            </svg>
-            Дууссан
-          </span>
-        ) : (
-          <span className="absolute top-2.5 left-2.5 inline-flex items-center gap-1.5 py-0.5 pl-1.5 pr-2 rounded-full bg-white/90 text-[#1a1a1a] text-[10.5px] font-bold uppercase tracking-[0.08em] backdrop-blur-sm shadow-sm">
-            <span className="relative inline-flex w-2 h-2">
-              <span className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-70" />
-              <span className="relative inline-flex w-2 h-2 rounded-full bg-emerald-500" />
-            </span>
-            Удахгүй
+        {valid && (
+          <span className="absolute top-3 right-3 inline-flex items-center py-1 px-3 rounded-full bg-white/95 text-[#1a1a1a] text-[12px] font-semibold backdrop-blur-sm shadow-sm">
+            {dateLabel}
           </span>
         )}
       </div>
 
-      <div className="flex items-start gap-4 p-4 flex-1">
-        <div className="flex flex-col items-center min-w-[44px] shrink-0 pt-0.5">
-          <span className="text-[11px] font-bold text-[#888] uppercase tracking-[0.07em] leading-none">
-            {monthAbbr}
-          </span>
-          <span
-            className={`text-[34px] font-extrabold leading-[1.05] tracking-[-0.02em] ${
-              isPast ? "text-[#6b7280]" : "text-[#1a1a1a]"
-            }`}
+      <div className="pt-3">
+        <h3
+          className={`font-bold text-[15px] leading-[1.35] m-0 tracking-[-0.01em] ${
+            isPast ? "text-[#4b5563]" : "text-[#1a1a1a]"
+          }`}
+        >
+          {ev.title}
+        </h3>
+        <div className="mt-1.5 inline-flex items-center gap-1.5 text-brand-blue text-[13px] font-medium">
+          Тасалбар авах
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+            className="[transition:transform_.25s_ease] group-hover:translate-x-0.5"
           >
-            {day}
-          </span>
-          <span className="text-[11px] text-[#aaa] leading-none mt-0.5">
-            {time}
-          </span>
-        </div>
-
-        <div className="flex-1 min-w-0 pt-0.5">
-          <h3
-            className={`font-extrabold text-[16px] leading-[1.25] m-0 tracking-[-0.01em] uppercase ${
-              isPast ? "text-[#4b5563]" : "text-[#1a1a1a]"
-            }`}
-          >
-            {ev.title}
-          </h3>
-          {ev.desc && (
-            <p className="text-[#666] text-[12px] mt-1.5 m-0 leading-[1.45]">
-              {ev.desc}
-            </p>
-          )}
+            <path d="M5 12h14" />
+            <polyline points="12 5 19 12 12 19" />
+          </svg>
         </div>
       </div>
     </Link>

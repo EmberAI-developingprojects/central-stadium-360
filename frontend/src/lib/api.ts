@@ -8,6 +8,7 @@ import type {
   DbHomePartner,
   DbHomeRoadmap,
   DbHomeService,
+  DbHistoryFigure,
   DbRecording,
   DbTicket,
   DbZone,
@@ -219,6 +220,9 @@ export const api = {
 
   getHomeContent: () => request<HomeContentResponse>("GET", "/api/content"),
 
+  listHistoryFigures: () =>
+    request<DbHistoryFigure[]>("GET", "/api/history"),
+
   getWatchToken: () =>
     request<{ cams: WatchCam[] }>("GET", "/api/watch/token"),
 
@@ -319,6 +323,11 @@ export const api = {
         | Partial<DbHomeService>[]
         | DbHomeHero[],
     ) => request<unknown[]>("PUT", `/api/admin/content/${section}`, items),
+
+    listHistoryFigures: () =>
+      request<DbHistoryFigure[]>("GET", "/api/admin/history"),
+    replaceHistoryFigures: (items: Partial<DbHistoryFigure>[]) =>
+      request<DbHistoryFigure[]>("PUT", "/api/admin/history", items),
 
     listTickets: (filter?: {
       status?: TicketStatus | "all";

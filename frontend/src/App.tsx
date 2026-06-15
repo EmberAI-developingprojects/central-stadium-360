@@ -30,6 +30,9 @@ import OrderView from "./admin/pages/OrderView";
 import UsersList from "./admin/pages/UsersList";
 import UserView from "./admin/pages/UserView";
 import Content from "./admin/pages/Content";
+import HistoryAdmin from "./admin/pages/History";
+import History from "./pages/History";
+import HistoryDetail from "./pages/HistoryDetail";
 
 function ScrollToTop() {
   const { pathname, hash } = useLocation();
@@ -86,6 +89,8 @@ export default function App() {
         <Route path="/transparency/petitions" element={<PetitionsOverview />} />
         <Route path="/transparency/:slug" element={<TransparencyDocument />} />
         <Route path="/news/:id" element={<NewsDetail />} />
+        <Route path="/history" element={<History />} />
+        <Route path="/history/:id" element={<HistoryDetail />} />
         <Route
           path="/login"
           element={
@@ -150,6 +155,7 @@ export default function App() {
           <Route path="users" element={<UsersList />} />
           <Route path="users/:id" element={<UserView />} />
           <Route path="content" element={<Content />} />
+          <Route path="history" element={<HistoryAdmin />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

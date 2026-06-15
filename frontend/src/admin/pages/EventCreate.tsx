@@ -159,6 +159,7 @@ export default function EventCreate() {
                   value={date}
                   onChange={setDate}
                   required
+                  allowPast
                 />
               </div>
               <div className={ADMIN_FIELD_CLS}>
@@ -179,6 +180,7 @@ export default function EventCreate() {
                   id="ev-end-date"
                   value={endDate}
                   onChange={setEndDate}
+                  allowPast
                 />
               </div>
               <div className={ADMIN_FIELD_CLS}>
