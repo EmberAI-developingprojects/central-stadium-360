@@ -6,25 +6,26 @@ import UserMenu from "./UserMenu";
 import LanguageSwitcher from "./LanguageSwitcher";
 
 const HEADER_BASE_CLS =
-  "w-full px-4 pb-0 sticky top-0 z-[100] [backdrop-filter:blur(16px)_saturate(160%)] [-webkit-backdrop-filter:blur(16px)_saturate(160%)] border-b border-solid [transition:background_0.25s_ease,box-shadow_0.25s_ease,border-color_0.25s_ease] max-[920px]:px-3";
+  "w-full px-5 pb-0 sticky top-0 z-[100] [backdrop-filter:blur(20px)_saturate(170%)] [-webkit-backdrop-filter:blur(20px)_saturate(170%)] border-b border-solid [transition:background_0.25s_ease,box-shadow_0.25s_ease,border-color_0.25s_ease,padding_0.25s_ease] max-[920px]:px-4 after:content-[''] after:absolute after:left-0 after:right-0 after:bottom-[-1px] after:h-px after:bg-[linear-gradient(90deg,transparent_0%,rgba(212,175,55,0.4)_20%,rgba(212,175,55,0.55)_50%,rgba(212,175,55,0.4)_80%,transparent_100%)] after:opacity-0 [&.is-scrolled]:after:opacity-100 after:[transition:opacity_.25s_ease]";
 const HEADER_BG_CLS =
-  "bg-[rgba(255,255,255,0.06)] border-[rgba(255,255,255,0.12)]";
+  "bg-[rgba(255,255,255,0.04)] border-[rgba(255,255,255,0.10)]";
 const HEADER_SCROLLED_CLS =
-  "!bg-[rgba(255,255,255,0.35)] !border-[rgba(255,255,255,0.22)] shadow-[0_8px_24px_-16px_rgba(31,41,55,0.18)]";
+  "!bg-[rgba(255,255,255,0.55)] !border-[rgba(255,255,255,0.25)] shadow-[0_10px_32px_-18px_rgba(31,41,55,0.22)]";
 
 const HEADER_INNER_CLS = "max-w-screen-page mx-auto";
 
 const MAINNAV_CLS =
-  "flex items-center justify-between gap-6 py-[8px] px-0 max-[1200px]:gap-4 max-[1200px]:py-2";
+  "flex items-center justify-between gap-5 py-[14px] px-0 [transition:padding_0.25s_ease] max-[1340px]:gap-4 max-[1340px]:py-3 [.is-scrolled_&]:py-[10px] [.is-scrolled_&]:max-[1340px]:py-2";
 
-const LOGO_CLS = "inline-flex items-center gap-2.5 no-underline text-ink flex-none";
+const LOGO_CLS =
+  "inline-flex items-center gap-3 no-underline text-ink flex-none [transition:transform_0.25s_ease] hover:scale-[1.02]";
 const LOGO_MARK_CLS =
-  "w-auto h-9 rounded-none bg-transparent border-0 flex-none [&_img]:block [&_img]:h-full [&_img]:w-auto max-[1200px]:h-8";
+  "w-auto h-12 rounded-none bg-transparent border-0 flex-none [transition:height_0.25s_ease] [&_img]:block [&_img]:h-full [&_img]:w-auto [&_img]:drop-shadow-[0_2px_8px_rgba(0,0,0,0.08)] max-[1340px]:h-11 max-[640px]:h-10 [.is-scrolled_&]:h-10 [.is-scrolled_&]:max-[1340px]:h-9";
 
 const NAV_LINKS_CLS =
-  "flex items-center list-none m-0 p-0 gap-7 max-[1380px]:gap-5 max-[1280px]:gap-4 max-[1200px]:hidden";
+  "flex items-center list-none m-0 p-0 gap-6 max-[1500px]:gap-5 max-[1400px]:gap-4 max-[1340px]:hidden";
 const NAV_LINK_A_CLS =
-  "no-underline text-ink text-[15px] font-semibold whitespace-nowrap [transition:color_0.15s_ease] hover:text-brand-blue max-[1380px]:text-[14px]";
+  "relative no-underline text-ink text-[14px] font-semibold whitespace-nowrap [transition:color_0.18s_ease] hover:text-brand-blue max-[1500px]:text-[13.5px] after:content-[''] after:absolute after:left-0 after:right-0 after:-bottom-[6px] after:h-[2px] after:rounded-full after:bg-brand-blue after:scale-x-0 after:origin-center after:[transition:transform_.2s_ease] hover:after:scale-x-100";
 const NAV_LINK_DROPDOWN_TRIGGER_CLS = `${NAV_LINK_A_CLS} inline-flex items-center gap-1.5`;
 
 const HAS_DROPDOWN_LI_CLS = "group relative";
@@ -38,13 +39,13 @@ const DROPDOWN_CLS =
 const DROPDOWN_A_CLS =
   "block text-[15px] font-medium text-ink rounded-lg whitespace-nowrap py-[9px] px-[14px] no-underline hover:bg-brand-blue-tint hover:text-brand-blue";
 
-const HEADER_AUTH_CLS = "inline-flex items-center gap-[14px] flex-none max-[1200px]:gap-2";
+const HEADER_AUTH_CLS = "inline-flex items-center gap-3 flex-none max-[1340px]:gap-2.5";
 
 const AUTH_BTN_CLS =
-  "inline-flex items-center leading-none gap-2 rounded-full bg-brand-blue text-white text-[15px] font-semibold no-underline py-[9px] px-[18px] [transition:background_.15s_ease,transform_.15s_ease,box-shadow_.2s_ease] shadow-[0_6px_18px_-8px_rgba(34,48,198,.55)] hover:bg-brand-blue-soft hover:-translate-y-px hover:shadow-[0_10px_24px_-8px_rgba(34,48,198,.65)] [&_svg]:w-4 [&_svg]:h-4";
+  "inline-flex items-center leading-none gap-2 rounded-full bg-[linear-gradient(135deg,#2230c6_0%,#3a48d8_100%)] text-white text-[14px] font-semibold no-underline py-[10px] px-[18px] [transition:transform_.18s_ease,box-shadow_.22s_ease,filter_.18s_ease] shadow-[0_8px_22px_-8px_rgba(34,48,198,.55),inset_0_1px_0_rgba(255,255,255,0.18)] hover:-translate-y-px hover:shadow-[0_12px_28px_-8px_rgba(34,48,198,.65),inset_0_1px_0_rgba(255,255,255,0.22)] hover:[filter:brightness(1.06)] [&_svg]:w-[16px] [&_svg]:h-[16px]";
 
 const HAMBURGER_BTN_CLS =
-  "hidden max-[1200px]:inline-flex items-center justify-center w-10 h-10 rounded-full bg-white border border-solid border-[rgba(31,41,55,0.10)] text-ink [transition:border-color_.15s_ease,box-shadow_.2s_ease] hover:border-[rgba(34,48,198,0.30)] hover:shadow-[0_6px_18px_-10px_rgba(34,48,198,.45)] [&_svg]:w-[18px] [&_svg]:h-[18px]";
+  "hidden max-[1340px]:inline-flex items-center justify-center w-11 h-11 rounded-full bg-white border border-solid border-[rgba(31,41,55,0.12)] text-ink [transition:border-color_.15s_ease,box-shadow_.22s_ease,transform_.15s_ease] hover:border-[rgba(34,48,198,0.32)] hover:shadow-[0_8px_22px_-10px_rgba(34,48,198,.45)] hover:-translate-y-px [&_svg]:w-[20px] [&_svg]:h-[20px]";
 
 const DRAWER_BACKDROP_BASE_CLS =
   "fixed inset-0 bg-[rgba(15,23,42,0.55)] z-[200] [backdrop-filter:blur(2px)] [-webkit-backdrop-filter:blur(2px)] [transition:opacity_.25s_ease]";
@@ -95,6 +96,7 @@ type NavGroup = {
 const buildNavGroups = (t: (k: string) => string): NavGroup[] => [
   { label: t("nav_events"), href: "/events" },
   { label: t("nav_technology"), href: "/technology" },
+  { label: t("nav_history"), href: "/history" },
   {
     label: t("nav_transparency"),
     href: "/#certificates",
@@ -207,7 +209,7 @@ export default function SiteHeader() {
               </li>
               <li>
                 <Link to="/history" className={NAV_LINK_A_CLS}>
-                  Түүхэн хэсэг
+                  {t("nav_history")}
                 </Link>
               </li>
               <li className={HAS_DROPDOWN_LI_CLS}>

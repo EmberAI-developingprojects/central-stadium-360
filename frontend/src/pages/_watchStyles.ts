@@ -34,7 +34,7 @@ export const WATCH_LOGOUT_CLS =
   "bg-transparent border-0 text-[13px] cursor-pointer text-[rgba(255,255,255,0.55)] font-[inherit] [transition:color_.15s_ease] hover:text-white";
 
 export const WATCH_MAIN_CLS =
-  "max-w-screen-page mx-auto pt-10 px-8 pb-20 max-[540px]:pt-6 max-[540px]:px-4 max-[540px]:pb-16";
+  "max-w-screen-page mx-auto pt-10 px-8 pb-20 max-[920px]:px-6 max-[540px]:pt-5 max-[540px]:px-4 max-[540px]:pb-14 max-[420px]:px-3";
 
 export const WATCH_BTN_CLS =
   "inline-flex items-center gap-2 rounded-[10px] text-[13.5px] font-bold cursor-pointer no-underline py-[11px] px-[18px] font-[inherit] border border-solid border-transparent [transition:background_.2s_ease,color_.2s_ease,transform_.15s_ease,border-color_.2s_ease] [&_svg]:w-[15px] [&_svg]:h-[15px]";
@@ -270,7 +270,7 @@ export const VIEWER_STATS_CLS =
 export const VIEWER_STAT_CLS =
   "inline-flex items-center gap-2 rounded-full text-[13px] font-semibold py-2 px-[14px] bg-[rgba(255,255,255,0.06)] border border-solid border-[rgba(255,255,255,0.08)] [font-variant-numeric:tabular-nums] [&_svg]:w-4 [&_svg]:h-4";
 export const VIEWER_ICON_BTN_CLS =
-  "w-[38px] h-[38px] rounded-[10px] text-white cursor-pointer grid place-items-center bg-[rgba(255,255,255,0.06)] border border-solid border-[rgba(255,255,255,0.08)] [transition:background_.15s_ease,color_.15s_ease,transform_.15s_ease] hover:bg-brand-blue hover:-translate-y-px [&_svg]:w-[17px] [&_svg]:h-[17px] max-[720px]:!w-[42px] max-[720px]:!h-[42px]";
+  "w-[38px] h-[38px] rounded-[10px] text-white cursor-pointer grid place-items-center bg-[rgba(255,255,255,0.06)] border border-solid border-[rgba(255,255,255,0.08)] [transition:background_.15s_ease,color_.15s_ease,transform_.15s_ease] hover:bg-brand-blue hover:-translate-y-px [&_svg]:w-[17px] [&_svg]:h-[17px] max-[720px]:!w-[44px] max-[720px]:!h-[44px] max-[720px]:!rounded-xl max-[720px]:[&_svg]:!w-[19px] max-[720px]:[&_svg]:!h-[19px]";
 export const VIEWER_ICON_BTN_ON_CLS = "is-on !bg-brand-blue";
 
 export const VIEWER_BODY_CLS =
@@ -312,7 +312,7 @@ export const VIEWER_MOBILE_CAM_LABEL_CLS =
 export const VIEWER_STAGE_CLS =
   "relative min-h-0 min-w-0 max-w-full flex flex-col gap-3 max-[1100px]:w-full [&.is-fs]:w-screen [&.is-fs]:h-screen [&.is-fs]:p-0 [&.is-fs]:bg-black [&.is-fs]:gap-0 [&.is-fs.is-idle]:cursor-none";
 export const VIEWER_STAGE_SHELL_CLS =
-  "flex-1 min-h-0 relative rounded-2xl overflow-hidden bg-black shadow-[0_40px_80px_-40px_rgba(0,0,0,0.9),0_0_80px_-30px_rgba(34,48,198,0.45),inset_0_0_0_1px_rgba(255,255,255,0.04)] max-[1100px]:!flex-none max-[1100px]:w-full max-[1100px]:!h-[calc((100vw-20px)*9/16)] max-[1100px]:!max-h-[60vh] max-[720px]:!h-[calc((100vw-20px)*9/16)] max-[720px]:!max-h-none [.is-fs_&]:!flex-1 [.is-fs_&]:!h-auto [.is-fs_&]:!max-h-none [.is-fs_&]:rounded-none [.is-fs_&]:shadow-none [&_video]:w-full [&_video]:h-full [&_video]:object-cover [&_video]:block [&_video]:[transition:transform_.35s_ease,filter_.35s_ease]";
+  "flex-1 min-h-0 relative rounded-2xl overflow-hidden bg-black shadow-[0_40px_80px_-40px_rgba(0,0,0,0.9),0_0_80px_-30px_rgba(34,48,198,0.45),inset_0_0_0_1px_rgba(255,255,255,0.04)] max-[1100px]:!flex-none max-[1100px]:w-full max-[1100px]:!h-[calc((100vw-20px)*9/16)] max-[1100px]:!max-h-[70vh] max-[720px]:!h-[calc((100vw-20px)*9/16)] max-[720px]:!max-h-none [@media_(max-height:500px)]:!max-h-[calc(100dvh-220px)] [.is-fs_&]:!flex-1 [.is-fs_&]:!h-auto [.is-fs_&]:!max-h-none [.is-fs_&]:rounded-none [.is-fs_&]:shadow-none [&_video]:w-full [&_video]:h-full [&_video]:object-cover [&_video]:block [&_video]:[transition:transform_.35s_ease,filter_.35s_ease]";
 export const VIEWER_MAIN_CAM_CLS =
   "absolute top-4 left-4 z-[2] bg-[rgba(11,15,26,0.7)] [backdrop-filter:blur(8px)] [-webkit-backdrop-filter:blur(8px)] py-[7px] px-[13px] rounded-full text-xs text-[rgba(255,255,255,0.9)] tracking-[.04em] [&_strong]:text-white [&_strong]:font-bold [&_strong]:mr-1 [.is-fs_&]:top-[22px] [.is-fs_&]:left-[22px] [.is-fs_&]:[transition:opacity_.25s_ease] [.is-fs.is-idle_&]:opacity-0";
 
@@ -320,7 +320,7 @@ export const VIEWER_REACT_FLOAT_CLS =
   "absolute inset-0 pointer-events-none overflow-hidden";
 
 export const VIEWER_CONTROLS_CLS =
-  "flex-none min-w-0 grid [grid-template-columns:minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 py-2.5 px-[14px] bg-[rgba(255,255,255,0.04)] border border-solid border-[rgba(255,255,255,0.08)] rounded-[14px] [.is-fs_&]:absolute [.is-fs_&]:left-1/2 [.is-fs_&]:bottom-6 [.is-fs_&]:[transform:translateX(-50%)] [.is-fs_&]:w-[min(900px,calc(100vw-32px))] [.is-fs_&]:bg-[rgba(11,15,26,0.65)] [.is-fs_&]:[backdrop-filter:blur(14px)_saturate(160%)] [.is-fs_&]:[-webkit-backdrop-filter:blur(14px)_saturate(160%)] [.is-fs_&]:border-[rgba(255,255,255,0.12)] [.is-fs_&]:shadow-[0_18px_40px_-10px_rgba(0,0,0,0.6)] [.is-fs_&]:opacity-100 [.is-fs_&]:[transition:opacity_.25s_ease] [.is-fs.is-idle_&]:!opacity-0 [.is-fs.is-idle_&]:pointer-events-none max-[720px]:!flex max-[720px]:!flex-wrap max-[720px]:!items-center max-[720px]:!justify-between max-[720px]:gap-2 max-[720px]:py-2 max-[720px]:px-2.5";
+  "flex-none min-w-0 grid [grid-template-columns:minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 py-2.5 px-[14px] bg-[rgba(255,255,255,0.04)] border border-solid border-[rgba(255,255,255,0.08)] rounded-[14px] [.is-fs_&]:absolute [.is-fs_&]:left-1/2 [.is-fs_&]:bottom-6 [.is-fs_&]:[transform:translateX(-50%)] [.is-fs_&]:w-[min(900px,calc(100vw-32px))] [.is-fs_&]:bg-[rgba(11,15,26,0.65)] [.is-fs_&]:[backdrop-filter:blur(14px)_saturate(160%)] [.is-fs_&]:[-webkit-backdrop-filter:blur(14px)_saturate(160%)] [.is-fs_&]:border-[rgba(255,255,255,0.12)] [.is-fs_&]:shadow-[0_18px_40px_-10px_rgba(0,0,0,0.6)] [.is-fs_&]:opacity-100 [.is-fs_&]:[transition:opacity_.25s_ease] [.is-fs.is-idle_&]:!opacity-0 [.is-fs.is-idle_&]:pointer-events-none max-[720px]:!flex max-[720px]:!flex-wrap max-[720px]:!items-center max-[720px]:!justify-between max-[720px]:gap-2.5 max-[720px]:py-3 max-[720px]:px-3 max-[720px]:rounded-[16px] max-[720px]:!bg-[rgba(11,15,26,0.85)] max-[720px]:!border-[rgba(255,255,255,0.10)]";
 export const VIEWER_CONTROLS_LEFT_CLS =
   "inline-flex items-center gap-2.5 min-w-0 max-[720px]:gap-1.5";
 export const VIEWER_CONTROLS_RIGHT_CLS =
