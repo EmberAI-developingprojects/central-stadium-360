@@ -1060,33 +1060,38 @@ function Partners({ items = [] }: { items: Partner[] }) {
 }
 
 function Roadmap(_props: { items?: RoadmapItem[] }) {
+  const { t } = useTranslation();
   type Milestone = { year: string; title: string };
   const bot: Milestone[] = [
-    { year: "1958", title: "БНХАУ-ын тусламжтай байгуулагдсан" },
-    { year: "1961", title: "Нийслэлийн өмчид шилжсэн" },
-    { year: "1971", title: "Төв асар ашиглалтад · 12,500 суудал" },
-    { year: "1990", title: "Ашиг орлогын тогтолцоо бүрдсэн" },
-    { year: "1993", title: "Эзэмшлийн маргаан үүссэн" },
+    { year: "1958", title: t("home_roadmap_1958") },
+    { year: "1961", title: t("home_roadmap_1961") },
+    { year: "1971", title: t("home_roadmap_1971") },
+    { year: "1990", title: t("home_roadmap_1990") },
+    { year: "1993", title: t("home_roadmap_1993") },
   ];
   const top: Milestone[] = [
-    { year: "2007", title: "Үзэгчийн суудал шинэчлэгдсэн" },
-    { year: "2014", title: "Эзэмшил дахин үнэлэгдсэн · 12.7 га" },
-    { year: "2019", title: "100% нийслэлийн өмчид шилжсэн" },
-    { year: "2024", title: "Шинэ гүйцэтгэх захирал томилогдсон" },
-    { year: "2025", title: "Дэвшилтэт шинэ бодлого хэрэгжсэн" },
-    { year: "2026", title: "360° Live вэбсайтын шинэчлэл" },
+    { year: "2007", title: t("home_roadmap_2007") },
+    { year: "2014", title: t("home_roadmap_2014") },
+    { year: "2019", title: t("home_roadmap_2019") },
+    { year: "2024", title: t("home_roadmap_2024") },
+    { year: "2025", title: t("home_roadmap_2025") },
+    { year: "2026", title: t("home_roadmap_2026") },
   ];
   const all = [...bot, ...top];
 
+  // Dots are placed ALONG a single smooth S-curve from (290,230) to (730,110).
+  // Pre-curve dots sit flat at y=230, post-curve dots sit flat at y=110, and
+  // the transition dots (1990, 1993, 2007, 2014) sample the smoothstep so
+  // every dot visually lies on the connecting line.
   const botDots = [
     { x: 80, y: 230 },
     { x: 185, y: 230 },
     { x: 290, y: 230 },
-    { x: 395, y: 230 },
-    { x: 500, y: 230 },
+    { x: 395, y: 213 },
+    { x: 500, y: 174 },
   ];
   const topDots = [
-    { x: 620, y: 110 },
+    { x: 620, y: 129 },
     { x: 730, y: 110 },
     { x: 838, y: 110 },
     { x: 946, y: 110 },
@@ -1107,7 +1112,7 @@ function Roadmap(_props: { items?: RoadmapItem[] }) {
         <h2
           className={`text-[42px] font-extrabold tracking-[-0.02em] m-0 mb-10 text-[#1a1a1a] max-[900px]:text-[34px] max-[540px]:text-[26px] max-[540px]:mb-7 ${REVEAL_UP_CLS}`}
         >
-          ТҮҮХЭН ЗАМНАЛ
+          {t("home_roadmap_title")}
         </h2>
 
         <div className="flex items-stretch gap-0 mb-10 max-[640px]:flex-col max-[640px]:gap-1.5">
@@ -1117,10 +1122,10 @@ function Roadmap(_props: { items?: RoadmapItem[] }) {
             data-stagger="1"
           >
             <strong className="text-[14px] font-extrabold block tracking-[0.02em] max-[900px]:text-[13px]">
-              1958–1993
+              {t("home_roadmap_phase1_years")}
             </strong>
             <small className="text-[12px] block opacity-85 max-[900px]:text-[11px]">
-              Үндэсний цэнгэлдэхийн үүсэл
+              {t("home_roadmap_phase1_label")}
             </small>
           </div>
           <div
@@ -1129,10 +1134,10 @@ function Roadmap(_props: { items?: RoadmapItem[] }) {
             data-stagger="2"
           >
             <strong className="text-[14px] font-extrabold block tracking-[0.02em] max-[900px]:text-[13px]">
-              2007–2019
+              {t("home_roadmap_phase2_years")}
             </strong>
             <small className="text-[12px] block opacity-85 max-[900px]:text-[11px]">
-              Шинэчлэл ба өмчийн өөрчлөлт
+              {t("home_roadmap_phase2_label")}
             </small>
           </div>
           <div
@@ -1141,10 +1146,10 @@ function Roadmap(_props: { items?: RoadmapItem[] }) {
             data-stagger="3"
           >
             <strong className="text-[14px] font-extrabold block tracking-[0.02em] max-[900px]:text-[13px]">
-              2024+
+              {t("home_roadmap_phase3_years")}
             </strong>
             <small className="text-[12px] block opacity-85 max-[900px]:text-[11px]">
-              Дэвшилтэт шинэ бодлого
+              {t("home_roadmap_phase3_label")}
             </small>
           </div>
         </div>
@@ -1160,7 +1165,7 @@ function Roadmap(_props: { items?: RoadmapItem[] }) {
             aria-hidden="true"
           >
             <path
-              d="M 40,230 L 510,230 C 555,230 575,110 620,110 L 1170,110"
+              d="M 40,230 L 290,230 C 510,230 510,110 730,110 L 1170,110"
               stroke="#2230C6"
               strokeWidth="2.2"
               fill="none"

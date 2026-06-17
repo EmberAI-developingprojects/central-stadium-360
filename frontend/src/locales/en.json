@@ -360,5 +360,24 @@
   "auth_forgot_reset_done": "Password updated ✓ Please sign in.",
   "auth_err_user_not_found": "This phone number is not registered.",
   "auth_err_forgot_send_failed": "Failed to send the code.",
-  "auth_err_forgot_reset_failed": "Failed to update the password."
+  "auth_err_forgot_reset_failed": "Failed to update the password.",
+
+  "home_roadmap_title": "OUR JOURNEY",
+  "home_roadmap_phase1_years": "1958–1993",
+  "home_roadmap_phase1_label": "Birth of the national stadium",
+  "home_roadmap_phase2_years": "2007–2019",
+  "home_roadmap_phase2_label": "Modernization & ownership reforms",
+  "home_roadmap_phase3_years": "2024+",
+  "home_roadmap_phase3_label": "A new era of progress",
+  "home_roadmap_1958": "Built with support from the People's Republic of China",
+  "home_roadmap_1961": "Transferred to city ownership",
+  "home_roadmap_1971": "Main grandstand opens · 12,500 seats",
+  "home_roadmap_1990": "Revenue-generating model established",
+  "home_roadmap_1993": "Ownership dispute begins",
+  "home_roadmap_2007": "Spectator seating renovated",
+  "home_roadmap_2014": "Property re-appraised · 12.7 ha",
+  "home_roadmap_2019": "Fully transferred to city ownership",
+  "home_roadmap_2024": "New executive director appointed",
+  "home_roadmap_2025": "Progressive new strategy launched",
+  "home_roadmap_2026": "360° live broadcast website launched"
 }
