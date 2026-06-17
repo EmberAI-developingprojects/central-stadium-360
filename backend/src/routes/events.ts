@@ -271,13 +271,10 @@ events.post("/:id/buy-replay", requireUser, async (c) => {
   const pending = await findRecentPendingTicket(user.id, event.id, "replay");
   if (pending) {
     const reuse = await reusePendingInvoice(pending, event.id);
-    if (!reuse.ok) {
-      return c.json(
-        { ok: false, error: reuse.error } as const,
-        reuse.status as 502,
-      );
+    if (reuse.ok) {
+      return c.json({ ok: true, data: reuse.data } as const);
     }
-    return c.json({ ok: true, data: reuse.data } as const);
+    // Stale pending invoice was discarded; fall through to mint a fresh one.
   }
 
   const price = Number(event.replay_price ?? 0);

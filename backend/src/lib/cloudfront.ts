@@ -10,7 +10,21 @@ export function isCloudFrontConfigured(): boolean {
   );
 }
 
-export function signRecordingUrl(s3KeyPath: string): string {
+function stripLeadingSlash(s: string): string {
+  return s.startsWith("/") ? s.slice(1) : s;
+}
+
+/**
+ * Sign the master playlist URL with a **wildcard custom policy** that
+ * authorizes every object beneath the recording's session prefix. The
+ * frontend forwards the resulting signature query params on every HLS
+ * child request (variant playlists, `.ts` segments) so CloudFront does
+ * not 403 them.
+ */
+export function signRecordingUrl(
+  masterPath: string,
+  sessionPrefix: string,
+): string {
   const domain = process.env.AWS_CLOUDFRONT_DOMAIN;
   const keyPairId = process.env.AWS_CLOUDFRONT_KEY_PAIR_ID;
   const privateKeyB64 = process.env.AWS_CLOUDFRONT_PRIVATE_KEY_BASE64;
@@ -18,8 +32,16 @@ export function signRecordingUrl(s3KeyPath: string): string {
     throw new Error("cloudfront_not_configured");
   }
   const privateKey = Buffer.from(privateKeyB64, "base64").toString("utf-8");
-  const path = s3KeyPath.startsWith("/") ? s3KeyPath.slice(1) : s3KeyPath;
-  const url = `https://${domain}/${path}`;
-  const dateLessThan = new Date(Date.now() + SIGN_TTL_MS).toISOString();
-  return getSignedUrl({ url, keyPairId, privateKey, dateLessThan });
+  const masterUrl = `https://${domain}/${stripLeadingSlash(masterPath)}`;
+  const resource = `https://${domain}/${stripLeadingSlash(sessionPrefix)}*`;
+  const epoch = Math.floor((Date.now() + SIGN_TTL_MS) / 1000);
+  const policy = JSON.stringify({
+    Statement: [
+      {
+        Resource: resource,
+        Condition: { DateLessThan: { "AWS:EpochTime": epoch } },
+      },
+    ],
+  });
+  return getSignedUrl({ url: masterUrl, keyPairId, privateKey, policy });
 }

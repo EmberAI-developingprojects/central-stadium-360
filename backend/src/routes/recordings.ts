@@ -46,7 +46,7 @@ recordings.post("/:id/sign-url", async (c) => {
   if (!rec || rec.status !== "ready") {
     return c.json({ ok: false, error: "not_found" } as const, 404);
   }
-  if (!rec.master_playlist_path) {
+  if (!rec.master_playlist_path || !rec.s3_key_prefix) {
     return c.json(
       { ok: false, error: "recording_incomplete" } as const,
       409,
@@ -60,7 +60,7 @@ recordings.post("/:id/sign-url", async (c) => {
 
   let signedUrl: string;
   try {
-    signedUrl = signRecordingUrl(rec.master_playlist_path);
+    signedUrl = signRecordingUrl(rec.master_playlist_path, rec.s3_key_prefix);
   } catch (_err) {
     return c.json({ ok: false, error: "sign_failed" } as const, 500);
   }

@@ -8,6 +8,12 @@ import { getSupabaseAdmin } from "./supabase";
 
 const HOUR_MS = 60 * 60 * 1000;
 const CAMERA_NUMBERS = [1, 2, 3, 4] as const;
+// IVS auto-record sessions are bucketed by the hour the session *started* —
+// which can be slightly before the event's official live_start_at, and the
+// final write of recording-ended.json can land well after live_end_at.
+// Widen the scan window so off-by-an-hour sessions still get discovered.
+const DISCOVERY_LOOKBACK_MS = 60 * 60 * 1000;
+const DISCOVERY_LOOKAHEAD_MS = 2 * 60 * 60 * 1000;
 
 const RECORDING_COLS =
   "id,event_id,camera_number,channel_arn,s3_bucket,s3_key_prefix,master_playlist_path,duration_seconds,recording_started_at,recording_ended_at,status,created_at";
@@ -20,10 +26,6 @@ function getS3Client(): S3Client | null {
   if (!region) return null;
   s3Client = new S3Client({ region });
   return s3Client;
-}
-
-function pad2(n: number): string {
-  return String(n).padStart(2, "0");
 }
 
 /**
@@ -86,7 +88,9 @@ function buildHourPrefix(
   day: number,
   hour: number,
 ): string {
-  return `ivs/v1/${accountId}/${channelId}/${year}/${pad2(month)}/${pad2(day)}/${pad2(hour)}/`;
+  // IVS auto-record-to-S3 path segments are NOT zero-padded:
+  //   ivs/v1/<acct>/<ch>/2026/6/16/2/48/<session>/...
+  return `ivs/v1/${accountId}/${channelId}/${year}/${month}/${day}/${hour}/`;
 }
 
 /**
@@ -323,10 +327,16 @@ export async function discoverRecordingsForEvent(
   event: Pick<DbEvent, "id" | "live_start_at" | "live_end_at">,
 ): Promise<DbRecording[]> {
   if (!event.live_start_at || !event.live_end_at) return [];
-  const startMs = new Date(event.live_start_at).getTime();
-  const endMs = new Date(event.live_end_at).getTime();
-  if (Number.isNaN(startMs) || Number.isNaN(endMs) || endMs <= startMs)
+  const liveStartMs = new Date(event.live_start_at).getTime();
+  const liveEndMs = new Date(event.live_end_at).getTime();
+  if (
+    Number.isNaN(liveStartMs) ||
+    Number.isNaN(liveEndMs) ||
+    liveEndMs <= liveStartMs
+  )
     return [];
+  const startMs = liveStartMs - DISCOVERY_LOOKBACK_MS;
+  const endMs = liveEndMs + DISCOVERY_LOOKAHEAD_MS;
 
   const bucket = process.env.AWS_IVS_RECORDINGS_BUCKET;
   if (!bucket) {
@@ -370,6 +380,7 @@ export async function discoverRecordingsForEvent(
     | "status"
   >;
   const found: Insertable[] = [];
+  const missingCams: number[] = [];
   for (const [cameraNumber, arn] of cameraArns) {
     try {
       const result = await discoverCamera(
@@ -381,14 +392,25 @@ export async function discoverRecordingsForEvent(
         startMs,
         endMs,
       );
-      if (result) found.push({ event_id: event.id, ...result });
+      if (result) {
+        found.push({ event_id: event.id, ...result });
+      } else {
+        missingCams.push(cameraNumber);
+      }
     } catch (err) {
+      missingCams.push(cameraNumber);
       console.warn(
         `[recordings] camera ${cameraNumber} discovery failed:`,
         (err as Error).message,
       );
     }
   }
+
+  console.info(
+    `[recordings] event=${event.id} window=${new Date(startMs).toISOString()}..${new Date(endMs).toISOString()} cams_found=[${found
+      .map((f) => f.camera_number)
+      .join(",")}] cams_missing=[${missingCams.join(",")}]`,
+  );
 
   if (found.length === 0) return [];
 
