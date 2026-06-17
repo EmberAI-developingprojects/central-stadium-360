@@ -68,7 +68,7 @@
   "vod_qr_help": "Open the QPay app and scan the QR code.",
   "vod_qr_waiting": "Waiting for payment…",
   "vod_purchase_success": "Ticket activated. Loading the replay…",
-  "vod_camera_switching": "Switching camera…",
+  "vod_camera_switching": "Switching camera",
   "vod_no_recordings": "Recordings are not ready yet.",
   "nav_login": "Sign In",
   "nav_main_menu": "Main menu",

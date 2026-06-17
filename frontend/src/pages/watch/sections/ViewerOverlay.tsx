@@ -191,53 +191,56 @@ export function ViewerOverlay({
     });
   }, []);
 
+  // Reuse a single Hls instance across camera switches — recreating it on
+  // every URL change forces a MediaSource teardown and re-init, which adds
+  // ~1s of "switching" latency. `loadSource(newUrl)` is dramatically faster.
   useEffect(() => {
     const video = videoRef.current;
     const url = activeCam?.hlsUrl;
     if (!video) return;
-
-    if (hlsRef.current) {
-      hlsRef.current.destroy();
-      hlsRef.current = null;
-    }
     setQualityLevels([]);
     setQualityIdx(-1);
-
     if (!url) return;
 
     if (Hls.isSupported()) {
-      const hls = new Hls({ startLevel: -1, capLevelToPlayerSize: true });
-      hlsRef.current = hls;
+      let hls = hlsRef.current;
+      if (!hls) {
+        hls = new Hls({ startLevel: -1, capLevelToPlayerSize: true });
+        hlsRef.current = hls;
+        hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
+          const levels: QualityLevel[] = data.levels.map((l, i) => ({
+            index: i,
+            height: l.height,
+            label:
+              l.height >= 1080
+                ? "1080p"
+                : l.height >= 720
+                  ? "720p"
+                  : l.height >= 480
+                    ? "480p"
+                    : `${l.height}p`,
+          }));
+          setQualityLevels(levels);
+          video.play().catch(() => {});
+        });
+        hls.attachMedia(video);
+      }
       hls.loadSource(url);
-      hls.attachMedia(video);
-      hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
-        const levels: QualityLevel[] = data.levels.map((l, i) => ({
-          index: i,
-          height: l.height,
-          label:
-            l.height >= 1080
-              ? "1080p"
-              : l.height >= 720
-                ? "720p"
-                : l.height >= 480
-                  ? "480p"
-                  : `${l.height}p`,
-        }));
-        setQualityLevels(levels);
-        video.play().catch(() => {});
-      });
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = url;
       video.play().catch(() => {});
     }
+  }, [activeCam?.hlsUrl]);
 
+  // Tear down Hls only on unmount, so camera switches reuse the instance.
+  useEffect(() => {
     return () => {
       if (hlsRef.current) {
         hlsRef.current.destroy();
         hlsRef.current = null;
       }
     };
-  }, [activeCam?.hlsUrl]);
+  }, []);
 
   useEffect(() => {
     if (hlsRef.current) hlsRef.current.currentLevel = qualityIdx;

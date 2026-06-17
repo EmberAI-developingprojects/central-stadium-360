@@ -93,7 +93,7 @@ export async function findRecentPendingTicket(
 
 export type ReusePendingResult =
   | { ok: true; data: TicketCreateResponse }
-  | { ok: false; error: string; status: number };
+  | { ok: false; recreate: true };
 
 export async function reusePendingInvoice(
   pending: PendingTicketRow,
@@ -113,7 +113,18 @@ export async function reusePendingInvoice(
     };
     return { ok: true, data };
   } catch (_err) {
-    return { ok: false, error: "qpay_unavailable", status: 502 };
+    // QPay no longer recognises this invoice (expired or cancelled). Drop the
+    // abandoned pending row so the caller can issue a fresh invoice instead of
+    // leaving the user stuck.
+    const admin = getSupabaseAdmin();
+    if (admin) {
+      await admin
+        .from("tickets")
+        .delete()
+        .eq("id", pending.id)
+        .eq("status", "pending");
+    }
+    return { ok: false, recreate: true };
   }
 }
 

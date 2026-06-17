@@ -276,12 +276,21 @@ function ShellChrome({
   );
 }
 
+type SignedEntry = { url: string; expiresAt: number };
+
 function VODViewer({ event }: { event: VODEventDetail }) {
   const { t } = useTranslation();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const stageRef = useRef<HTMLElement>(null);
+  // Mutable signature query for the *currently active* recording — read by
+  // the shared HLS loader at request time so we can reuse one Hls instance
+  // across camera switches.
+  const signQueryRef = useRef<string>("");
+  // recording_id → cached signed URL (1h TTL backend-side; we treat as
+  // stale 5m before that).
+  const signedCacheRef = useRef<Map<string, SignedEntry>>(new Map());
 
   const recordings = useMemo(
     () =>
@@ -314,24 +323,55 @@ function VODViewer({ event }: { event: VODEventDetail }) {
   const activeRecording = recordings[camIdx] ?? null;
   const is360 = activeRecording != null;
 
+  const pendingSeekRef = useRef<number | null>(null);
+
   const loadSignedUrl = useCallback(
     async (recordingId: string, seekTo: number | null) => {
       setSwitching(true);
       setSignError(null);
-      const res = await api.signRecordingUrl(recordingId);
-      if (!res.ok) {
-        setSignError(res.error);
-        setSwitching(false);
-        return;
+      const cached = signedCacheRef.current.get(recordingId);
+      // Treat URLs as stale 5 min before the backend's 1h expiry.
+      const isFresh = cached && cached.expiresAt - Date.now() > 5 * 60 * 1000;
+      let url = cached?.url;
+      if (!isFresh) {
+        const res = await api.signRecordingUrl(recordingId);
+        if (!res.ok) {
+          setSignError(res.error);
+          setSwitching(false);
+          return;
+        }
+        url = res.data.url;
+        signedCacheRef.current.set(recordingId, {
+          url,
+          expiresAt: new Date(res.data.expires_at).getTime(),
+        });
       }
-      setCurrentSrc(res.data.url);
-      // seek-target captured for later — applied in the HLS mount effect
       pendingSeekRef.current = seekTo;
+      setCurrentSrc(url!);
     },
     [],
   );
 
-  const pendingSeekRef = useRef<number | null>(null);
+  // Pre-sign all camera URLs in parallel as soon as recordings are known so
+  // subsequent camera switches don't have to wait for the backend round-trip.
+  useEffect(() => {
+    if (recordings.length === 0) return;
+    let alive = true;
+    void Promise.all(
+      recordings.map(async (rec) => {
+        if (signedCacheRef.current.has(rec.id)) return;
+        const res = await api.signRecordingUrl(rec.id);
+        if (!alive || !res.ok) return;
+        signedCacheRef.current.set(rec.id, {
+          url: res.data.url,
+          expiresAt: new Date(res.data.expires_at).getTime(),
+        });
+      }),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [recordings]);
 
   // Initial load for the first camera.
   useEffect(() => {
@@ -352,15 +392,19 @@ function VODViewer({ event }: { event: VODEventDetail }) {
     [camIdx, recordings, loadSignedUrl],
   );
 
-  // (Re-)attach HLS whenever the signed URL changes.
+  // (Re-)attach HLS whenever the signed URL changes. We reuse a single Hls
+  // instance across camera switches — `loadSource(newUrl)` is dramatically
+  // faster than destroy + recreate (no MediaSource teardown, no re-init).
   useEffect(() => {
     const video = videoRef.current;
     const url = currentSrc;
     if (!video || !url) return;
 
-    if (hlsRef.current) {
-      hlsRef.current.destroy();
-      hlsRef.current = null;
+    // Update sign query for the new URL before any loader runs.
+    try {
+      signQueryRef.current = new URL(url).search.replace(/^\?/, "");
+    } catch {
+      signQueryRef.current = "";
     }
     setQualityLevels([]);
     setQualityIdx(-1);
@@ -378,33 +422,65 @@ function VODViewer({ event }: { event: VODEventDetail }) {
     };
 
     if (Hls.isSupported()) {
-      const hls = new Hls({ startLevel: -1, capLevelToPlayerSize: true });
-      hlsRef.current = hls;
+      let hls = hlsRef.current;
+      if (!hls) {
+        // CloudFront signs the master with a wildcard custom policy; the
+        // Policy/Signature/Key-Pair-Id query params live only on the master
+        // URL. HLS resolves variant playlists & .ts segments as relative
+        // refs (which drops the base URL's query) — so we rewrite every
+        // child request URL to carry the same signature, otherwise
+        // CloudFront 403s them and the player stalls.
+        const BaseLoader = Hls.DefaultConfig.loader;
+        const signRef = signQueryRef;
+        class SignedLoader extends BaseLoader {
+          load(
+            context: Parameters<InstanceType<typeof BaseLoader>["load"]>[0],
+            config: Parameters<InstanceType<typeof BaseLoader>["load"]>[1],
+            callbacks: Parameters<InstanceType<typeof BaseLoader>["load"]>[2],
+          ) {
+            const sign = signRef.current;
+            if (sign && context.url && !context.url.includes("Signature=")) {
+              const sep = context.url.includes("?") ? "&" : "?";
+              context.url = `${context.url}${sep}${sign}`;
+            }
+            return super.load(context, config, callbacks);
+          }
+        }
+        hls = new Hls({
+          startLevel: -1,
+          capLevelToPlayerSize: true,
+          loader: SignedLoader,
+        });
+        hlsRef.current = hls;
+        hls.on(Hls.Events.ERROR, (_, data) => {
+          if (data.fatal) {
+            console.error("[hls] fatal", data.type, data.details, data);
+          }
+        });
+        hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
+          const levels: QualityLevel[] = data.levels.map((l, i) => ({
+            index: i,
+            height: l.height,
+            label:
+              l.height >= 1080
+                ? "1080p"
+                : l.height >= 720
+                  ? "720p"
+                  : l.height >= 480
+                    ? "480p"
+                    : `${l.height}p`,
+          }));
+          setQualityLevels(levels);
+        });
+        hls.attachMedia(video);
+      }
       hls.loadSource(url);
-      hls.attachMedia(video);
-      hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
-        const levels: QualityLevel[] = data.levels.map((l, i) => ({
-          index: i,
-          height: l.height,
-          label:
-            l.height >= 1080
-              ? "1080p"
-              : l.height >= 720
-                ? "720p"
-                : l.height >= 480
-                  ? "480p"
-                  : `${l.height}p`,
-        }));
-        setQualityLevels(levels);
-      });
       const onLoaded = () => applyPendingSeek();
       video.addEventListener("loadedmetadata", onLoaded, { once: true });
+      // Only remove the listener on re-run; the Hls instance is reused and
+      // torn down once in the unmount-only effect below.
       return () => {
         video.removeEventListener("loadedmetadata", onLoaded);
-        if (hlsRef.current) {
-          hlsRef.current.destroy();
-          hlsRef.current = null;
-        }
       };
     }
 
@@ -415,6 +491,16 @@ function VODViewer({ event }: { event: VODEventDetail }) {
       return () => video.removeEventListener("loadedmetadata", onLoaded);
     }
   }, [currentSrc]);
+
+  // Tear down Hls only on unmount, so camera switches reuse the instance.
+  useEffect(() => {
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (hlsRef.current) hlsRef.current.currentLevel = qualityIdx;
