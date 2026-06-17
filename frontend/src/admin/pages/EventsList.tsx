@@ -4,7 +4,6 @@ import {
   deleteEvent,
   listAdminEvents,
   listOrders,
-  setFeaturedEvent,
 } from "../../data/store";
 import type { AdminEventRecord } from "../../data/store";
 import type { EventStatus } from "@cs360/shared";
@@ -107,8 +106,6 @@ export default function EventsList() {
   const [salesByEvent, setSalesByEvent] = useState<Record<string, number>>({});
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [pendingFeatureId, setPendingFeatureId] = useState<string | null>(null);
-
   const load = () => {
     Promise.all([listAdminEvents(), listOrders({ status: "paid" })]).then(
       ([evts, orders]) => {
@@ -150,19 +147,6 @@ export default function EventsList() {
     }
   };
 
-  const onFeature = async (id: string) => {
-    setPendingFeatureId(id);
-    try {
-      await setFeaturedEvent(id);
-      toast.success("Featured болголоо.");
-      load();
-    } catch (e) {
-      toast.error((e as Error).message || "Алдаа гарлаа.");
-    } finally {
-      setPendingFeatureId(null);
-    }
-  };
-
   const enriched = useMemo(() => {
     return (events || []).map((e) => ({
       event: e,
@@ -175,13 +159,12 @@ export default function EventsList() {
     const total = enriched.length;
     const live = enriched.filter((r) => r.status === "live").length;
     const upcoming = enriched.filter((r) => r.status === "upcoming").length;
-    const featuredCount = enriched.filter((r) => r.event.featured).length;
     const totalSales = enriched.reduce((s, r) => s + r.sales, 0);
     const revenue = enriched.reduce(
       (s, r) => s + (r.event.base || 0) * r.sales,
       0,
     );
-    return { total, live, upcoming, featuredCount, totalSales, revenue };
+    return { total, live, upcoming, totalSales, revenue };
   }, [enriched]);
 
   const filtered = useMemo(() => {
@@ -200,7 +183,7 @@ export default function EventsList() {
       <div className={ADMIN_PAGE_HEADER_CLS}>
         <div>
           <h2>Арга хэмжээ</h2>
-          <p>Удахгүй болох тоглолтуудыг үүсгэх, засах, онцлох.</p>
+          <p>Удахгүй болох тоглолтуудыг үүсгэх, засах.</p>
         </div>
         <Link
           to="/admin/events/new"
@@ -215,7 +198,7 @@ export default function EventsList() {
       </div>
 
       {events.length > 0 && (
-        <div className="grid gap-3 mb-5 [grid-template-columns:repeat(4,minmax(0,1fr))] max-[980px]:[grid-template-columns:repeat(2,minmax(0,1fr))]">
+        <div className="grid gap-3 mb-5 [grid-template-columns:repeat(3,minmax(0,1fr))] max-[980px]:[grid-template-columns:repeat(2,minmax(0,1fr))]">
           <StatCard
             label="Нийт"
             value={stats.total.toString()}
@@ -230,16 +213,6 @@ export default function EventsList() {
             value={stats.live.toString()}
             sub={stats.live > 0 ? "одоо явагдаж байна" : "идэвхтэй эфир алга"}
             accent={stats.live > 0 ? "live" : undefined}
-          />
-          <StatCard
-            label="Featured"
-            value={stats.featuredCount.toString()}
-            sub={
-              stats.featuredCount > 0
-                ? "нүүр хуудаст онцлогдсон"
-                : "сонгогдоогүй"
-            }
-            accent={stats.featuredCount > 0 ? "featured" : undefined}
           />
           <StatCard
             label="Орлого"
@@ -330,7 +303,6 @@ export default function EventsList() {
                 <th style={{ textAlign: "right" }}>Шууд / Нөхөж үзэх</th>
                 <th style={{ textAlign: "center" }}>Бичлэг</th>
                 <th style={{ textAlign: "center" }}>Зарагдсан</th>
-                <th style={{ textAlign: "center" }}>★</th>
                 <th style={{ width: 1 }} />
               </tr>
             </thead>
@@ -370,14 +342,6 @@ export default function EventsList() {
                             >
                               {e.title || "Untitled"}
                             </Link>
-                            {e.featured && (
-                              <span className="inline-flex items-center gap-1 shrink-0 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[10.5px] font-semibold px-1.5 py-0.5 leading-none">
-                                <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                                </svg>
-                                FEATURED
-                              </span>
-                            )}
                           </div>
                           <div className="text-[11.5px] text-zinc-500 mt-0.5 flex items-center gap-1.5">
                             <span className="font-mono text-[10.5px] text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -425,37 +389,6 @@ export default function EventsList() {
                       ) : (
                         <span className="text-zinc-400">0</span>
                       )}
-                    </td>
-                    <td style={{ textAlign: "center" }}>
-                      <button
-                        type="button"
-                        onClick={() => !e.featured && onFeature(e.id)}
-                        disabled={e.featured || pendingFeatureId === e.id}
-                        title={
-                          e.featured
-                            ? "Аль хэдийн featured"
-                            : "Featured болгох"
-                        }
-                        className={`inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors ${
-                          e.featured
-                            ? "text-amber-500 cursor-default"
-                            : "text-zinc-300 hover:text-amber-500 hover:bg-amber-50 cursor-pointer"
-                        }`}
-                      >
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill={e.featured ? "currentColor" : "none"}
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          aria-hidden="true"
-                        >
-                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                        </svg>
-                      </button>
                     </td>
                     <td>
                       <div className="inline-flex gap-1">
@@ -506,14 +439,9 @@ function StatCard({
   label: string;
   value: string;
   sub: string;
-  accent?: "live" | "featured";
+  accent?: "live";
 }) {
-  const valueColor =
-    accent === "live"
-      ? "text-red-600"
-      : accent === "featured"
-        ? "text-amber-600"
-        : "text-zinc-900";
+  const valueColor = accent === "live" ? "text-red-600" : "text-zinc-900";
   return (
     <div className="bg-white border border-[#ececef] rounded-xl p-4">
       <div className="flex items-center gap-1.5">

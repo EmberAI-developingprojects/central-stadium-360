@@ -54,12 +54,32 @@ export default function Watch() {
   const featuredEvent = useMemo<TicketModalEvent>(() => {
     if (events.length === 0) return FEATURED_FALLBACK;
     const now = Date.now();
-    const sorted = [...events].sort((a, b) => {
-      const da = Math.abs(new Date(a.start_time).getTime() - now);
-      const db = Math.abs(new Date(b.start_time).getTime() - now);
-      return da - db;
-    });
-    const ev = sorted[0];
+    const startMs = (e: EventRecord) =>
+      new Date(e.live_start_at ?? e.start_time).getTime();
+    const endMs = (e: EventRecord) =>
+      e.live_end_at ? new Date(e.live_end_at).getTime() : null;
+
+    // 1) Currently live — requires a known live window. Pick the one that
+    // started most recently (the freshest live event).
+    const live = events
+      .filter((e) => {
+        const en = endMs(e);
+        if (en === null) return false;
+        const s = startMs(e);
+        return s <= now && en >= now;
+      })
+      .sort((a, b) => startMs(b) - startMs(a));
+    // 2) Next upcoming — earliest start in the future.
+    const upcoming = events
+      .filter((e) => startMs(e) > now)
+      .sort((a, b) => startMs(a) - startMs(b));
+    // 3) Most recent past — latest start in the past.
+    const past = events
+      .filter((e) => startMs(e) <= now)
+      .sort((a, b) => startMs(b) - startMs(a));
+
+    const ev = live[0] ?? upcoming[0] ?? past[0];
+    if (!ev) return FEATURED_FALLBACK;
     return {
       id: ev.id,
       title: ev.title,

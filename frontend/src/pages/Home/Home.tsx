@@ -580,6 +580,10 @@ function Upcoming({ gatedGo, events }: UpcomingProps) {
     setProgress(0);
   };
 
+  // Hide the entire section when there are no upcoming/live events — an
+  // empty dark stage with disabled nav arrows looks broken to visitors.
+  if (upcoming.length === 0) return null;
+
   const upNavBase =
     "absolute top-1/2 w-12 h-12 rounded-full text-white inline-flex items-center justify-center border-0 z-[3] cursor-pointer [transform:translateY(-50%)] bg-[rgba(255,255,255,0.12)] [backdrop-filter:blur(8px)] [-webkit-backdrop-filter:blur(8px)] [transition:background_0.18s_ease,color_0.18s_ease,transform_0.18s_ease] hover:bg-brand-blue hover:text-white hover:[transform:translateY(-50%)_scale(1.06)] [&_svg]:w-[22px] [&_svg]:h-[22px] max-[720px]:w-10 max-[720px]:h-10";
   const upThumbBase =
@@ -1373,14 +1377,13 @@ function newsExcerpt(item: NewsItem, max = 220): string {
 
 function pickFeaturedNews(items: NewsItem[]): NewsItem | null {
   if (!items || items.length === 0) return null;
+  // Hero shows ONLY the admin-selected featured news. No latest-news
+  // fallback — if nothing is marked featured, the hero renders its default
+  // branded placeholder instead.
   const featured = items
     .filter((n) => n.featured)
     .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
-  if (featured.length > 0) return featured[0];
-  const sorted = [...items].sort((a, b) =>
-    (b.createdAt || "").localeCompare(a.createdAt || ""),
-  );
-  return sorted[0] ?? null;
+  return featured[0] ?? null;
 }
 
 function FeaturedNewsHero({ items }: { items: NewsItem[] }) {

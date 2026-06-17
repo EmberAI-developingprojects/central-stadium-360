@@ -713,51 +713,6 @@ export default function EventEdit() {
                     </span>
                   </div>
 
-                  <label
-                    className={`relative flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition-all ${
-                      form.featured
-                        ? "border-brand-blue bg-brand-blue-tint/40 shadow-[0_0_0_3px_rgba(34,48,198,0.08)]"
-                        : "border-[#e4e4e7] bg-white hover:bg-zinc-50 hover:border-zinc-300"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={!!form.featured}
-                      onChange={(e) => update({ featured: e.target.checked })}
-                      className="sr-only peer"
-                    />
-                    <span
-                      className={`shrink-0 mt-0.5 inline-flex h-5 w-9 items-center rounded-full p-0.5 transition-colors ${
-                        form.featured ? "bg-brand-blue" : "bg-zinc-300"
-                      }`}
-                      aria-hidden="true"
-                    >
-                      <span
-                        className={`h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
-                          form.featured ? "translate-x-4" : "translate-x-0"
-                        }`}
-                      />
-                    </span>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5 text-[13px] font-semibold text-zinc-900 leading-tight">
-                        <svg
-                          width="13"
-                          height="13"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                          className="text-amber-500"
-                          aria-hidden="true"
-                        >
-                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                        </svg>
-                        Featured (Шууд) болгох
-                      </div>
-                      <div className="text-[12px] text-zinc-500 mt-1 leading-[1.45]">
-                        Watch нүүр хуудаст hero хэсэгт энэ арга хэмжээ
-                        онцлогдоно.
-                      </div>
-                    </div>
-                  </label>
                 </div>
               </div>
             </section>
@@ -803,20 +758,6 @@ export default function EventEdit() {
                       <div className="absolute inset-0 grid place-items-center text-zinc-500 text-[11.5px]">
                         Нүүр зураг алга
                       </div>
-                    )}
-                    {form.featured && (
-                      <span className="absolute top-2.5 left-2.5 inline-flex items-center gap-1 py-1 px-2 rounded-full bg-amber-500/95 text-zinc-900 text-[10.5px] font-bold uppercase tracking-[.08em]">
-                        <svg
-                          width="10"
-                          height="10"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                          aria-hidden="true"
-                        >
-                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                        </svg>
-                        Featured
-                      </span>
                     )}
                   </div>
                   <div className="p-3.5">

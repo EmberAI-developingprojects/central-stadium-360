@@ -4,6 +4,16 @@ import { getSupabaseAdmin } from "./supabase";
 import { createInvoice, getInvoice, isQPayConfigured } from "./qpay";
 import { buildCallbackUrl, getCallbackSecret } from "./qpay-signature";
 
+export async function markUserViewed(userId: string): Promise<void> {
+  const admin = getSupabaseAdmin();
+  if (!admin) return;
+  await admin
+    .from("users")
+    .update({ first_viewed_at: new Date().toISOString() })
+    .eq("id", userId)
+    .is("first_viewed_at", null);
+}
+
 export async function hasValidTicketForEvent(
   userId: string,
   eventId: string,

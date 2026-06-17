@@ -129,10 +129,22 @@ async function applyRateLimits(
   const idRl = getIdentifierLimiter();
   const ipRl = getIpLimiter();
   if (!idRl || !ipRl) return null;
-  const [byId, byIp] = await Promise.all([
-    idRl.limit(identifier),
-    ipRl.limit(ip),
-  ]);
+  let byId: Awaited<ReturnType<typeof idRl.limit>>;
+  let byIp: Awaited<ReturnType<typeof ipRl.limit>>;
+  try {
+    [byId, byIp] = await Promise.all([
+      idRl.limit(identifier),
+      ipRl.limit(ip),
+    ]);
+  } catch (err) {
+    // Upstash unreachable or misconfigured (e.g. WRONGPASS). Rate limiting is
+    // a safety net — degrade open rather than 500-ing every auth request.
+    console.warn(
+      "[ratelimit] upstash request failed, skipping rate limit:",
+      err instanceof Error ? err.message : err,
+    );
+    return null;
+  }
   if (byId.success && byIp.success) return null;
   const reset = Math.max(byId.reset, byIp.reset);
   const retryAfter = Math.max(1, Math.ceil((reset - Date.now()) / 1000));
@@ -176,6 +188,38 @@ auth.post("/register/phone", async (c) => {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
       503,
+    );
+  }
+
+  // Pre-check: reject re-registration of an already-confirmed active phone
+  // before invoking Supabase signUp. The downstream "stale user" fallback only
+  // runs for truly abandoned (unconfirmed or soft-deleted) accounts, so a
+  // genuinely-registered phone could otherwise slip through into a resend-OTP
+  // path and look like the signup was accepted. Best-effort: if any of these
+  // probes throw (e.g. transient admin-API hiccup) we fall through to the
+  // existing signUp + fallback flow rather than 500-ing the whole request.
+  try {
+    const existingPublicId = await findUserIdByPhone(phone);
+    if (existingPublicId) {
+      const adminClient = getSupabaseAdmin();
+      if (adminClient) {
+        const authUserId = await findAuthUserIdByPhone(adminClient, phone);
+        if (authUserId) {
+          const { data: authUser } =
+            await adminClient.auth.admin.getUserById(authUserId);
+          if (authUser?.user?.phone_confirmed_at) {
+            return c.json(
+              { ok: false, error: "already_registered" } as const,
+              409,
+            );
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.warn(
+      "[register/phone] pre-check failed, falling through:",
+      err instanceof Error ? err.message : err,
     );
   }
 

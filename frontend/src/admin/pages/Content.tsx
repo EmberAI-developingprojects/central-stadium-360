@@ -19,7 +19,6 @@ import {
   ADMIN_BTN_PRIMARY_CLS,
   ADMIN_BTN_SM_CLS,
   ADMIN_CARD_CLS,
-  ADMIN_CHECKBOX_CLS,
   ADMIN_EMPTY_CLS,
   ADMIN_FIELD_CLS,
   ADMIN_FORM_ROW_CLS,
@@ -120,6 +119,27 @@ export default function Content() {
       content.members.map((it) => (it.id === id ? { ...it, ...patch } : it)),
     );
 
+  // Mark a single news article as featured (hero on the public homepage).
+  // Featured is mutually exclusive — clicking on one clears every other.
+  // Persists to the backend immediately so the admin doesn't have to
+  // remember to hit "Хадгалах" after toggling.
+  const setNewsFeatured = async (id: string) => {
+    const next = content.news.map((it) => ({
+      ...it,
+      featured: it.id === id,
+    }));
+    updateSectionNews(next);
+    try {
+      await updateHomeContent({ news: next });
+      setSavedAt(Date.now());
+      toast.success("Онцлох мэдээ шинэчлэгдлээ.");
+    } catch (e) {
+      // Roll back local state so the UI matches the server.
+      updateSectionNews(content.news);
+      toast.error((e as Error).message || "Хадгалах боломжгүй.");
+    }
+  };
+
   const addItem = () => {
     if (tab === "news") {
       const next = NEW_ITEM.news();
@@ -206,6 +226,7 @@ export default function Content() {
                 item={it}
                 onEdit={() => setEditingNewsId(it.id)}
                 onRemove={() => removeItem(it.id)}
+                onFeature={() => setNewsFeatured(it.id)}
               />
             ))}
           {tab === "partners" &&
@@ -275,10 +296,12 @@ function NewsListItem({
   item,
   onEdit,
   onRemove,
+  onFeature,
 }: {
   item: NewsItem;
   onEdit: () => void;
   onRemove: () => void;
+  onFeature: () => void;
 }) {
   return (
     <div className="flex items-center gap-4 p-3 pr-4 bg-white border border-[#ececef] rounded-xl hover:border-zinc-300 transition-colors">
@@ -324,6 +347,35 @@ function NewsListItem({
         </div>
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
+        <button
+          type="button"
+          onClick={onFeature}
+          disabled={!!item.featured}
+          aria-pressed={!!item.featured}
+          title={
+            item.featured
+              ? "Энэ мэдээ нүүр хуудсанд онцлох болгож харагдаж байна"
+              : "Энэ мэдээг нүүр хуудсанд онцлох болгох"
+          }
+          className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS} ${
+            item.featured
+              ? "!bg-amber-50 !text-amber-700 !border-amber-200 !cursor-default"
+              : ""
+          } inline-flex items-center gap-1.5 [&_svg]:w-3.5 [&_svg]:h-3.5`}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill={item.featured ? "currentColor" : "none"}
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <polygon points="12 2 15.1 8.6 22 9.5 17 14.4 18.2 21.3 12 18 5.8 21.3 7 14.4 2 9.5 8.9 8.6 12 2" />
+          </svg>
+          {item.featured ? "Онцолсон" : "Онцлох"}
+        </button>
         <button
           type="button"
           className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS}`}
@@ -584,15 +636,6 @@ function NewsRow({
           onChange={(e) => onChange({ title: e.target.value })}
         />
       </div>
-      <label className={ADMIN_CHECKBOX_CLS}>
-        <input
-          type="checkbox"
-          checked={!!item.featured}
-          onChange={(e) => onChange({ featured: e.target.checked })}
-        />
-        <span>Featured (онцлох картаар харуулах)</span>
-      </label>
-
       <div className={ADMIN_FIELD_CLS}>
         <label>Мэдээний агуулга</label>
         <TinyEditor
