@@ -1,38 +1,51 @@
-import { useEffect, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, type ReactNode } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth, RequireAdmin } from "./auth";
 import Home from "./pages/Home";
-import Events from "./pages/Events";
-import EventDetail from "./pages/EventDetail";
-import Technology from "./pages/Technology";
-import PetitionsOverview from "./pages/PetitionsOverview";
-import TransparencyDocument from "./pages/TransparencyDocument";
-import WatchVOD from "./pages/WatchVOD";
-import WatchEventDetail from "./pages/WatchEventDetail";
-import NewsDetail from "./pages/NewsDetail";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import RegisterPhone from "./pages/RegisterPhone";
-import RegisterEmail from "./pages/RegisterEmail";
-import ForgotPassword from "./pages/ForgotPassword";
-import Watch from "./pages/watch";
-import Settings from "./pages/Settings";
-import Profile from "./pages/Profile";
-import OrderDetail from "./pages/OrderDetail";
-import AdminLayout from "./admin/AdminLayout";
-import Dashboard from "./admin/pages/Dashboard";
-import EventsList from "./admin/pages/EventsList";
-import EventEdit from "./admin/pages/EventEdit";
-import EventCreate from "./admin/pages/EventCreate";
-import AdminEventDetail from "./admin/pages/EventDetail";
-import OrdersList from "./admin/pages/OrdersList";
-import OrderView from "./admin/pages/OrderView";
-import UsersList from "./admin/pages/UsersList";
-import UserView from "./admin/pages/UserView";
-import Content from "./admin/pages/Content";
-import HistoryAdmin from "./admin/pages/History";
-import History from "./pages/History";
-import HistoryDetail from "./pages/HistoryDetail";
+
+// Lazy-load every non-landing page so the initial JS bundle only contains
+// the homepage. Other routes are fetched on demand, which keeps first paint
+// fast and shrinks the admin surface area for public visitors.
+const Events = lazy(() => import("./pages/Events"));
+const EventDetail = lazy(() => import("./pages/EventDetail"));
+const Technology = lazy(() => import("./pages/Technology"));
+const PetitionsOverview = lazy(() => import("./pages/PetitionsOverview"));
+const TransparencyDocument = lazy(() => import("./pages/TransparencyDocument"));
+const WatchVOD = lazy(() => import("./pages/WatchVOD"));
+const WatchEventDetail = lazy(() => import("./pages/WatchEventDetail"));
+const NewsDetail = lazy(() => import("./pages/NewsDetail"));
+const Login = lazy(() => import("./pages/Login"));
+const Register = lazy(() => import("./pages/Register"));
+const RegisterPhone = lazy(() => import("./pages/RegisterPhone"));
+const RegisterEmail = lazy(() => import("./pages/RegisterEmail"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const Watch = lazy(() => import("./pages/watch"));
+const Settings = lazy(() => import("./pages/Settings"));
+const Profile = lazy(() => import("./pages/Profile"));
+const OrderDetail = lazy(() => import("./pages/OrderDetail"));
+const History = lazy(() => import("./pages/History"));
+const HistoryDetail = lazy(() => import("./pages/HistoryDetail"));
+const AdminLayout = lazy(() => import("./admin/AdminLayout"));
+const Dashboard = lazy(() => import("./admin/pages/Dashboard"));
+const EventsList = lazy(() => import("./admin/pages/EventsList"));
+const EventEdit = lazy(() => import("./admin/pages/EventEdit"));
+const EventCreate = lazy(() => import("./admin/pages/EventCreate"));
+const AdminEventDetail = lazy(() => import("./admin/pages/EventDetail"));
+const OrdersList = lazy(() => import("./admin/pages/OrdersList"));
+const OrderView = lazy(() => import("./admin/pages/OrderView"));
+const UsersList = lazy(() => import("./admin/pages/UsersList"));
+const UserView = lazy(() => import("./admin/pages/UserView"));
+const Content = lazy(() => import("./admin/pages/Content"));
+const HistoryAdmin = lazy(() => import("./admin/pages/History"));
+
+function RouteFallback() {
+  return (
+    <div className="min-h-screen grid place-items-center bg-white">
+      <div className="w-10 h-10 rounded-full border-[3px] border-solid border-black/10 border-t-black/50 [animation:routeSpin_0.9s_linear_infinite]" />
+      <style>{`@keyframes routeSpin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+}
 
 function ScrollToTop() {
   const { pathname, hash } = useLocation();
@@ -74,6 +87,7 @@ export default function App() {
   return (
     <>
       <ScrollToTop />
+      <Suspense fallback={<RouteFallback />}>
       <Routes>
         <Route
           path="/"
@@ -159,6 +173,7 @@ export default function App() {
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </Suspense>
     </>
   );
 }

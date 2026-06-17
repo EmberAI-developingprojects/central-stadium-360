@@ -111,6 +111,16 @@ export default function Watch() {
     };
   }, [viewerOpen, modalEvent]);
 
+  // Dark themed page — keep the body background dark so iOS safe-area and
+  // scroll-bounce don't reveal the default white body underneath.
+  useEffect(() => {
+    const prevBg = document.body.style.backgroundColor;
+    document.body.style.backgroundColor = "#0B0F1A";
+    return () => {
+      document.body.style.backgroundColor = prevBg;
+    };
+  }, []);
+
   useEffect(() => {
     const id = location.hash.slice(1);
     if (!id) return;

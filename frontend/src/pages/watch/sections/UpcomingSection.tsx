@@ -203,7 +203,7 @@ function EventCard({
   return (
     <article
       role="listitem"
-      className={`flex flex-col rounded-[14px] overflow-hidden bg-[#0d2044] group [transition:transform_.2s_ease,box-shadow_.2s_ease] hover:-translate-y-1 hover:shadow-[0_24px_48px_-14px_rgba(0,0,0,0.7)] cursor-pointer flex-none w-[320px] max-[560px]:w-[260px] [scroll-snap-align:start] ${
+      className={`flex flex-col rounded-[14px] overflow-hidden bg-[#0d2044] group [transition:transform_.2s_ease,box-shadow_.2s_ease] hover:-translate-y-1 hover:shadow-[0_24px_48px_-14px_rgba(0,0,0,0.7)] cursor-pointer flex-none w-[320px] max-[920px]:w-[280px] max-[560px]:w-[240px] max-[420px]:w-[220px] [scroll-snap-align:start] ${
         muted ? "opacity-80 hover:opacity-100" : ""
       }`}
       onClick={onClick}

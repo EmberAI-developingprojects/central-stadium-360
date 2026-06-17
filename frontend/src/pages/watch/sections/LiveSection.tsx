@@ -37,7 +37,7 @@ export function LiveSection({
   return (
     <section className="w-full max-w-full overflow-hidden" id="live">
       <div className="grid [grid-template-columns:55%_45%] max-[720px]:grid-cols-1 min-h-[460px] max-[720px]:min-h-0 w-full max-w-full">
-        <div className="relative overflow-hidden bg-[#0a1628] min-w-0 max-[720px]:[aspect-ratio:16/9]">
+        <div className="relative overflow-hidden bg-[#0a1628] min-w-0 [aspect-ratio:16/9] max-[720px]:[aspect-ratio:16/9]">
           {featuredEvent.image ? (
             <img
               src={featuredEvent.image}
@@ -46,7 +46,24 @@ export function LiveSection({
               loading="eager"
             />
           ) : (
-            <div className="w-full h-full min-h-[300px] bg-[#0a1628]" />
+            <div
+              className="w-full h-full bg-[linear-gradient(135deg,#0a1628_0%,#142a4e_50%,#0a1628_100%)] grid place-items-center"
+              aria-hidden="true"
+            >
+              <svg
+                className="w-16 h-16 text-white/15 max-[720px]:w-12 max-[720px]:h-12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <ellipse cx="12" cy="12" rx="10" ry="6" />
+                <path d="M2 12c0-3.3 4.5-6 10-6s10 2.7 10 6" />
+                <path d="M8 8.5L6 16M16 8.5l2 7.5" />
+              </svg>
+            </div>
           )}
           {isLive && streamLive && (
             <span className="absolute top-4 left-4 inline-flex items-center gap-2 bg-[#e53935] text-white text-[11px] font-bold uppercase tracking-[0.14em] rounded-full px-3 py-1.5">
@@ -59,19 +76,19 @@ export function LiveSection({
           )}
         </div>
 
-        <div className="bg-[#071526] flex flex-col justify-center min-w-0 px-10 py-14 max-[920px]:px-7 max-[920px]:py-10 max-[720px]:px-5 max-[720px]:py-7 max-[420px]:px-4 max-[420px]:py-6">
-          <p className="text-[rgba(255,255,255,0.5)] text-[13px] font-bold uppercase tracking-[0.2em] m-0 mb-5 max-[420px]:text-[12px] max-[420px]:mb-3">
+        <div className="bg-[#071526] flex flex-col justify-center min-w-0 px-10 py-14 max-[920px]:px-7 max-[920px]:py-10 max-[720px]:px-5 max-[720px]:py-6 max-[420px]:px-4 max-[420px]:py-5">
+          <p className="text-[rgba(255,255,255,0.5)] text-[13px] font-bold uppercase tracking-[0.2em] m-0 mb-5 max-[720px]:mb-3 max-[420px]:text-[11px] max-[420px]:mb-2.5">
             {dateStr}
           </p>
-          <h1 className="text-white text-[40px] font-extrabold uppercase tracking-[-0.01em] leading-[1.1] m-0 break-words max-[920px]:text-[30px] max-[720px]:text-[22px] max-[420px]:text-[20px]">
+          <h1 className="text-white text-[40px] font-extrabold uppercase tracking-[-0.01em] leading-[1.1] m-0 break-words max-[920px]:text-[30px] max-[720px]:text-[22px] max-[420px]:text-[19px]">
             {featuredEvent.title}
           </h1>
           {featuredEvent.desc && (
-            <p className="text-[rgba(255,255,255,0.5)] text-[14px] mt-3 m-0 uppercase tracking-[0.06em] font-medium break-words max-[420px]:text-[12px]">
+            <p className="text-[rgba(255,255,255,0.5)] text-[14px] mt-3 m-0 uppercase tracking-[0.06em] font-medium break-words max-[720px]:text-[12px] max-[720px]:mt-2 max-[420px]:text-[11px]">
               {featuredEvent.desc}
             </p>
           )}
-          <div className="mt-9 flex flex-wrap items-center gap-3 max-[720px]:mt-6 max-[420px]:flex-col max-[420px]:items-stretch max-[420px]:gap-2.5">
+          <div className="mt-9 flex flex-wrap items-center gap-3 max-[720px]:mt-5 max-[420px]:flex-col max-[420px]:items-stretch max-[420px]:gap-2.5">
             {!ownsFeatured && saleKind !== "expired" && (
               <button
                 type="button"

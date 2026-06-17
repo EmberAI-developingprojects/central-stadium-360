@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import SiteHeader from "../../components/SiteHeader";
 import SiteFooter from "../../components/SiteFooter";
 import StoryVideo from "../../components/StoryVideo";
@@ -26,13 +27,39 @@ const EMPTY_CONTENT: HomeContent = {
   hero: [],
 };
 
+const HOME_CONTENT_CACHE_KEY = "cs360:home:content";
+const HOME_EVENTS_CACHE_KEY = "cs360:home:events";
+
+function readCache<T>(key: string, fallback: T): T {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const raw = window.sessionStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeCache(key: string, value: unknown): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(key, JSON.stringify(value));
+  } catch {}
+}
+
 export default function Home() {
   useRevealOnScroll();
   useSmoothAnchors();
   const gatedGo = useGatedNavigate();
 
-  const [events, setEvents] = useState<EventRecord[]>([]);
-  const [content, setContent] = useState<HomeContent>(EMPTY_CONTENT);
+  // Hydrate from sessionStorage so re-visits paint instantly with no layout
+  // shift; the background fetch still runs to refresh.
+  const [events, setEvents] = useState<EventRecord[]>(() =>
+    readCache<EventRecord[]>(HOME_EVENTS_CACHE_KEY, []),
+  );
+  const [content, setContent] = useState<HomeContent>(() =>
+    readCache<HomeContent>(HOME_CONTENT_CACHE_KEY, EMPTY_CONTENT),
+  );
 
   useEffect(() => {
     let alive = true;
@@ -40,6 +67,8 @@ export default function Home() {
       if (!alive) return;
       setEvents(evts);
       setContent(c);
+      writeCache(HOME_EVENTS_CACHE_KEY, evts);
+      writeCache(HOME_CONTENT_CACHE_KEY, c);
     });
     return () => {
       alive = false;
@@ -300,6 +329,7 @@ function Hero({
 }
 
 function Highlights() {
+  const { t } = useTranslation();
   return (
     <section
       className="w-full bg-white py-12 px-6 max-[920px]:py-14 max-[920px]:px-5"
@@ -309,7 +339,7 @@ function Highlights() {
         <h2
           className={`text-[42px] font-extrabold tracking-[-0.02em] m-0 mb-10 text-[#1a1a1a] max-[920px]:text-[34px] ${REVEAL_UP_CLS}`}
         >
-          Бидний тухай
+          {t("home_about_title")}
         </h2>
 
         <div className="grid gap-10 items-start [grid-template-columns:1.05fr_1fr_1fr] max-[920px]:gap-8 max-[920px]:[grid-template-columns:1fr_1fr] max-[600px]:[grid-template-columns:1fr]">
@@ -318,16 +348,10 @@ function Highlights() {
             data-stagger="1"
           >
             <h3 className="text-[28px] leading-[1.3] text-ink m-0 mb-[18px] tracking-[-0.01em] font-bold max-[900px]:text-2xl">
-              Монголын спортын зүрх — 1958 оноос хойш
+              {t("home_about_heading")}
             </h3>
-            <p className="text-[17px] leading-[1.75] text-ink-soft m-0 max-[900px]:text-base">
-              Төв Цэнгэлдэх Хүрээлэн нь 1958 онд байгуулагдсан, Монгол Улсын
-              анхны үндэсний хэмжээний цэнгэлдэх. Олон арван жилийн турш
-              үндэсний шигшээ багуудын чухал тоглолт, олон улсын тэмцээн,
-              томоохон соёлын арга хэмжээний голлох тавцан болж ирсэн. Өнөөдөр
-              бид 12,500 суудалтай, 25,000 хүртэлх үзэгчийг хүлээн авах хүчин
-              чадалтай орчин үеийн цогцолбор болон өргөжиж, иргэддээ дэлхийн
-              жишигт нийцсэн үйлчилгээ хүргэхээр зорьж байна.
+            <p className="text-[17px] leading-[1.75] text-ink-soft m-0 text-justify [hyphens:auto] [word-spacing:0.01em] max-[900px]:text-base">
+              {t("home_about_body")}
             </p>
           </article>
 
@@ -337,7 +361,7 @@ function Highlights() {
           >
             <img
               src="/assets/images/stadium/exterior.opt.jpg"
-              alt="Төв цэнгэлдэх хүрээлэн — гадна талаас"
+              alt={t("home_about_title")}
               width="600"
               height="630"
               className="w-full h-full object-cover object-center block [border-radius:inherit]"
@@ -358,14 +382,14 @@ function Highlights() {
                 backgroundPosition: "center",
               }}
             />
-            <p className="text-[17px] font-bold leading-[1.35] m-0 text-[#1a1a1a]">
-              Манай түүх, эрхэм зорилго, ирээдүйн төлөвлөгөөтэй танилцана уу.
+            <p className="text-[17px] font-bold leading-[1.35] m-0 text-[#1a1a1a] text-pretty">
+              {t("home_about_cta_lead")}
             </p>
             <Link
               to="/about"
               className="self-start inline-flex items-center gap-2.5 rounded-full bg-transparent text-sm font-semibold no-underline cursor-pointer px-[22px] py-3 border-[1.5px] border-solid border-[#1a1a1a] text-[#1a1a1a] font-[inherit] [transition:background_0.2s_ease,color_0.2s_ease] hover:bg-[#1a1a1a] hover:text-white"
             >
-              Дэлгэрэнгүй унших
+              {t("home_about_cta")}
               <svg
                 width="14"
                 height="14"
@@ -389,11 +413,12 @@ function Highlights() {
 }
 
 function Stats() {
+  const { t } = useTranslation();
   const items = [
-    { num: "1958", label: "Founded · Байгуулагдсан" },
-    { num: "12,500", label: "Seats · Суудал" },
-    { num: "25k+", label: "Capacity · Хүлээн авах" },
-    { num: "105×68", label: "Field (m) · Талбай" },
+    { num: "1958", label: t("home_stats_founded") },
+    { num: "12,500", label: t("home_stats_seats") },
+    { num: "25k+", label: t("home_stats_capacity") },
+    { num: "105×68", label: t("home_stats_field") },
   ];
   return (
     <section className="w-full bg-white pt-8 px-6 pb-6 max-[920px]:py-16 max-[920px]:px-5">
@@ -403,7 +428,7 @@ function Stats() {
             <span key={s.num} style={{ display: "contents" }}>
               {i > 0 && (
                 <span
-                  className="w-0.5 h-16 bg-brand-blue-tint relative rounded-[1px] justify-self-center max-[920px]:hidden before:content-[''] before:absolute before:left-1/2 before:w-[9px] before:h-[9px] before:rounded-full before:bg-brand-blue-tint before:-translate-x-1/2 before:-top-[5px] after:content-[''] after:absolute after:left-1/2 after:w-[9px] after:h-[9px] after:rounded-full after:bg-brand-blue-tint after:-translate-x-1/2 after:-bottom-[5px]"
+                  className="w-px h-12 bg-[#e5e7eb] justify-self-center max-[920px]:hidden"
                   aria-hidden="true"
                 ></span>
               )}
@@ -414,7 +439,9 @@ function Stats() {
                 <div className="text-[42px] font-extrabold tracking-[-0.02em] leading-none text-[#1a1a1a] max-[920px]:text-4xl">
                   {s.num}
                 </div>
-                <div className="text-sm text-[#888] font-medium">{s.label}</div>
+                <div className="text-[13px] uppercase tracking-[0.12em] text-[#9ca3af] font-semibold">
+                  {s.label}
+                </div>
               </div>
             </span>
           ))}
@@ -1353,9 +1380,10 @@ function pickFeaturedNews(items: NewsItem[]): NewsItem | null {
 
 function FeaturedNewsHero({ items }: { items: NewsItem[] }) {
   const featured = pickFeaturedNews(items);
-  if (!featured) return null;
-  const excerpt = newsExcerpt(featured);
+  const excerpt = featured ? newsExcerpt(featured) : "";
 
+  // Always reserve the full hero slot — returning null on empty input causes
+  // a 100vh layout shift when the news API resolves and the hero pops in.
   return (
     <section
       className="relative w-full overflow-hidden bg-black text-white isolate -mt-[64px] max-[920px]:-mt-[56px]"
@@ -1363,15 +1391,23 @@ function FeaturedNewsHero({ items }: { items: NewsItem[] }) {
       aria-label="Онцлох мэдээ"
     >
       <div className="relative w-full min-h-[calc(100vh+64px)] min-h-[calc(100dvh+64px)] max-[920px]:min-h-[calc(100vh+56px)] max-[920px]:min-h-[calc(100dvh+56px)]">
-        {featured.image ? (
+        {/* Fallback hero image: shown immediately on first paint so the
+            section never looks empty while news data is in flight. */}
+        <img
+          src="/assets/images/stadium/exterior.opt.jpg"
+          alt=""
+          aria-hidden="true"
+          loading="eager"
+          fetchPriority="high"
+          className="absolute inset-0 w-full h-full object-cover object-center"
+        />
+        {featured?.image && (
           <img
             src={featured.image}
             alt={featured.title}
             loading="eager"
-            className="absolute inset-0 w-full h-full object-cover object-center"
+            className="absolute inset-0 w-full h-full object-cover object-center [transition:opacity_.4s_ease] opacity-100"
           />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-[#1a1f3a] to-[#0b0e1f]" />
         )}
 
         <div
@@ -1379,7 +1415,28 @@ function FeaturedNewsHero({ items }: { items: NewsItem[] }) {
           aria-hidden="true"
         />
 
-        <div className="absolute inset-0 grid place-items-center px-6 py-16 max-[640px]:px-5 max-[640px]:py-12">
+        {/* Default brand content while news is loading. Same layout shape
+            as the real hero, so the swap is visually a label/title fade. */}
+        <div
+          className={`absolute inset-0 grid place-items-center px-6 py-16 max-[640px]:px-5 max-[640px]:py-12 [transition:opacity_.35s_ease] ${featured ? "opacity-0 pointer-events-none" : "opacity-100"}`}
+          aria-hidden={featured ? "true" : undefined}
+        >
+          <div className="max-w-[860px] text-center">
+            <span className="inline-flex items-center gap-2 mb-6 px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-sm text-[11px] tracking-[0.18em] uppercase font-semibold text-white/95 max-[640px]:mb-5 max-[640px]:text-[10px]">
+              Тавтай морил
+            </span>
+            <h1 className="m-0 text-gold-pale font-extrabold uppercase leading-[1.16] tracking-[0.015em] text-[44px] max-[920px]:text-[32px] max-[640px]:text-[24px] drop-shadow-[0_2px_14px_rgba(0,0,0,0.55)] [text-shadow:0_1px_0_rgba(0,0,0,0.25)]">
+              Төв Цэнгэлдэх Хүрээлэн
+            </h1>
+            <p className="mt-6 mx-auto max-w-[680px] text-white/85 text-[15px] leading-[1.7] max-[640px]:text-[13px] max-[640px]:mt-5 max-[640px]:leading-[1.6]">
+              Монголын спортын зүрх — 1958 оноос хойш
+            </p>
+          </div>
+        </div>
+
+        <div
+          className={`absolute inset-0 grid place-items-center px-6 py-16 max-[640px]:px-5 max-[640px]:py-12 [transition:opacity_.35s_ease] ${featured ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        >
           <div className="max-w-[860px] text-center">
             <span className="inline-flex items-center gap-2 mb-6 px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-sm text-[11px] tracking-[0.18em] uppercase font-semibold text-white/95 max-[640px]:mb-5 max-[640px]:text-[10px]">
               <svg
@@ -1400,7 +1457,7 @@ function FeaturedNewsHero({ items }: { items: NewsItem[] }) {
               Мэдээ мэдээлэл
             </span>
             <h1 className="m-0 text-gold-pale font-extrabold uppercase leading-[1.16] tracking-[0.015em] text-[44px] max-[920px]:text-[32px] max-[640px]:text-[24px] drop-shadow-[0_2px_14px_rgba(0,0,0,0.55)] [text-shadow:0_1px_0_rgba(0,0,0,0.25)]">
-              {featured.title}
+              {featured?.title ?? ""}
             </h1>
             {excerpt && (
               <p className="mt-6 mx-auto max-w-[680px] text-white/85 text-[15px] leading-[1.7] max-[640px]:text-[13px] max-[640px]:mt-5 max-[640px]:leading-[1.6]">
@@ -1408,7 +1465,7 @@ function FeaturedNewsHero({ items }: { items: NewsItem[] }) {
               </p>
             )}
             <Link
-              to={`/news/${featured.id}`}
+              to={featured ? `/news/${featured.id}` : "#"}
               className="inline-flex items-center gap-2 mt-9 px-7 py-3.5 rounded-full border border-white/75 text-white text-[13px] font-semibold tracking-[0.16em] uppercase no-underline hover:bg-white hover:text-ink hover:border-white transition-colors duration-200 max-[640px]:mt-7 max-[640px]:px-6 max-[640px]:py-3 max-[640px]:text-[11.5px]"
             >
               Дэлгэрэнгүй үзэх

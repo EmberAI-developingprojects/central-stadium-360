@@ -28,7 +28,6 @@ import {
   VIEWER_CONTROLS_RIGHT_CLS,
   VIEWER_HEADER_CLS,
   VIEWER_ICON_BTN_CLS,
-  VIEWER_MAIN_CAM_CLS,
   VIEWER_MOBILE_CAM_CLS,
   VIEWER_MOBILE_CAM_LABEL_CLS,
   VIEWER_MOBILE_CAM_THUMB_CLS,
@@ -83,6 +82,16 @@ export default function WatchVOD() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [previousTicketExpired, setPreviousTicketExpired] = useState(false);
+
+  // Dark-themed page — keep <body> dark so iOS safe-area, scroll bounce,
+  // and any horizontal slack don't reveal the default white body underneath.
+  useEffect(() => {
+    const prevBg = document.body.style.backgroundColor;
+    document.body.style.backgroundColor = "#05080F";
+    return () => {
+      document.body.style.backgroundColor = prevBg;
+    };
+  }, []);
 
   const fetchEvent = useCallback(
     async (silent = false) => {
@@ -918,12 +927,6 @@ function VODViewer({ event }: { event: VODEventDetail }) {
           )}
         </div>
 
-        {activeRecording && (
-          <span className={VIEWER_MAIN_CAM_CLS}>
-            <strong>{camLabel(activeRecording)}</strong> ·{" "}
-            <span>{dateFmt(event.date)}</span>
-          </span>
-        )}
 
         <div
           className={VIEWER_MOBILE_CAMS_CLS}
@@ -1055,7 +1058,7 @@ function VODViewer({ event }: { event: VODEventDetail }) {
             </span>
           </div>
 
-          <div className="flex-1 min-w-0 px-2 flex items-center gap-2 max-[720px]:[flex-basis:100%] max-[720px]:order-3">
+          <div className="flex-1 min-w-0 px-2 flex items-center gap-2.5 max-[720px]:[flex-basis:100%] max-[720px]:order-3 max-[720px]:px-1 max-[720px]:gap-3">
             <input
               type="range"
               min={0}
@@ -1067,9 +1070,20 @@ function VODViewer({ event }: { event: VODEventDetail }) {
               onTouchEnd={onSeekCommit}
               onKeyUp={onSeekCommit}
               aria-label="Тоглуулах байрлал"
-              className="w-full h-1 bg-[rgba(255,255,255,0.18)] rounded-full cursor-pointer [appearance:none] [-webkit-appearance:none] [&::-webkit-slider-thumb]:[-webkit-appearance:none] [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-brand-blue [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-solid [&::-webkit-slider-thumb]:border-white [&::-moz-range-thumb]:w-3.5 [&::-moz-range-thumb]:h-3.5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-brand-blue [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-solid [&::-moz-range-thumb]:border-white"
+              style={{
+                background: `linear-gradient(to right, rgb(34 48 198) 0%, rgb(34 48 198) ${
+                  duration > 0
+                    ? Math.min(100, (currentTime / duration) * 100)
+                    : 0
+                }%, rgba(255,255,255,0.18) ${
+                  duration > 0
+                    ? Math.min(100, (currentTime / duration) * 100)
+                    : 0
+                }%, rgba(255,255,255,0.18) 100%)`,
+              }}
+              className="w-full h-1.5 rounded-full cursor-pointer [appearance:none] [-webkit-appearance:none] max-[720px]:h-[5px] [&::-webkit-slider-thumb]:[-webkit-appearance:none] [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-[3px] [&::-webkit-slider-thumb]:border-solid [&::-webkit-slider-thumb]:border-brand-blue [&::-webkit-slider-thumb]:shadow-[0_2px_8px_rgba(0,0,0,0.3)] max-[720px]:[&::-webkit-slider-thumb]:w-[18px] max-[720px]:[&::-webkit-slider-thumb]:h-[18px] [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-[3px] [&::-moz-range-thumb]:border-solid [&::-moz-range-thumb]:border-brand-blue"
             />
-            <span className="text-[11.5px] font-semibold text-[rgba(255,255,255,0.65)] tabular-nums whitespace-nowrap hidden max-[540px]:inline">
+            <span className="text-[12px] font-semibold text-white/85 tabular-nums whitespace-nowrap hidden max-[540px]:inline">
               {fmtTime(currentTime)} / {fmtTime(duration)}
             </span>
           </div>
@@ -1095,7 +1109,7 @@ function VODViewer({ event }: { event: VODEventDetail }) {
                     onClick={() => setQualityOpen((o) => !o)}
                     aria-haspopup="listbox"
                     aria-expanded={qualityOpen}
-                    className="inline-flex items-center justify-between gap-2 min-w-[78px] bg-[rgba(255,255,255,0.06)] border border-solid border-[rgba(255,255,255,0.1)] text-white font-semibold text-[12.5px] pt-[7px] pr-2.5 pb-[7px] pl-3 rounded-[9px] cursor-pointer hover:bg-[rgba(255,255,255,0.1)]"
+                    className="inline-flex items-center justify-between gap-2 min-w-[78px] bg-[rgba(255,255,255,0.06)] border border-solid border-[rgba(255,255,255,0.1)] text-white font-semibold text-[12.5px] pt-[7px] pr-2.5 pb-[7px] pl-3 rounded-[9px] cursor-pointer hover:bg-[rgba(255,255,255,0.1)] max-[720px]:h-11 max-[720px]:px-3 max-[720px]:text-[13px] max-[720px]:rounded-xl"
                   >
                     <span>{currentLabel}</span>
                     <svg

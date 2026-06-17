@@ -1,77 +1,12 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import SiteHeader from "../../components/SiteHeader";
 import SiteFooter from "../../components/SiteFooter";
 import useRevealOnScroll from "../../hooks/useRevealOnScroll";
 import { REVEAL_UP_CLS } from "../../hooks/_revealCls";
 
-const FEATURES = [
-  {
-    n: "01",
-    title: "360° бүрэн зургийн өнцөг",
-    desc: "Талбайн дунд байрлуулсан панорам линз нь хэвтээ 360° ба босоо чиглэлд бүтэн дүрсийг бичиж, үзэгчид өөрийн хүссэн өнцгөөр харах эрх чөлөөтэй.",
-    meta: "Бүтэн хамрах хүрээ",
-  },
-  {
-    n: "02",
-    title: "Олон өнцгийн зэрэгцээ урсгал",
-    desc: "Сонгодог гурван тэнхлэгийн өнцөг дээр нэмэлтээр 360° панорам камер ажиллаж, нийт дөрвөн урсгалыг үзэгч зэрэгцүүлэн харна.",
-    meta: "4 урсгал · UHD чанар",
-  },
-  {
-    n: "03",
-    title: "Бага хоцролттой шууд дамжуулалт",
-    desc: "Талбай дээр болж буй мөч бүр үзэгчид бараг шууд хүрнэ. Гар утас, таблет, компьютер дээр жигд тоглож, секундын доод хоцролттой шууд дамжина.",
-    meta: "Бараг шууд · секундын доод",
-  },
-  {
-    n: "04",
-    title: "Интерактив өнцөг сонголт",
-    desc: "Үзэгч хулгана, хуруугаараа дэлгэцийг чирэн дурын чиглэлд эргүүлж, өөрийн сонгосон өнцгөөр тоглолтыг үзнэ.",
-    meta: "Touch · хулгана · хазайлт",
-  },
-  {
-    n: "05",
-    title: "Орон зайн дуу",
-    desc: "Талбайн дотор байрлуулсан микрофоны массив нь үзэгчид талбай дээр сууж буй мэт мэдрэмжийг бүрдүүлэх орон зайн дууг бичнэ.",
-    meta: "Орон зайн дуу · олон сувгийн",
-  },
-  {
-    n: "06",
-    title: "Нөхөж үзэх боломж",
-    desc: "Шууд дамжуулалтын дуусахад тоглолт автоматаар хадгалагдаж, нөхөж үзэх тасалбартай үзэгч хүссэн үедээ буцаан үзнэ.",
-    meta: "Онлайн архив · 72 цаг хүртэл",
-  },
-];
-
-const PIPELINE = [
-  {
-    n: "01",
-    label: "БИЧЛЭГ",
-    title: "Талбайн дунд камерын суурилуулалт",
-    desc: "Мэргэжлийн баг тоглолтын өмнө талбайн стратегийн цэгүүдэд 4 камерыг байршуулна. Нэг нь панорам (360°) линз бүхий гол камер.",
-    spec: "4× камер · 1× 360° бүрэлдэхүүн",
-  },
-  {
-    n: "02",
-    label: "ДАМЖУУЛАЛТ",
-    title: "Шууд дамжуулалт",
-    desc: "Камер бүрийн дүрсийг секундын доод хоцролтоор үзэгч рүү шууд хүргэнэ. Сүлжээний хурднаас үл хамаарч жигд урсгалаар тоглоно.",
-    spec: "Бараг шууд хоцролт · жигд урсгал",
-  },
-  {
-    n: "03",
-    label: "ҮЗЭГЧИЙН ТАЛ",
-    title: "Дэлгэц дээр 360° дүрс",
-    desc: "Үзэгчийн төхөөрөмж дээр 360° дүрсийг дамжуулж, хэрэглэгч харах өнцгийг чөлөөтэйгөөр өөрчилнө.",
-    spec: "Бодит цагт rendering · жигд хөдөлгөөн",
-  },
-  {
-    n: "04",
-    label: "Нөхөж үзэх",
-    title: "Нөхөж үзэх",
-    desc: "Шууд дамжуулалт дуусмагц тоглолт автоматаар хадгалагдаж, нөхөж үзэх тасалбартай үзэгч хүссэн үедээ үзнэ.",
-    spec: "Нөхөж үзэх · 365 өдөр",
-  },
-];
+const FEATURE_KEYS = ["1", "2", "3", "4"] as const;
+const PIPELINE_KEYS = ["1", "2", "3", "4"] as const;
 
 const TECH_STYLE = `
   @keyframes techDot { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
@@ -132,6 +67,7 @@ const RULE_CLS = "border-t border-[#0f172a]/10";
 
 export default function Technology() {
   useRevealOnScroll();
+  const { t } = useTranslation();
 
   return (
     <div
@@ -139,35 +75,11 @@ export default function Technology() {
     >
       <style dangerouslySetInnerHTML={{ __html: TECH_STYLE }} />
 
-      {/* minimal back bar (replaces site header on this page) */}
-      <div className="relative max-w-screen-page mx-auto px-6 pt-8 max-[920px]:px-5 max-[920px]:pt-6">
-        <Link
-          to="/"
-          className="group inline-flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.22em] no-underline pb-1 border-b [transition:color_.15s_ease,border-color_.15s_ease]"
-          style={{ color: INK, borderColor: "rgba(15,23,42,0.25)" }}
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-            className="[transition:transform_.18s_ease] group-hover:-translate-x-1"
-          >
-            <line x1="19" y1="12" x2="5" y2="12" />
-            <polyline points="12 19 5 12 12 5" />
-          </svg>
-          Буцах
-        </Link>
-      </div>
+      <SiteHeader />
 
       {/* ───────────── HERO ───────────── */}
       <section
-        className={`relative overflow-hidden ${SECTION_PAD} pt-10 max-[920px]:pt-8`}
+        className={`relative overflow-hidden ${SECTION_PAD} pt-16 max-[920px]:pt-12`}
       >
         {/* soft ambient warmth */}
         <div
@@ -187,9 +99,9 @@ export default function Technology() {
           >
             <div className={KICKER_CLS}>
               <span className="bar" />
-              Vol.01 — Технологийн дэвшил
+              Vol.01 — {t("tech_volume")}
             </div>
-            <div className={SECTION_INDEX_CLS}>※ 360° / LIVE / ИНТЕРАКТИВ</div>
+            <div className={SECTION_INDEX_CLS}>{t("tech_hero_index")}</div>
           </div>
           <div className={RULE_CLS} />
 
@@ -201,21 +113,21 @@ export default function Technology() {
                 data-stagger="2"
                 style={{ fontSize: "clamp(48px, 7vw, 96px)" }}
               >
-                Талбайн
+                {t("tech_hero_title_line1")}
                 <br />
                 <span
                   className="italic font-light"
                   style={{ color: INK_FAINT }}
                 >
-                  дунд&nbsp;байгаа
+                  {t("tech_hero_title_italic")}
                 </span>{" "}
                 <span className="inline-flex items-baseline">
-                  <span>камер.</span>
+                  <span>{t("tech_hero_title_camera")}</span>
                 </span>
                 <br />
-                Үзэгч бүрд{" "}
+                {t("tech_hero_title_line3")}{" "}
                 <span className="relative inline-block">
-                  өөрийн өнцөг.
+                  {t("tech_hero_title_accent")}
                   <span
                     aria-hidden="true"
                     className="absolute left-0 right-0 -bottom-1 h-[2px]"
@@ -229,10 +141,7 @@ export default function Technology() {
                 data-stagger="3"
                 style={{ color: INK_SOFT }}
               >
-                Төв Цэнгэлдэх Хүрээлэн анх удаа Монголд нэвтрүүлж буй 360° камер
-                ба бага хоцролттой шууд дамжуулалтын платформ. Үзэгч нь зөвхөн
-                дамжуулагчийн сонгосон өнцгөөр биш, өөрийн хүссэн чиглэлд харах
-                эрх чөлөөтэй.
+                {t("tech_hero_body")}
               </p>
 
               <div
@@ -243,7 +152,7 @@ export default function Technology() {
                   to="/events"
                   className="group inline-flex items-center gap-3 bg-[#0f172a] text-white text-[13.5px] font-semibold no-underline px-6 py-4 [transition:transform_.18s_ease,background_.18s_ease] hover:bg-[#1e293b]"
                 >
-                  Удахгүй болох тоглолтууд
+                  {t("tech_hero_cta_events")}
                   <svg
                     width="14"
                     height="14"
@@ -265,7 +174,7 @@ export default function Technology() {
                   className="inline-flex items-center gap-2 text-[13.5px] font-semibold no-underline border-b pb-1 [transition:color_.15s_ease,border-color_.15s_ease]"
                   style={{ color: INK, borderColor: "rgba(15,23,42,0.3)" }}
                 >
-                  Хэрхэн ажилладагийг үзэх
+                  {t("tech_hero_cta_pipeline")}
                 </a>
               </div>
             </div>
@@ -277,8 +186,8 @@ export default function Technology() {
                 className="mt-4 flex items-center justify-between text-[10.5px] font-mono uppercase tracking-[0.2em]"
                 style={{ color: INK_FAINT }}
               >
-                <span>FIG. 01 — 360° панорам камер · Хос линз</span>
-                <span>UHD · Шууд эфир</span>
+                <span>{t("tech_fig_caption")}</span>
+                <span>{t("tech_fig_meta")}</span>
               </div>
             </div>
           </div>
@@ -288,10 +197,10 @@ export default function Technology() {
             <div className={RULE_CLS} />
             <dl className="grid [grid-template-columns:repeat(4,minmax(0,1fr))] max-[760px]:[grid-template-columns:repeat(2,minmax(0,1fr))]">
               {[
-                { v: "360", u: "°", l: "Бүрэн өнцөг" },
-                { v: "4", u: "ch", l: "Зэрэгцээ урсгал" },
-                { v: "4K", u: "", l: "UHD чанар" },
-                { v: "~720", u: "ms", l: "Дундаж хоцролт" },
+                { v: "360", u: "°", l: t("tech_stat_angle") },
+                { v: "4", u: "ch", l: t("tech_stat_streams") },
+                { v: "4K", u: "", l: t("tech_stat_uhd") },
+                { v: "~720", u: "ms", l: t("tech_stat_latency") },
               ].map((s, i) => (
                 <div
                   key={s.l}
@@ -340,30 +249,28 @@ export default function Technology() {
             <div>
               <div className={`${KICKER_CLS} mb-6`}>
                 <span className="bar" />
-                §02 · Онцлог
+                {t("tech_features_kicker")}
               </div>
               <h2
                 className="font-extrabold tracking-[-0.03em] leading-[1.02] m-0"
                 style={{ fontSize: "clamp(34px, 4.4vw, 56px)", color: INK }}
               >
-                Яагаад 360° камер?
+                {t("tech_features_title")}
               </h2>
             </div>
             <p
               className="text-[16.5px] leading-[1.75] m-0 max-w-[640px] [align-self:end]"
               style={{ color: INK_SOFT }}
             >
-              Энд харин үзэгч өөрөө талбайн дотор зогсож буй мэт, өөрийн хүссэн
-              чиглэлд эргэн харах эрхтэй. Доорхи зургаан зүйл нь энэ системийг
-              энгийн шууд дамжуулалт ялгана.
+              {t("tech_features_lead")}
             </p>
           </div>
 
           <div className={RULE_CLS} />
           <div className="grid [grid-template-columns:repeat(2,minmax(0,1fr))] max-[760px]:[grid-template-columns:1fr]">
-            {FEATURES.map((f, i) => (
+            {FEATURE_KEYS.map((k, i) => (
               <article
-                key={f.n}
+                key={k}
                 className={`relative px-1 py-9 ${i % 2 === 0 ? "[border-right:1px_solid_rgba(15,23,42,0.10)] max-[760px]:[border-right:none] pr-10 max-[920px]:pr-6" : "pl-10 max-[920px]:pl-6 max-[760px]:pl-1"} ${i > 1 ? "border-t border-[#0f172a]/10" : ""} ${i === 1 ? "max-[760px]:border-t max-[760px]:border-[#0f172a]/10" : ""} ${REVEAL_UP_CLS}`}
                 data-stagger={(i % 2) + 1}
               >
@@ -372,26 +279,26 @@ export default function Technology() {
                     className="text-[11px] font-mono tracking-[0.2em]"
                     style={{ color: INK_FAINT }}
                   >
-                    № {f.n}
+                    № 0{k}
                   </span>
                   <span
                     className="text-[10.5px] font-mono uppercase tracking-[0.18em] text-right"
                     style={{ color: INK_FAINT }}
                   >
-                    {f.meta}
+                    {t(`tech_feature_${k}_meta`)}
                   </span>
                 </div>
                 <h3
                   className="text-[22px] font-bold tracking-[-0.018em] leading-[1.2] m-0 mb-3 max-w-[420px]"
                   style={{ color: INK }}
                 >
-                  {f.title}
+                  {t(`tech_feature_${k}_title`)}
                 </h3>
                 <p
                   className="text-[15px] leading-[1.7] m-0 max-w-[520px]"
                   style={{ color: INK_SOFT }}
                 >
-                  {f.desc}
+                  {t(`tech_feature_${k}_desc`)}
                 </p>
               </article>
             ))}
@@ -410,31 +317,30 @@ export default function Technology() {
             <div>
               <div className={`${KICKER_CLS} mb-6`}>
                 <span className="bar" />
-                §03 · Pipeline
+                {t("tech_pipeline_kicker")}
               </div>
               <h2
                 className="font-extrabold tracking-[-0.03em] leading-[1.02] m-0"
                 style={{ fontSize: "clamp(34px, 4.4vw, 56px)", color: INK }}
               >
-                Камераас
+                {t("tech_pipeline_title_line1")}
                 <br />
-                дэлгэц хүртэл
+                {t("tech_pipeline_title_line2")}
               </h2>
             </div>
             <p
               className="text-[16.5px] leading-[1.75] m-0 max-w-[640px] [align-self:end]"
               style={{ color: INK_SOFT }}
             >
-              Талбайд байршуулсан камераас гар утсан дээрх дэлгэц хүртэл дүрс
-              хэрхэн дамжих вэ — дөрвөн алхамын техникийн товчоо.
+              {t("tech_pipeline_lead")}
             </p>
           </div>
 
           <ol className="relative list-none m-0 p-0">
             <div className={RULE_CLS} />
-            {PIPELINE.map((s) => (
+            {PIPELINE_KEYS.map((k) => (
               <li
-                key={s.n}
+                key={k}
                 className={`relative grid items-start gap-10 [grid-template-columns:200px_1fr_220px] max-[1080px]:[grid-template-columns:140px_1fr] max-[1080px]:gap-6 max-[760px]:[grid-template-columns:1fr] py-10 border-b border-[#0f172a]/10 ${REVEAL_UP_CLS}`}
                 data-stagger="1"
               >
@@ -443,13 +349,13 @@ export default function Technology() {
                     className="font-extrabold tabular-nums tracking-[-0.04em] leading-none"
                     style={{ fontSize: "clamp(56px, 5.6vw, 80px)", color: INK }}
                   >
-                    {s.n}
+                    0{k}
                   </span>
                   <span
                     className="mt-2 text-[10.5px] font-mono uppercase tracking-[0.24em] max-[760px]:mt-1"
                     style={{ color: INK_FAINT }}
                   >
-                    {s.label}
+                    {t(`tech_pipeline_${k}_label`)}
                   </span>
                 </div>
 
@@ -458,13 +364,13 @@ export default function Technology() {
                     className="text-[24px] font-bold tracking-[-0.018em] leading-[1.2] m-0 mb-3 max-w-[560px]"
                     style={{ color: INK }}
                   >
-                    {s.title}
+                    {t(`tech_pipeline_${k}_title`)}
                   </h3>
                   <p
                     className="text-[15px] leading-[1.7] m-0 max-w-[640px]"
                     style={{ color: INK_SOFT }}
                   >
-                    {s.desc}
+                    {t(`tech_pipeline_${k}_desc`)}
                   </p>
                 </div>
 
@@ -473,20 +379,20 @@ export default function Technology() {
                     className="text-[10.5px] font-mono uppercase tracking-[0.2em] mb-2"
                     style={{ color: INK_FAINT }}
                   >
-                    Spec
+                    {t("tech_pipeline_spec_label")}
                   </div>
                   <div
                     className="text-[12.5px] font-mono leading-[1.6]"
                     style={{ color: INK_SOFT }}
                   >
-                    {s.spec}
+                    {t(`tech_pipeline_${k}_spec`)}
                   </div>
                 </div>
                 <div
                   className="hidden max-[1080px]:block max-[760px]:mt-1 text-[11px] font-mono"
                   style={{ color: INK_FAINT }}
                 >
-                  {s.spec}
+                  {t(`tech_pipeline_${k}_spec`)}
                 </div>
               </li>
             ))}
@@ -504,18 +410,18 @@ export default function Technology() {
               className="font-extrabold tracking-[-0.035em] leading-[0.98] m-0"
               style={{ fontSize: "clamp(38px, 5.4vw, 72px)", color: INK }}
             >
-              Дараагийн тоглолтыг{" "}
+              {t("tech_cta_title_line1")}{" "}
               <span className="italic font-light" style={{ color: INK_FAINT }}>
-                360°-аар
+                {t("tech_cta_title_accent")}
               </span>{" "}
-              туршаад үзээрэй.
+              {t("tech_cta_title_line2")}
             </h2>
             <div className="flex flex-wrap gap-5 items-center [justify-self:end] max-[920px]:[justify-self:start]">
               <Link
                 to="/events"
                 className="group inline-flex items-center gap-3 bg-[#0f172a] text-white text-[13.5px] font-semibold no-underline px-6 py-4 hover:bg-[#1e293b] [transition:background_.15s_ease]"
               >
-                Тасалбар авах
+                {t("tech_cta_buy")}
                 <svg
                   width="14"
                   height="14"
@@ -537,7 +443,7 @@ export default function Technology() {
                 className="inline-flex items-center gap-2 text-[13.5px] font-semibold no-underline border-b pb-1 [transition:color_.15s_ease,border-color_.15s_ease]"
                 style={{ color: INK, borderColor: "rgba(15,23,42,0.3)" }}
               >
-                Холбоо барих
+                {t("tech_cta_contact")}
               </Link>
             </div>
           </div>

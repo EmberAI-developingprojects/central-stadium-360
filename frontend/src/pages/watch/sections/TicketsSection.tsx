@@ -25,7 +25,6 @@ import {
   WATCH_BTN_CLS,
   WATCH_BTN_GHOST_CLS,
   WATCH_BTN_PRIMARY_CLS,
-  WATCH_EYEBROW_CLS,
   WATCH_SECTION_CLS,
   WATCH_SECTION_HEAD_CLS,
   WATCH_TITLE_CLS,
@@ -107,7 +106,36 @@ function TicketCard({
   return (
     <article className={TICKET_STUB_CLS} data-code={tk.code}>
       <div className={TICKET_STUB_COVER_CLS}>
-        <img src={tk.image} alt={tk.title} />
+        {tk.image ? (
+          <img
+            src={tk.image}
+            alt={tk.title}
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).style.display = "none";
+            }}
+          />
+        ) : (
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 [background:radial-gradient(120%_120%_at_30%_20%,rgba(34,48,198,0.35)_0%,rgba(15,18,40,0.85)_55%,#0b0f1a_100%)] flex items-center justify-center text-white/25"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="44"
+              height="44"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M2 9a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z" />
+              <line x1="13" y1="5" x2="13" y2="7" />
+              <line x1="13" y1="11" x2="13" y2="13" />
+              <line x1="13" y1="17" x2="13" y2="19" />
+            </svg>
+          </div>
+        )}
         <span className={TICKET_STUB_TIER_CLS}>{tk.tierName}</span>
       </div>
       <div className={TICKET_STUB_BODY_CLS}>
@@ -300,7 +328,6 @@ export function TicketsSection({
   return (
     <section className={WATCH_SECTION_CLS} id="tickets">
       <div className={WATCH_SECTION_HEAD_CLS}>
-        <span className={WATCH_EYEBROW_CLS}>{tr("watch_my_section")}</span>
         <h2 className={WATCH_TITLE_CLS}>{tr("watch_my_tickets")}</h2>
       </div>
       <div className={TICKETS_LIST_CLS}>
