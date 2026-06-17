@@ -360,5 +360,24 @@
   "auth_forgot_reset_done": "Нууц үг шинэчлэгдлээ ✓ Нэвтэрнэ үү.",
   "auth_err_user_not_found": "Энэ дугаар бүртгэлгүй байна.",
   "auth_err_forgot_send_failed": "Код илгээхэд алдаа гарлаа.",
-  "auth_err_forgot_reset_failed": "Нууц үг шинэчлэхэд алдаа гарлаа."
+  "auth_err_forgot_reset_failed": "Нууц үг шинэчлэхэд алдаа гарлаа.",
+
+  "home_roadmap_title": "ТҮҮХЭН ЗАМНАЛ",
+  "home_roadmap_phase1_years": "1958–1993",
+  "home_roadmap_phase1_label": "Үндэсний цэнгэлдэхийн үүсэл",
+  "home_roadmap_phase2_years": "2007–2019",
+  "home_roadmap_phase2_label": "Шинэчлэл ба өмчийн өөрчлөлт",
+  "home_roadmap_phase3_years": "2024+",
+  "home_roadmap_phase3_label": "Дэвшилтэт шинэ бодлого",
+  "home_roadmap_1958": "БНХАУ-ын тусламжтай байгуулагдсан",
+  "home_roadmap_1961": "Нийслэлийн өмчид шилжсэн",
+  "home_roadmap_1971": "Төв асар ашиглалтад · 12,500 суудал",
+  "home_roadmap_1990": "Ашиг орлогын тогтолцоо бүрдсэн",
+  "home_roadmap_1993": "Эзэмшлийн маргаан үүссэн",
+  "home_roadmap_2007": "Үзэгчийн суудал шинэчлэгдсэн",
+  "home_roadmap_2014": "Эзэмшил дахин үнэлэгдсэн · 12.7 га",
+  "home_roadmap_2019": "100% нийслэлийн өмчид шилжсэн",
+  "home_roadmap_2024": "Шинэ гүйцэтгэх захирал томилогдсон",
+  "home_roadmap_2025": "Дэвшилтэт шинэ бодлого хэрэгжсэн",
+  "home_roadmap_2026": "360° Live вэбсайтын шинэчлэл"
 }
