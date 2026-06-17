@@ -93,6 +93,7 @@ export default function EventCreate() {
 
     setBusy(true);
     try {
+      const cover = thumbnailUrl.trim();
       const created = await createEvent({
         title: name.trim(),
         start_time: startTimeIso,
@@ -102,7 +103,8 @@ export default function EventCreate() {
         live_start_at: liveStartIso,
         live_end_at: liveEndIso,
         replay_available_until: replayUntilIso,
-        thumbnail_url: thumbnailUrl.trim() || null,
+        thumbnail_url: cover || null,
+        image: cover || undefined,
       });
       toast.success("Арга хэмжээ үүсгэгдлээ.");
       navigate(`/admin/events/${created.id}`);

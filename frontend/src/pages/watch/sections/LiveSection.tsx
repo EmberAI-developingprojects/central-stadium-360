@@ -1,3 +1,4 @@
+import { useState, type SyntheticEvent } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useCountdown } from "../hooks/useCountdown";
@@ -26,6 +27,14 @@ export function LiveSection({
   const { streamLive, streamChecked } = useStreamLive(
     ownsFeatured && inLiveWindow,
   );
+  const [imgAspect, setImgAspect] = useState<number | null>(null);
+  const onImgLoad = (e: SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+      setImgAspect(img.naturalWidth / img.naturalHeight);
+    }
+  };
+
   const d = featuredEvent.start_time
     ? new Date(featuredEvent.start_time)
     : null;
@@ -36,15 +45,40 @@ export function LiveSection({
 
   return (
     <section className="w-full max-w-full overflow-hidden" id="live">
-      <div className="grid [grid-template-columns:55%_45%] max-[720px]:grid-cols-1 min-h-[460px] max-[720px]:min-h-0 w-full max-w-full">
-        <div className="relative overflow-hidden bg-[#0a1628] min-w-0 [aspect-ratio:16/9] max-[720px]:[aspect-ratio:16/9]">
+      <div className="flex max-[720px]:flex-col min-h-[460px] max-[720px]:min-h-0 w-full max-w-full">
+        <div
+          className="relative overflow-hidden bg-[#0a1628] min-w-0 flex-none max-[720px]:w-full max-[720px]:flex-1 max-[720px]:[aspect-ratio:16/9]"
+          style={
+            imgAspect
+              ? {
+                  aspectRatio: `${imgAspect}`,
+                  maxWidth: "min(70%, 900px)",
+                  minWidth: "min(40%, 360px)",
+                }
+              : { aspectRatio: "16/9", maxWidth: "70%" }
+          }
+        >
           {featuredEvent.image ? (
-            <img
-              src={featuredEvent.image}
-              alt={featuredEvent.title}
-              className="w-full h-full object-cover block"
-              loading="eager"
-            />
+            <>
+              <img
+                src={featuredEvent.image}
+                alt=""
+                aria-hidden="true"
+                className="absolute inset-0 w-full h-full object-cover scale-[1.15] [filter:blur(28px)_saturate(1.2)_brightness(0.85)] opacity-70 select-none pointer-events-none"
+                loading="eager"
+              />
+              <div
+                className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_55%,rgba(7,21,38,0.55)_100%)] pointer-events-none"
+                aria-hidden="true"
+              />
+              <img
+                src={featuredEvent.image}
+                alt={featuredEvent.title}
+                className="relative w-full h-full object-contain block"
+                loading="eager"
+                onLoad={onImgLoad}
+              />
+            </>
           ) : (
             <div
               className="w-full h-full bg-[linear-gradient(135deg,#0a1628_0%,#142a4e_50%,#0a1628_100%)] grid place-items-center"
@@ -76,7 +110,7 @@ export function LiveSection({
           )}
         </div>
 
-        <div className="bg-[#071526] flex flex-col justify-center min-w-0 px-10 py-14 max-[920px]:px-7 max-[920px]:py-10 max-[720px]:px-5 max-[720px]:py-6 max-[420px]:px-4 max-[420px]:py-5">
+        <div className="bg-[#071526] flex-1 flex flex-col justify-center min-w-0 px-10 py-14 max-[920px]:px-7 max-[920px]:py-10 max-[720px]:px-5 max-[720px]:py-6 max-[420px]:px-4 max-[420px]:py-5">
           <p className="text-[rgba(255,255,255,0.5)] text-[13px] font-bold uppercase tracking-[0.2em] m-0 mb-5 max-[720px]:mb-3 max-[420px]:text-[11px] max-[420px]:mb-2.5">
             {dateStr}
           </p>
@@ -88,12 +122,12 @@ export function LiveSection({
               {featuredEvent.desc}
             </p>
           )}
-          <div className="mt-9 flex flex-wrap items-center gap-3 max-[720px]:mt-5 max-[420px]:flex-col max-[420px]:items-stretch max-[420px]:gap-2.5">
+          <div className="mt-9 flex flex-wrap items-stretch gap-3 max-[720px]:mt-5 max-[420px]:flex-col max-[420px]:items-stretch max-[420px]:gap-2.5">
             {!ownsFeatured && saleKind !== "expired" && (
               <button
                 type="button"
                 onClick={onWatch}
-                className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-sm bg-white text-[#071526] text-[12px] font-bold uppercase tracking-[0.1em] cursor-pointer font-[inherit] [transition:background_.15s_ease,transform_.15s_ease,box-shadow_.2s_ease] shadow-[0_8px_24px_-12px_rgba(255,255,255,0.4)] hover:bg-[rgba(255,255,255,0.88)] hover:-translate-y-px hover:shadow-[0_12px_28px_-10px_rgba(255,255,255,0.5)] whitespace-nowrap max-[420px]:px-3 max-[420px]:text-[11px] max-[420px]:tracking-[0.08em]"
+                className="flex-1 basis-[160px] inline-flex items-center justify-center gap-2 h-11 px-5 rounded-sm bg-white text-[#071526] text-[12px] font-bold uppercase tracking-[0.1em] cursor-pointer font-[inherit] [transition:background_.15s_ease,transform_.15s_ease,box-shadow_.2s_ease] shadow-[0_8px_24px_-12px_rgba(255,255,255,0.4)] hover:bg-[rgba(255,255,255,0.88)] hover:-translate-y-px hover:shadow-[0_12px_28px_-10px_rgba(255,255,255,0.5)] whitespace-nowrap max-[420px]:px-3 max-[420px]:text-[11px] max-[420px]:tracking-[0.08em]"
               >
                 <svg
                   className="w-3.5 h-3.5 shrink-0"
@@ -116,7 +150,7 @@ export function LiveSection({
 
             <Link
               to={`/watch/events/${featuredEvent.id}`}
-              className="inline-flex items-center justify-center h-11 px-5 rounded-sm bg-transparent border border-solid border-[rgba(255,255,255,0.30)] text-white text-[12px] font-bold uppercase tracking-[0.1em] no-underline [transition:background_.15s_ease,border-color_.15s_ease,transform_.15s_ease] hover:bg-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.5)] hover:-translate-y-px whitespace-nowrap max-[420px]:px-3 max-[420px]:text-[11px] max-[420px]:tracking-[0.08em]"
+              className="flex-1 basis-[160px] inline-flex items-center justify-center h-11 px-5 rounded-sm bg-transparent border border-solid border-[rgba(255,255,255,0.30)] text-white text-[12px] font-bold uppercase tracking-[0.1em] no-underline [transition:background_.15s_ease,border-color_.15s_ease,transform_.15s_ease] hover:bg-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.5)] hover:-translate-y-px whitespace-nowrap max-[420px]:px-3 max-[420px]:text-[11px] max-[420px]:tracking-[0.08em]"
             >
               {t("watch_details")}
             </Link>
@@ -176,7 +210,7 @@ export function LiveSection({
               <button
                 type="button"
                 onClick={onWatch}
-                className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-sm bg-transparent border-2 border-solid border-white text-white text-[12px] font-bold uppercase tracking-[0.1em] cursor-pointer font-[inherit] [transition:background_.15s_ease,transform_.15s_ease] hover:bg-[rgba(255,255,255,0.1)] hover:-translate-y-px whitespace-nowrap max-[420px]:flex-1 max-[420px]:px-3 max-[420px]:text-[11px] max-[420px]:tracking-[0.06em] max-[420px]:gap-1.5"
+                className="flex-1 basis-[160px] inline-flex items-center justify-center gap-2 h-11 px-5 rounded-sm bg-transparent border-2 border-solid border-white text-white text-[12px] font-bold uppercase tracking-[0.1em] cursor-pointer font-[inherit] [transition:background_.15s_ease,transform_.15s_ease] hover:bg-[rgba(255,255,255,0.1)] hover:-translate-y-px whitespace-nowrap max-[420px]:px-3 max-[420px]:text-[11px] max-[420px]:tracking-[0.06em] max-[420px]:gap-1.5"
               >
                 <span
                   className="w-2 h-2 rounded-full bg-[#e53935] animate-live-blink shrink-0"

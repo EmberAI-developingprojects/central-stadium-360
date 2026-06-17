@@ -13,16 +13,16 @@ export default function SiteFooter() {
     "w-9 h-9 rounded-full inline-flex items-center justify-center text-white/70 no-underline [transition:color_0.18s_ease,background_0.18s_ease] hover:text-white hover:bg-white/10 [&_svg]:w-[16px] [&_svg]:h-[16px]";
 
   return (
-    <footer className="bg-ink pt-14 px-6 pb-6 text-[rgba(255,255,255,0.78)]">
+    <footer className="bg-ink pt-14 px-6 pb-6 text-[rgba(255,255,255,0.78)] max-[560px]:pt-8 max-[560px]:px-5 max-[560px]:pb-5">
       <div className="max-w-screen-page mx-auto">
-        <div className="grid gap-10 pb-12 [grid-template-columns:1.5fr_1fr_1fr_1fr] max-[900px]:[grid-template-columns:1fr_1fr] max-[900px]:gap-8 max-[560px]:[grid-template-columns:1fr]">
-          <div>
+        <div className="grid gap-10 pb-12 [grid-template-columns:1.5fr_1fr_1fr_1fr] max-[900px]:[grid-template-columns:1fr_1fr] max-[900px]:gap-8 max-[560px]:!flex max-[560px]:!flex-col max-[560px]:!items-center max-[560px]:!text-center max-[560px]:gap-5 max-[560px]:pb-6">
+          <div className="max-[560px]:flex max-[560px]:flex-col max-[560px]:items-center">
             <Link
-              className="inline-flex items-center gap-3 mb-5 no-underline"
+              className="inline-flex items-center gap-3 mb-5 no-underline max-[560px]:mb-3"
               to="/"
             >
               <img
-                className="block h-12 w-auto"
+                className="block h-12 w-auto max-[560px]:h-9"
                 src="/assets/images/brand/logo-white.png"
                 alt="Төв Цэнгэлдэх Хүрээлэн"
                 width="240"
@@ -31,10 +31,10 @@ export default function SiteFooter() {
                 decoding="async"
               />
             </Link>
-            <p className="text-[15px] leading-[1.65] m-0 mb-6 max-w-[320px] text-[rgba(255,255,255,0.7)]">
+            <p className="text-[15px] leading-[1.65] m-0 mb-6 max-w-[320px] text-[rgba(255,255,255,0.7)] max-[560px]:hidden">
               {t("footer_tagline")}
             </p>
-            <div className="flex gap-1.5 -ml-2">
+            <div className="flex gap-1.5 -ml-2 max-[560px]:ml-0 max-[560px]:gap-1">
               <a href="#" aria-label="Facebook" className={socialLinkCls}>
                 <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                   <path d="M13 22v-8h3l1-4h-4V7c0-1 .3-1.7 1.8-1.7H17V1.9c-.3 0-1.3-.1-2.4-.1-2.4 0-4 1.4-4 4.1V10H7v4h3.6v8z" />
@@ -73,7 +73,7 @@ export default function SiteFooter() {
             </div>
           </div>
 
-          <div>
+          <div className="max-[560px]:hidden">
             <h4 className={colTitleCls}>{t("footer_quick_links")}</h4>
             <ul className={ulCls}>
               <li><Link className={linkCls} to="/#top">{t("footer_home")}</Link></li>
@@ -84,7 +84,7 @@ export default function SiteFooter() {
             </ul>
           </div>
 
-          <div>
+          <div className="max-[560px]:hidden">
             <h4 className={colTitleCls}>{t("footer_info")}</h4>
             <ul className={ulCls}>
               <li><Link className={linkCls} to="/#news">{t("footer_news")}</Link></li>
@@ -95,7 +95,7 @@ export default function SiteFooter() {
             </ul>
           </div>
 
-          <div id="contact">
+          <div id="contact" className="max-[560px]:hidden">
             <h4 className={colTitleCls}>{t("footer_contact")}</h4>
             <ul className={ulCls}>
               <li className={liCls}>+976 7700 1212</li>
@@ -103,19 +103,35 @@ export default function SiteFooter() {
               <li className={liCls}>Улаанбаатар хот, Монгол улс</li>
             </ul>
           </div>
+
+          {/* Mobile-only compact contact row */}
+          <div className="hidden max-[560px]:flex flex-col items-center gap-1 text-[13px] text-white/65">
+            <a
+              href="tel:+97677001212"
+              className="text-white/85 no-underline tabular-nums hover:text-white"
+            >
+              +976 7700 1212
+            </a>
+            <a
+              href="mailto:info@stadium.mn"
+              className="text-white/75 no-underline hover:text-white"
+            >
+              info@stadium.mn
+            </a>
+          </div>
         </div>
 
-        <div className="flex justify-between items-center pt-6 text-[13px] text-[rgba(255,255,255,0.45)] max-[560px]:flex-col max-[560px]:gap-3 max-[560px]:text-center">
+        <div className="flex justify-between items-center pt-6 text-[13px] text-[rgba(255,255,255,0.45)] border-t border-white/5 max-[560px]:flex-col max-[560px]:gap-2 max-[560px]:text-center max-[560px]:pt-4 max-[560px]:text-[11.5px]">
           <p className="m-0">{t("footer_copyright")}</p>
-          <ul className="list-none p-0 m-0 flex gap-6">
+          <ul className="list-none p-0 m-0 flex gap-6 max-[560px]:gap-3">
             <li>
-              <a className="no-underline text-[13px] text-[rgba(255,255,255,0.45)] [transition:color_0.15s_ease] hover:text-white" href="#">{t("footer_privacy")}</a>
+              <a className="no-underline text-[13px] text-[rgba(255,255,255,0.45)] [transition:color_0.15s_ease] hover:text-white max-[560px]:text-[11.5px]" href="#">{t("footer_privacy")}</a>
             </li>
             <li>
-              <a className="no-underline text-[13px] text-[rgba(255,255,255,0.45)] [transition:color_0.15s_ease] hover:text-white" href="#">{t("footer_terms")}</a>
+              <a className="no-underline text-[13px] text-[rgba(255,255,255,0.45)] [transition:color_0.15s_ease] hover:text-white max-[560px]:text-[11.5px]" href="#">{t("footer_terms")}</a>
             </li>
             <li>
-              <a className="no-underline text-[13px] text-[rgba(255,255,255,0.45)] [transition:color_0.15s_ease] hover:text-white" href="#">{t("footer_cookies")}</a>
+              <a className="no-underline text-[13px] text-[rgba(255,255,255,0.45)] [transition:color_0.15s_ease] hover:text-white max-[560px]:text-[11.5px]" href="#">{t("footer_cookies")}</a>
             </li>
           </ul>
         </div>

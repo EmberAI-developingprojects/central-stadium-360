@@ -2,6 +2,8 @@ import { Hono } from "hono";
 import { createSign, createPrivateKey } from "node:crypto";
 import type { AuthEnv } from "../middleware/require-user";
 import { requireUser } from "../middleware/require-user";
+import { markUserViewed } from "../lib/tickets";
+import { getSupabaseAdmin } from "../lib/supabase";
 
 const watch = new Hono<AuthEnv>();
 
@@ -102,15 +104,19 @@ function buildCamUrls(): { id: string; url: string | null }[] {
   });
 }
 
-const viewedUserIds = new Set<string>();
-
-export function getViewedUserCount(): number {
-  return viewedUserIds.size;
+export async function getViewedUserCount(): Promise<number> {
+  const admin = getSupabaseAdmin();
+  if (!admin) return 0;
+  const { count } = await admin
+    .from("users")
+    .select("id", { count: "exact", head: true })
+    .not("first_viewed_at", "is", null);
+  return count ?? 0;
 }
 
 watch.get("/token", requireUser, (c) => {
   const user = c.get("user");
-  if (user?.id) viewedUserIds.add(user.id);
+  if (user?.id) markUserViewed(user.id).catch(() => {});
   const urls = buildCamUrls();
   const cams: WatchCam[] = CAM_DEFS.map((cam, i) => ({
     ...cam,

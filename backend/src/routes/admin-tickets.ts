@@ -142,7 +142,7 @@ adminTickets.get("/stats", async (c) => {
     revenue,
     count: rows.length,
     paidCount: paid.length,
-    viewerCount: getViewedUserCount(),
+    viewerCount: await getViewedUserCount(),
     byEvent,
     last30d,
   };

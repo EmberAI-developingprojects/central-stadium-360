@@ -181,13 +181,14 @@ function fmtDateLong(iso: string): string {
 }
 
 function dbToEvent(row: DbEvent): EventRecord {
+  const cover = row.image || row.thumbnail_url || "";
   return {
     id: row.id,
     title: row.title,
     desc: row.description ?? "",
     date: fmtDateShort(row.start_time),
     when: fmtDateLong(row.start_time),
-    image: row.image ?? "",
+    image: cover,
     base: row.price,
     featured: row.featured,
     start_time: row.start_time,
@@ -197,7 +198,7 @@ function dbToEvent(row: DbEvent): EventRecord {
     live_start_at: row.live_start_at,
     live_end_at: row.live_end_at,
     replay_available_until: row.replay_available_until,
-    thumbnail_url: row.thumbnail_url,
+    thumbnail_url: row.thumbnail_url || row.image || null,
   };
 }
 

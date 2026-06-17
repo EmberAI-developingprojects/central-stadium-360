@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import type { DbRecording } from "@cs360/shared";
 import { getSupabaseAdmin } from "../lib/supabase";
 import { requireUser, type AuthEnv } from "../middleware/require-user";
-import { hasValidTicketForEvent } from "../lib/tickets";
+import { hasValidTicketForEvent, markUserViewed } from "../lib/tickets";
 import {
   isCloudFrontConfigured,
   signRecordingUrl,
@@ -57,6 +57,7 @@ recordings.post("/:id/sign-url", async (c) => {
   if (!ok) {
     return c.json({ ok: false, error: "forbidden" } as const, 403);
   }
+  markUserViewed(user.id).catch(() => {});
 
   let signedUrl: string;
   try {
