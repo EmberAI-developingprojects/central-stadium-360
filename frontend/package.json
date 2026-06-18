@@ -20,7 +20,8 @@
     "react-dom": "^18.3.1",
     "react-i18next": "^17.0.8",
     "react-router-dom": "^6.26.2",
-    "three": "^0.184.0"
+    "three": "^0.184.0",
+    "tinymce": "^7"
   },
   "devDependencies": {
     "@types/node": "^22.9.0",

@@ -1316,6 +1316,27 @@ function News({ items = [] }: { items: NewsItem[] }) {
           <span className={headingLineCls} aria-hidden="true" />
         </div>
 
+        <div className={`flex items-center justify-end mb-8 -mt-6 ${REVEAL_UP_CLS}`}>
+          <Link
+            to="/news"
+            className="inline-flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.06em] text-ink no-underline pb-1 border-b-2 border-solid border-transparent [transition:color_.18s_ease,border-color_.18s_ease,gap_.18s_ease] hover:text-brand-blue hover:gap-3 hover:border-brand-blue [&_svg]:w-[14px] [&_svg]:h-[14px]"
+          >
+            Бүх мэдээ үзэх
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M5 12h14" />
+              <path d="M13 6l6 6-6 6" />
+            </svg>
+          </Link>
+        </div>
+
         <div className="grid grid-cols-3 gap-10 max-[920px]:grid-cols-2 max-[920px]:gap-7 max-[640px]:grid-cols-1 max-[640px]:gap-8">
           {cards.map((n, i) => (
             <article
@@ -1399,22 +1420,27 @@ function FeaturedNewsHero({ items }: { items: NewsItem[] }) {
       aria-label="Онцлох мэдээ"
     >
       <div className="relative w-full min-h-[calc(100vh+64px)] min-h-[calc(100dvh+64px)] max-[920px]:min-h-[calc(100vh+56px)] max-[920px]:min-h-[calc(100dvh+56px)]">
-        {/* Fallback hero image: shown immediately on first paint so the
-            section never looks empty while news data is in flight. */}
         <img
           src="/assets/images/stadium/exterior.opt.jpg"
           alt=""
           aria-hidden="true"
           loading="eager"
-          fetchPriority="high"
+          decoding="async"
           className="absolute inset-0 w-full h-full object-cover object-center"
         />
         {featured?.image && (
           <img
+            key={featured.image}
             src={featured.image}
             alt={featured.title}
             loading="eager"
-            className="absolute inset-0 w-full h-full object-cover object-center [transition:opacity_.4s_ease] opacity-100"
+            fetchPriority="high"
+            decoding="async"
+            referrerPolicy="no-referrer"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).style.display = "none";
+            }}
+            className="absolute inset-0 w-full h-full object-cover object-center"
           />
         )}
 

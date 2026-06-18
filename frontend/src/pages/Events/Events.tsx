@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import SiteHeader from "../../components/SiteHeader";
 import SiteFooter from "../../components/SiteFooter";
 import useRevealOnScroll from "../../hooks/useRevealOnScroll";
@@ -131,24 +132,22 @@ function YearSection({
   group: YearGroup;
   isPast: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <section className="mb-12 last:mb-0">
-      <div className={`flex items-center gap-3 mb-5 ${REVEAL_UP_CLS}`}>
+      <div className={`flex items-end gap-4 mb-6 ${REVEAL_UP_CLS}`}>
         <h2
-          className={`text-[14px] font-bold uppercase tracking-[0.18em] m-0 ${
+          className={`text-[26px] font-extrabold tracking-[-0.01em] tabular-nums leading-none m-0 max-[600px]:text-[22px] ${
             isPast ? "text-[#7a7a7a]" : "text-[#1a1a1a]"
           }`}
         >
-          {group.year} он
+          {t("events_year_heading", { year: group.year })}
         </h2>
         <div
-          className={`flex-1 h-px ${
+          className={`flex-1 h-px mb-2 ${
             isPast ? "bg-[#e2e2e6]" : "bg-[#e8e8e8]"
           }`}
         />
-        <span className="text-[11px] font-semibold tabular-nums text-[#aaa]">
-          {group.events.length}
-        </span>
       </div>
       <div className="grid grid-cols-3 gap-5 max-[920px]:grid-cols-2 max-[560px]:grid-cols-1">
         {group.events.map((ev, i) => (
@@ -162,6 +161,7 @@ function YearSection({
 export default function Events() {
   useRevealOnScroll();
   useSmoothAnchors();
+  const { t } = useTranslation();
 
   const [events, setEvents] = useState<EventRecord[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -212,6 +212,8 @@ export default function Events() {
     <div className="min-h-screen bg-white">
       <SiteHeader />
 
+      <ServiceIntro />
+
       <section
         className="relative w-full px-6 pt-12 pb-6 max-[920px]:px-5 max-[920px]:pt-9 overflow-hidden"
       >
@@ -220,74 +222,10 @@ export default function Events() {
           className="pointer-events-none absolute inset-x-0 top-0 h-[260px] [background:radial-gradient(60%_120%_at_50%_0%,rgba(34,48,198,0.06)_0%,transparent_70%)]"
         />
         <div className="relative max-w-screen-page mx-auto">
-          <header className={`mb-10 max-[920px]:mb-8 ${REVEAL_UP_CLS}`}>
-            <div className="flex items-center gap-2 mb-2">
-              <svg
-                className="w-[18px] h-[18px] text-brand-blue shrink-0"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <rect x="3" y="4" width="18" height="18" rx="2" />
-                <path d="M16 2v4M8 2v4M3 10h18" />
-              </svg>
-              <span className="text-[12px] font-bold uppercase tracking-[0.2em] text-[#888]">
-                Үйл ажиллагаа
-              </span>
-            </div>
-            <h1 className="text-[#1a1a1a] text-[38px] font-extrabold tracking-[-0.02em] m-0 leading-[1.15] max-[920px]:text-[28px] max-[480px]:text-[24px]">
-              Арга хэмжээнүүд
+          <header className={`mb-10 max-[920px]:mb-8 text-center ${REVEAL_UP_CLS}`}>
+            <h1 className="text-[#1a1a1a] text-[38px] font-extrabold tracking-[-0.02em] m-0 mx-auto leading-[1.2] max-w-[920px] max-[920px]:text-[26px] max-[480px]:text-[22px]">
+              {t("events_page_heading")}
             </h1>
-            <p className="mt-3 text-[#666] text-[15px] max-w-[560px] leading-[1.6] m-0">
-              Төв Цэнгэлдэх Хүрээлэнд удахгүй болох тоглолт, спортын тэмцээн,
-              соёл олон нийтийн арга хэмжээний бүрэн жагсаалт.
-            </p>
-
-            {events !== null && (
-              <div
-                className="mt-6 flex items-center gap-4 flex-wrap text-[12.5px]"
-                data-stagger="1"
-              >
-                <span className="inline-flex items-center gap-2 py-1 pl-2 pr-3 rounded-full bg-emerald-50 text-emerald-700 font-semibold">
-                  <span className="relative inline-flex w-2 h-2">
-                    <span className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-70" />
-                    <span className="relative inline-flex w-2 h-2 rounded-full bg-emerald-500" />
-                  </span>
-                  Удахгүй болох
-                  <span className="font-bold tabular-nums text-emerald-800">
-                    {upcoming.length}
-                  </span>
-                </span>
-                {past.length > 0 && (
-                  <a
-                    href="#past"
-                    className="inline-flex items-center gap-1.5 py-1 pl-3 pr-2 rounded-full bg-zinc-100 text-zinc-700 font-semibold no-underline transition-colors hover:bg-zinc-200 hover:text-zinc-900"
-                  >
-                    Дууссан
-                    <span className="font-bold tabular-nums text-zinc-900">
-                      {past.length}
-                    </span>
-                    <svg
-                      width="12"
-                      height="12"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                    >
-                      <line x1="12" y1="5" x2="12" y2="19" />
-                      <polyline points="19 12 12 19 5 12" />
-                    </svg>
-                  </a>
-                )}
-              </div>
-            )}
           </header>
 
           {error && empty(`Алдаа: ${error}`)}
@@ -380,5 +318,138 @@ export default function Events() {
 
       <SiteFooter />
     </div>
+  );
+}
+
+function CheckBullet() {
+  return (
+    <span className="mt-[3px] inline-flex w-[18px] h-[18px] flex-none items-center justify-center rounded-full text-gold-pale ring-1 ring-gold-pale/40">
+      <svg
+        width="10"
+        height="10"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <polyline points="20 6 9 17 4 12" />
+      </svg>
+    </span>
+  );
+}
+
+function ServiceIntro() {
+  const { t } = useTranslation();
+
+  const capacity = [
+    {
+      strong: t("events_intro_capacity_1_strong"),
+      rest: t("events_intro_capacity_1_rest"),
+    },
+    {
+      strong: t("events_intro_capacity_2_strong"),
+      rest: t("events_intro_capacity_2_rest"),
+    },
+    {
+      strong: t("events_intro_capacity_3_strong"),
+      rest: t("events_intro_capacity_3_rest"),
+    },
+  ];
+  const advantages = [
+    t("events_intro_advantage_1"),
+    t("events_intro_advantage_2"),
+    t("events_intro_advantage_3"),
+    t("events_intro_advantage_4"),
+    t("events_intro_advantage_5"),
+    t("events_intro_advantage_6"),
+  ];
+  const included = [
+    t("events_intro_included_1"),
+    t("events_intro_included_2"),
+    t("events_intro_included_3"),
+    t("events_intro_included_4"),
+    t("events_intro_included_5"),
+    t("events_intro_included_6"),
+    t("events_intro_included_7"),
+    t("events_intro_included_8"),
+  ];
+
+  return (
+    <section
+      aria-label={t("events_intro_label")}
+      className="relative w-full text-white [background:radial-gradient(120%_140%_at_0%_0%,#1a1f4a_0%,#0e1238_55%,#080a26_100%)]"
+    >
+      <div className="relative max-w-screen-page mx-auto px-6 py-14 max-[920px]:px-5 max-[920px]:py-10">
+        <h2 className="m-0 text-gold-pale text-[14px] font-bold uppercase tracking-[0.2em]">
+          {t("events_intro_label")}
+        </h2>
+        <p className="mt-4 m-0 max-w-[1100px] text-white/85 text-[14.5px] leading-[1.75]">
+          {t("events_intro_body")}
+        </p>
+
+        <div className="my-8 h-px bg-white/15" />
+
+        <div className="grid grid-cols-3 gap-10 max-[920px]:grid-cols-1 max-[920px]:gap-8">
+          <div>
+            <h3 className="m-0 mb-5 text-gold-pale text-[13.5px] font-bold uppercase tracking-[0.18em]">
+              {t("events_intro_capacity_title")}
+            </h3>
+            <ul className="m-0 p-0 list-none flex flex-col gap-3.5">
+              {capacity.map((item) => (
+                <li
+                  key={item.strong}
+                  className="flex gap-3 items-start text-white/85 text-[13.5px] leading-[1.65]"
+                >
+                  <CheckBullet />
+                  <span>
+                    <strong className="text-white font-semibold">
+                      {item.strong}
+                    </strong>
+                    {item.rest}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="m-0 mb-5 text-gold-pale text-[13.5px] font-bold uppercase tracking-[0.18em]">
+              {t("events_intro_advantages_title")}
+            </h3>
+            <ul className="m-0 p-0 list-none flex flex-col gap-3.5">
+              {advantages.map((item) => (
+                <li
+                  key={item}
+                  className="flex gap-3 items-start text-white/85 text-[13.5px] leading-[1.65]"
+                >
+                  <CheckBullet />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="m-0 mb-5 text-gold-pale text-[13.5px] font-bold uppercase tracking-[0.18em]">
+              {t("events_intro_included_title")}
+            </h3>
+            <ul className="m-0 p-0 list-none flex flex-col gap-3.5">
+              {included.map((item) => (
+                <li
+                  key={item}
+                  className="flex gap-3 items-start text-white/85 text-[13.5px] leading-[1.65]"
+                >
+                  <CheckBullet />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }

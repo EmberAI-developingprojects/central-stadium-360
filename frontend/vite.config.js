@@ -40,7 +40,7 @@ export default defineConfig({
           'vendor-supabase': ['@supabase/supabase-js'],
           'vendor-three': ['three'],
           'vendor-hls': ['hls.js'],
-          'vendor-tinymce': ['@tinymce/tinymce-react'],
+          'vendor-tinymce': ['@tinymce/tinymce-react', 'tinymce'],
         },
       },
     },
