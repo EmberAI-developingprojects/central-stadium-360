@@ -167,7 +167,10 @@ adminTickets.get("/:id", async (c) => {
     return c.json({ ok: false, error: error.message } as const, 500);
   }
   if (!data) return c.json({ ok: false, error: "not_found" } as const, 404);
-  return c.json({ ok: true, data: toRow(data as unknown as RawTicketRow) } as const);
+  return c.json({
+    ok: true,
+    data: toRow(data as unknown as RawTicketRow),
+  } as const);
 });
 
 adminTickets.post("/:id/refund", async (c) => {
@@ -187,8 +190,7 @@ adminTickets.post("/:id/refund", async (c) => {
   if (selErr) {
     return c.json({ ok: false, error: selErr.message } as const, 500);
   }
-  if (!existing)
-    return c.json({ ok: false, error: "not_found" } as const, 404);
+  if (!existing) return c.json({ ok: false, error: "not_found" } as const, 404);
   if (existing.status !== "paid") {
     return c.json({ ok: false, error: "not_paid" } as const, 409);
   }
@@ -210,7 +212,10 @@ adminTickets.post("/:id/refund", async (c) => {
     .eq("id", id)
     .maybeSingle();
   if (!row) return c.json({ ok: false, error: "not_found" } as const, 404);
-  return c.json({ ok: true, data: toRow(row as unknown as RawTicketRow) } as const);
+  return c.json({
+    ok: true,
+    data: toRow(row as unknown as RawTicketRow),
+  } as const);
 });
 
 adminTickets.delete("/:id", async (c) => {
