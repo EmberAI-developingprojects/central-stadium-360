@@ -78,6 +78,25 @@ export default function EventDetail() {
     ? new Date(event.start_time).getTime() <= Date.now()
     : false;
 
+  const nowMs = Date.now();
+  const startMs = event?.start_time
+    ? new Date(event.start_time).getTime()
+    : NaN;
+  let liveEndMs: number | null = null;
+  if (event?.live_end_at) {
+    const t = new Date(event.live_end_at).getTime();
+    if (!Number.isNaN(t)) liveEndMs = t;
+  }
+  if (liveEndMs === null && !Number.isNaN(startMs)) {
+    liveEndMs = startMs + 3 * 60 * 60 * 1000;
+  }
+  const liveOver = liveEndMs !== null && nowMs > liveEndMs;
+  const replayExpired = event?.replay_available_until
+    ? nowMs > new Date(event.replay_available_until).getTime()
+    : false;
+  const replayAvailable =
+    (event?.replay_price ?? 0) > 0 && !replayExpired;
+
   return (
     <div className="min-h-screen bg-surface-1">
       <SiteHeader />
@@ -236,66 +255,203 @@ export default function EventDetail() {
               </div>
             </div>
 
-            <div className="order-first md:order-last md:sticky md:top-24 bg-white rounded-2xl p-6 shadow-[0_8px_32px_-12px_rgba(31,41,55,0.18)] border border-solid border-[rgba(31,41,55,0.07)]">
-              {dt && (
-                <div className="mb-5">
-                  <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-ink-soft mb-1">
-                    {dt.weekday}
-                  </div>
-                  <div className="text-[28px] font-extrabold text-ink leading-none tracking-tight">
-                    {dt.day}{" "}
-                    <span className="text-[18px] font-semibold text-ink-soft">
-                      {dt.month}
+            <div className="order-first md:order-last md:sticky md:top-24 bg-white rounded-2xl overflow-hidden shadow-[0_8px_32px_-12px_rgba(31,41,55,0.18)] border border-solid border-[rgba(31,41,55,0.07)]">
+              <div className="relative px-6 pt-6 pb-5 bg-[linear-gradient(180deg,rgba(34,48,198,0.04)_0%,rgba(255,255,255,0)_100%)]">
+                <div className="mb-4">
+                  {liveOver && replayAvailable && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-blue-tint text-brand-blue px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-[0.14em]">
+                      <span className="w-1.5 h-1.5 rounded-full bg-brand-blue" />
+                      Replay · Нөхөж үзэх
                     </span>
+                  )}
+                  {liveOver && !replayAvailable && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 text-zinc-600 px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-[0.14em]">
+                      <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
+                      Дууссан
+                    </span>
+                  )}
+                  {!liveOver && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 text-emerald-700 px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-[0.14em]">
+                      <span className="relative inline-flex w-2 h-2">
+                        <span className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-60" />
+                        <span className="relative inline-flex w-2 h-2 rounded-full bg-emerald-500" />
+                      </span>
+                      {isLive ? "Шууд" : "Удахгүй болох"}
+                    </span>
+                  )}
+                </div>
+
+                {dt && (
+                  <div className="flex items-center gap-3.5">
+                    <span
+                      aria-hidden="true"
+                      className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-white border border-[rgba(31,41,55,0.08)] shadow-[0_4px_12px_-6px_rgba(31,41,55,0.18)] text-ink"
+                    >
+                      <div className="flex flex-col items-center leading-none">
+                        <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-brand-blue">
+                          {dt.monthEn}
+                        </span>
+                        <span className="text-[20px] font-extrabold tracking-tight mt-0.5">
+                          {dt.day}
+                        </span>
+                      </div>
+                    </span>
+                    <div className="min-w-0">
+                      <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-ink-soft">
+                        {dt.weekday}
+                      </div>
+                      <div className="text-[17px] font-extrabold text-ink leading-tight tracking-[-0.01em] tabular-nums">
+                        {dt.time}
+                        <span className="ml-2 text-[12px] font-semibold text-ink-soft">
+                          {dt.year}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-[13px] text-ink-soft mt-1">
-                    {dt.time}
+                )}
+              </div>
+
+              <div className="px-6 pb-2">
+                {!liveOver && (
+                  <>
+                    <Link
+                      to="/login"
+                      className="flex items-center justify-center gap-2 w-full rounded-xl bg-[linear-gradient(135deg,#2230C6_0%,#3A48D8_100%)] text-white font-bold text-[13px] tracking-[0.08em] uppercase no-underline py-3.5 px-5 shadow-[0_10px_24px_-10px_rgba(34,48,198,0.6),inset_0_1px_0_rgba(255,255,255,0.2)] [transition:transform_.18s_ease,box-shadow_.22s_ease,filter_.18s_ease] hover:-translate-y-px hover:shadow-[0_14px_28px_-10px_rgba(34,48,198,0.7),inset_0_1px_0_rgba(255,255,255,0.25)] hover:[filter:brightness(1.04)]"
+                    >
+                      <svg
+                        width="15"
+                        height="15"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M2 9a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z" />
+                      </svg>
+                      Тасалбар авах
+                    </Link>
+                    {event.base > 0 && (
+                      <div className="mt-3 flex items-center justify-between rounded-xl bg-surface-1 px-4 py-2.5">
+                        <span className="text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-soft">
+                          Үнэ
+                        </span>
+                        <span className="text-[16px] font-extrabold text-ink tabular-nums tracking-tight">
+                          {money(event.base)}
+                        </span>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {liveOver && replayAvailable && (
+                  <>
+                    <Link
+                      to="/login"
+                      className="flex items-center justify-center gap-2 w-full rounded-xl bg-[linear-gradient(135deg,#2230C6_0%,#3A48D8_100%)] text-white font-bold text-[13px] tracking-[0.08em] uppercase no-underline py-3.5 px-5 shadow-[0_10px_24px_-10px_rgba(34,48,198,0.6),inset_0_1px_0_rgba(255,255,255,0.2)] [transition:transform_.18s_ease,box-shadow_.22s_ease,filter_.18s_ease] hover:-translate-y-px hover:shadow-[0_14px_28px_-10px_rgba(34,48,198,0.7),inset_0_1px_0_rgba(255,255,255,0.25)] hover:[filter:brightness(1.04)]"
+                    >
+                      <svg
+                        width="15"
+                        height="15"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M3 12a9 9 0 1 0 9-9" />
+                        <path d="M3 4v5h5" />
+                        <path d="M12 7v5l3 2" />
+                      </svg>
+                      Нөхөж үзэх
+                    </Link>
+                    <div className="mt-3 flex items-center justify-between rounded-xl bg-surface-1 px-4 py-2.5">
+                      <div className="flex flex-col">
+                        <span className="text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-soft leading-none">
+                          Үнэ
+                        </span>
+                        <span className="text-[10.5px] text-ink-soft mt-1 leading-none">
+                          30 хоногийн үзэх эрх
+                        </span>
+                      </div>
+                      <span className="text-[16px] font-extrabold text-ink tabular-nums tracking-tight">
+                        {money(event.replay_price)}
+                      </span>
+                    </div>
+                  </>
+                )}
+
+                {liveOver && !replayAvailable && (
+                  <div className="w-full rounded-xl bg-surface-1 border border-solid border-[rgba(31,41,55,0.08)] px-5 py-4 text-center">
+                    <div className="text-[13px] font-bold text-ink leading-tight">
+                      Энэ арга хэмжээ дууссан
+                    </div>
+                    <div className="text-[11.5px] text-ink-soft mt-1">
+                      Нөхөж үзэх тасалбарын хугацаа дууссан.
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="h-px bg-[rgba(31,41,55,0.08)] mx-6 my-5" />
+
+              <div className="px-6 pb-6 flex flex-col gap-4">
+                <div className="flex items-start gap-3">
+                  <span
+                    aria-hidden="true"
+                    className="inline-flex w-8 h-8 rounded-lg bg-brand-blue-tint text-brand-blue items-center justify-center shrink-0 mt-0.5"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                      <circle cx="12" cy="10" r="3" />
+                    </svg>
+                  </span>
+                  <div className="min-w-0">
+                    <div className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-ink-soft">
+                      Байршил
+                    </div>
+                    <div className="text-[13px] text-ink mt-0.5 leading-snug">
+                      Төв Цэнгэлдэх Хүрээлэн · Улаанбаатар
+                    </div>
                   </div>
                 </div>
-              )}
-
-              <Link
-                to="/watch"
-                className="flex items-center justify-center gap-2 w-full rounded-full bg-brand-blue text-white font-bold text-[13px] tracking-[0.1em] uppercase no-underline py-3.5 px-5 shadow-[0_6px_18px_-8px_rgba(34,48,198,0.55)] hover:bg-brand-blue-soft hover:-translate-y-px transition-all"
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M2 9a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z" />
-                </svg>
-                Тасалбар авах
-              </Link>
-
-              {event.base > 0 && (
-                <div className="text-[12px] text-ink-soft text-center mt-2">
-                  Үнэ: {money(event.base)}
-                </div>
-              )}
-
-              <div className="h-px bg-[rgba(31,41,55,0.08)] my-5" />
-
-              <div className="flex flex-col gap-3">
-                <div>
-                  <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-ink-soft mb-0.5">
-                    Байршил
-                  </div>
-                  <div className="text-[13px] text-ink">
-                    Төв Цэнгэлдэх Хүрээлэн · Улаанбаатар
-                  </div>
-                </div>
-                <div>
-                  <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-ink-soft mb-0.5">
-                    Дамжуулалт
-                  </div>
-                  <div className="text-[13px] text-ink">
-                    360° · 4 камер · HD чанар
+                <div className="flex items-start gap-3">
+                  <span
+                    aria-hidden="true"
+                    className="inline-flex w-8 h-8 rounded-lg bg-brand-blue-tint text-brand-blue items-center justify-center shrink-0 mt-0.5"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polygon points="23 7 16 12 23 17 23 7" />
+                      <rect x="1" y="5" width="15" height="14" rx="2" />
+                    </svg>
+                  </span>
+                  <div className="min-w-0">
+                    <div className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-ink-soft">
+                      Дамжуулалт
+                    </div>
+                    <div className="text-[13px] text-ink mt-0.5 leading-snug">
+                      360° · 4 камер · HD чанар
+                    </div>
                   </div>
                 </div>
               </div>

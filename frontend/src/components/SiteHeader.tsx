@@ -15,12 +15,12 @@ const HEADER_SCROLLED_CLS =
 const HEADER_INNER_CLS = "max-w-screen-page mx-auto";
 
 const MAINNAV_CLS =
-  "flex items-center justify-between gap-5 py-[14px] px-0 [transition:padding_0.25s_ease] max-[1340px]:gap-4 max-[1340px]:py-3 [.is-scrolled_&]:py-[10px] [.is-scrolled_&]:max-[1340px]:py-2";
+  "flex items-center justify-between gap-5 py-[14px] px-0 max-[1340px]:gap-4 max-[1340px]:py-3";
 
 const LOGO_CLS =
   "inline-flex items-center gap-3 no-underline text-ink flex-none [transition:transform_0.25s_ease] hover:scale-[1.02]";
 const LOGO_MARK_CLS =
-  "w-auto h-12 rounded-none bg-transparent border-0 flex-none [transition:height_0.25s_ease] [&_img]:block [&_img]:h-full [&_img]:w-auto [&_img]:drop-shadow-[0_2px_8px_rgba(0,0,0,0.08)] max-[1340px]:h-11 max-[640px]:h-10 [.is-scrolled_&]:h-10 [.is-scrolled_&]:max-[1340px]:h-9";
+  "w-auto h-12 rounded-none bg-transparent border-0 flex-none [&_img]:block [&_img]:h-full [&_img]:w-auto [&_img]:drop-shadow-[0_2px_8px_rgba(0,0,0,0.08)] max-[1340px]:h-11 max-[640px]:h-10";
 
 const NAV_LINKS_CLS =
   "flex items-center list-none m-0 p-0 gap-6 max-[1500px]:gap-5 max-[1400px]:gap-4 max-[1340px]:hidden";

@@ -334,5 +334,8 @@
   "news_page_heading": "News",
   "news_view_all": "View all news",
   "news_read_more": "Read more",
-  "news_empty": "No news available yet."
+  "news_empty": "No news available yet.",
+  "footer_years_copyright": "1958 - 2025 © \"National Stadium of Mongolia\" - All rights reserved",
+  "footer_built_by_prefix": "Built by",
+  "footer_built_by_suffix": ""
 }
