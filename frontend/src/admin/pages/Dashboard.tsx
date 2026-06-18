@@ -131,7 +131,7 @@ export default function Dashboard() {
     const revCurr = ordCurr.reduce((s, o) => s + o.total, 0);
     const revPrev = ordPrev.reduce((s, o) => s + o.total, 0);
 
-    const uniqueBuyers = new Set(orders.map((o) => o.user)).size;
+    const uniqueBuyers = new Set(chartOrders.map((o) => o.user)).size;
     const buyerPct =
       users.length > 0 ? Math.round((uniqueBuyers / users.length) * 100) : 0;
     const viewerCount = stats?.viewerCount ?? 0;
@@ -555,7 +555,7 @@ export default function Dashboard() {
                 value={money(selectedSummary.revenue)}
               />
               <SummaryStat
-                label="Худалдан авагч"
+                label="Худалдан авсан"
                 value={selectedSummary.buyerCount.toLocaleString()}
               />
             </div>
@@ -567,112 +567,174 @@ export default function Dashboard() {
         <div
           className={ADMIN_CARD_CLS}
           style={{
-            padding: "20px 24px",
+            padding: "22px 24px 20px",
             display: "flex",
             flexDirection: "column",
-            alignItems: "center",
+            gap: 16,
           }}
         >
-          <div style={{ width: "100%", marginBottom: 12 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "#111" }}>
-              Тасалбар үзсэн хэрэглэгч
-            </div>
-            <div style={{ fontSize: 12, color: "#71717a", marginTop: 2 }}>
-              Худалдан авагчдын дунд үзсэн / үзээгүй харьцаа
-            </div>
-          </div>
-          <DonutChart percent={derived.watchedPct} />
           <div
             style={{
-              width: "100%",
-              marginTop: 12,
+              display: "flex",
+              alignItems: "flex-start",
+              justifyContent: "space-between",
+              gap: 12,
+            }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <div
+                style={{
+                  fontSize: 13.5,
+                  fontWeight: 700,
+                  color: "#0f172a",
+                  letterSpacing: "-0.005em",
+                }}
+              >
+                Тасалбар үзсэн хэрэглэгч
+              </div>
+              <div
+                style={{
+                  fontSize: 12,
+                  color: "#71717a",
+                  marginTop: 3,
+                  lineHeight: 1.45,
+                }}
+              >
+                Худалдан авагчдын дунд үзсэн / үзээгүй хувь
+              </div>
+            </div>
+            <span
+              aria-hidden="true"
+              style={{
+                flex: "none",
+                width: 32,
+                height: 32,
+                borderRadius: 10,
+                background:
+                  "linear-gradient(135deg,rgba(34,48,198,0.10),rgba(68,81,220,0.04))",
+                color: "#2230C6",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </span>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              padding: "4px 0 2px",
+            }}
+          >
+            <DonutChart
+              percent={derived.watchedPct}
+              watched={derived.watchedCount}
+              total={derived.uniqueBuyers}
+            />
+          </div>
+
+          <div
+            style={{
               display: "flex",
               flexDirection: "column",
               gap: 6,
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                fontSize: 12,
-                color: "#52525b",
-              }}
-            >
-              <span
-                style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: 999,
-                  background: "#2230C6",
-                  display: "inline-block",
-                }}
-              />
-              <span style={{ flex: 1 }}>Үзсэн</span>
-              <strong
-                style={{
-                  color: "#111",
-                  fontWeight: 700,
-                  fontVariantNumeric: "tabular-nums",
-                }}
-              >
-                {derived.watchedCount.toLocaleString()}
-              </strong>
-            </div>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                fontSize: 12,
-                color: "#52525b",
-              }}
-            >
-              <span
-                style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: 999,
-                  background: "#e4e4e7",
-                  display: "inline-block",
-                }}
-              />
-              <span style={{ flex: 1 }}>Үзээгүй</span>
-              <strong
-                style={{
-                  color: "#111",
-                  fontWeight: 700,
-                  fontVariantNumeric: "tabular-nums",
-                }}
-              >
-                {derived.notWatchedCount.toLocaleString()}
-              </strong>
-            </div>
+            <DonutLegendRow
+              color="#2230C6"
+              label="Үзсэн"
+              value={derived.watchedCount}
+              total={derived.uniqueBuyers}
+            />
+            <DonutLegendRow
+              color="#d4d4d8"
+              label="Үзээгүй"
+              value={derived.notWatchedCount}
+              total={derived.uniqueBuyers}
+            />
           </div>
+
           <div
             style={{
-              width: "100%",
-              marginTop: 14,
-              borderTop: "1px solid #f4f4f5",
-              paddingTop: 12,
-              display: "flex",
-              justifyContent: "space-between",
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 10,
+              marginTop: 2,
             }}
           >
-            <div>
-              <div style={{ fontSize: 11, color: "#71717a", marginBottom: 3 }}>
-                Худалдан авагч
+            <div
+              style={{
+                borderRadius: 12,
+                background: "#fafafa",
+                border: "1px solid #f1f1f4",
+                padding: "10px 12px",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 11,
+                  color: "#71717a",
+                  marginBottom: 4,
+                  letterSpacing: "0.02em",
+                }}
+              >
+                Худалдан авсан
               </div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: "#111" }}>
+              <div
+                style={{
+                  fontSize: 19,
+                  fontWeight: 700,
+                  color: "#0f172a",
+                  fontVariantNumeric: "tabular-nums",
+                  letterSpacing: "-0.01em",
+                }}
+              >
                 {derived.uniqueBuyers.toLocaleString()}
               </div>
             </div>
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 11, color: "#71717a", marginBottom: 3 }}>
-                Үзсэн харьцаа
+            <div
+              style={{
+                borderRadius: 12,
+                background: "#fafafa",
+                border: "1px solid #f1f1f4",
+                padding: "10px 12px",
+                textAlign: "right",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 11,
+                  color: "#71717a",
+                  marginBottom: 4,
+                  letterSpacing: "0.02em",
+                }}
+              >
+                Үзсэн
               </div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: "#111" }}>
+              <div
+                style={{
+                  fontSize: 19,
+                  fontWeight: 700,
+                  color: "#0f172a",
+                  fontVariantNumeric: "tabular-nums",
+                  letterSpacing: "-0.01em",
+                }}
+              >
                 {derived.watchedPct}%
               </div>
             </div>
@@ -1026,66 +1088,154 @@ function BarChart({ bars, maxVal }: { bars: BarDatum[]; maxVal: number }) {
   );
 }
 
-function DonutChart({ percent }: { percent: number }) {
+function DonutChart({
+  percent,
+  watched,
+  total,
+}: {
+  percent: number;
+  watched: number;
+  total: number;
+}) {
   const r = 66;
   const cx = 90;
   const cy = 90;
   const c = 2 * Math.PI * r;
-  const p = Math.min(percent, 100) / 100;
-  const segments = [
-    { frac: p * 0.45, color: "#2230C6" },
-    { frac: p * 0.3, color: "#4451DC" },
-    { frac: p * 0.25, color: "#8891f0" },
-  ];
+  const p = Math.max(0, Math.min(percent, 100)) / 100;
+  const watchedLen = c * p;
+  const gradId = "donut-watched-gradient";
 
-  let offset = 0;
   return (
-    <svg viewBox="0 0 180 180" style={{ width: 170, height: 170 }}>
+    <svg viewBox="0 0 180 180" style={{ width: 184, height: 184 }}>
+      <defs>
+        <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#2230C6" />
+          <stop offset="100%" stopColor="#4451DC" />
+        </linearGradient>
+      </defs>
       <circle
         cx={cx}
         cy={cy}
         r={r}
         fill="none"
-        stroke="#f4f4f5"
-        strokeWidth="22"
+        stroke="#eef0f4"
+        strokeWidth="20"
       />
-
-      {segments.map((seg, i) => {
-        const dash = seg.frac * c;
-        const gap = c - dash;
-        const rotation = -90 + offset * 360;
-        offset += seg.frac;
-        return (
-          <circle
-            key={i}
-            cx={cx}
-            cy={cy}
-            r={r}
-            fill="none"
-            stroke={seg.color}
-            strokeWidth="22"
-            strokeDasharray={`${dash} ${gap}`}
-            strokeLinecap="round"
-            transform={`rotate(${rotation} ${cx} ${cy})`}
-            style={{ transition: "stroke-dasharray .6s ease" }}
-          />
-        );
-      })}
+      <circle
+        cx={cx}
+        cy={cy}
+        r={r}
+        fill="none"
+        stroke="#d4d4d8"
+        strokeWidth="20"
+        strokeDasharray={`${c - watchedLen} ${watchedLen}`}
+        strokeDashoffset={-watchedLen}
+        transform={`rotate(-90 ${cx} ${cy})`}
+        style={{ transition: "stroke-dasharray .6s ease" }}
+      />
+      {p > 0 && (
+        <circle
+          cx={cx}
+          cy={cy}
+          r={r}
+          fill="none"
+          stroke={`url(#${gradId})`}
+          strokeWidth="20"
+          strokeDasharray={`${watchedLen} ${c - watchedLen}`}
+          strokeLinecap="round"
+          transform={`rotate(-90 ${cx} ${cy})`}
+          style={{ transition: "stroke-dasharray .6s ease" }}
+        />
+      )}
 
       <text
         x={cx}
-        y={cy - 6}
+        y={cy - 4}
         textAnchor="middle"
-        fontSize="26"
-        fontWeight="700"
-        fill="#111"
+        fontSize="28"
+        fontWeight="800"
+        fill="#0f172a"
+        style={{ letterSpacing: "-0.02em" }}
       >
         {percent}%
       </text>
-      <text x={cx} y={cy + 14} textAnchor="middle" fontSize="10" fill="#71717a">
-        Ticket авсан
+      <text
+        x={cx}
+        y={cy + 18}
+        textAnchor="middle"
+        fontSize="10.5"
+        fontWeight="500"
+        fill="#71717a"
+        style={{ letterSpacing: "0.02em" }}
+      >
+        {watched.toLocaleString()} / {total.toLocaleString()}
       </text>
     </svg>
+  );
+}
+
+function DonutLegendRow({
+  color,
+  label,
+  value,
+  total,
+}: {
+  color: string;
+  label: string;
+  value: number;
+  total: number;
+}) {
+  const pct = total > 0 ? Math.round((value / total) * 100) : 0;
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        padding: "8px 10px",
+        borderRadius: 10,
+        background: "#fafafa",
+        border: "1px solid #f1f1f4",
+        fontSize: 12.5,
+        color: "#52525b",
+      }}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: 999,
+          background: color,
+          boxShadow: `0 0 0 3px ${color}1f`,
+          display: "inline-block",
+          flex: "none",
+        }}
+      />
+      <span style={{ flex: 1, fontWeight: 500, color: "#3f3f46" }}>
+        {label}
+      </span>
+      <span
+        style={{
+          fontSize: 11,
+          color: "#a1a1aa",
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        {pct}%
+      </span>
+      <strong
+        style={{
+          color: "#0f172a",
+          fontWeight: 700,
+          fontVariantNumeric: "tabular-nums",
+          minWidth: 24,
+          textAlign: "right",
+        }}
+      >
+        {value.toLocaleString()}
+      </strong>
+    </div>
   );
 }
 

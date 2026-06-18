@@ -8,13 +8,13 @@ import Home from "./pages/Home";
 // fast and shrinks the admin surface area for public visitors.
 const Events = lazy(() => import("./pages/Events"));
 const EventDetail = lazy(() => import("./pages/EventDetail"));
-const Technology = lazy(() => import("./pages/Technology"));
 const PetitionsOverview = lazy(() => import("./pages/PetitionsOverview"));
 const TransparencyDocument = lazy(() => import("./pages/TransparencyDocument"));
 const Legal = lazy(() => import("./pages/Legal"));
 const WatchVOD = lazy(() => import("./pages/WatchVOD"));
 const WatchEventDetail = lazy(() => import("./pages/WatchEventDetail"));
 const NewsDetail = lazy(() => import("./pages/NewsDetail"));
+const News = lazy(() => import("./pages/News"));
 const Login = lazy(() => import("./pages/Login"));
 const Register = lazy(() => import("./pages/Register"));
 const RegisterPhone = lazy(() => import("./pages/RegisterPhone"));
@@ -100,10 +100,10 @@ export default function App() {
         />
         <Route path="/events" element={<Events />} />
         <Route path="/events/:id" element={<EventDetail />} />
-        <Route path="/technology" element={<Technology />} />
         <Route path="/transparency/petitions" element={<PetitionsOverview />} />
         <Route path="/transparency/:slug" element={<TransparencyDocument />} />
         <Route path="/legal" element={<Legal />} />
+        <Route path="/news" element={<News />} />
         <Route path="/news/:id" element={<NewsDetail />} />
         <Route path="/history" element={<History />} />
         <Route path="/history/:id" element={<HistoryDetail />} />

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Editor } from "@tinymce/tinymce-react";
+import "../lib/tinymce-setup";
 import { getHomeContent, updateHomeContent } from "../../data/store";
 import { api } from "../../lib/api";
 import { useToast } from "../components/Toast";
@@ -656,23 +657,22 @@ function TinyEditor({
 }) {
   return (
     <Editor
-      apiKey="o8vpo0yqslg0lwjzh8l8lorslz73hhfiy8he10al8wx9wjat"
+      licenseKey="gpl"
       value={value}
       onEditorChange={(html) => onChange(html)}
       init={{
         height: 500,
         menubar: "edit insert format table",
         plugins: [
-          "anchor", "autolink", "charmap", "codesample", "lists", "link",
-          "image", "searchreplace", "table", "visualblocks", "wordcount",
-          "checklist", "mediaembed", "formatpainter", "advtable",
-          "advcode", "typography", "autocorrect",
+          "anchor", "autolink", "charmap", "code", "codesample", "image",
+          "link", "lists", "media", "searchreplace", "table", "visualblocks",
+          "wordcount",
         ],
         toolbar:
           "undo redo | blocks | bold italic underline strikethrough | " +
           "alignleft aligncenter alignright | " +
-          "bullist numlist checklist | link image | " +
-          "formatpainter removeformat | advcode",
+          "bullist numlist | link image media | " +
+          "removeformat | code",
         images_upload_handler: async (blobInfo) => {
           const file = new File(
             [blobInfo.blob()],

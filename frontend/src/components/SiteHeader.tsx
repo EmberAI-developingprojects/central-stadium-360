@@ -103,7 +103,6 @@ type NavGroup = {
 
 const buildNavGroups = (t: (k: string) => string): NavGroup[] => [
   { label: t("nav_events"), href: "/events" },
-  { label: t("nav_technology"), href: "/technology" },
   { label: t("nav_history"), href: "/history" },
   {
     label: t("nav_transparency"),
@@ -128,7 +127,7 @@ const buildNavGroups = (t: (k: string) => string): NavGroup[] => [
     ],
   },
   { label: t("nav_legal"), href: "/legal" },
-  { label: t("nav_news"), href: "/#news" },
+  { label: t("nav_news"), href: "/news" },
 ];
 
 export default function SiteHeader() {
@@ -211,11 +210,6 @@ export default function SiteHeader() {
                 </Link>
               </li>
               <li>
-                <Link to="/technology" className={NAV_LINK_A_CLS}>
-                  {t("nav_technology")}
-                </Link>
-              </li>
-              <li>
                 <Link to="/history" className={NAV_LINK_A_CLS}>
                   {t("nav_history")}
                 </Link>
@@ -284,7 +278,7 @@ export default function SiteHeader() {
                 </Link>
               </li>
               <li>
-                <Link to="/#news" className={NAV_LINK_A_CLS}>
+                <Link to="/news" className={NAV_LINK_A_CLS}>
                   {t("nav_news")}
                 </Link>
               </li>
