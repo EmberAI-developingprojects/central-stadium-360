@@ -76,22 +76,62 @@ export default function SiteFooter() {
           <div className="max-[560px]:hidden">
             <h4 className={colTitleCls}>{t("footer_quick_links")}</h4>
             <ul className={ulCls}>
-              <li><Link className={linkCls} to="/#top">{t("footer_home")}</Link></li>
-              <li><Link className={linkCls} to="/#about">{t("footer_about")}</Link></li>
-              <li><Link className={linkCls} to="/#events">{t("footer_events")}</Link></li>
-              <li><Link className={linkCls} to="/#partners">{t("footer_partners")}</Link></li>
-              <li><Link className={linkCls} to="/#membership">{t("footer_membership")}</Link></li>
+              <li>
+                <Link className={linkCls} to="/#top">
+                  {t("footer_home")}
+                </Link>
+              </li>
+              <li>
+                <Link className={linkCls} to="/#about">
+                  {t("footer_about")}
+                </Link>
+              </li>
+              <li>
+                <Link className={linkCls} to="/#events">
+                  {t("footer_events")}
+                </Link>
+              </li>
+              <li>
+                <Link className={linkCls} to="/#partners">
+                  {t("footer_partners")}
+                </Link>
+              </li>
+              <li>
+                <Link className={linkCls} to="/#membership">
+                  {t("footer_membership")}
+                </Link>
+              </li>
             </ul>
           </div>
 
           <div className="max-[560px]:hidden">
             <h4 className={colTitleCls}>{t("footer_info")}</h4>
             <ul className={ulCls}>
-              <li><Link className={linkCls} to="/#news">{t("footer_news")}</Link></li>
-              <li><Link className={linkCls} to="/#partners">{t("footer_sponsors")}</Link></li>
-              <li><Link className={linkCls} to="/#certificates">{t("footer_certificates")}</Link></li>
-              <li><Link className={linkCls} to="/#contact">{t("footer_help")}</Link></li>
-              <li><Link className={linkCls} to="/#contact">{t("footer_contact")}</Link></li>
+              <li>
+                <Link className={linkCls} to="/#news">
+                  {t("footer_news")}
+                </Link>
+              </li>
+              <li>
+                <Link className={linkCls} to="/#partners">
+                  {t("footer_sponsors")}
+                </Link>
+              </li>
+              <li>
+                <Link className={linkCls} to="/#certificates">
+                  {t("footer_certificates")}
+                </Link>
+              </li>
+              <li>
+                <Link className={linkCls} to="/#contact">
+                  {t("footer_help")}
+                </Link>
+              </li>
+              <li>
+                <Link className={linkCls} to="/#contact">
+                  {t("footer_contact")}
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -121,19 +161,22 @@ export default function SiteFooter() {
           </div>
         </div>
 
-        <div className="flex justify-between items-center pt-6 text-[13px] text-[rgba(255,255,255,0.45)] border-t border-white/5 max-[560px]:flex-col max-[560px]:gap-2 max-[560px]:text-center max-[560px]:pt-4 max-[560px]:text-[11.5px]">
-          <p className="m-0">{t("footer_copyright")}</p>
-          <ul className="list-none p-0 m-0 flex gap-6 max-[560px]:gap-3">
-            <li>
-              <a className="no-underline text-[13px] text-[rgba(255,255,255,0.45)] [transition:color_0.15s_ease] hover:text-white max-[560px]:text-[11.5px]" href="#">{t("footer_privacy")}</a>
-            </li>
-            <li>
-              <a className="no-underline text-[13px] text-[rgba(255,255,255,0.45)] [transition:color_0.15s_ease] hover:text-white max-[560px]:text-[11.5px]" href="#">{t("footer_terms")}</a>
-            </li>
-            <li>
-              <a className="no-underline text-[13px] text-[rgba(255,255,255,0.45)] [transition:color_0.15s_ease] hover:text-white max-[560px]:text-[11.5px]" href="#">{t("footer_cookies")}</a>
-            </li>
-          </ul>
+        <div className="flex justify-between items-center pt-6 text-[14.5px] text-[rgba(255,255,255,0.55)] border-t border-white/5 max-[560px]:flex-col max-[560px]:gap-2 max-[560px]:text-center max-[560px]:pt-4 max-[560px]:text-[13px]">
+          <p className="m-0">{t("footer_years_copyright")}</p>
+          <p className="m-0">
+            {t("footer_built_by_prefix")}{" "}
+            <a
+              href="https://ember.mn/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="no-underline font-semibold text-white [transition:color_0.15s_ease] hover:text-brand-blue-tint"
+            >
+              Grand Ember Group
+            </a>
+            {t("footer_built_by_suffix")
+              ? ` ${t("footer_built_by_suffix")}`
+              : ""}
+          </p>
         </div>
       </div>
     </footer>

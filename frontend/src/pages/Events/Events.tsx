@@ -103,22 +103,40 @@ function EventCard({
           {ev.title}
         </h3>
         <div className="mt-1.5 inline-flex items-center gap-1.5 text-brand-blue text-[13px] font-medium">
-          Тасалбар авах
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-            className="[transition:transform_.25s_ease] group-hover:translate-x-0.5"
-          >
-            <path d="M5 12h14" />
-            <polyline points="12 5 19 12 12 19" />
-          </svg>
+          {isPast ? (
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className="shrink-0"
+            >
+              <polygon points="6 4 20 12 6 20 6 4" />
+            </svg>
+          ) : null}
+          {isPast ? "Нөхөж үзэх" : "Тасалбар авах"}
+          {!isPast && (
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className="[transition:transform_.25s_ease] group-hover:translate-x-0.5"
+            >
+              <path d="M5 12h14" />
+              <polyline points="12 5 19 12 12 19" />
+            </svg>
+          )}
         </div>
       </div>
     </Link>

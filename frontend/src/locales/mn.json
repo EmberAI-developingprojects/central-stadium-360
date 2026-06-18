@@ -334,5 +334,8 @@
   "news_page_heading": "Мэдээ мэдээлэл",
   "news_view_all": "Бүх мэдээ үзэх",
   "news_read_more": "Цааш унших",
-  "news_empty": "Одоогоор мэдээ бэлэн болоогүй байна."
+  "news_empty": "Одоогоор мэдээ бэлэн болоогүй байна.",
+  "footer_years_copyright": "1958 - 2025 © \"Төв Цэнгэлдэх Хүрээлэн\" - Бүх эрх хуулиар хамгаалагдсан",
+  "footer_built_by_prefix": "Вэбсайтыг",
+  "footer_built_by_suffix": "хөгжүүлэв"
 }
