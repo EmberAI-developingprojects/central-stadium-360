@@ -9,6 +9,7 @@ import useSmoothAnchors from "../../hooks/useSmoothAnchors";
 import { REVEAL_UP_CLS } from "../../hooks/_revealCls";
 import { useGatedNavigate } from "../../auth";
 import { pickNewsLocale } from "../../lib/newsLocale";
+import { pickEventLocale } from "../../lib/eventLocale";
 import { getHomeContent, listEvents } from "../../data/store";
 import type {
   EventRecord,
@@ -464,6 +465,7 @@ function Stats() {
 type UpcomingProps = { gatedGo: (to: string) => void; events: EventRecord[] };
 
 function Upcoming({ gatedGo, events }: UpcomingProps) {
+  const { i18n } = useTranslation();
   const upcoming = events
     .filter((e) => {
       const ts = new Date(e.start_time).getTime();
@@ -475,10 +477,11 @@ function Upcoming({ gatedGo, events }: UpcomingProps) {
     )
     .map((e) => {
       const [d, y] = (e.date || "").split("·").map((s) => s.trim());
+      const loc = pickEventLocale(e, i18n.language);
       return {
         id: e.id,
         src: e.image,
-        alt: e.title,
+        alt: loc.title,
         date: d || e.date,
         year: y || "",
       };

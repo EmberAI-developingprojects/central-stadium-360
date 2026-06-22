@@ -29,6 +29,8 @@ export type EventRecord = {
   live_end_at: string | null;
   replay_available_until: string | null;
   thumbnail_url: string | null;
+  titleEn?: string;
+  descEn?: string;
 };
 
 export type OrderStatus = "paid" | "refunded";
@@ -202,6 +204,8 @@ function dbToEvent(row: DbEvent): EventRecord {
     live_end_at: row.live_end_at,
     replay_available_until: row.replay_available_until,
     thumbnail_url: row.thumbnail_url || row.image || null,
+    titleEn: row.title_en ?? "",
+    descEn: row.description_en ?? "",
   };
 }
 
@@ -249,6 +253,8 @@ function toEventInput(input: EventInput) {
     price: Number(input.base) || 0,
     image: input.image ?? null,
     featured: !!input.featured,
+    title_en: input.titleEn?.trim() ? input.titleEn : null,
+    description_en: input.descEn?.trim() ? input.descEn : null,
   };
   if (input.live_price !== undefined)
     body.live_price = Number(input.live_price) || 0;
@@ -283,6 +289,10 @@ export async function updateEvent(
   const body: Record<string, unknown> = {};
   if (patch.title !== undefined) body.title = patch.title;
   if (patch.desc !== undefined) body.description = patch.desc;
+  if (patch.titleEn !== undefined)
+    body.title_en = patch.titleEn?.trim() ? patch.titleEn : null;
+  if (patch.descEn !== undefined)
+    body.description_en = patch.descEn?.trim() ? patch.descEn : null;
   if (patch.image !== undefined) body.image = patch.image;
   if (patch.featured !== undefined) body.featured = !!patch.featured;
   if (patch.base !== undefined) body.price = Number(patch.base) || 0;

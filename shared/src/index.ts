@@ -50,6 +50,8 @@ export interface DbEvent {
   image: string | null;
   featured: boolean;
   created_at: string;
+  title_en?: string | null;
+  description_en?: string | null;
 }
 
 export type EventInput = {
@@ -66,6 +68,8 @@ export type EventInput = {
   thumbnail_url?: string | null;
   image?: string | null;
   featured?: boolean;
+  title_en?: string | null;
+  description_en?: string | null;
 };
 
 export type EventPatch = Partial<EventInput>;

@@ -1,4 +1,4 @@
-export type EmailProvider = "dev" | "postmark";
+export type EmailProvider = "dev" | "postmark" | "ses";
 
 export type EmailActionType =
   | "signup"
@@ -46,6 +46,7 @@ export interface EmailSendResult {
 function resolveProvider(): EmailProvider {
   const raw = (process.env.EMAIL_PROVIDER ?? "").trim().toLowerCase();
   if (raw === "postmark") return "postmark";
+  if (raw === "ses") return "ses";
   return "dev";
 }
 
@@ -374,12 +375,64 @@ async function sendViaPostmark(
   };
 }
 
+let sesClient: import("@aws-sdk/client-sesv2").SESv2Client | null = null;
+
+async function sendViaSes(input: SendEmailInput): Promise<EmailSendResult> {
+  const from = process.env.SES_FROM;
+  if (!from) {
+    throw new Error("EMAIL_PROVIDER=ses but SES_FROM is not set.");
+  }
+  const region =
+    process.env.SES_REGION ?? process.env.AWS_REGION ?? "ap-northeast-2";
+
+  const { SESv2Client, SendEmailCommand } = await import(
+    "@aws-sdk/client-sesv2"
+  );
+  if (!sesClient) {
+    sesClient = new SESv2Client({ region });
+  }
+
+  const toAddress = input.fullName
+    ? `${input.fullName} <${input.to}>`
+    : input.to;
+
+  const command = new SendEmailCommand({
+    FromEmailAddress: from,
+    Destination: { ToAddresses: [toAddress] },
+    Content: {
+      Simple: {
+        Subject: { Data: input.subject, Charset: "UTF-8" },
+        Body: {
+          Html: { Data: input.htmlBody, Charset: "UTF-8" },
+          Text: { Data: input.textBody, Charset: "UTF-8" },
+        },
+      },
+    },
+    EmailTags: input.tag
+      ? [{ Name: "tag", Value: input.tag.replace(/[^A-Za-z0-9_-]/g, "_") }]
+      : undefined,
+  });
+
+  try {
+    const res = await sesClient.send(command);
+    return {
+      ok: true,
+      provider: "ses",
+      messageId: res.MessageId,
+    };
+  } catch (err) {
+    throw new Error(`ses_send_failed: ${(err as Error).message}`);
+  }
+}
+
 export async function sendEmail(
   input: SendEmailInput,
 ): Promise<EmailSendResult> {
   switch (resolveProvider()) {
     case "postmark":
       return sendViaPostmark(input);
+    case "ses":
+      return sendViaSes(input);
     case "dev":
     default:
       return sendViaDev(input);

@@ -8,6 +8,7 @@ import useSmoothAnchors from "../../hooks/useSmoothAnchors";
 import { REVEAL_UP_CLS } from "../../hooks/_revealCls";
 import { listEvents } from "../../data/store";
 import type { EventRecord } from "../../data/store";
+import { pickEventLocale } from "../../lib/eventLocale";
 
 type YearGroup = {
   key: string;
@@ -45,6 +46,8 @@ function EventCard({
   isPast?: boolean;
   stagger?: number;
 }) {
+  const { i18n } = useTranslation();
+  const loc = pickEventLocale(ev, i18n.language);
   const d = new Date(ev.start_time);
   const valid = !Number.isNaN(d.getTime());
   const monthNum = valid ? d.getMonth() + 1 : "";
@@ -66,7 +69,7 @@ function EventCard({
         {ev.image ? (
           <img
             src={ev.image}
-            alt={ev.title}
+            alt={loc.title}
             className="w-full h-full object-cover block [transition:transform_.55s_cubic-bezier(.2,.8,.2,1)] group-hover:scale-[1.04]"
             loading="lazy"
           />
@@ -100,7 +103,7 @@ function EventCard({
             isPast ? "text-[#4b5563]" : "text-[#1a1a1a]"
           }`}
         >
-          {ev.title}
+          {loc.title}
         </h3>
         <div className="mt-1.5 inline-flex items-center gap-1.5 text-brand-blue text-[13px] font-medium">
           {isPast ? (
