@@ -23,18 +23,36 @@ events.get("/", async (c) => {
     );
   }
 
-  const { data, error } = await supabase
+  const FULL =
+    "id,title,description,status,start_time,price,live_price,replay_price,live_start_at,live_end_at,replay_available_until,thumbnail_url,image,featured,created_at,title_en,description_en";
+  const NO_EN =
+    "id,title,description,status,start_time,price,live_price,replay_price,live_start_at,live_end_at,replay_available_until,thumbnail_url,image,featured,created_at";
+
+  let { data, error } = await supabase
     .from("events")
-    .select(
-      "id,title,description,status,start_time,price,live_price,replay_price,live_start_at,live_end_at,replay_available_until,thumbnail_url,image,featured,created_at",
-    )
+    .select(FULL)
     .order("start_time", { ascending: true });
+
+  if (
+    error &&
+    (error.code === "42703" ||
+      (typeof error.message === "string" &&
+        (error.message.includes("title_en") ||
+          error.message.includes("description_en"))))
+  ) {
+    const retry = await supabase
+      .from("events")
+      .select(NO_EN)
+      .order("start_time", { ascending: true });
+    data = (retry.data ?? null) as typeof data;
+    error = retry.error;
+  }
 
   if (error) {
     return c.json({ ok: false, error: error.message } as const, 500);
   }
 
-  return c.json({ ok: true, data: (data ?? []) as DbEvent[] } as const);
+  return c.json({ ok: true, data: (data ?? []) as unknown as DbEvent[] } as const);
 });
 
 export type ArchivedEventRow = {

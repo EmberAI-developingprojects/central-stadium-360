@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import SiteHeader from "../../components/SiteHeader";
 import SiteFooter from "../../components/SiteFooter";
 import { getEvent } from "../../data/store";
 import type { EventRecord } from "../../data/store";
+import { pickEventLocale } from "../../lib/eventLocale";
 
 const MONTHS_MN = [
   "1 сар",
@@ -62,8 +64,16 @@ const money = (n: number) => n.toLocaleString("en-US") + "₮";
 
 export default function EventDetail() {
   const { id } = useParams<{ id: string }>();
+  const { i18n } = useTranslation();
   const [event, setEvent] = useState<EventRecord | null>(null);
   const [loading, setLoading] = useState(true);
+  const loc = useMemo(
+    () =>
+      event
+        ? pickEventLocale(event, i18n.language)
+        : { title: "", desc: "" },
+    [event, i18n.language],
+  );
 
   useEffect(() => {
     if (!id) return;
@@ -121,7 +131,7 @@ export default function EventDetail() {
             {event.image && (
               <img
                 src={event.image}
-                alt={event.title}
+                alt={loc.title}
                 className="w-full h-full object-cover block"
                 loading="eager"
               />
@@ -149,7 +159,7 @@ export default function EventDetail() {
                   textShadow: "0 2px 20px rgba(0,0,0,0.5)",
                 }}
               >
-                {event.title}
+                {loc.title}
               </h1>
             </div>
             {isLive && (
@@ -188,11 +198,11 @@ export default function EventDetail() {
                 </div>
               )}
               <h2 className="text-[clamp(22px,3.5vw,38px)] font-extrabold tracking-tight leading-[1.1] text-ink m-0 mb-3 uppercase">
-                {event.title}
+                {loc.title}
               </h2>
-              {event.desc && (
+              {loc.desc && (
                 <p className="text-[14px] leading-relaxed text-ink-soft m-0 mb-8">
-                  {event.desc}
+                  {loc.desc}
                 </p>
               )}
 

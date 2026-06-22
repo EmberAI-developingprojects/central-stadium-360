@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "../../components/LanguageSwitcher";
 import { getEvent, listMyOrders } from "../../data/store";
 import type { EventRecord } from "../../data/store";
 import { useAuth } from "../../auth";
+import { pickEventLocale } from "../../lib/eventLocale";
 
 const LIVE_FALLBACK_MS = 3 * 60 * 60 * 1000;
 const REPLAY_FALLBACK_DAYS = 30;
@@ -91,6 +92,13 @@ export default function WatchEventDetail() {
   const [event, setEvent] = useState<EventRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [ownsTicket, setOwnsTicket] = useState(false);
+  const loc = useMemo(
+    () =>
+      event
+        ? pickEventLocale(event, i18n.language)
+        : { title: "", desc: "" },
+    [event, i18n.language],
+  );
 
   useEffect(() => {
     if (!id) return;
@@ -188,7 +196,7 @@ export default function WatchEventDetail() {
                 />
                 <img
                   src={event.image}
-                  alt={event.title}
+                  alt={loc.title}
                   className="relative max-w-full block"
                   style={{ maxHeight: "78vh", height: "auto", width: "auto" }}
                   loading="eager"
@@ -213,11 +221,11 @@ export default function WatchEventDetail() {
                 </div>
               )}
               <h2 className="m-0 mb-3 sm:mb-4 text-[20px] sm:text-[26px] md:text-[32px] lg:text-[36px] font-black uppercase tracking-[-0.01em] leading-[1.1] text-white">
-                {event.title}
+                {loc.title}
               </h2>
-              {event.desc && (
+              {loc.desc && (
                 <p className="m-0 text-[13px] sm:text-sm leading-[1.72] text-white/50 tracking-[0.02em]">
-                  {event.desc}
+                  {loc.desc}
                 </p>
               )}
               <div className="h-px bg-white/10 my-6 sm:my-7" />

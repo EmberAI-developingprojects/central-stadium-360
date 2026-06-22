@@ -46,6 +46,8 @@ const EMPTY: EventRecord = {
   live_end_at: null,
   replay_available_until: null,
   thumbnail_url: null,
+  titleEn: "",
+  descEn: "",
 };
 
 function isoToLocalInput(iso: string): string {
@@ -580,6 +582,8 @@ export default function EventEdit() {
                     maxLength={600}
                   />
                 </div>
+
+                <EventEnglishSection form={form} update={update} />
               </div>
             </section>
 
@@ -983,5 +987,79 @@ export default function EventEdit() {
         </div>
       </form>
     </>
+  );
+}
+
+function EventEnglishSection({
+  form,
+  update,
+}: {
+  form: EventRecord;
+  update: (patch: Partial<EventRecord>) => void;
+}) {
+  const hasAny = !!(form.titleEn || form.descEn);
+  const [open, setOpen] = useState(hasAny);
+  return (
+    <div className="mt-2 pt-4 border-t border-dashed border-[#ececef]">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center gap-2 bg-transparent border-0 p-0 cursor-pointer text-zinc-800 text-[13px] font-semibold"
+      >
+        <span
+          className="inline-flex transition-transform"
+          style={{ transform: open ? "rotate(90deg)" : "rotate(0deg)" }}
+          aria-hidden="true"
+        >
+          ▸
+        </span>
+        English хувилбар (заавал биш)
+        {hasAny && !open && (
+          <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-100 rounded-md px-2 py-0.5">
+            Бөглөсөн
+          </span>
+        )}
+      </button>
+      {open && (
+        <div className="mt-3 flex flex-col gap-3">
+          <div className="text-[12px] text-zinc-500">
+            Хэрэв сайтын хэлийг англи болгоход энэ арга хэмжээг англиар
+            харуулахыг хүсвэл доорх талбаруудыг өөрөө орчуулж бөглөнө үү.
+            Хоосон үлдээвэл монгол хувилбар нь харагдана.
+          </div>
+          <div className={ADMIN_FIELD_CLS}>
+            <label htmlFor="evt-title-en" className="flex items-center justify-between">
+              <span>Гарчиг (EN)</span>
+              <span className="text-[11px] text-zinc-400 font-normal">
+                {(form.titleEn || "").length}/120
+              </span>
+            </label>
+            <input
+              id="evt-title-en"
+              value={form.titleEn || ""}
+              onChange={(e) => update({ titleEn: e.target.value.slice(0, 120) })}
+              placeholder="English title"
+              maxLength={120}
+            />
+          </div>
+          <div className={ADMIN_FIELD_CLS}>
+            <label htmlFor="evt-desc-en" className="flex items-center justify-between">
+              <span>Тайлбар (EN)</span>
+              <span className="text-[11px] text-zinc-400 font-normal">
+                {(form.descEn || "").length}/600
+              </span>
+            </label>
+            <textarea
+              id="evt-desc-en"
+              value={form.descEn || ""}
+              onChange={(e) => update({ descEn: e.target.value.slice(0, 600) })}
+              placeholder="Short summary in English…"
+              rows={5}
+              maxLength={600}
+            />
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

@@ -14,8 +14,33 @@ const adminEvents = new Hono<AuthEnv>();
 adminEvents.use("*", requireUser);
 adminEvents.use("*", async (c, next) => requireAdmin(c, next));
 
-const SELECT_COLS =
+const SELECT_COLS_FULL =
+  "id,title,description,status,start_time,price,live_price,replay_price,live_start_at,live_end_at,replay_available_until,thumbnail_url,image,featured,created_at,title_en,description_en";
+const SELECT_COLS_NO_EN =
   "id,title,description,status,start_time,price,live_price,replay_price,live_start_at,live_end_at,replay_available_until,thumbnail_url,image,featured,created_at";
+
+let eventEnColumnsAvailable: boolean | null = null;
+
+function selectCols(): string {
+  return eventEnColumnsAvailable === false ? SELECT_COLS_NO_EN : SELECT_COLS_FULL;
+}
+
+function isMissingEventEnError(err: { code?: string; message?: string } | null): boolean {
+  if (!err) return false;
+  return (
+    err.code === "42703" ||
+    (typeof err.message === "string" &&
+      (err.message.includes("title_en") || err.message.includes("description_en")))
+  );
+}
+
+function stripEnFields<T extends Record<string, unknown>>(payload: T): T {
+  const { title_en: _t, description_en: _d, ...rest } = payload as T & {
+    title_en?: unknown;
+    description_en?: unknown;
+  };
+  return rest as T;
+}
 
 const eventStatus = z.enum([
   "upcoming",
@@ -39,6 +64,8 @@ const createSchema = z.object({
   thumbnail_url: z.string().nullable().optional(),
   image: z.string().nullable().optional(),
   featured: z.boolean().optional(),
+  title_en: z.string().nullable().optional(),
+  description_en: z.string().nullable().optional(),
 });
 
 const patchSchema = createSchema.partial();
@@ -57,14 +84,23 @@ adminEvents.get("/", async (c) => {
       503,
     );
   }
-  const { data, error } = await admin
+  let { data, error } = await admin
     .from("events")
-    .select(`${SELECT_COLS},recordings(count)`)
+    .select(`${selectCols()},recordings(count)`)
     .order("start_time", { ascending: true });
+  if (error && isMissingEventEnError(error)) {
+    eventEnColumnsAvailable = false;
+    const retry = await admin
+      .from("events")
+      .select(`${selectCols()},recordings(count)`)
+      .order("start_time", { ascending: true });
+    data = retry.data;
+    error = retry.error;
+  }
   if (error) {
     return c.json({ ok: false, error: error.message } as const, 500);
   }
-  const rows: AdminEventListRow[] = ((data ?? []) as AdminEventListRaw[]).map(
+  const rows: AdminEventListRow[] = ((data ?? []) as unknown as AdminEventListRaw[]).map(
     ({ recordings, ...row }) => ({
       ...row,
       recording_count: Array.isArray(recordings)
@@ -84,11 +120,21 @@ adminEvents.get("/:id", async (c) => {
     );
   }
   const id = c.req.param("id");
-  const { data, error } = await admin
+  let { data, error } = await admin
     .from("events")
-    .select(SELECT_COLS)
+    .select(selectCols())
     .eq("id", id)
     .maybeSingle<DbEvent>();
+  if (error && isMissingEventEnError(error)) {
+    eventEnColumnsAvailable = false;
+    const retry = await admin
+      .from("events")
+      .select(selectCols())
+      .eq("id", id)
+      .maybeSingle<DbEvent>();
+    data = retry.data;
+    error = retry.error;
+  }
   if (error) {
     return c.json({ ok: false, error: error.message } as const, 500);
   }
@@ -129,11 +175,21 @@ adminEvents.post("/", async (c) => {
     }
   }
 
-  const { data, error } = await admin
+  let { data, error } = await admin
     .from("events")
     .insert(parsed.data)
-    .select(SELECT_COLS)
+    .select(selectCols())
     .single<DbEvent>();
+  if (error && isMissingEventEnError(error)) {
+    eventEnColumnsAvailable = false;
+    const retry = await admin
+      .from("events")
+      .insert(stripEnFields(parsed.data))
+      .select(selectCols())
+      .single<DbEvent>();
+    data = retry.data;
+    error = retry.error;
+  }
   if (error) {
     return c.json({ ok: false, error: error.message } as const, 500);
   }
@@ -173,12 +229,23 @@ adminEvents.on(["PATCH", "PUT"], "/:id", async (c) => {
     }
   }
 
-  const { data, error } = await admin
+  let { data, error } = await admin
     .from("events")
     .update(parsed.data)
     .eq("id", id)
-    .select(SELECT_COLS)
+    .select(selectCols())
     .maybeSingle<DbEvent>();
+  if (error && isMissingEventEnError(error)) {
+    eventEnColumnsAvailable = false;
+    const retry = await admin
+      .from("events")
+      .update(stripEnFields(parsed.data))
+      .eq("id", id)
+      .select(selectCols())
+      .maybeSingle<DbEvent>();
+    data = retry.data;
+    error = retry.error;
+  }
   if (error) {
     return c.json({ ok: false, error: error.message } as const, 500);
   }
@@ -211,7 +278,7 @@ adminEvents.post("/:id/feature", async (c) => {
     .from("events")
     .update({ featured: true })
     .eq("id", id)
-    .select(SELECT_COLS)
+    .select(selectCols())
     .maybeSingle<DbEvent>();
   if (error) {
     return c.json({ ok: false, error: error.message } as const, 500);
