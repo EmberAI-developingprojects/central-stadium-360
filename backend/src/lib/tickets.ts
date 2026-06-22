@@ -111,6 +111,12 @@ export async function reusePendingInvoice(
 ): Promise<ReusePendingResult> {
   try {
     const invoice = await getInvoice(pending.qpay_invoice_id);
+    // QPay's GET /v2/invoice/:id returns metadata only — qr_text/qr_image are
+    // produced by POST /v2/invoice at creation time. If we can't reconstruct
+    // the QR we have nothing useful to show the user; treat as recreate.
+    if (!invoice.qr_text || !invoice.qr_image) {
+      throw new Error("qpay_invoice_missing_qr");
+    }
     const data: TicketCreateResponse = {
       ticket_id: pending.id,
       event_id: eventId,
@@ -123,9 +129,9 @@ export async function reusePendingInvoice(
     };
     return { ok: true, data };
   } catch (_err) {
-    // QPay no longer recognises this invoice (expired or cancelled). Drop the
-    // abandoned pending row so the caller can issue a fresh invoice instead of
-    // leaving the user stuck.
+    // QPay no longer recognises this invoice (expired or cancelled) OR the
+    // GET response lacks QR data. Drop the abandoned pending row so the caller
+    // can issue a fresh invoice instead of leaving the user stuck.
     const admin = getSupabaseAdmin();
     if (admin) {
       await admin
