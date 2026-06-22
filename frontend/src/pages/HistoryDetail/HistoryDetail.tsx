@@ -56,9 +56,6 @@ export default function HistoryDetail() {
   const yearText = `${figure.yearStart}${
     figure.yearEnd ? ` — ${figure.yearEnd}` : " — одоо"
   }`;
-  const orderLabel =
-    idx >= 0 ? `${idx + 1}-р удирдлага · нийт ${all.length}` : "";
-
   return (
     <div className="min-h-screen bg-[#fafaf7]">
       <SiteHeader />
@@ -120,14 +117,11 @@ export default function HistoryDetail() {
                 {yearText}
               </span>
             </div>
-            {orderLabel && (
+            {
               <>
                 <span className="w-px h-4 bg-white/25 max-[640px]:hidden" />
-                <span className="text-white/65 text-[12px] tracking-[0.08em] uppercase">
-                  {orderLabel}
-                </span>
               </>
-            )}
+            }
           </div>
         </div>
       </section>
@@ -214,9 +208,7 @@ export default function HistoryDetail() {
 
           {others.length > 0 && (
             <div className="mt-24 max-[920px]:mt-16">
-              <div
-                className={`flex items-center gap-4 mb-8 ${REVEAL_UP_CLS}`}
-              >
+              <div className={`flex items-center gap-4 mb-8 ${REVEAL_UP_CLS}`}>
                 <span className="w-10 h-px bg-ink/30" />
                 <h2 className="m-0 font-serif italic text-ink text-[22px] tracking-[-0.01em] max-[640px]:text-[18px]">
                   Бусад түүхэн хүмүүс
@@ -226,11 +218,7 @@ export default function HistoryDetail() {
 
               <div className="grid gap-5 [grid-template-columns:repeat(3,minmax(0,1fr))] max-[920px]:[grid-template-columns:repeat(2,minmax(0,1fr))] max-[600px]:[grid-template-columns:1fr]">
                 {others.map((o, i) => (
-                  <OtherFigureCard
-                    key={o.id}
-                    figure={o}
-                    stagger={i + 1}
-                  />
+                  <OtherFigureCard key={o.id} figure={o} stagger={i + 1} />
                 ))}
               </div>
             </div>

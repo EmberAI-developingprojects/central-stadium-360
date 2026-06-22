@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { compress } from "hono/compress";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import type { HealthResponse } from "@cs360/shared";
@@ -28,6 +29,7 @@ app.use("*", async (c, next) => {
   if (c.req.path === "/api/health") return next();
   return requestLogger(c, next);
 });
+app.use("*", compress());
 app.use(
   "*",
   cors({

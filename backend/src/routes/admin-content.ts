@@ -20,12 +20,15 @@ const adminContent = new Hono<AuthEnv>();
 adminContent.use("*", requireUser);
 adminContent.use("*", async (c, next) => requireAdmin(c, next));
 
-const NEWS_COLS_WITH_BLOCKS =
+const NEWS_COLS_FULL =
+  "id,label,title,body,image,featured,blocks,label_en,title_en,body_en,sort_order,created_at";
+const NEWS_COLS_NO_EN =
   "id,label,title,body,image,featured,blocks,sort_order,created_at";
 const NEWS_COLS_NO_BLOCKS =
   "id,label,title,body,image,featured,sort_order,created_at";
 
 let blocksColumnAvailable: boolean | null = null;
+let enColumnsAvailable: boolean | null = null;
 
 function isMissingColumnError(err: unknown, column: string): boolean {
   if (!err || typeof err !== "object") return false;
@@ -34,6 +37,15 @@ function isMissingColumnError(err: unknown, column: string): boolean {
     e.code === "42703" ||
     (typeof e.message === "string" && e.message.includes(column))
   );
+}
+
+function pickNewsCols(): string {
+  if (enColumnsAvailable === false) {
+    return blocksColumnAvailable === false
+      ? NEWS_COLS_NO_BLOCKS
+      : NEWS_COLS_NO_EN;
+  }
+  return blocksColumnAvailable === false ? NEWS_COLS_NO_BLOCKS : NEWS_COLS_FULL;
 }
 const PARTNER_COLS = "id,image,alt,sort_order,created_at";
 const ROADMAP_COLS = "id,year,title,position,sort_order,created_at";
@@ -53,6 +65,9 @@ const newsItemSchema = z.object({
   image: z.string().nullable().optional(),
   featured: z.boolean().default(false),
   blocks: z.array(newsBlockSchema).default([]),
+  label_en: z.string().nullable().optional(),
+  title_en: z.string().nullable().optional(),
+  body_en: z.string().nullable().optional(),
 });
 
 const partnerItemSchema = z.object({
@@ -140,6 +155,7 @@ adminContent.put("/:section", async (c) => {
     if (error) {
       return c.json({ ok: false, error: error.message } as const, 500);
     }
+    invalidateHomeContentCache();
     return c.json({ ok: true, data: data ?? [] } as const);
   }
 
@@ -168,13 +184,47 @@ adminContent.put("/:section", async (c) => {
     .insert(rows)
     .select("*");
 
+  if (
+    insErr &&
+    section === "news" &&
+    (isMissingColumnError(insErr, "title_en") ||
+      isMissingColumnError(insErr, "body_en") ||
+      isMissingColumnError(insErr, "label_en"))
+  ) {
+    enColumnsAvailable = false;
+    const rowsNoEn = rows.map((r) => {
+      const {
+        title_en: _t,
+        body_en: _b,
+        label_en: _l,
+        ...rest
+      } = r as {
+        title_en?: unknown;
+        body_en?: unknown;
+        label_en?: unknown;
+      } & Record<string, unknown>;
+      return rest;
+    });
+    const retry = await admin.from(table).insert(rowsNoEn).select("*");
+    data = retry.data;
+    insErr = retry.error;
+  }
+
   if (insErr && section === "news" && isMissingColumnError(insErr, "blocks")) {
     blocksColumnAvailable = false;
     const rowsNoBlocks = rows.map((r) => {
-      const { blocks: _b, ...rest } = r as { blocks?: unknown } & Record<
-        string,
-        unknown
-      >;
+      const {
+        blocks: _b,
+        title_en: _t,
+        body_en: _by,
+        label_en: _l,
+        ...rest
+      } = r as {
+        blocks?: unknown;
+        title_en?: unknown;
+        body_en?: unknown;
+        label_en?: unknown;
+      } & Record<string, unknown>;
       return rest;
     });
     const retry = await admin.from(table).insert(rowsNoBlocks).select("*");
@@ -185,6 +235,7 @@ adminContent.put("/:section", async (c) => {
   if (insErr) {
     return c.json({ ok: false, error: insErr.message } as const, 500);
   }
+  invalidateHomeContentCache();
   return c.json({ ok: true, data: data ?? [] } as const);
 });
 
@@ -192,14 +243,18 @@ export default adminContent;
 
 export const publicContent = new Hono();
 
-publicContent.get("/", async (c) => {
+const CONTENT_CACHE_TTL_MS = 60 * 1000;
+let contentCache: { expiresAt: number; payload: HomeContentResponse } | null =
+  null;
+let contentInflight: Promise<HomeContentResponse | { error: string }> | null =
+  null;
+
+async function loadHomeContent(): Promise<
+  HomeContentResponse | { error: string }
+> {
   const admin = getSupabaseAdmin();
-  if (!admin) {
-    return c.json(
-      { ok: false, error: "supabase_not_configured" } as const,
-      503,
-    );
-  }
+  if (!admin) return { error: "supabase_not_configured" };
+
   type NewsQueryResult = {
     data: Array<DbHomeNews & { blocks?: unknown }> | null;
     error: { code?: string; message?: string } | null;
@@ -213,17 +268,24 @@ publicContent.get("/", async (c) => {
     return res as unknown as NewsQueryResult;
   };
 
-  let news = await queryNews(
-    blocksColumnAvailable === false
-      ? NEWS_COLS_NO_BLOCKS
-      : NEWS_COLS_WITH_BLOCKS,
-  );
+  let news = await queryNews(pickNewsCols());
+
+  if (
+    news.error &&
+    (isMissingColumnError(news.error, "title_en") ||
+      isMissingColumnError(news.error, "body_en") ||
+      isMissingColumnError(news.error, "label_en"))
+  ) {
+    enColumnsAvailable = false;
+    news = await queryNews(pickNewsCols());
+  }
 
   if (news.error && isMissingColumnError(news.error, "blocks")) {
     blocksColumnAvailable = false;
-    news = await queryNews(NEWS_COLS_NO_BLOCKS);
-  } else if (!news.error && blocksColumnAvailable === null) {
-    blocksColumnAvailable = true;
+    news = await queryNews(pickNewsCols());
+  } else if (!news.error) {
+    if (blocksColumnAvailable === null) blocksColumnAvailable = true;
+    if (enColumnsAvailable === null) enColumnsAvailable = true;
   }
 
   const [partners, roadmap, services, hero] = await Promise.all([
@@ -246,9 +308,7 @@ publicContent.get("/", async (c) => {
   ]);
 
   for (const r of [news, partners, roadmap, services]) {
-    if (r.error) {
-      return c.json({ ok: false, error: r.error.message } as const, 500);
-    }
+    if (r.error) return { error: r.error.message ?? "query_failed" };
   }
 
   const newsNormalized: DbHomeNews[] = (news.data ?? []).map((r) => ({
@@ -256,12 +316,39 @@ publicContent.get("/", async (c) => {
     blocks: Array.isArray(r.blocks) ? (r.blocks as DbHomeNews["blocks"]) : [],
   }));
 
-  const payload: HomeContentResponse = {
+  return {
     news: newsNormalized,
     partners: (partners.data ?? []) as DbHomePartner[],
     roadmap: (roadmap.data ?? []) as DbHomeRoadmap[],
     services: (services.data ?? []) as DbHomeService[],
     hero: hero.error ? [] : ((hero.data ?? []) as DbHomeHero[]),
   };
-  return c.json({ ok: true, data: payload } as const);
+}
+
+export function invalidateHomeContentCache(): void {
+  contentCache = null;
+}
+
+publicContent.get("/", async (c) => {
+  const now = Date.now();
+  if (contentCache && contentCache.expiresAt > now) {
+    c.header("Cache-Control", "public, max-age=60");
+    return c.json({ ok: true, data: contentCache.payload } as const);
+  }
+
+  if (!contentInflight) {
+    contentInflight = loadHomeContent().finally(() => {
+      contentInflight = null;
+    });
+  }
+  const result = await contentInflight;
+
+  if ("error" in result) {
+    const status = result.error === "supabase_not_configured" ? 503 : 500;
+    return c.json({ ok: false, error: result.error } as const, status);
+  }
+
+  contentCache = { expiresAt: Date.now() + CONTENT_CACHE_TTL_MS, payload: result };
+  c.header("Cache-Control", "public, max-age=60");
+  return c.json({ ok: true, data: result } as const);
 });

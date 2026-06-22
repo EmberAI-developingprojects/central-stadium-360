@@ -7,6 +7,7 @@ import useRevealOnScroll from "../../hooks/useRevealOnScroll";
 import { REVEAL_UP_CLS } from "../../hooks/_revealCls";
 import { getHomeContent } from "../../data/store";
 import type { NewsItem } from "../../data/store";
+import { pickNewsLocale } from "../../lib/newsLocale";
 
 function fmtDate(iso: string): string {
   if (!iso) return "";
@@ -53,7 +54,7 @@ function ArrowRight() {
 
 export default function News() {
   useRevealOnScroll();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [items, setItems] = useState<NewsItem[] | null>(null);
 
   useEffect(() => {
@@ -135,7 +136,9 @@ export default function News() {
               className="list-none p-0 m-0 flex flex-col gap-7 max-[920px]:gap-5"
               aria-label={t("news_page_heading")}
             >
-              {sorted.map((n, i) => (
+              {sorted.map((n, i) => {
+                const loc = pickNewsLocale(n, i18n.language);
+                return (
                 <li
                   key={n.id}
                   className={REVEAL_UP_CLS}
@@ -143,7 +146,7 @@ export default function News() {
                 >
                   <Link
                     to={`/news/${n.id}`}
-                    aria-label={n.title}
+                    aria-label={loc.title}
                     className="group block bg-white rounded-2xl overflow-hidden no-underline shadow-[0_2px_12px_rgba(31,41,55,0.06)] [transition:transform_.25s_ease,box-shadow_.3s_ease] hover:-translate-y-0.5 hover:shadow-[0_20px_36px_-22px_rgba(11,17,48,0.28)]"
                   >
                     <div className="grid [grid-template-columns:minmax(0,5fr)_minmax(0,7fr)] gap-0 max-[720px]:grid-cols-1">
@@ -151,7 +154,7 @@ export default function News() {
                         {n.image ? (
                           <img
                             src={n.image}
-                            alt={n.title}
+                            alt={loc.title}
                             loading="lazy"
                             decoding="async"
                             className="absolute inset-0 w-full h-full object-cover object-center [transition:transform_.6s_cubic-bezier(.2,.8,.2,1)] group-hover:scale-[1.04]"
@@ -183,7 +186,7 @@ export default function News() {
                           </div>
                         )}
                         <h2 className="m-0 text-[20px] font-extrabold tracking-[-0.01em] leading-[1.35] text-ink max-[920px]:text-[17px] group-hover:text-brand-blue [transition:color_.2s_ease]">
-                          {n.title}
+                          {loc.title}
                         </h2>
                         <span className="mt-2 inline-flex items-center gap-1.5 text-[13.5px] font-bold text-brand-blue [&_svg]:w-[13px] [&_svg]:h-[13px] group-hover:gap-2.5 [transition:gap_.2s_ease]">
                           {t("news_read_more")}
@@ -193,7 +196,8 @@ export default function News() {
                     </div>
                   </Link>
                 </li>
-              ))}
+                );
+              })}
             </ul>
           )}
         </div>

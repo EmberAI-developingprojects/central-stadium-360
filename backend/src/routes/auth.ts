@@ -6,11 +6,7 @@ import {
   getSupabaseForAccessToken,
 } from "../lib/supabase-anon";
 import { getSupabaseAdmin } from "../lib/supabase";
-import {
-  getIdentifierLimiter,
-  getIpLimiter,
-  getRedisClient,
-} from "../lib/redis";
+import { checkIdentifierLimit, checkIpLimit } from "../lib/rate-limit";
 import { sendSms } from "../lib/sms";
 import { randomInt } from "node:crypto";
 
@@ -126,25 +122,8 @@ async function applyRateLimits(
   identifier: string,
 ): Promise<Response | null> {
   const ip = getClientIp(c);
-  const idRl = getIdentifierLimiter();
-  const ipRl = getIpLimiter();
-  if (!idRl || !ipRl) return null;
-  let byId: Awaited<ReturnType<typeof idRl.limit>>;
-  let byIp: Awaited<ReturnType<typeof ipRl.limit>>;
-  try {
-    [byId, byIp] = await Promise.all([
-      idRl.limit(identifier),
-      ipRl.limit(ip),
-    ]);
-  } catch (err) {
-    // Upstash unreachable or misconfigured (e.g. WRONGPASS). Rate limiting is
-    // a safety net — degrade open rather than 500-ing every auth request.
-    console.warn(
-      "[ratelimit] upstash request failed, skipping rate limit:",
-      err instanceof Error ? err.message : err,
-    );
-    return null;
-  }
+  const byId = checkIdentifierLimit(identifier);
+  const byIp = checkIpLimit(ip);
   if (byId.success && byIp.success) return null;
   const reset = Math.max(byId.reset, byIp.reset);
   const retryAfter = Math.max(1, Math.ceil((reset - Date.now()) / 1000));
@@ -517,44 +496,29 @@ auth.post("/resend-code", async (c) => {
 const RESET_OTP_TTL_SECONDS = 5 * 60;
 const RESET_OTP_PREFIX = "cs360:auth:reset:";
 
-const memoryOtpStore = new Map<string, { code: string; expiresAt: number }>();
+const otpStore = new Map<string, { code: string; expiresAt: number }>();
 
-async function setResetOtp(phone: string, code: string): Promise<void> {
+function setResetOtp(phone: string, code: string): void {
   const key = `${RESET_OTP_PREFIX}${phone}`;
-  const redis = getRedisClient();
-  if (redis) {
-    await redis.set(key, code, { ex: RESET_OTP_TTL_SECONDS });
-    return;
-  }
-  memoryOtpStore.set(key, {
+  otpStore.set(key, {
     code,
     expiresAt: Date.now() + RESET_OTP_TTL_SECONDS * 1000,
   });
 }
 
-async function getResetOtp(phone: string): Promise<string | null> {
+function getResetOtp(phone: string): string | null {
   const key = `${RESET_OTP_PREFIX}${phone}`;
-  const redis = getRedisClient();
-  if (redis) {
-    return (await redis.get<string>(key)) ?? null;
-  }
-  const entry = memoryOtpStore.get(key);
+  const entry = otpStore.get(key);
   if (!entry) return null;
   if (entry.expiresAt < Date.now()) {
-    memoryOtpStore.delete(key);
+    otpStore.delete(key);
     return null;
   }
   return entry.code;
 }
 
-async function deleteResetOtp(phone: string): Promise<void> {
-  const key = `${RESET_OTP_PREFIX}${phone}`;
-  const redis = getRedisClient();
-  if (redis) {
-    await redis.del(key);
-    return;
-  }
-  memoryOtpStore.delete(key);
+function deleteResetOtp(phone: string): void {
+  otpStore.delete(`${RESET_OTP_PREFIX}${phone}`);
 }
 
 async function findUserIdByPhone(phone: string): Promise<string | null> {
@@ -619,7 +583,7 @@ auth.post("/forgot-password/send", async (c) => {
   }
 
   const otp = String(randomInt(0, 1_000_000)).padStart(6, "0");
-  await setResetOtp(phone, otp);
+  setResetOtp(phone, otp);
 
   try {
     await sendSms({ phone, otp });
@@ -639,7 +603,7 @@ auth.post("/forgot-password/verify", async (c) => {
   if (!parsed.success) return invalidInput(c, parsed);
   const { phone, code } = parsed.data;
 
-  const stored = await getResetOtp(phone);
+  const stored = getResetOtp(phone);
   if (!stored || stored !== code) {
     return c.json({ ok: false, error: "otp_invalid" } as const, 401);
   }
@@ -660,7 +624,7 @@ auth.post("/forgot-password/reset", async (c) => {
     );
   }
 
-  const stored = await getResetOtp(phone);
+  const stored = getResetOtp(phone);
   if (!stored || stored !== code) {
     return c.json({ ok: false, error: "otp_invalid" } as const, 401);
   }
@@ -680,7 +644,7 @@ auth.post("/forgot-password/reset", async (c) => {
     );
   }
 
-  await deleteResetOtp(phone);
+  deleteResetOtp(phone);
   return c.json({ ok: true, data: { phone } } as const);
 });
 

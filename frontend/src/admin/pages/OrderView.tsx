@@ -105,10 +105,6 @@ export default function OrderView() {
                 <td className="font-medium break-all">{order.user || "—"}</td>
               </tr>
               <tr>
-                <th>Багц</th>
-                <td>{order.tierName || order.tier}</td>
-              </tr>
-              <tr>
                 <th>Тоо</th>
                 <td className="tabular-nums">{order.qty}</td>
               </tr>

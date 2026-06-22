@@ -31,7 +31,7 @@ export default function About() {
               data-stagger="1"
             >
               <h2 className="text-[28px] leading-[1.3] text-ink m-0 mb-[18px] tracking-[-0.01em] font-bold max-[900px]:text-2xl">
-                Монголын спортын зүрх — 1958 оноос хойш
+                Монголын спортын зүрх 1958 оноос хойш
               </h2>
               <p className="text-[17px] leading-[1.75] text-ink-soft m-0 max-[900px]:text-base">
                 Төв Цэнгэлдэх Хүрээлэн нь 1958 онд байгуулагдсан, Монгол Улсын

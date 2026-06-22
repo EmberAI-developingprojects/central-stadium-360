@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import SiteHeader from "../../components/SiteHeader";
 import SiteFooter from "../../components/SiteFooter";
 import useRevealOnScroll from "../../hooks/useRevealOnScroll";
@@ -9,6 +10,7 @@ import type { HistoryFigure } from "../../data/history";
 
 export default function History() {
   useRevealOnScroll();
+  const { t } = useTranslation();
   const [items, setItems] = useState<HistoryFigure[]>([]);
 
   useEffect(() => {
@@ -24,18 +26,17 @@ export default function History() {
           <span
             className={`inline-block mb-4 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-sm text-[11px] tracking-[0.18em] uppercase font-semibold text-white/90 ${REVEAL_UP_CLS}`}
           >
-            1958 оноос хойш
+            {t("history_since_1958")}
           </span>
           <h1
             className={`m-0 text-gold-pale font-extrabold uppercase leading-[1.15] tracking-[0.01em] text-[44px] max-[920px]:text-[32px] max-[640px]:text-[24px] drop-shadow-[0_2px_12px_rgba(0,0,0,0.45)] ${REVEAL_UP_CLS}`}
           >
-            Түүхэн хэсэг
+            {t("history_page_heading")}
           </h1>
           <p
             className={`mt-5 mx-auto max-w-[640px] text-white/85 text-[15.5px] leading-[1.7] max-[640px]:text-[13.5px] ${REVEAL_UP_CLS}`}
           >
-            Төв Цэнгэлдэх Хүрээлэнгийн түүхийг бүтээж байсан гүйцэтгэх захирлууд,
-            үндэслэгчид болон зүтгэлтнүүдийн товч намтрууд.
+            {t("history_page_subtitle")}
           </p>
         </div>
       </section>
@@ -44,7 +45,7 @@ export default function History() {
         <div className="max-w-screen-page mx-auto">
           {items.length === 0 ? (
             <div className="text-center text-ink-soft text-[14px] py-20">
-              Удахгүй мэдээлэл оруулагдана.
+              {t("history_empty")}
             </div>
           ) : (
             <div className="grid gap-8 [grid-template-columns:repeat(3,minmax(0,1fr))] max-[920px]:gap-6 max-[920px]:[grid-template-columns:repeat(2,minmax(0,1fr))] max-[600px]:[grid-template-columns:1fr]">
@@ -96,7 +97,7 @@ export default function History() {
                     <div className="absolute left-5 right-5 bottom-5 max-[640px]:left-4 max-[640px]:right-4 max-[640px]:bottom-4">
                       <div className="font-serif text-gold-pale text-[13px] tracking-[0.18em] mb-1 [font-feature-settings:'lnum']">
                         {f.yearStart}
-                        {f.yearEnd ? ` — ${f.yearEnd}` : " — ОДОО"}
+                        {f.yearEnd ? ` — ${f.yearEnd}` : ` — ${t("history_year_present")}`}
                       </div>
                       <h3 className="m-0 text-white text-[22px] font-extrabold leading-[1.18] tracking-[-0.015em] drop-shadow-[0_2px_10px_rgba(0,0,0,0.45)] max-[640px]:text-[18px]">
                         {f.name}
@@ -111,12 +112,12 @@ export default function History() {
                       </p>
                     ) : (
                       <p className="m-0 text-zinc-400 italic text-[13px] leading-[1.6]">
-                        Намтар оруулагдаагүй байна.
+                        {t("history_no_bio")}
                       </p>
                     )}
 
                     <div className="mt-5 inline-flex items-center gap-2 text-[13px] font-bold text-ink [transition:color_.2s_ease,gap_.25s_ease] group-hover:text-brand-blue group-hover:gap-3">
-                      Намтар үзэх
+                      {t("history_view_bio")}
                       <svg
                         width="14"
                         height="14"

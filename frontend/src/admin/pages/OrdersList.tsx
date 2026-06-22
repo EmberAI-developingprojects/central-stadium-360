@@ -74,24 +74,16 @@ export default function OrdersList() {
     <>
       <div className={ADMIN_PAGE_HEADER_CLS}>
         <div>
-          <h2>Захиалга</h2>
-          <p>Бүх тасалбарын борлуулалт. Шууд буцаалт хийх боломжтой.</p>
+          <h2>Тасалбар борлуулалт</h2>
         </div>
       </div>
 
       {allOrders && allOrders.length > 0 && (
         <div className="grid gap-3 mb-5 [grid-template-columns:repeat(2,minmax(0,1fr))] max-[980px]:[grid-template-columns:1fr]">
-          <StatCard
-            label="Нийт захиалга"
-            value={stats.total.toString()}
-            sub={`${stats.paid} төлбөртэй · ${stats.refunded} буцаалттай`}
-          />
+          <StatCard label="Нийт захиалга" value={stats.total.toString()} />
           <StatCard
             label="Буцаалт"
             value={money(stats.refundedAmt)}
-            sub={
-              stats.refunded > 0 ? `${stats.refunded} захиалга` : "буцаалт алга"
-            }
             accent={stats.refunded > 0 ? "refunded" : undefined}
           />
         </div>
@@ -233,9 +225,6 @@ export default function OrdersList() {
                           <div className="text-zinc-900 font-medium truncate">
                             {o.title || "—"}
                           </div>
-                          <div className="text-[11.5px] text-zinc-500 mt-0.5 truncate">
-                            {o.tierName || o.tier || "—"}
-                          </div>
                         </div>
                       </div>
                     </td>
@@ -312,12 +301,10 @@ export default function OrdersList() {
 function StatCard({
   label,
   value,
-  sub,
   accent,
 }: {
   label: string;
   value: string;
-  sub: string;
   accent?: "paid" | "refunded";
 }) {
   const valueColor =
@@ -336,7 +323,6 @@ function StatCard({
       >
         {value}
       </div>
-      <div className="text-[11.5px] text-zinc-500 mt-2">{sub}</div>
     </div>
   );
 }

@@ -13,6 +13,9 @@ export const supabase: SupabaseClient | null =
           autoRefreshToken: true,
           detectSessionInUrl: true,
           flowType: 'pkce',
+          storage:
+            typeof window !== 'undefined' ? window.sessionStorage : undefined,
+          storageKey: 'cs360.auth',
         },
       })
     : null;

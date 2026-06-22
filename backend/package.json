@@ -15,8 +15,6 @@
     "@cs360/shared": "workspace:*",
     "@hono/node-server": "^1.13.7",
     "@supabase/supabase-js": "^2.106.2",
-    "@upstash/ratelimit": "^2.0.8",
-    "@upstash/redis": "^1.38.0",
     "dotenv": "^17.4.2",
     "hono": "^4.6.10",
     "tsx": "^4.19.2",

@@ -243,10 +243,6 @@ export default function OrderDetail() {
                 </h2>
                 <dl className={META_CLS}>
                   <div>
-                    <dt className={META_DT_CLS}>{t("order_package")}</dt>
-                    <dd className={META_DD_CLS}>{order.tierName}</dd>
-                  </div>
-                  <div>
                     <dt className={META_DT_CLS}>{t("order_access")}</dt>
                     <dd className={META_DD_CLS}>
                       {order.qty} {t("order_devices")}
@@ -274,9 +270,7 @@ export default function OrderDetail() {
                   </thead>
                   <tbody>
                     <tr>
-                      <td>
-                        {order.tierName} — {order.title}
-                      </td>
+                      <td>{order.title}</td>
                       <td>{money(order.unitPrice)}</td>
                       <td>{order.qty}</td>
                       <td>

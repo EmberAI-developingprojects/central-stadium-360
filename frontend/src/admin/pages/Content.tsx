@@ -4,9 +4,9 @@ import "../lib/tinymce-setup";
 import { getHomeContent, updateHomeContent } from "../../data/store";
 import { api } from "../../lib/api";
 import { useToast } from "../components/Toast";
+import { useConfirm } from "../components/ConfirmDialog";
 import type {
   HomeContent,
-  MemberItem,
   NewsItem,
   Partner,
 } from "../../data/store";
@@ -28,27 +28,16 @@ import {
   ADMIN_TABS_CLS,
 } from "../_adminStyles";
 
-type SectionKey = "news" | "partners" | "members";
+type SectionKey = "news" | "partners";
 
 const TABS: { key: SectionKey; label: string }[] = [
   { key: "news", label: "Мэдээ" },
   { key: "partners", label: "Хамтрагч" },
-  { key: "members", label: "Үйлчилгээ" },
 ];
-
-const ICON_KEYS = [
-  "music",
-  "doc",
-  "news",
-  "chat",
-  "stream",
-  "stadium",
-] as const;
 
 const NEW_ITEM: {
   news: () => NewsItem;
   partners: () => Partner;
-  members: () => MemberItem;
 } = {
   news: () => ({
     id: "news-" + Math.random().toString(36).slice(2, 7),
@@ -59,29 +48,26 @@ const NEW_ITEM: {
     featured: false,
     blocks: [],
     createdAt: new Date().toISOString(),
+    labelEn: "",
+    titleEn: "",
+    bodyEn: "",
   }),
   partners: () => ({
     id: "partner-" + Math.random().toString(36).slice(2, 7),
     image: "",
     alt: "Партнёр байгууллага",
   }),
-  members: () => ({
-    id: "svc-" + Math.random().toString(36).slice(2, 7),
-    title: "",
-    desc: "",
-    iconKey: "music",
-    href: "#",
-    badge: "",
-  }),
 };
 
 export default function Content() {
   const toast = useToast();
+  const confirm = useConfirm();
   const [tab, setTab] = useState<SectionKey>("news");
   const [content, setContent] = useState<HomeContent | null>(null);
   const [busy, setBusy] = useState(false);
   const [savedAt, setSavedAt] = useState(0);
   const [editingNewsId, setEditingNewsId] = useState<string | null>(null);
+  const [draftNewsIds, setDraftNewsIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     getHomeContent().then(setContent);
@@ -95,16 +81,63 @@ export default function Content() {
     setContent({ ...content, news: next });
   const updateSectionPartners = (next: Partner[]) =>
     setContent({ ...content, partners: next });
-  const updateSectionMembers = (next: MemberItem[]) =>
-    setContent({ ...content, members: next });
 
-  const removeItem = (id: string) => {
-    if (tab === "news")
-      updateSectionNews(content.news.filter((it) => it.id !== id));
-    else if (tab === "partners")
-      updateSectionPartners(content.partners.filter((it) => it.id !== id));
-    else if (tab === "members")
-      updateSectionMembers(content.members.filter((it) => it.id !== id));
+  const removeItem = async (id: string) => {
+    if (tab === "news") {
+      const target = content.news.find((it) => it.id === id);
+      const title = target?.title?.trim() || "Гарчиггүй мэдээ";
+      const ok = await confirm({
+        title: "Мэдээг устгах уу?",
+        message: (
+          <>
+            <strong className="font-semibold text-zinc-900">«{title}»</strong>{" "}
+            устгагдана. Энэ үйлдлийг буцаах боломжгүй.
+          </>
+        ),
+        confirmLabel: "Устгах",
+        cancelLabel: "Болих",
+        variant: "danger",
+      });
+      if (!ok) return;
+      const prev = content;
+      const next = content.news.filter((it) => it.id !== id);
+      updateSectionNews(next);
+      try {
+        await updateHomeContent({ news: next });
+        setSavedAt(Date.now());
+        toast.success("Мэдээ устгагдлаа.");
+      } catch (e) {
+        setContent(prev);
+        toast.error((e as Error).message || "Устгах боломжгүй.");
+      }
+    } else if (tab === "partners") {
+      const target = content.partners.find((it) => it.id === id);
+      const label = target?.alt?.trim() || "Хамтрагч";
+      const ok = await confirm({
+        title: "Хамтрагчийг устгах уу?",
+        message: (
+          <>
+            <strong className="font-semibold text-zinc-900">«{label}»</strong>{" "}
+            устгагдана. Энэ үйлдлийг буцаах боломжгүй.
+          </>
+        ),
+        confirmLabel: "Устгах",
+        cancelLabel: "Болих",
+        variant: "danger",
+      });
+      if (!ok) return;
+      const prev = content;
+      const next = content.partners.filter((it) => it.id !== id);
+      updateSectionPartners(next);
+      try {
+        await updateHomeContent({ partners: next });
+        setSavedAt(Date.now());
+        toast.success("Хамтрагч устгагдлаа.");
+      } catch (e) {
+        setContent(prev);
+        toast.error((e as Error).message || "Устгах боломжгүй.");
+      }
+    }
   };
 
   const updateNews = (id: string, patch: Partial<NewsItem>) =>
@@ -115,15 +148,7 @@ export default function Content() {
     updateSectionPartners(
       content.partners.map((it) => (it.id === id ? { ...it, ...patch } : it)),
     );
-  const updateMember = (id: string, patch: Partial<MemberItem>) =>
-    updateSectionMembers(
-      content.members.map((it) => (it.id === id ? { ...it, ...patch } : it)),
-    );
 
-  // Mark a single news article as featured (hero on the public homepage).
-  // Featured is mutually exclusive — clicking on one clears every other.
-  // Persists to the backend immediately so the admin doesn't have to
-  // remember to hit "Хадгалах" after toggling.
   const setNewsFeatured = async (id: string) => {
     const next = content.news.map((it) => ({
       ...it,
@@ -135,7 +160,6 @@ export default function Content() {
       setSavedAt(Date.now());
       toast.success("Онцлох мэдээ шинэчлэгдлээ.");
     } catch (e) {
-      // Roll back local state so the UI matches the server.
       updateSectionNews(content.news);
       toast.error((e as Error).message || "Хадгалах боломжгүй.");
     }
@@ -146,10 +170,22 @@ export default function Content() {
       const next = NEW_ITEM.news();
       updateSectionNews([...content.news, next]);
       setEditingNewsId(next.id);
+      setDraftNewsIds((prev) => {
+        const n = new Set(prev);
+        n.add(next.id);
+        return n;
+      });
     } else if (tab === "partners")
       updateSectionPartners([...content.partners, NEW_ITEM.partners()]);
-    else if (tab === "members")
-      updateSectionMembers([...content.members, NEW_ITEM.members()]);
+  };
+
+  const clearDraftId = (id: string) => {
+    setDraftNewsIds((prev) => {
+      if (!prev.has(id)) return prev;
+      const n = new Set(prev);
+      n.delete(id);
+      return n;
+    });
   };
 
   const onSave = async () => {
@@ -171,7 +207,7 @@ export default function Content() {
         <div>
           <h2>Контент засварлагч</h2>
           <p>
-            Нүүр хуудсанд харагдах мэдээ, хамтрагч, үйлчилгээний картууд.
+            Нүүр хуудсанд харагдах мэдээ, хамтрагчийн картууд.
           </p>
         </div>
         <div className={ADMIN_ACTIONS_CLS}>
@@ -240,16 +276,6 @@ export default function Content() {
                 />
               </div>
             ))}
-          {tab === "members" &&
-            content.members.map((it) => (
-              <div key={it.id} className={ADMIN_CARD_CLS}>
-                <MemberRow
-                  item={it}
-                  onChange={(p) => updateMember(it.id, p)}
-                  onRemove={() => removeItem(it.id)}
-                />
-              </div>
-            ))}
         </div>
       )}
 
@@ -263,6 +289,7 @@ export default function Content() {
               busy={busy}
               onChange={(p) => updateNews(editing.id, p)}
               onRemove={() => {
+                clearDraftId(editing.id);
                 removeItem(editing.id);
                 setEditingNewsId(null);
               }}
@@ -276,6 +303,7 @@ export default function Content() {
                   setContent({ ...content, news: next });
                   setSavedAt(Date.now());
                   toast.success("Мэдээ хадгалагдлаа.");
+                  clearDraftId(latest.id);
                   setEditingNewsId(null);
                 } catch (e) {
                   toast.error(
@@ -285,7 +313,15 @@ export default function Content() {
                   setBusy(false);
                 }
               }}
-              onClose={() => setEditingNewsId(null)}
+              onClose={() => {
+                if (draftNewsIds.has(editing.id)) {
+                  updateSectionNews(
+                    content.news.filter((n) => n.id !== editing.id),
+                  );
+                  clearDraftId(editing.id);
+                }
+                setEditingNewsId(null);
+              }}
             />
           );
         })()}
@@ -415,7 +451,6 @@ function NewsEditModal({
 
   useEffect(() => {
     setDraft(item);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item.id]);
 
   useEffect(() => {
@@ -644,7 +679,106 @@ function NewsRow({
           onChange={(html) => onChange({ body: html, blocks: [] })}
         />
       </div>
+
+      <EnglishSection item={item} onChange={onChange} />
     </>
+  );
+}
+
+function EnglishSection({
+  item,
+  onChange,
+}: {
+  item: NewsItem;
+  onChange: (p: Partial<NewsItem>) => void;
+}) {
+  const hasAny = !!(item.titleEn || item.bodyEn || item.labelEn);
+  const [open, setOpen] = useState(hasAny);
+  return (
+    <div
+      style={{
+        marginTop: 18,
+        borderTop: "1px dashed #ececef",
+        paddingTop: 14,
+      }}
+    >
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 8,
+          background: "transparent",
+          border: 0,
+          padding: 0,
+          cursor: "pointer",
+          color: "#1f2937",
+          fontSize: 13,
+          fontWeight: 600,
+        }}
+      >
+        <span
+          style={{
+            display: "inline-flex",
+            transition: "transform .15s ease",
+            transform: open ? "rotate(90deg)" : "rotate(0deg)",
+          }}
+          aria-hidden="true"
+        >
+          ▸
+        </span>
+        English хувилбар (заавал биш)
+        {hasAny && !open && (
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: "#059669",
+              background: "#d1fae5",
+              borderRadius: 6,
+              padding: "2px 8px",
+            }}
+          >
+            Бөглөсөн
+          </span>
+        )}
+      </button>
+      {open && (
+        <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ fontSize: 12, color: "#64748b" }}>
+            Хэрэв сайтын хэлийг англи болгоход энэ мэдээг англиар харуулахыг
+            хүсвэл доорх талбаруудыг өөрөө орчуулж бөглөнө үү. Хоосон үлдээвэл
+            монгол хувилбар нь харагдана.
+          </div>
+          <div className={ADMIN_FORM_ROW_CLS}>
+            <div className={ADMIN_FIELD_CLS}>
+              <label>Шошго (EN)</label>
+              <input
+                value={item.labelEn || ""}
+                onChange={(e) => onChange({ labelEn: e.target.value })}
+                placeholder="e.g. New"
+              />
+            </div>
+            <div className={ADMIN_FIELD_CLS}>
+              <label>Гарчиг (EN)</label>
+              <input
+                value={item.titleEn || ""}
+                onChange={(e) => onChange({ titleEn: e.target.value })}
+                placeholder="English title"
+              />
+            </div>
+          </div>
+          <div className={ADMIN_FIELD_CLS}>
+            <label>Мэдээний агуулга (EN)</label>
+            <TinyEditor
+              value={item.bodyEn || ""}
+              onChange={(html) => onChange({ bodyEn: html })}
+            />
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -748,10 +882,11 @@ function PartnerRow({
           />
         </div>
         <div className={ADMIN_FIELD_CLS}>
-          <label>Alt текст</label>
+          <label>Зургийн тайлбар</label>
           <input
             value={item.alt || ""}
             onChange={(e) => onChange({ alt: e.target.value })}
+            placeholder="Жишээ нь: Партнёр байгууллагын лого"
           />
         </div>
       </div>
@@ -796,64 +931,3 @@ function PartnerRow({
   );
 }
 
-function MemberRow({
-  item,
-  onChange,
-  onRemove,
-}: {
-  item: MemberItem;
-  onChange: (p: Partial<MemberItem>) => void;
-  onRemove: () => void;
-}) {
-  return (
-    <>
-      <RowHeader onRemove={onRemove}>{item.title || "Үйлчилгээ"}</RowHeader>
-      <div className={ADMIN_FORM_ROW_CLS}>
-        <div className={ADMIN_FIELD_CLS}>
-          <label>Гарчиг</label>
-          <input
-            value={item.title || ""}
-            onChange={(e) => onChange({ title: e.target.value })}
-          />
-        </div>
-        <div className={ADMIN_FIELD_CLS}>
-          <label>Икон</label>
-          <select
-            value={item.iconKey || "music"}
-            onChange={(e) => onChange({ iconKey: e.target.value })}
-          >
-            {ICON_KEYS.map((k) => (
-              <option key={k} value={k}>
-                {k}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-      <div className={ADMIN_FIELD_CLS}>
-        <label>Тайлбар</label>
-        <textarea
-          value={item.desc || ""}
-          onChange={(e) => onChange({ desc: e.target.value })}
-        />
-      </div>
-      <div className={ADMIN_FORM_ROW_CLS}>
-        <div className={ADMIN_FIELD_CLS}>
-          <label>Холбоос (href)</label>
-          <input
-            value={item.href || "#"}
-            onChange={(e) => onChange({ href: e.target.value })}
-          />
-        </div>
-        <div className={ADMIN_FIELD_CLS}>
-          <label>Badge (заавал биш)</label>
-          <input
-            value={item.badge || ""}
-            onChange={(e) => onChange({ badge: e.target.value })}
-            placeholder="Live"
-          />
-        </div>
-      </div>
-    </>
-  );
-}

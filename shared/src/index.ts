@@ -87,6 +87,9 @@ export interface DbHomeNews {
   blocks: NewsBlock[];
   sort_order: number;
   created_at: string;
+  label_en?: string | null;
+  title_en?: string | null;
+  body_en?: string | null;
 }
 
 export interface DbHomePartner {
