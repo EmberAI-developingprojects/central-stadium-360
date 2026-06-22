@@ -386,3 +386,25 @@ export interface KioskCardResultInput {
   payment_ref?: string;
   ebarimt?: KioskEbarimt;
 }
+
+// ---------------------------------------------------------------------------
+// Admin views over in-person (kiosk) sales — staff POS + sales reporting.
+// ---------------------------------------------------------------------------
+
+/** A venue order as the admin sales report lists it (event title + ticket count joined). */
+export interface AdminVenueOrderRow extends DbVenueOrder {
+  event_title: string | null;
+  ticket_count: number;
+}
+
+/** A venue order with its minted admission tickets, for the order detail view. */
+export interface AdminVenueOrderDetail extends AdminVenueOrderRow {
+  tickets: DbVenueTicket[];
+}
+
+export interface AdminVenueStats {
+  revenue: number;
+  orderCount: number;
+  paidCount: number;
+  ticketCount: number;
+}
