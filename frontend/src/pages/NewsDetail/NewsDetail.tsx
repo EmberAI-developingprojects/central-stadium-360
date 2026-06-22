@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import SiteHeader from "../../components/SiteHeader";
 import SiteFooter from "../../components/SiteFooter";
 import { getHomeContent } from "../../data/store";
 import type { NewsBlock, NewsItem } from "../../data/store";
+import { pickNewsLocale } from "../../lib/newsLocale";
 
 const PAGE_CLS = "min-h-screen bg-white";
 const SECTION_CLS =
@@ -96,6 +98,7 @@ function NewsBlockRender({ block, alt }: { block: NewsBlock; alt: string }) {
 
 export default function NewsDetail() {
   const { id } = useParams<{ id: string }>();
+  const { i18n } = useTranslation();
   const [items, setItems] = useState<NewsItem[] | null>(null);
   const [views, setViews] = useState(0);
   const [copied, setCopied] = useState(false);
@@ -109,13 +112,21 @@ export default function NewsDetail() {
     [items, id],
   );
 
+  const loc = useMemo(
+    () =>
+      item
+        ? pickNewsLocale(item, i18n.language)
+        : { label: "", title: "", body: "" },
+    [item, i18n.language],
+  );
+
   useEffect(() => {
     if (item) setViews(bumpView(item.id));
   }, [item]);
 
   const isHtmlBody = useMemo(
-    () => !!item?.body && /<[a-z][\s\S]*>/i.test(item.body),
-    [item],
+    () => !!loc.body && /<[a-z][\s\S]*>/i.test(loc.body),
+    [loc.body],
   );
 
   const blocks: NewsBlock[] = useMemo(() => {
@@ -124,14 +135,14 @@ export default function NewsDetail() {
     if (item.blocks && item.blocks.length > 0) return item.blocks;
     const fallback: NewsBlock[] = [];
     if (item.image) fallback.push({ type: "image", value: item.image });
-    if (item.body) fallback.push({ type: "text", value: item.body });
+    if (loc.body) fallback.push({ type: "text", value: loc.body });
     return fallback;
-  }, [item, isHtmlBody]);
+  }, [item, isHtmlBody, loc.body]);
 
   const onShare = (kind: "fb" | "tw" | "pin" | "in" | "copy") => {
     if (typeof window === "undefined" || !item) return;
     const url = `${window.location.origin}/news/${item.id}`;
-    const text = item.title ?? "";
+    const text = loc.title ?? "";
     if (kind === "copy") {
       navigator.clipboard?.writeText(url);
       setCopied(true);
@@ -180,12 +191,12 @@ export default function NewsDetail() {
                   </svg>
                   Бүх мэдээ рүү буцах
                 </Link>
-                {item.label &&
-                  item.label.toLowerCase() !== item.title.toLowerCase() && (
-                    <span className={LABEL_CLS}>{item.label}</span>
+                {loc.label &&
+                  loc.label.toLowerCase() !== loc.title.toLowerCase() && (
+                    <span className={LABEL_CLS}>{loc.label}</span>
                   )}
               </div>
-              <h1 className={TITLE_CLS}>{item.title}</h1>
+              <h1 className={TITLE_CLS}>{loc.title}</h1>
 
               <div className={META_ROW_CLS}>
                 <span className={META_ITEM_CLS}>
@@ -313,7 +324,7 @@ export default function NewsDetail() {
             {isHtmlBody ? (
               <div
                 className="news-body"
-                dangerouslySetInnerHTML={{ __html: item.body }}
+                dangerouslySetInnerHTML={{ __html: loc.body }}
                 style={{
                   fontSize: 16,
                   lineHeight: 1.75,
@@ -324,7 +335,7 @@ export default function NewsDetail() {
             ) : (
               <div className={BODY_WRAP_CLS}>
                 {blocks.map((b, i) => (
-                  <NewsBlockRender key={i} block={b} alt={item.title} />
+                  <NewsBlockRender key={i} block={b} alt={loc.title} />
                 ))}
                 {blocks.length === 0 && (
                   <p className={TEXT_BLOCK_CLS}>

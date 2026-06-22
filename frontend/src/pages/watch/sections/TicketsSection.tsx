@@ -17,7 +17,6 @@ import {
   TICKET_STUB_META_CLS,
   TICKET_STUB_META_DD_CLS,
   TICKET_STUB_META_DT_CLS,
-  TICKET_STUB_TIER_CLS,
   TICKET_STUB_TITLE_CLS,
   TICKETS_EMPTY_CLS,
   TICKETS_EMPTY_ICON_CLS,
@@ -136,7 +135,6 @@ function TicketCard({
             </svg>
           </div>
         )}
-        <span className={TICKET_STUB_TIER_CLS}>{tk.tierName}</span>
       </div>
       <div className={TICKET_STUB_BODY_CLS}>
         <span className={TICKET_STUB_DATE_CLS}>{tk.date}</span>

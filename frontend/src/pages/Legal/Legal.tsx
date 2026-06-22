@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import SiteHeader from "../../components/SiteHeader";
 import SiteFooter from "../../components/SiteFooter";
 import useRevealOnScroll from "../../hooks/useRevealOnScroll";
@@ -6,7 +7,7 @@ import { REVEAL_UP_CLS } from "../../hooks/_revealCls";
 
 type LawItem = {
   id: string;
-  title: string;
+  titleKey: string;
   href: string;
   featured?: boolean;
 };
@@ -14,68 +15,67 @@ type LawItem = {
 const LAWS: LawItem[] = [
   {
     id: "undsen-huuli",
-    title: "Монгол Улсын Үндсэн хууль",
+    titleKey: "legal_law_undsen_huuli",
     href: "https://legalinfo.mn/mn/detail?lawId=367",
   },
   {
     id: "turiin-orn-omch",
-    title: "Төрийн болон орон нутгийн өмчийн тухай хууль",
+    titleKey: "legal_law_turiin_orn_omch",
     href: "https://legalinfo.mn/mn/detail/492",
   },
   {
     id: "kompani",
-    title: "Компанийн тухай хууль",
+    titleKey: "legal_law_kompani",
     href: "https://legalinfo.mn/mn/detail?lawId=310",
   },
   {
     id: "undesnii-naadam",
-    title: "Үндэсний их баяр наадмын тухай хууль",
+    titleKey: "legal_law_undesnii_naadam",
     href: "https://legalinfo.mn/mn/detail?lawId=16530657329231",
   },
   {
     id: "undesnii-naadam-jurmiin",
-    title: "Үндэсний их баяр наадмын тухай хуулийг дагаж мөрдөх журмын тухай",
+    titleKey: "legal_law_undesnii_naadam_jurmiin",
     href: "https://legalinfo.mn/mn/detail?lawId=16",
   },
   {
     id: "niiteer-temdeglekh",
-    title: "Нийтээр тэмдэглэх баярын болон тэмдэглэлт өдрүүдийн тухай хууль",
+    titleKey: "legal_law_niiteer_temdeglekh",
     href: "https://legalinfo.mn/mn/detail/399",
   },
   {
     id: "hudulmur",
-    title: "Хөдөлмөрийн тухай хууль",
+    titleKey: "legal_law_hudulmur",
     href: "https://legalinfo.mn/mn/detail?lawId=16230709635751",
   },
   {
     id: "hudaldan-avah",
-    title:
-      "Төрийн болон орон нутгийн өмчийн хөрөнгөөр бараа, ажил, үйлчилгээ худалдан авах тухай",
+    titleKey: "legal_law_hudaldan_avah",
     href: "https://legalinfo.mn/mn/detail?lawId=16760359992351",
   },
   {
     id: "arhiv",
-    title: "Архив, албан хэрэг хөтлөлтийн тухай хууль",
+    titleKey: "legal_law_arhiv",
     href: "https://legalinfo.mn/mn/detail/15370",
   },
   {
     id: "nyagtlan-bodoh",
-    title: "Нягтлан бодох бүртгэлийн тухай хууль",
+    titleKey: "legal_law_nyagtlan_bodoh",
     href: "https://legalinfo.mn/mn/detail?lawId=11191",
   },
   {
     id: "turiin-hemnelt",
-    title: "Төрийн хэмнэлтийн хууль",
+    titleKey: "legal_law_turiin_hemnelt",
     href: "https://legalinfo.mn/mn/detail?lawId=16468624002961",
   },
   {
     id: "niitiin-medeellel",
-    title: "Нийтийн мэдээллийн ил тод байдлын тухай",
+    titleKey: "legal_law_niitiin_medeellel",
     href: "https://legalinfo.mn/mn/detail?lawId=16390263044601",
   },
   {
     id: "avliga",
-    title: "Авлигын эсрэг хууль",
+    titleKey: "legal_law_avliga",
     href: "https://legalinfo.mn/mn/detail?lawId=8928",
   },
 ];
@@ -123,6 +123,7 @@ function LawIcon({ active }: { active?: boolean }) {
 
 export default function Legal() {
   useRevealOnScroll();
+  const { t } = useTranslation();
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -133,7 +134,7 @@ export default function Legal() {
           <h1
             className={`m-0 text-gold-pale font-extrabold uppercase leading-[1.1] tracking-[0.01em] text-[44px] max-[920px]:text-[32px] max-[640px]:text-[24px] drop-shadow-[0_2px_12px_rgba(0,0,0,0.45)] ${REVEAL_UP_CLS}`}
           >
-            Хууль, эрх зүй
+            {t("legal_page_heading")}
           </h1>
           <nav
             className={`mt-5 text-[12px] uppercase tracking-[0.22em] text-white/85 flex items-center gap-3 ${REVEAL_UP_CLS}`}
@@ -144,12 +145,12 @@ export default function Legal() {
               to="/"
               className="text-white/85 no-underline hover:text-gold-pale [transition:color_.2s_ease]"
             >
-              Нүүр
+              {t("footer_home")}
             </Link>
             <span aria-hidden="true" className="text-white/40">
               /
             </span>
-            <span className="text-white">Хууль, эрх зүй</span>
+            <span className="text-white">{t("legal_page_heading")}</span>
           </nav>
         </div>
       </section>
@@ -163,7 +164,7 @@ export default function Legal() {
         <div className="max-w-screen-page mx-auto">
           <ul
             className="list-none p-0 m-0 grid gap-5 [grid-template-columns:repeat(4,minmax(0,1fr))] max-[1100px]:[grid-template-columns:repeat(3,minmax(0,1fr))] max-[820px]:[grid-template-columns:repeat(2,minmax(0,1fr))] max-[520px]:[grid-template-columns:1fr]"
-            aria-label="Хууль, эрх зүйн жагсаалт"
+            aria-label={t("legal_list_aria")}
           >
             {LAWS.map((law, i) => {
               const featured = law.featured;
@@ -194,12 +195,12 @@ export default function Legal() {
                     <h3
                       className={`mt-5 mb-0 text-[14.5px] font-bold leading-[1.45] ${featured ? "text-white" : "text-ink group-hover:text-white"} [transition:color_.25s_ease]`}
                     >
-                      {law.title}
+                      {t(law.titleKey)}
                     </h3>
                     <span
                       className={`mt-auto pt-6 inline-flex items-center gap-1.5 text-[13px] font-semibold ${featured ? "text-white" : "text-brand-blue group-hover:text-white"} [transition:color_.25s_ease,gap_.2s_ease] group-hover:gap-2.5`}
                     >
-                      Дэлгэрэнгүй үзэх
+                      {t("legal_view_details")}
                       <svg
                         width="14"
                         height="14"

@@ -290,7 +290,6 @@ export default function UserView() {
               <tr>
                 <th>Код</th>
                 <th>Арга хэмжээ</th>
-                <th>Багц</th>
                 <th style={{ textAlign: "right" }}>Нийт</th>
                 <th>Төлөв</th>
                 <th></th>
@@ -303,7 +302,6 @@ export default function UserView() {
                     <code style={{ fontSize: 12 }}>{o.code}</code>
                   </td>
                   <td>{o.title}</td>
-                  <td>{o.tierName || o.tier}</td>
                   <td style={{ textAlign: "right" }}>{money(o.total)}</td>
                   <td>
                     <span

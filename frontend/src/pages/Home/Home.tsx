@@ -8,6 +8,7 @@ import useRevealOnScroll from "../../hooks/useRevealOnScroll";
 import useSmoothAnchors from "../../hooks/useSmoothAnchors";
 import { REVEAL_UP_CLS } from "../../hooks/_revealCls";
 import { useGatedNavigate } from "../../auth";
+import { pickNewsLocale } from "../../lib/newsLocale";
 import { getHomeContent, listEvents } from "../../data/store";
 import type {
   EventRecord,
@@ -98,49 +99,58 @@ const EMPTY_HERO_TILES: HeroImage[] = [
   { slot: "tile4", image_url: "", alt: "" },
 ];
 
-const DEFAULT_MEMBERS: MemberItem[] = [
+type DefaultMemberKey = {
+  id: string;
+  iconKey: string;
+  href: string;
+  titleKey: string;
+  descKey: string;
+  badge?: string;
+};
+
+const DEFAULT_MEMBER_KEYS: DefaultMemberKey[] = [
   {
     id: "svc-1",
     iconKey: "music",
-    title: "Тоглолт, арга хэмжээ, талбайн түрээс",
-    desc: "«Төв Цэнгэлдэх Хүрээлэн» ХХК нь үндэсний болон олон улсын томоохон арга хэмжээ, тоглолт зохион байгуулах, талбай түрээслүүлэх үйлчилгээг иргэд, байгууллагуудад хүргэдэг.",
     href: "/events",
+    titleKey: "home_services_card1_title",
+    descKey: "home_services_card1_desc",
   },
   {
     id: "svc-2",
     iconKey: "doc",
-    title: "Хууль, эрх зүй",
-    desc: "Иргэн, байгууллагын эрх зүйн асуудал, манай үйл ажиллагаатай холбоотой хууль, дүрэм, журамтай танилцана уу.",
     href: "/legal",
+    titleKey: "home_services_card2_title",
+    descKey: "home_services_card2_desc",
   },
   {
     id: "svc-3",
     iconKey: "news",
-    title: "Мэдээ, мэдээлэл",
-    desc: "Манай байгууллагын үйл ажиллагаа, удахгүй болох арга хэмжээ, шинэ мэдээллийг эндээс цаг алдалгүй авах боломжтой.",
     href: "#",
+    titleKey: "home_services_card3_title",
+    descKey: "home_services_card3_desc",
   },
   {
     id: "svc-4",
     iconKey: "chat",
-    title: "Холбоо барих, санал хүсэлт",
-    desc: "Та санал, шүүмж, талархал болон өрөнхий чиглэлийн асуултаар бидэнд илгээж, шуурхай хариу авах боломжтой.",
     href: "#",
+    titleKey: "home_services_card4_title",
+    descKey: "home_services_card4_desc",
   },
   {
     id: "svc-5",
     iconKey: "stream",
-    badge: "Live",
-    title: "360° Шууд дамжуулалт",
-    desc: "Цэнгэлдэх болж буй тоглолт, тэмцээн, арга хэмжээг 360° форматаар манай вэбсайтаас шууд үзэх боломжтой — танхимд байгаа мэт мэдрэж.",
     href: "/watch",
+    badge: "Live",
+    titleKey: "home_services_card5_title",
+    descKey: "home_services_card5_desc",
   },
   {
     id: "svc-6",
     iconKey: "stadium",
-    title: "Төв Цэнгэлдэх Хүрээлэн",
-    desc: "1958 онд байгуулагдсан, 12,500 суудалтай, 25,000 хүртэлх үзэгчийг хүлээн авах хүчин чадалтай Монгол Улсын анхдагч цогцолбор. Спорт, соёл, олон нийтийн арга хэмжээний голлох тавцан.",
     href: "/about",
+    titleKey: "home_services_card6_title",
+    descKey: "home_services_card6_desc",
   },
 ];
 
@@ -822,7 +832,16 @@ function MemberIcon({ iconKey }: { iconKey: string }) {
 }
 
 function Members({ items = [] }: { items: MemberItem[] }) {
-  const cards = items.length > 0 ? items : DEFAULT_MEMBERS;
+  const { t } = useTranslation();
+  const fallbackCards: MemberItem[] = DEFAULT_MEMBER_KEYS.map((m) => ({
+    id: m.id,
+    iconKey: m.iconKey,
+    href: m.href,
+    title: t(m.titleKey),
+    desc: t(m.descKey),
+    ...(m.badge ? { badge: m.badge } : {}),
+  }));
+  const cards = items.length > 0 ? items : fallbackCards;
   const memberCardCls = [
     "group bg-white rounded-[18px] flex flex-col items-start gap-4 text-left pt-7 px-[26px] pb-6 relative overflow-hidden",
     "border border-solid border-[rgba(31,41,55,0.06)] shadow-[0_4px_16px_rgba(0,0,0,0.04)]",
@@ -866,12 +885,12 @@ function Members({ items = [] }: { items: MemberItem[] }) {
         <h2
           className={`text-center text-[38px] font-extrabold text-ink m-0 mb-3 tracking-[-0.015em] max-[900px]:text-3xl max-[540px]:text-[26px] ${REVEAL_UP_CLS}`}
         >
-          Үйл ажиллагаа &amp; үйлчилгээ
+          {t("home_services_title")}
         </h2>
         <p
           className={`text-center text-base text-ink-soft max-w-[640px] mx-auto mb-14 leading-[1.65] ${REVEAL_UP_CLS}`}
         >
-          Төв Цэнгэлдэх Хүрээлэнгийн үндсэн чиглэл, иргэдэд хүрэх үйлчилгээ.
+          {t("home_services_subtitle")}
         </p>
 
         <div className="grid gap-6 mx-auto mb-8 grid-cols-3 max-[900px]:grid-cols-2 max-[540px]:grid-cols-1">
@@ -892,7 +911,9 @@ function Members({ items = [] }: { items: MemberItem[] }) {
                 {m.desc}
               </p>
               <a href={m.href || "#"} className={cardBtnCls}>
-                {m.badge === "Live" ? "Шууд үзэх" : "Цааш үзэх"}
+                {m.badge === "Live"
+                  ? t("home_services_cta_live")
+                  : t("home_services_cta")}
                 <Arrow />
               </a>
             </article>
@@ -1014,6 +1035,7 @@ function VideoCta() {
 }
 
 function Partners({ items = [] }: { items: Partner[] }) {
+  const { t } = useTranslation();
   const loop = items.length > 0 ? [...items, ...items] : items;
   return (
     <section className="w-full bg-white pt-3 px-6 pb-14" id="partners">
@@ -1021,17 +1043,13 @@ function Partners({ items = [] }: { items: Partner[] }) {
         <h2
           className={`text-[44px] font-extrabold text-ink tracking-[-0.02em] m-0 mb-5 leading-[1.15] max-[900px]:text-[34px] max-[540px]:text-[26px] ${REVEAL_UP_CLS}`}
         >
-          Манай хамтрагч байгууллагууд
+          {t("home_partners_title")}
         </h2>
         <p
           className={`text-[16px] text-[#6b6b6b] max-w-[720px] mx-auto mb-12 leading-[1.65] max-[720px]:text-[14px] max-[720px]:mb-9 ${REVEAL_UP_CLS}`}
           data-stagger="1"
         >
-          Төв Цэнгэлдэх Хүрээлэн нь Монголын тэргүүлэх аж ахуйн нэгж, олон улсын
-          байгууллагуудтай олон жилийн турш урт хугацаанд хамтран ажиллаж,
-          спорт, соёл, олон нийтийн томоохон арга хэмжээг хамтын хүчээр
-          амжилттай зохион байгуулсаар ирсэн. Тэдний итгэл, дэмжлэг бидний
-          өсөлт, шинэчлэл, иргэддээ хүргэх үйлчилгээний чанарын гол түшиц юм.
+          {t("home_partners_subtitle")}
         </p>
 
         {items.length > 0 && (
@@ -1063,7 +1081,7 @@ function Partners({ items = [] }: { items: Partner[] }) {
   );
 }
 
-function Roadmap(_props: { items?: RoadmapItem[] }) {
+export function Roadmap(_props: { items?: any[] }) {
   const { t } = useTranslation();
   type Milestone = { year: string; title: string };
   const bot: Milestone[] = [
@@ -1083,26 +1101,51 @@ function Roadmap(_props: { items?: RoadmapItem[] }) {
   ];
   const all = [...bot, ...top];
 
-  // Dots are placed ALONG a single smooth S-curve from (290,230) to (730,110).
-  // Pre-curve dots sit flat at y=230, post-curve dots sit flat at y=110, and
-  // the transition dots (1990, 1993, 2007, 2014) sample the smoothstep so
-  // every dot visually lies on the connecting line.
+  // Бүх координатыг 0-100% хувиар тооцсон (Бодит харьцаа)
   const botDots = [
-    { x: 80, y: 230 },
-    { x: 185, y: 230 },
-    { x: 290, y: 230 },
-    { x: 395, y: 213 },
-    { x: 500, y: 174 },
+    { x: 6.67, y: 71.88 },
+    { x: 15.42, y: 71.88 },
+    { x: 24.17, y: 71.88 },
+    { x: 32.92, y: 71.88 },
+    { x: 41.67, y: 71.88 },
   ];
   const topDots = [
-    { x: 620, y: 129 },
-    { x: 730, y: 110 },
-    { x: 838, y: 110 },
-    { x: 946, y: 110 },
-    { x: 1054, y: 110 },
-    { x: 1162, y: 110 },
+    { x: 51.67, y: 34.38 },
+    { x: 60.83, y: 34.38 },
+    { x: 69.83, y: 34.38 },
+    { x: 78.83, y: 34.38 },
+    { x: 87.83, y: 34.38 },
+    { x: 96.83, y: 34.38 },
   ];
-  const dotPct = (x: number) => (x / 1200) * 100;
+
+  const allDots = [...botDots, ...topDots].sort((a, b) => a.x - b.x);
+
+  // SVG-ийн PATH үүсгэх: 0-100% координат дээр суурилна
+  const generateCurvedPath = (points: { x: number; y: number }[]) => {
+    if (points.length === 0) return "";
+
+    // Эхний цэгээс бага зэрэг (3%) зүүн талаас эхэлнэ
+    const startX = Math.max(points[0].x - 3, 0);
+    let d = `M ${startX},${points[0].y} L ${points[0].x},${points[0].y}`;
+
+    for (let i = 0; i < points.length - 1; i++) {
+      const x1 = points[i].x;
+      const y1 = points[i].y;
+      const x2 = points[i + 1].x;
+      const y2 = points[i + 1].y;
+
+      const midX = (x1 + x2) / 2;
+      d += ` C ${midX},${y1} ${midX},${y2} ${x2},${y2}`;
+    }
+
+    // Сүүлийн цэгээс бага зэрэг (3%) баруун талд дуусна
+    const endX = Math.min(points[points.length - 1].x + 3, 100);
+    d += ` L ${endX},${points[points.length - 1].y}`;
+
+    return d;
+  };
+
+  const curvedPath = generateCurvedPath(allDots);
 
   const phaseBase =
     "flex flex-col justify-center min-h-[64px] py-3 pr-[44px] font-[inherit] max-[640px]:[clip-path:none] max-[640px]:m-0 max-[640px]:rounded max-[640px]:py-3 max-[640px]:px-4";
@@ -1114,14 +1157,14 @@ function Roadmap(_props: { items?: RoadmapItem[] }) {
     >
       <div className="max-w-screen-page mx-auto">
         <h2
-          className={`text-[42px] font-extrabold tracking-[-0.02em] m-0 mb-10 text-[#1a1a1a] max-[900px]:text-[34px] max-[540px]:text-[26px] max-[540px]:mb-7 ${REVEAL_UP_CLS}`}
+          className={`text-[42px] font-extrabold tracking-[-0.02em] m-0 mb-10 text-[#1a1a1a] max-[900px]:text-[34px] max-[540px]:text-[26px] max-[540px]:mb-7 reveal-up`}
         >
           {t("home_roadmap_title")}
         </h2>
 
         <div className="flex items-stretch gap-0 mb-10 max-[640px]:flex-col max-[640px]:gap-1.5">
           <div
-            className={`${phaseBase} pl-9 bg-brand-blue-tint text-ink [clip-path:polygon(0_0,calc(100%_-_22px)_0,100%_50%,calc(100%_-_22px)_100%,0_100%)] -mr-3 ${REVEAL_UP_CLS}`}
+            className={`${phaseBase} pl-9 bg-brand-blue-tint text-ink [clip-path:polygon(0_0,calc(100%_-_22px)_0,100%_50%,calc(100%_-_22px)_100%,0_100%)] -mr-3 reveal-up`}
             style={{ flex: "47 1 0%" }}
             data-stagger="1"
           >
@@ -1133,7 +1176,7 @@ function Roadmap(_props: { items?: RoadmapItem[] }) {
             </small>
           </div>
           <div
-            className={`${phaseBase} pl-12 bg-ink text-brand-blue-tint [clip-path:polygon(0_0,calc(100%_-_22px)_0,100%_50%,calc(100%_-_22px)_100%,0_100%,22px_50%)] -mr-3 ${REVEAL_UP_CLS}`}
+            className={`${phaseBase} pl-12 bg-ink text-brand-blue-tint [clip-path:polygon(0_0,calc(100%_-_22px)_0,100%_50%,calc(100%_-_22px)_100%,0_100%,22px_50%)] -mr-3 reveal-up`}
             style={{ flex: "27 1 0%" }}
             data-stagger="2"
           >
@@ -1145,7 +1188,7 @@ function Roadmap(_props: { items?: RoadmapItem[] }) {
             </small>
           </div>
           <div
-            className={`${phaseBase} pl-12 bg-ink text-brand-blue-tint [clip-path:polygon(0_0,calc(100%_-_22px)_0,100%_50%,calc(100%_-_22px)_100%,0_100%,22px_50%)] ${REVEAL_UP_CLS}`}
+            className={`${phaseBase} pl-12 bg-ink text-brand-blue-tint [clip-path:polygon(0_0,calc(100%_-_22px)_0,100%_50%,calc(100%_-_22px)_100%,0_100%,22px_50%)] reveal-up`}
             style={{ flex: "26 1 0%" }}
             data-stagger="3"
           >
@@ -1159,22 +1202,23 @@ function Roadmap(_props: { items?: RoadmapItem[] }) {
         </div>
 
         <div
-          className={`relative w-full mb-3 h-[380px] max-[1200px]:h-[360px] max-[900px]:h-[340px] max-[640px]:hidden ${REVEAL_UP_CLS}`}
+          className={`relative w-full mb-3 h-[380px] max-[1200px]:h-[360px] max-[900px]:h-[340px] max-[640px]:hidden reveal-up`}
           data-stagger="4"
         >
           <svg
             className="absolute inset-0 w-full h-full"
-            viewBox="0 0 1200 320"
+            viewBox="0 0 100 100"
             preserveAspectRatio="none"
             aria-hidden="true"
           >
             <path
-              d="M 40,230 L 290,230 C 510,230 510,110 730,110 L 1170,110"
-              stroke="#2230C6"
-              strokeWidth="2.2"
+              d={curvedPath}
+              stroke="#1a1a1a"
+              strokeWidth="2.5"
               fill="none"
               strokeLinecap="round"
               strokeLinejoin="round"
+              vectorEffect="non-scaling-stroke"
             />
           </svg>
 
@@ -1184,9 +1228,9 @@ function Roadmap(_props: { items?: RoadmapItem[] }) {
               aria-hidden="true"
               className="absolute w-px bg-[#4D5670] -translate-x-1/2"
               style={{
-                left: `${dotPct(d.x)}%`,
-                top: `${(d.y / 320) * 100}%`,
-                height: `${((288 - d.y) / 320) * 100}%`,
+                left: `${d.x}%`,
+                top: `${d.y}%`,
+                height: `18.12%`,
               }}
             />
           ))}
@@ -1196,9 +1240,9 @@ function Roadmap(_props: { items?: RoadmapItem[] }) {
               aria-hidden="true"
               className="absolute w-px bg-[#4D5670] -translate-x-1/2"
               style={{
-                left: `${dotPct(d.x)}%`,
-                top: `${(42 / 320) * 100}%`,
-                height: `${((d.y - 42) / 320) * 100}%`,
+                left: `${d.x}%`,
+                top: `13.12%`,
+                height: `21.26%`,
               }}
             />
           ))}
@@ -1207,10 +1251,7 @@ function Roadmap(_props: { items?: RoadmapItem[] }) {
               key={`bd-${i}`}
               aria-hidden="true"
               className="absolute w-2.5 h-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#A89968]"
-              style={{
-                left: `${dotPct(d.x)}%`,
-                top: `${(d.y / 320) * 100}%`,
-              }}
+              style={{ left: `${d.x}%`, top: `${d.y}%` }}
             />
           ))}
           {topDots.map((d, i) => (
@@ -1218,10 +1259,7 @@ function Roadmap(_props: { items?: RoadmapItem[] }) {
               key={`td-${i}`}
               aria-hidden="true"
               className="absolute w-2.5 h-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#A89968]"
-              style={{
-                left: `${dotPct(d.x)}%`,
-                top: `${(d.y / 320) * 100}%`,
-              }}
+              style={{ left: `${d.x}%`, top: `${d.y}%` }}
             />
           ))}
 
@@ -1229,7 +1267,7 @@ function Roadmap(_props: { items?: RoadmapItem[] }) {
             <div
               key={`b-${i}`}
               className="absolute -translate-x-1/2 w-[108px] text-center text-[#4a4a4a] top-[89%] max-[1200px]:w-[92px] max-[900px]:w-[80px]"
-              style={{ left: `${dotPct(botDots[i].x)}%` }}
+              style={{ left: `${botDots[i].x}%` }}
             >
               <strong className="block font-extrabold text-[13px] mb-1 text-[#1a1a1a] max-[1200px]:text-[12px] max-[900px]:text-[11px]">
                 {m.year}
@@ -1243,7 +1281,7 @@ function Roadmap(_props: { items?: RoadmapItem[] }) {
             <div
               key={`t-${i}`}
               className="absolute -translate-x-1/2 w-[108px] text-center text-[#4a4a4a] bottom-[83%] max-[1200px]:w-[92px] max-[900px]:w-[80px]"
-              style={{ left: `${dotPct(topDots[i].x)}%` }}
+              style={{ left: `${topDots[i].x}%` }}
             >
               <strong className="block font-extrabold text-[13px] mb-1 text-[#1a1a1a] max-[1200px]:text-[12px] max-[900px]:text-[11px]">
                 {m.year}
@@ -1281,6 +1319,7 @@ function Roadmap(_props: { items?: RoadmapItem[] }) {
 }
 
 function News({ items = [] }: { items: NewsItem[] }) {
+  const { t, i18n } = useTranslation();
   const sectionCls =
     "w-full bg-white pt-16 px-6 pb-20 max-[920px]:pt-12 max-[920px]:pb-14";
   const innerCls = "max-w-screen-page mx-auto";
@@ -1297,7 +1336,7 @@ function News({ items = [] }: { items: NewsItem[] }) {
         <div className={innerCls}>
           <div className={headingWrapCls}>
             <span className={headingLineCls} aria-hidden="true" />
-            <h2 className={headingTextCls}>Мэдээ мэдээлэл</h2>
+            <h2 className={headingTextCls}>{t("news_page_heading")}</h2>
             <span className={headingLineCls} aria-hidden="true" />
           </div>
         </div>
@@ -1312,16 +1351,18 @@ function News({ items = [] }: { items: NewsItem[] }) {
       <div className={innerCls}>
         <div className={headingWrapCls}>
           <span className={headingLineCls} aria-hidden="true" />
-          <h2 className={headingTextCls}>Мэдээ мэдээлэл</h2>
+          <h2 className={headingTextCls}>{t("news_page_heading")}</h2>
           <span className={headingLineCls} aria-hidden="true" />
         </div>
 
-        <div className={`flex items-center justify-end mb-8 -mt-6 ${REVEAL_UP_CLS}`}>
+        <div
+          className={`flex items-center justify-end mb-8 -mt-6 ${REVEAL_UP_CLS}`}
+        >
           <Link
             to="/news"
             className="inline-flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.06em] text-ink no-underline pb-1 border-b-2 border-solid border-transparent [transition:color_.18s_ease,border-color_.18s_ease,gap_.18s_ease] hover:text-brand-blue hover:gap-3 hover:border-brand-blue [&_svg]:w-[14px] [&_svg]:h-[14px]"
           >
-            Бүх мэдээ үзэх
+            {t("news_view_all")}
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -1338,7 +1379,9 @@ function News({ items = [] }: { items: NewsItem[] }) {
         </div>
 
         <div className="grid grid-cols-3 gap-10 max-[920px]:grid-cols-2 max-[920px]:gap-7 max-[640px]:grid-cols-1 max-[640px]:gap-8">
-          {cards.map((n, i) => (
+          {cards.map((n, i) => {
+            const loc = pickNewsLocale(n, i18n.language);
+            return (
             <article
               key={n.id}
               className={`flex flex-col items-center text-center group ${REVEAL_UP_CLS}`}
@@ -1346,21 +1389,21 @@ function News({ items = [] }: { items: NewsItem[] }) {
             >
               <Link
                 to={`/news/${n.id}`}
-                aria-label={n.title}
+                aria-label={loc.title}
                 className="block w-full overflow-hidden rounded-2xl bg-surface-1 [aspect-ratio:4/3] [&_img]:w-full [&_img]:h-full [&_img]:object-cover [&_img]:block [&_img]:[transition:transform_.6s_cubic-bezier(.2,.8,.2,1)] group-hover:[&_img]:scale-[1.04]"
               >
-                {n.image && <img src={n.image} alt={n.title} loading="lazy" />}
+                {n.image && <img src={n.image} alt={loc.title} loading="lazy" />}
               </Link>
 
               <h3 className="mt-6 text-[16px] font-extrabold leading-[1.45] text-ink max-w-[340px] max-[920px]:text-[15px]">
-                {n.title}
+                {loc.title}
               </h3>
 
               <Link
                 to={`/news/${n.id}`}
                 className="mt-6 inline-flex items-center gap-2 text-[13.5px] font-bold text-brand-blue no-underline group/link hover:gap-3 [transition:gap_.2s_ease] [&_svg]:w-[13px] [&_svg]:h-[13px]"
               >
-                Дэлгэрэнгүй унших
+                {t("news_read_more")}
                 <svg
                   viewBox="0 0 24 24"
                   fill="none"
@@ -1375,20 +1418,21 @@ function News({ items = [] }: { items: NewsItem[] }) {
                 </svg>
               </Link>
             </article>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>
   );
 }
 
-function newsExcerpt(item: NewsItem, max = 220): string {
+function newsExcerpt(item: NewsItem, body: string, max = 220): string {
   const fromBlocks = item.blocks
     ?.filter((b) => b.type === "text")
     .map((b) => b.value)
     .join(" ")
     .trim();
-  const raw = (fromBlocks || item.body || "")
+  const raw = (fromBlocks || body || "")
     .replace(/<[^>]+>/g, " ")
     .replace(/\s+/g, " ")
     .trim();
@@ -1408,8 +1452,12 @@ function pickFeaturedNews(items: NewsItem[]): NewsItem | null {
 }
 
 function FeaturedNewsHero({ items }: { items: NewsItem[] }) {
+  const { i18n } = useTranslation();
   const featured = pickFeaturedNews(items);
-  const excerpt = featured ? newsExcerpt(featured) : "";
+  const loc = featured
+    ? pickNewsLocale(featured, i18n.language)
+    : { label: "", title: "", body: "" };
+  const excerpt = featured ? newsExcerpt(featured, loc.body) : "";
 
   // Always reserve the full hero slot — returning null on empty input causes
   // a 100vh layout shift when the news API resolves and the hero pops in.
@@ -1432,7 +1480,7 @@ function FeaturedNewsHero({ items }: { items: NewsItem[] }) {
           <img
             key={featured.image}
             src={featured.image}
-            alt={featured.title}
+            alt={loc.title}
             loading="eager"
             fetchPriority="high"
             decoding="async"
@@ -1491,7 +1539,7 @@ function FeaturedNewsHero({ items }: { items: NewsItem[] }) {
               Мэдээ мэдээлэл
             </span>
             <h1 className="m-0 text-gold-pale font-extrabold uppercase leading-[1.16] tracking-[0.015em] text-[44px] max-[920px]:text-[32px] max-[640px]:text-[24px] drop-shadow-[0_2px_14px_rgba(0,0,0,0.55)] [text-shadow:0_1px_0_rgba(0,0,0,0.25)]">
-              {featured?.title ?? ""}
+              {loc.title}
             </h1>
             {excerpt && (
               <p className="mt-6 mx-auto max-w-[680px] text-white/85 text-[15px] leading-[1.7] max-[640px]:text-[13px] max-[640px]:mt-5 max-[640px]:leading-[1.6]">

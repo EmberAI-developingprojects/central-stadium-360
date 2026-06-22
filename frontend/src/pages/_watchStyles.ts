@@ -123,9 +123,6 @@ export const TICKET_STUB_CLS =
 export const TICKET_STUB_COVER_CLS =
   "relative [aspect-ratio:16/8] overflow-hidden [&_img]:w-full [&_img]:h-full [&_img]:object-cover [&_img]:block [&_img]:[filter:saturate(.9)]";
 
-export const TICKET_STUB_TIER_CLS =
-  "absolute top-3 left-3 bg-brand-blue text-white text-[10.5px] font-extrabold tracking-[.14em] uppercase py-[5px] px-2.5 rounded-full shadow-[0_6px_14px_-6px_rgba(34,48,198,0.7)]";
-
 export const TICKET_STUB_BODY_CLS =
   "pt-[22px] px-[22px] pb-5 flex flex-col gap-[14px] [background:linear-gradient(to_bottom,rgba(255,255,255,0.02)_0%,transparent_30%),transparent] relative before:content-[''] before:absolute before:top-0 before:left-[14px] before:right-[14px] before:border-t before:border-dashed before:border-[rgba(255,255,255,0.18)]";
 

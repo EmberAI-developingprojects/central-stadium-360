@@ -84,6 +84,9 @@ export type NewsItem = {
   featured: boolean;
   blocks: NewsBlock[];
   createdAt: string;
+  labelEn?: string;
+  titleEn?: string;
+  bodyEn?: string;
 };
 
 export type Partner = {
@@ -147,8 +150,8 @@ function ticketToOrder(t: AdminTicketRow): OrderRecord {
     user: t.user_email || t.user_phone || t.user_full_name || t.user_id,
     eventId: t.event_id,
     title: t.event_title || "",
-    tier: "standard",
-    tierName: "Стандарт",
+    tier: "",
+    tierName: "",
     qty: 1,
     unitPrice: t.price,
     total: t.price,
@@ -325,6 +328,9 @@ function dbToNews(row: DbHomeNews): NewsItem {
         )
       : [],
     createdAt: row.created_at,
+    labelEn: row.label_en ?? "",
+    titleEn: row.title_en ?? "",
+    bodyEn: row.body_en ?? "",
   };
 }
 function dbToPartner(row: DbHomePartner): Partner {
@@ -357,6 +363,9 @@ function toNewsPayload(items: NewsItem[]): Partial<DbHomeNews>[] {
     image: it.image || null,
     featured: !!it.featured,
     blocks: it.blocks ?? [],
+    label_en: it.labelEn?.trim() ? it.labelEn : null,
+    title_en: it.titleEn?.trim() ? it.titleEn : null,
+    body_en: it.bodyEn?.trim() ? it.bodyEn : null,
   }));
 }
 function toPartnerPayload(items: Partner[]): Partial<DbHomePartner>[] {
@@ -519,8 +528,8 @@ export async function listMyOrders(): Promise<OrderRecord[]> {
         user: "",
         eventId: t.event_id,
         title: ev?.title || "",
-        tier: "standard",
-        tierName: "Стандарт",
+        tier: "",
+        tierName: "",
         qty: 1,
         unitPrice: t.price,
         total: t.price,
