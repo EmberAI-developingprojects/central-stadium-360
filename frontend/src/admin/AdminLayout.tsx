@@ -30,6 +30,7 @@ const NAV: NavItem[] = [
   { to: "/admin", end: true, label: "Хяналт", icon: IconGrid },
   { to: "/admin/events", label: "Арга хэмжээ", icon: IconCalendar },
   { to: "/admin/orders", label: " Борлуулалт", icon: IconReceipt },
+  { to: "/admin/kiosk", label: "Касс", icon: IconKiosk },
   { to: "/admin/users", label: "Хэрэглэгч", icon: IconUsers },
   { to: "/admin/content", label: "Контент", icon: IconLayout },
   { to: "/admin/history", label: "Түүхэн хэсэг", icon: IconHistory },
@@ -40,6 +41,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin/events": "Арга хэмжээ",
   "/admin/events/new": "Шинэ арга хэмжээ",
   "/admin/orders": "Захиалга",
+  "/admin/kiosk": "Касс — биечлэн тасалбар",
   "/admin/users": "Хэрэглэгч",
   "/admin/content": "Контент засварлагч",
   "/admin/history": "Түүхэн хэсэг",
@@ -212,6 +214,24 @@ function IconReceipt() {
       <line x1="9" y1="8" x2="15" y2="8" />
       <line x1="9" y1="12" x2="15" y2="12" />
       <line x1="9" y1="16" x2="13" y2="16" />
+    </svg>
+  );
+}
+function IconKiosk() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M3 9l1-5h16l1 5" />
+      <path d="M4 9v11a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9" />
+      <path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0" />
+      <rect x="9" y="14" width="6" height="7" />
     </svg>
   );
 }

@@ -2,6 +2,9 @@ import type {
   AdminTicketRow,
   AdminTicketStats,
   AdminUserRow,
+  AdminVenueOrderDetail,
+  AdminVenueOrderRow,
+  AdminVenueStats,
   DbEvent,
   DbHomeHero,
   DbHomeNews,
@@ -15,6 +18,12 @@ import type {
   EventInput,
   EventPatch,
   EventStatus,
+  KioskCreateOrderResponse,
+  KioskEbarimt,
+  KioskEvent,
+  KioskOrderItemInput,
+  KioskOrderStatus,
+  PaymentMethod,
   ZoneInput,
   ZonePatch,
   HomeContentResponse,
@@ -362,6 +371,57 @@ export const api = {
       request<AdminUserRow>("PATCH", `/api/admin/users/${id}/disabled`, { disabled }),
     deleteUser: (id: string) =>
       request<{ id: string }>("DELETE", `/api/admin/users/${id}`),
+
+    // In-person (kiosk) ticketing — staff POS + sales report.
+    kiosk: {
+      listEvents: () =>
+        request<KioskEvent[]>("GET", "/api/admin/kiosk/events"),
+      stats: () =>
+        request<AdminVenueStats>("GET", "/api/admin/kiosk/stats"),
+      listOrders: (filter?: {
+        status?: TicketStatus | "all";
+        eventId?: string;
+      }) => {
+        const qs = new URLSearchParams();
+        if (filter?.status) qs.set("status", filter.status);
+        if (filter?.eventId) qs.set("eventId", filter.eventId);
+        const suffix = qs.toString() ? `?${qs.toString()}` : "";
+        return request<AdminVenueOrderRow[]>(
+          "GET",
+          `/api/admin/kiosk/orders${suffix}`,
+        );
+      },
+      getOrder: (id: string) =>
+        request<AdminVenueOrderDetail>(
+          "GET",
+          `/api/admin/kiosk/orders/${encodeURIComponent(id)}`,
+        ),
+      createOrder: (input: {
+        event_id: string;
+        items: KioskOrderItemInput[];
+        method: PaymentMethod;
+        buyer_phone?: string | null;
+      }) =>
+        request<KioskCreateOrderResponse>(
+          "POST",
+          "/api/admin/kiosk/orders",
+          input,
+        ),
+      orderStatus: (id: string) =>
+        request<KioskOrderStatus>(
+          "GET",
+          `/api/admin/kiosk/orders/${encodeURIComponent(id)}/status`,
+        ),
+      cardResult: (
+        id: string,
+        input: { approved: boolean; ebarimt?: KioskEbarimt },
+      ) =>
+        request<KioskOrderStatus>(
+          "POST",
+          `/api/admin/kiosk/orders/${encodeURIComponent(id)}/card-result`,
+          input,
+        ),
+    },
 
     uploadImage: async (
       file: File,
