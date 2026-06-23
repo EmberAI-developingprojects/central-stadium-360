@@ -412,3 +412,71 @@ export interface AdminVenueStats {
   paidCount: number;
   ticketCount: number;
 }
+
+// --- Sell-through report (per-event / per-zone fill + revenue) ---------------
+
+export type SellThroughScope = "onsale" | "all";
+
+/** One capacity zone with its realized (paid) sales. */
+export interface AdminSellThroughZone {
+  zone_id: string;
+  name_mn: string;
+  color: string | null;
+  price: number;
+  capacity: number;
+  /** Tickets sold via *paid* orders (not reservations). */
+  sold: number;
+  available: number;
+  revenue: number;
+  /** Fill ratio 0..1 (sold / capacity). */
+  pct: number;
+}
+
+export interface AdminSellThroughEvent {
+  event_id: string;
+  title: string;
+  status: EventStatus;
+  start_time: string;
+  capacity: number;
+  sold: number;
+  revenue: number;
+  pct: number;
+  zones: AdminSellThroughZone[];
+}
+
+export interface AdminSellThroughReport {
+  totals: {
+    capacity: number;
+    sold: number;
+    revenue: number;
+    events: number;
+  };
+  events: AdminSellThroughEvent[];
+}
+
+// --- Reconciliation / cash-up (per-kiosk / per-staff) -----------------------
+
+export type ReconRange = "today" | "7d" | "all";
+
+/** Paid sales attributed to one kiosk / staff member. */
+export interface AdminReconciliationRow {
+  kiosk_id: string | null;
+  label: string;
+  staff_id: string | null;
+  orders: number;
+  tickets: number;
+  revenue: number;
+  qpay: number;
+  card: number;
+}
+
+export interface AdminReconciliationReport {
+  totals: {
+    revenue: number;
+    orders: number;
+    tickets: number;
+    byMethod: { qpay: number; card: number };
+    voided: number;
+  };
+  kiosks: AdminReconciliationRow[];
+}

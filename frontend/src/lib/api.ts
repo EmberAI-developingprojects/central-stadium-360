@@ -1,10 +1,14 @@
 import type {
+  AdminReconciliationReport,
+  AdminSellThroughReport,
   AdminTicketRow,
   AdminTicketStats,
   AdminUserRow,
   AdminVenueOrderDetail,
   AdminVenueOrderRow,
   AdminVenueStats,
+  ReconRange,
+  SellThroughScope,
   DbEvent,
   DbHomeHero,
   DbHomeNews,
@@ -378,6 +382,21 @@ export const api = {
         request<KioskEvent[]>("GET", "/api/admin/kiosk/events"),
       stats: () =>
         request<AdminVenueStats>("GET", "/api/admin/kiosk/stats"),
+      sellThrough: (scope?: SellThroughScope) =>
+        request<AdminSellThroughReport>(
+          "GET",
+          `/api/admin/kiosk/sell-through${scope ? `?scope=${scope}` : ""}`,
+        ),
+      reconciliation: (opts?: { range?: ReconRange; eventId?: string }) => {
+        const qs = new URLSearchParams();
+        if (opts?.range) qs.set("range", opts.range);
+        if (opts?.eventId) qs.set("eventId", opts.eventId);
+        const suffix = qs.toString() ? `?${qs.toString()}` : "";
+        return request<AdminReconciliationReport>(
+          "GET",
+          `/api/admin/kiosk/reconciliation${suffix}`,
+        );
+      },
       listOrders: (filter?: {
         status?: TicketStatus | "all";
         eventId?: string;
