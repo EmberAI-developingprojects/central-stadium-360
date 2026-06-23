@@ -105,6 +105,8 @@
   "watch_tab_live": "Live",
   "watch_tab_upcoming": "Upcoming",
   "watch_tab_tickets": "Tickets",
+  "watch_no_event_title": "Coming soon",
+  "watch_no_event_hint": "No live or upcoming events right now. We'll announce a new event soon.",
   "watch_details": "Details",
   "watch_buy_ticket": "Get Ticket",
   "watch_watch_live": "Watch Live",

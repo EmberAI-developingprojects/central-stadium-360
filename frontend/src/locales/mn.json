@@ -105,6 +105,8 @@
   "watch_tab_live": "Шууд",
   "watch_tab_upcoming": "Удахгүй",
   "watch_tab_tickets": "Тасалбар",
+  "watch_no_event_title": "Удахгүй",
+  "watch_no_event_hint": "Идэвхтэй болон удахгүй болох арга хэмжээ алга. Бид удахгүй шинэ арга хэмжээ зарлах болно.",
   "watch_details": "Дэлгэрэнгүй",
   "watch_buy_ticket": "Тасалбар авах",
   "watch_watch_live": "Шууд үзэх",

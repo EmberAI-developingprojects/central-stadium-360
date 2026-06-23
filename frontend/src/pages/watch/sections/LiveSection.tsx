@@ -20,6 +20,7 @@ export function LiveSection({
   onWatch,
 }: LiveSectionProps) {
   const { t, i18n } = useTranslation();
+  const isPlaceholder = featuredEvent.id === "featured-placeholder";
   const loc = pickEventLocale(featuredEvent, i18n.language);
   const { isLive, hasTime, days, hours, minutes, seconds } = useCountdown(
     featuredEvent.start_time,
@@ -44,6 +45,7 @@ export function LiveSection({
   const dateStr = valid
     ? `${MONTHS_ABBR_EN[d!.getMonth()]} ${d!.getDate()} / ${d!.getFullYear()}`
     : featuredEvent.date;
+  const titleText = isPlaceholder ? t("watch_no_event_title") : loc.title;
 
   return (
     <section className="w-full max-w-full overflow-hidden" id="live">
@@ -57,7 +59,14 @@ export function LiveSection({
                   maxWidth: "min(70%, 900px)",
                   minWidth: "min(40%, 360px)",
                 }
-              : { aspectRatio: "16/9", maxWidth: "70%" }
+              : isPlaceholder
+                ? {
+                    aspectRatio: "16/9",
+                    width: "44%",
+                    minWidth: "320px",
+                    maxWidth: "560px",
+                  }
+                : { aspectRatio: "16/9", maxWidth: "70%" }
           }
         >
           {featuredEvent.image ? (
@@ -113,12 +122,20 @@ export function LiveSection({
         </div>
 
         <div className="bg-[#071526] flex-1 flex flex-col justify-center min-w-0 px-10 py-14 max-[920px]:px-7 max-[920px]:py-10 max-[720px]:px-5 max-[720px]:py-6 max-[420px]:px-4 max-[420px]:py-5">
-          <p className="text-[rgba(255,255,255,0.5)] text-[13px] font-bold uppercase tracking-[0.2em] m-0 mb-5 max-[720px]:mb-3 max-[420px]:text-[11px] max-[420px]:mb-2.5">
-            {dateStr}
-          </p>
+          {dateStr && (
+            <p className="text-[rgba(255,255,255,0.5)] text-[13px] font-bold uppercase tracking-[0.2em] m-0 mb-5 max-[720px]:mb-3 max-[420px]:text-[11px] max-[420px]:mb-2.5">
+              {dateStr}
+            </p>
+          )}
           <h1 className="text-white text-[40px] font-extrabold uppercase tracking-[-0.01em] leading-[1.1] m-0 break-words max-[920px]:text-[30px] max-[720px]:text-[22px] max-[420px]:text-[19px]">
-            {loc.title}
+            {titleText}
           </h1>
+          {isPlaceholder && (
+            <p className="mt-5 text-white/55 text-[14px] leading-[1.65] max-w-[480px] m-0 max-[420px]:text-[13px]">
+              {t("watch_no_event_hint")}
+            </p>
+          )}
+          {!isPlaceholder && (
           <div className="mt-9 flex flex-wrap items-stretch gap-3 max-[720px]:mt-5 max-[420px]:flex-col max-[420px]:items-stretch max-[420px]:gap-2.5">
             {!ownsFeatured && saleKind !== "expired" && (
               <button
@@ -217,6 +234,7 @@ export function LiveSection({
               </button>
             )}
           </div>
+          )}
         </div>
       </div>
     </section>
