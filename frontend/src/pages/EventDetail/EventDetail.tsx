@@ -7,20 +7,6 @@ import { getEvent } from "../../data/store";
 import type { EventRecord } from "../../data/store";
 import { pickEventLocale } from "../../lib/eventLocale";
 
-const MONTHS_MN = [
-  "1 сар",
-  "2 сар",
-  "3 сар",
-  "4 сар",
-  "5 сар",
-  "6 сар",
-  "7 сар",
-  "8 сар",
-  "9 сар",
-  "10 сар",
-  "11 сар",
-  "12 сар",
-];
 const MONTHS_EN = [
   "JAN",
   "FEB",
@@ -35,27 +21,25 @@ const MONTHS_EN = [
   "NOV",
   "DEC",
 ];
-const WEEKDAYS_MN = [
-  "Ням",
-  "Даваа",
-  "Мягмар",
-  "Лхагва",
-  "Пүрэв",
-  "Баасан",
-  "Бямба",
-];
 
-function fmtDate(iso: string) {
+function intlLocale(lang: string): string {
+  return lang.toLowerCase().startsWith("mn") ? "mn-MN" : "en-US";
+}
+
+function fmtDate(iso: string, lang: string) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
   const h = d.getHours(),
     m = d.getMinutes();
+  const locale = intlLocale(lang);
+  const weekday = new Intl.DateTimeFormat(locale, {
+    weekday: "short",
+  }).format(d);
   return {
     day: d.getDate(),
-    month: MONTHS_MN[d.getMonth()],
     monthEn: MONTHS_EN[d.getMonth()],
     year: d.getFullYear(),
-    weekday: WEEKDAYS_MN[d.getDay()],
+    weekday,
     time: `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`,
   };
 }
@@ -64,7 +48,7 @@ const money = (n: number) => n.toLocaleString("en-US") + "₮";
 
 export default function EventDetail() {
   const { id } = useParams<{ id: string }>();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [event, setEvent] = useState<EventRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const loc = useMemo(
@@ -83,7 +67,7 @@ export default function EventDetail() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  const dt = event ? fmtDate(event.start_time) : null;
+  const dt = event ? fmtDate(event.start_time, i18n.language) : null;
   const isLive = event?.start_time
     ? new Date(event.start_time).getTime() <= Date.now()
     : false;
@@ -113,12 +97,12 @@ export default function EventDetail() {
 
       {loading && (
         <div className="max-w-screen-page mx-auto px-6 py-20 text-center text-ink-soft text-[14px]">
-          Уншиж байна…
+          {t("event_detail_loading")}
         </div>
       )}
       {!loading && !event && (
         <div className="max-w-screen-page mx-auto px-6 py-20 text-center text-ink-soft text-[14px]">
-          Арга хэмжээ олдсонгүй.
+          {t("event_detail_not_found")}
         </div>
       )}
 
@@ -126,25 +110,33 @@ export default function EventDetail() {
         <>
           <div
             className="relative w-full overflow-hidden bg-[#0a1628]"
-            style={{ aspectRatio: "21/9", minHeight: 220, maxHeight: 460 }}
+            style={{ aspectRatio: "16/9", minHeight: 320, maxHeight: 620 }}
           >
             {event.image && (
-              <img
-                src={event.image}
-                alt={loc.title}
-                className="w-full h-full object-cover block"
-                loading="eager"
-              />
+              <>
+                <img
+                  src={event.image}
+                  alt=""
+                  aria-hidden="true"
+                  className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-60"
+                />
+                <img
+                  src={event.image}
+                  alt={loc.title}
+                  className="absolute inset-0 w-full h-full object-contain block z-[1]"
+                  loading="eager"
+                />
+              </>
             )}
             <div
-              className="absolute inset-0"
+              className="absolute inset-0 z-[2] pointer-events-none"
               style={{
                 background:
-                  "linear-gradient(to bottom, rgba(10,22,40,0.1) 0%, rgba(10,22,40,0.55) 55%, rgba(10,22,40,0.92) 100%)",
+                  "linear-gradient(to bottom, rgba(10,22,40,0) 55%, rgba(10,22,40,0.55) 80%, rgba(10,22,40,0.95) 100%)",
               }}
             />
             <div
-              className="absolute bottom-0 left-0 right-0 px-5 pb-7 md:px-14 md:pb-10"
+              className="absolute bottom-0 left-0 right-0 px-5 pb-7 md:px-14 md:pb-10 z-[3]"
               style={{ maxWidth: 860 }}
             >
               <h1
@@ -156,14 +148,14 @@ export default function EventDetail() {
                   letterSpacing: "-0.01em",
                   lineHeight: 1.06,
                   color: "#fff",
-                  textShadow: "0 2px 20px rgba(0,0,0,0.5)",
+                  textShadow: "0 2px 20px rgba(0,0,0,0.6)",
                 }}
               >
                 {loc.title}
               </h1>
             </div>
             {isLive && (
-              <span className="absolute top-4 left-5 md:left-14 inline-flex items-center gap-1.5 bg-[#e53935] text-white text-[11px] font-bold uppercase tracking-[0.14em] rounded-full px-3 py-1.5">
+              <span className="absolute top-4 left-5 md:left-14 inline-flex items-center gap-1.5 bg-[#e53935] text-white text-[11px] font-bold uppercase tracking-[0.14em] rounded-full px-3 py-1.5 z-[3]">
                 <span className="w-[7px] h-[7px] rounded-full bg-white animate-live-blink" />
                 LIVE
               </span>
@@ -189,7 +181,7 @@ export default function EventDetail() {
                   <line x1="19" y1="12" x2="5" y2="12" />
                   <polyline points="12 19 5 12 12 5" />
                 </svg>
-                Бүх арга хэмжээ
+                {t("event_detail_back_to_events")}
               </Link>
 
               {dt && (
@@ -243,7 +235,7 @@ export default function EventDetail() {
                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                     <circle cx="12" cy="10" r="3" />
                   </svg>
-                  Төв Цэнгэлдэх Хүрээлэн · Улаанбаатар
+                  {t("event_detail_location_value")}
                 </div>
                 <div className="flex items-center gap-2.5 text-[13.5px] text-ink-soft">
                   <svg
@@ -260,7 +252,7 @@ export default function EventDetail() {
                     <polygon points="23 7 16 12 23 17 23 7" />
                     <rect x="1" y="5" width="15" height="14" rx="2" />
                   </svg>
-                  360° онлайн дамжуулалт · 4 камер
+                  {t("event_detail_inline_stream")}
                 </div>
               </div>
             </div>
@@ -271,13 +263,13 @@ export default function EventDetail() {
                   {liveOver && replayAvailable && (
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-blue-tint text-brand-blue px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-[0.14em]">
                       <span className="w-1.5 h-1.5 rounded-full bg-brand-blue" />
-                      Replay · Нөхөж үзэх
+                      {t("event_detail_replay_badge")}
                     </span>
                   )}
                   {liveOver && !replayAvailable && (
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 text-zinc-600 px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-[0.14em]">
                       <span className="w-1.5 h-1.5 rounded-full bg-zinc-400" />
-                      Дууссан
+                      {t("watch_card_ended")}
                     </span>
                   )}
                   {!liveOver && (
@@ -286,7 +278,7 @@ export default function EventDetail() {
                         <span className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-60" />
                         <span className="relative inline-flex w-2 h-2 rounded-full bg-emerald-500" />
                       </span>
-                      {isLive ? "Шууд" : "Удахгүй болох"}
+                      {isLive ? t("watch_card_live") : t("watch_card_upcoming")}
                     </span>
                   )}
                 </div>
@@ -340,12 +332,12 @@ export default function EventDetail() {
                       >
                         <path d="M2 9a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z" />
                       </svg>
-                      Тасалбар авах
+                      {t("event_detail_buy")}
                     </Link>
                     {event.base > 0 && (
                       <div className="mt-3 flex items-center justify-between rounded-xl bg-surface-1 px-4 py-2.5">
                         <span className="text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-soft">
-                          Үнэ
+                          {t("event_detail_price_label")}
                         </span>
                         <span className="text-[16px] font-extrabold text-ink tabular-nums tracking-tight">
                           {money(event.base)}
@@ -375,15 +367,15 @@ export default function EventDetail() {
                         <path d="M3 4v5h5" />
                         <path d="M12 7v5l3 2" />
                       </svg>
-                      Нөхөж үзэх
+                      {t("event_detail_buy_replay")}
                     </Link>
                     <div className="mt-3 flex items-center justify-between rounded-xl bg-surface-1 px-4 py-2.5">
                       <div className="flex flex-col">
                         <span className="text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-soft leading-none">
-                          Үнэ
+                          {t("event_detail_price_label")}
                         </span>
                         <span className="text-[10.5px] text-ink-soft mt-1 leading-none">
-                          30 хоногийн үзэх эрх
+                          {t("event_detail_replay_short_perk")}
                         </span>
                       </div>
                       <span className="text-[16px] font-extrabold text-ink tabular-nums tracking-tight">
@@ -396,10 +388,10 @@ export default function EventDetail() {
                 {liveOver && !replayAvailable && (
                   <div className="w-full rounded-xl bg-surface-1 border border-solid border-[rgba(31,41,55,0.08)] px-5 py-4 text-center">
                     <div className="text-[13px] font-bold text-ink leading-tight">
-                      Энэ арга хэмжээ дууссан
+                      {t("event_detail_event_over")}
                     </div>
                     <div className="text-[11.5px] text-ink-soft mt-1">
-                      Нөхөж үзэх тасалбарын хугацаа дууссан.
+                      {t("event_detail_replay_expired_note")}
                     </div>
                   </div>
                 )}
@@ -429,10 +421,10 @@ export default function EventDetail() {
                   </span>
                   <div className="min-w-0">
                     <div className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-ink-soft">
-                      Байршил
+                      {t("event_detail_location")}
                     </div>
                     <div className="text-[13px] text-ink mt-0.5 leading-snug">
-                      Төв Цэнгэлдэх Хүрээлэн · Улаанбаатар
+                      {t("event_detail_location_value")}
                     </div>
                   </div>
                 </div>
@@ -457,10 +449,10 @@ export default function EventDetail() {
                   </span>
                   <div className="min-w-0">
                     <div className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-ink-soft">
-                      Дамжуулалт
+                      {t("event_detail_broadcast")}
                     </div>
                     <div className="text-[13px] text-ink mt-0.5 leading-snug">
-                      360° · 4 камер · HD чанар
+                      {t("event_detail_broadcast_value")}
                     </div>
                   </div>
                 </div>
