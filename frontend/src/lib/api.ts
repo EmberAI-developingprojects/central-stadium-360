@@ -1,4 +1,5 @@
 import type {
+  AdminAdmissionReport,
   AdminReconciliationReport,
   AdminSellThroughReport,
   AdminTicketRow,
@@ -395,6 +396,16 @@ export const api = {
         return request<AdminReconciliationReport>(
           "GET",
           `/api/admin/kiosk/reconciliation${suffix}`,
+        );
+      },
+      admission: (opts?: { eventId?: string; scope?: "onsale" | "all" }) => {
+        const qs = new URLSearchParams();
+        if (opts?.eventId) qs.set("eventId", opts.eventId);
+        if (opts?.scope) qs.set("scope", opts.scope);
+        const suffix = qs.toString() ? `?${qs.toString()}` : "";
+        return request<AdminAdmissionReport>(
+          "GET",
+          `/api/admin/kiosk/admission${suffix}`,
         );
       },
       listOrders: (filter?: {

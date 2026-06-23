@@ -39,6 +39,7 @@ const UserView = lazy(() => import("./admin/pages/UserView"));
 const Content = lazy(() => import("./admin/pages/Content"));
 const HistoryAdmin = lazy(() => import("./admin/pages/History"));
 const Kiosk = lazy(() => import("./admin/pages/Kiosk"));
+const Gate = lazy(() => import("./pages/Gate/Gate"));
 
 function RouteFallback() {
   return (
@@ -154,6 +155,7 @@ export default function App() {
         <Route path="/profile" element={<Profile />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/orders/:code" element={<OrderDetail />} />
+        <Route path="/gate" element={<Gate />} />
         <Route
           path="/admin"
           element={

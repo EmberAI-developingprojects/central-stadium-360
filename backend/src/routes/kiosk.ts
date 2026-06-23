@@ -7,6 +7,7 @@ import {
   applyCardResult,
   createKioskOrder,
   getKioskOrderStatus,
+  redeemTicket,
 } from "../lib/venue";
 import {
   getCallbackSecret,
@@ -142,6 +143,28 @@ kiosk.post("/orders/:id/card-result", async (c) => {
   );
   if (!res.ok) {
     return c.json({ ok: false, error: res.error } as const, res.status as 402);
+  }
+  return c.json({ ok: true, data: res.data } as const);
+});
+
+// --- Gate admission: redeem an admission ticket at the turnstile -------------
+const scanSchema = z.object({
+  code: z.string().trim().min(1),
+  event_id: z.string().uuid().nullable().optional(),
+});
+
+kiosk.post("/scan", async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = scanSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json(
+      { ok: false, error: "invalid_input", details: parsed.error.flatten() } as const,
+      400,
+    );
+  }
+  const res = await redeemTicket(parsed.data.code, parsed.data.event_id ?? null);
+  if (!res.ok) {
+    return c.json({ ok: false, error: res.error } as const, res.status as 400);
   }
   return c.json({ ok: true, data: res.data } as const);
 });
