@@ -1,6 +1,11 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import type {
+  AdminReconciliationReport,
+  AdminReconciliationRow,
+  AdminSellThroughEvent,
+  AdminSellThroughReport,
+  AdminSellThroughZone,
   AdminVenueOrderDetail,
   AdminVenueOrderRow,
   AdminVenueStats,
@@ -8,7 +13,9 @@ import type {
   DbVenueTicket,
   KioskEvent,
   KioskZone,
+  PaymentMethod,
   TicketStatus,
+  VenueOrderItem,
 } from "@cs360/shared";
 import { getSupabaseAdmin } from "../lib/supabase";
 import {
@@ -102,6 +109,238 @@ adminKiosk.get("/stats", async (c) => {
     ticketCount: ticketCount ?? 0,
   };
   return c.json({ ok: true, data: stats } as const);
+});
+
+// --- Report: sell-through (per-event / per-zone fill + realized revenue) ------
+type SellThroughEventRow = {
+  id: string;
+  title: string;
+  status: KioskEvent["status"];
+  start_time: string;
+  zones: (KioskZone & { sort_order: number; color: string | null })[];
+};
+
+adminKiosk.get("/sell-through", async (c) => {
+  const admin = getSupabaseAdmin();
+  if (!admin) {
+    return c.json({ ok: false, error: "supabase_not_configured" } as const, 503);
+  }
+  const scope = new URL(c.req.url).searchParams.get("scope") === "all"
+    ? "all"
+    : "onsale";
+
+  let eventQuery = admin
+    .from("events")
+    .select(`id,title,status,start_time,zones(${ZONE_COLS})`)
+    .order("start_time", { ascending: true });
+  if (scope === "onsale") {
+    eventQuery = eventQuery.in("status", ["upcoming", "live"]);
+  }
+  const { data: evData, error: evErr } = await eventQuery;
+  if (evErr) {
+    return c.json({ ok: false, error: evErr.message } as const, 500);
+  }
+  const eventRows = (evData ?? []) as unknown as SellThroughEventRow[];
+  const eventIds = eventRows.map((e) => e.id);
+
+  // Realized sales come from *paid* orders, aggregated per zone.
+  const byZone = new Map<string, { sold: number; revenue: number }>();
+  if (eventIds.length > 0) {
+    const { data: paidData, error: paidErr } = await admin
+      .from("venue_orders")
+      .select("items")
+      .eq("status", "paid")
+      .in("event_id", eventIds);
+    if (paidErr) {
+      return c.json({ ok: false, error: paidErr.message } as const, 500);
+    }
+    for (const row of (paidData ?? []) as { items: VenueOrderItem[] }[]) {
+      for (const it of row.items ?? []) {
+        const agg = byZone.get(it.zone_id) ?? { sold: 0, revenue: 0 };
+        agg.sold += it.qty;
+        agg.revenue += it.qty * it.unit_price;
+        byZone.set(it.zone_id, agg);
+      }
+    }
+  }
+
+  const events: AdminSellThroughEvent[] = eventRows.map((e) => {
+    const zones: AdminSellThroughZone[] = [...(e.zones ?? [])]
+      .sort((a, b) => a.sort_order - b.sort_order)
+      .map((z) => {
+        const agg = byZone.get(z.id) ?? { sold: 0, revenue: 0 };
+        const sold = Math.min(agg.sold, z.capacity);
+        return {
+          zone_id: z.id,
+          name_mn: z.name_mn,
+          color: z.color,
+          price: z.price,
+          capacity: z.capacity,
+          sold,
+          available: Math.max(0, z.capacity - sold),
+          revenue: agg.revenue,
+          pct: z.capacity > 0 ? sold / z.capacity : 0,
+        };
+      });
+    const capacity = zones.reduce((s, z) => s + z.capacity, 0);
+    const sold = zones.reduce((s, z) => s + z.sold, 0);
+    const revenue = zones.reduce((s, z) => s + z.revenue, 0);
+    return {
+      event_id: e.id,
+      title: e.title,
+      status: e.status,
+      start_time: e.start_time,
+      capacity,
+      sold,
+      revenue,
+      pct: capacity > 0 ? sold / capacity : 0,
+      zones,
+    };
+  });
+
+  const report: AdminSellThroughReport = {
+    totals: {
+      capacity: events.reduce((s, e) => s + e.capacity, 0),
+      sold: events.reduce((s, e) => s + e.sold, 0),
+      revenue: events.reduce((s, e) => s + e.revenue, 0),
+      events: events.length,
+    },
+    events,
+  };
+  return c.json({ ok: true, data: report } as const);
+});
+
+// --- Report: reconciliation / cash-up (per-kiosk / per-staff) ----------------
+type ReconOrderRow = {
+  id: string;
+  kiosk_id: string | null;
+  payment_method: PaymentMethod | null;
+  total: number;
+  status: TicketStatus;
+  paid_at: string | null;
+};
+
+adminKiosk.get("/reconciliation", async (c) => {
+  const admin = getSupabaseAdmin();
+  if (!admin) {
+    return c.json({ ok: false, error: "supabase_not_configured" } as const, 503);
+  }
+  const url = new URL(c.req.url);
+  const range = url.searchParams.get("range");
+  const eventId = url.searchParams.get("eventId");
+
+  let cutoff: string | null = null;
+  if (range === "today") {
+    const now = new Date();
+    cutoff = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+    ).toISOString();
+  } else if (range === "7d") {
+    cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  }
+
+  let query = admin
+    .from("venue_orders")
+    .select("id,kiosk_id,payment_method,total,status,paid_at");
+  if (eventId) query = query.eq("event_id", eventId);
+  const { data, error } = await query;
+  if (error) {
+    return c.json({ ok: false, error: error.message } as const, 500);
+  }
+  const all = (data ?? []) as ReconOrderRow[];
+
+  const inWindow = (o: ReconOrderRow): boolean =>
+    !cutoff || (!!o.paid_at && o.paid_at >= cutoff);
+
+  const paid = all.filter((o) => o.status === "paid" && inWindow(o));
+  const voided = all.filter(
+    (o) =>
+      (o.status === "cancelled" || o.status === "refunded") &&
+      (!cutoff || (!!o.paid_at && o.paid_at >= cutoff)),
+  ).length;
+
+  // Tickets minted per paid order, tallied back to a kiosk.
+  const paidIds = paid.map((o) => o.id);
+  const ticketsByOrder = new Map<string, number>();
+  if (paidIds.length > 0) {
+    const { data: tData } = await admin
+      .from("venue_tickets")
+      .select("order_id")
+      .in("order_id", paidIds);
+    for (const t of (tData ?? []) as { order_id: string }[]) {
+      ticketsByOrder.set(t.order_id, (ticketsByOrder.get(t.order_id) ?? 0) + 1);
+    }
+  }
+
+  // Resolve admin:<id> kiosk ids to staff names.
+  const staffIds = [
+    ...new Set(
+      paid
+        .map((o) => o.kiosk_id)
+        .filter((k): k is string => !!k && k.startsWith("admin:"))
+        .map((k) => k.slice("admin:".length)),
+    ),
+  ];
+  const staffNames = new Map<string, string>();
+  if (staffIds.length > 0) {
+    const { data: users } = await admin
+      .from("users")
+      .select("id,full_name")
+      .in("id", staffIds);
+    for (const u of (users ?? []) as { id: string; full_name: string | null }[]) {
+      staffNames.set(u.id, u.full_name || "Ажилтан");
+    }
+  }
+
+  const labelFor = (kioskId: string | null): { label: string; staffId: string | null } => {
+    if (!kioskId) return { label: "Тодорхойгүй", staffId: null };
+    if (kioskId.startsWith("admin:")) {
+      const sid = kioskId.slice("admin:".length);
+      return { label: staffNames.get(sid) ?? "Ажилтан", staffId: sid };
+    }
+    return { label: kioskId, staffId: null };
+  };
+
+  const groups = new Map<string, AdminReconciliationRow>();
+  for (const o of paid) {
+    const key = o.kiosk_id ?? "__none__";
+    let row = groups.get(key);
+    if (!row) {
+      const { label, staffId } = labelFor(o.kiosk_id);
+      row = {
+        kiosk_id: o.kiosk_id,
+        label,
+        staff_id: staffId,
+        orders: 0,
+        tickets: 0,
+        revenue: 0,
+        qpay: 0,
+        card: 0,
+      };
+      groups.set(key, row);
+    }
+    row.orders += 1;
+    row.revenue += Number(o.total) || 0;
+    row.tickets += ticketsByOrder.get(o.id) ?? 0;
+    if (o.payment_method === "qpay") row.qpay += Number(o.total) || 0;
+    else if (o.payment_method === "card") row.card += Number(o.total) || 0;
+  }
+
+  const kiosks = [...groups.values()].sort((a, b) => b.revenue - a.revenue);
+  const report: AdminReconciliationReport = {
+    totals: {
+      revenue: kiosks.reduce((s, k) => s + k.revenue, 0),
+      orders: kiosks.reduce((s, k) => s + k.orders, 0),
+      tickets: kiosks.reduce((s, k) => s + k.tickets, 0),
+      byMethod: {
+        qpay: kiosks.reduce((s, k) => s + k.qpay, 0),
+        card: kiosks.reduce((s, k) => s + k.card, 0),
+      },
+      voided,
+    },
+    kiosks,
+  };
+  return c.json({ ok: true, data: report } as const);
 });
 
 // --- Report: list venue orders -----------------------------------------------
