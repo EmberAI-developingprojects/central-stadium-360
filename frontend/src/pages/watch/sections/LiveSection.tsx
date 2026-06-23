@@ -6,6 +6,7 @@ import { useStreamLive } from "../hooks/useStreamLive";
 import { MONTHS_ABBR_EN } from "../constants";
 import { pad2 } from "../utils";
 import type { TicketModalEvent } from "../types";
+import { pickEventLocale } from "../../../lib/eventLocale";
 
 type LiveSectionProps = {
   featuredEvent: TicketModalEvent;
@@ -18,7 +19,8 @@ export function LiveSection({
   ownsFeatured,
   onWatch,
 }: LiveSectionProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const loc = pickEventLocale(featuredEvent, i18n.language);
   const { isLive, hasTime, days, hours, minutes, seconds } = useCountdown(
     featuredEvent.start_time,
   );
@@ -73,7 +75,7 @@ export function LiveSection({
               />
               <img
                 src={featuredEvent.image}
-                alt={featuredEvent.title}
+                alt={loc.title}
                 className="relative w-full h-full object-contain block"
                 loading="eager"
                 onLoad={onImgLoad}
@@ -115,13 +117,8 @@ export function LiveSection({
             {dateStr}
           </p>
           <h1 className="text-white text-[40px] font-extrabold uppercase tracking-[-0.01em] leading-[1.1] m-0 break-words max-[920px]:text-[30px] max-[720px]:text-[22px] max-[420px]:text-[19px]">
-            {featuredEvent.title}
+            {loc.title}
           </h1>
-          {featuredEvent.desc && (
-            <p className="text-[rgba(255,255,255,0.5)] text-[14px] mt-3 m-0 uppercase tracking-[0.06em] font-medium break-words max-[720px]:text-[12px] max-[720px]:mt-2 max-[420px]:text-[11px]">
-              {featuredEvent.desc}
-            </p>
-          )}
           <div className="mt-9 flex flex-wrap items-stretch gap-3 max-[720px]:mt-5 max-[420px]:flex-col max-[420px]:items-stretch max-[420px]:gap-2.5">
             {!ownsFeatured && saleKind !== "expired" && (
               <button

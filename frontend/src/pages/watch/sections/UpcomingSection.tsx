@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import type { EventRecord, OrderRecord } from "../../../data/store";
 import { MONTHS_ABBR_MN } from "../constants";
 import { fmtEventTime } from "../utils";
+import { pickEventLocale } from "../../../lib/eventLocale";
 
 type UpcomingSectionProps = {
   events: EventRecord[];
@@ -187,7 +188,8 @@ function EventCard({
   onClick: () => void;
   muted: boolean;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const loc = pickEventLocale(ev, i18n.language);
   const d = new Date(ev.start_time);
   const valid = !Number.isNaN(d.getTime());
   const day = valid ? d.getDate() : "";
@@ -212,7 +214,7 @@ function EventCard({
         {ev.image ? (
           <img
             src={ev.image}
-            alt={ev.title}
+            alt={loc.title}
             className="w-full h-full object-cover block [transition:transform_.45s_ease] group-hover:scale-[1.04]"
             loading="lazy"
           />
@@ -301,11 +303,11 @@ function EventCard({
         </div>
         <div className="flex-1 min-w-0 pt-0.5">
           <h3 className="text-white font-extrabold text-[16px] leading-[1.25] m-0 tracking-[-0.01em] uppercase">
-            {ev.title}
+            {loc.title}
           </h3>
-          {ev.desc && (
+          {loc.desc && (
             <p className="text-[rgba(255,255,255,0.5)] text-[12px] mt-1.5 m-0 leading-[1.45] line-clamp-2">
-              {ev.desc}
+              {loc.desc}
             </p>
           )}
         </div>

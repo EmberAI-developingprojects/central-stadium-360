@@ -620,7 +620,7 @@ function Upcoming({ gatedGo, events }: UpcomingProps) {
           </div>
           <Link
             to="/events"
-            className="text-[13px] font-bold uppercase text-ink no-underline inline-flex items-center gap-2 pb-1 tracking-[0.06em] border-b-2 border-solid border-transparent [transition:color_0.18s_ease,border-color_0.18s_ease,gap_0.18s_ease] hover:text-brand-blue hover:gap-3 hover:border-brand-blue [&_svg]:w-[14px] [&_svg]:h-[14px]"
+            className="group relative text-[13px] font-bold uppercase text-ink no-underline inline-flex items-center gap-2 pb-1 tracking-[0.06em] outline-none focus:outline-none [transition:color_0.18s_ease,gap_0.18s_ease] hover:text-brand-blue hover:gap-3 focus-visible:text-brand-blue [&_svg]:w-[14px] [&_svg]:h-[14px] after:content-[''] after:absolute after:left-0 after:right-0 after:bottom-0 after:h-[2px] after:bg-transparent after:[transition:background-color_0.18s_ease] hover:after:bg-brand-blue focus-visible:after:bg-brand-blue"
           >
             Бүх арга хэмжээ үзэх
             <svg
@@ -1121,28 +1121,15 @@ export function Roadmap(_props: { items?: any[] }) {
     { x: 96.83, y: 34.38 },
   ];
 
-  const allDots = [...botDots, ...topDots].sort((a, b) => a.x - b.x);
-
-  const VBW = 1000;
-  const VBH = 380;
-  const buildPath = () => {
-    const pts = allDots.map((p) => ({
-      x: (p.x / 100) * VBW,
-      y: (p.y / 100) * VBH,
-    }));
-    const startX = Math.max(pts[0].x - 30, 0);
-    let d = `M ${startX} ${pts[0].y} L ${pts[0].x} ${pts[0].y}`;
-    for (let i = 0; i < pts.length - 1; i++) {
-      const { x: x1, y: y1 } = pts[i];
-      const { x: x2, y: y2 } = pts[i + 1];
-      const midX = (x1 + x2) / 2;
-      d += ` C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`;
-    }
-    const endX = Math.min(pts[pts.length - 1].x + 30, VBW);
-    d += ` L ${endX} ${pts[pts.length - 1].y}`;
-    return d;
-  };
-  const curvedPath = buildPath();
+  const botY = botDots[0].y;
+  const topY = topDots[0].y;
+  const botLineLeft = Math.max(botDots[0].x - 3, 0);
+  const botLineRight = botDots[botDots.length - 1].x;
+  const topLineLeft = topDots[0].x;
+  const topLineRight = Math.min(topDots[topDots.length - 1].x + 3, 100);
+  const rampLeft = botDots[botDots.length - 1].x;
+  const rampRight = topDots[0].x;
+  const rampWidthPct = rampRight - rampLeft;
 
   const phaseBase =
     "flex flex-col justify-center min-h-[64px] py-3 pr-[44px] font-[inherit] max-[640px]:[clip-path:none] max-[640px]:m-0 max-[640px]:rounded max-[640px]:py-3 max-[640px]:px-4";
@@ -1202,19 +1189,43 @@ export function Roadmap(_props: { items?: any[] }) {
           className={`relative w-full mb-3 h-[380px] max-[1200px]:h-[360px] max-[900px]:h-[340px] max-[640px]:hidden reveal-up`}
           data-stagger="4"
         >
-          <svg
-            className="absolute inset-0 w-full h-full overflow-visible"
-            viewBox="0 0 1000 380"
-            preserveAspectRatio="none"
+          <span
             aria-hidden="true"
+            className="absolute h-[2px] bg-[#1a1a1a] rounded-full"
+            style={{
+              left: `${botLineLeft}%`,
+              width: `${botLineRight - botLineLeft}%`,
+              top: `calc(${botY}% - 1px)`,
+            }}
+          />
+          <span
+            aria-hidden="true"
+            className="absolute h-[2px] bg-[#1a1a1a] rounded-full"
+            style={{
+              left: `${topLineLeft}%`,
+              width: `${topLineRight - topLineLeft}%`,
+              top: `calc(${topY}% - 1px)`,
+            }}
+          />
+          <svg
+            aria-hidden="true"
+            className="absolute overflow-visible"
+            style={{
+              left: `${rampLeft}%`,
+              top: `${topY}%`,
+              width: `${rampWidthPct}%`,
+              height: `${botY - topY}%`,
+            }}
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
           >
             <path
-              d={curvedPath}
+              d="M 0 100 C 50 100, 50 0, 100 0"
               stroke="#1a1a1a"
-              strokeWidth="2.5"
+              strokeWidth="2"
               fill="none"
+              vectorEffect="non-scaling-stroke"
               strokeLinecap="round"
-              strokeLinejoin="round"
             />
           </svg>
 
@@ -1356,7 +1367,7 @@ function News({ items = [] }: { items: NewsItem[] }) {
         >
           <Link
             to="/news"
-            className="inline-flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.06em] text-ink no-underline pb-1 border-b-2 border-solid border-transparent [transition:color_.18s_ease,border-color_.18s_ease,gap_.18s_ease] hover:text-brand-blue hover:gap-3 hover:border-brand-blue [&_svg]:w-[14px] [&_svg]:h-[14px]"
+            className="group relative inline-flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.06em] text-ink no-underline pb-1 outline-none focus:outline-none [transition:color_.18s_ease,gap_.18s_ease] hover:text-brand-blue hover:gap-3 focus-visible:text-brand-blue [&_svg]:w-[14px] [&_svg]:h-[14px] after:content-[''] after:absolute after:left-0 after:right-0 after:bottom-0 after:h-[2px] after:bg-transparent after:[transition:background-color_.18s_ease] hover:after:bg-brand-blue focus-visible:after:bg-brand-blue"
           >
             {t("news_view_all")}
             <svg

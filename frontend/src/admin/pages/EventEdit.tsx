@@ -1000,32 +1000,33 @@ function EventEnglishSection({
   const hasAny = !!(form.titleEn || form.descEn);
   const [open, setOpen] = useState(hasAny);
   return (
-    <div className="mt-2 pt-4 border-t border-dashed border-[#ececef]">
+    <div className="mt-4 rounded-2xl bg-gradient-to-br from-indigo-50 to-blue-50 border border-solid border-indigo-200/70 shadow-[0_2px_8px_-2px_rgba(34,48,198,0.08)] p-5">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-2 bg-transparent border-0 p-0 cursor-pointer text-zinc-800 text-[13px] font-semibold"
+        className="inline-flex items-center gap-2.5 bg-transparent border-0 p-0 cursor-pointer text-indigo-900 text-[14px] font-bold"
       >
+        <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-indigo-600 text-white text-[12px] font-extrabold tracking-wider shadow-sm">
+          EN
+        </span>
         <span
-          className="inline-flex transition-transform"
+          className="inline-flex transition-transform text-indigo-500"
           style={{ transform: open ? "rotate(90deg)" : "rotate(0deg)" }}
           aria-hidden="true"
         >
           ▸
         </span>
-        English хувилбар (заавал биш)
+        English хувилбар <span className="text-[12px] font-medium text-indigo-500">(заавал биш)</span>
         {hasAny && !open && (
           <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-100 rounded-md px-2 py-0.5">
-            Бөглөсөн
+            ✓ Бөглөсөн
           </span>
         )}
       </button>
       {open && (
-        <div className="mt-3 flex flex-col gap-3">
-          <div className="text-[12px] text-zinc-500">
-            Хэрэв сайтын хэлийг англи болгоход энэ арга хэмжээг англиар
-            харуулахыг хүсвэл доорх талбаруудыг өөрөө орчуулж бөглөнө үү.
-            Хоосон үлдээвэл монгол хувилбар нь харагдана.
+        <div className="mt-4 flex flex-col gap-3">
+          <div className="text-[12.5px] text-indigo-900/75 leading-relaxed bg-white/60 rounded-lg px-3 py-2.5 border border-solid border-indigo-100">
+            💡 Сайтын хэлийг англи болгож харахад энэ арга хэмжээг англиар харуулахыг хүсвэл доорх талбаруудыг бөглөнө үү. Хоосон үлдээвэл монгол хувилбар нь харагдана.
           </div>
           <div className={ADMIN_FIELD_CLS}>
             <label htmlFor="evt-title-en" className="flex items-center justify-between">
