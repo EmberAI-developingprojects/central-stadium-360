@@ -1,6 +1,10 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import type {
+  AdminAdmissionEvent,
+  AdminAdmissionReport,
+  AdminAdmissionScan,
+  AdminAdmissionZone,
   AdminReconciliationReport,
   AdminReconciliationRow,
   AdminSellThroughEvent,
@@ -16,6 +20,7 @@ import type {
   PaymentMethod,
   TicketStatus,
   VenueOrderItem,
+  VenueTicketStatus,
 } from "@cs360/shared";
 import { getSupabaseAdmin } from "../lib/supabase";
 import {
@@ -340,6 +345,125 @@ adminKiosk.get("/reconciliation", async (c) => {
     },
     kiosks,
   };
+  return c.json({ ok: true, data: report } as const);
+});
+
+// --- Report: live admission (turnstile scans vs issued tickets) --------------
+type AdmissionEventRow = {
+  id: string;
+  title: string;
+  status: AdminAdmissionEvent["status"];
+  start_time: string;
+  zones: { id: string; name_mn: string; color: string | null; sort_order: number }[];
+};
+
+adminKiosk.get("/admission", async (c) => {
+  const admin = getSupabaseAdmin();
+  if (!admin) {
+    return c.json({ ok: false, error: "supabase_not_configured" } as const, 503);
+  }
+  const url = new URL(c.req.url);
+  const scope = url.searchParams.get("scope") === "all" ? "all" : "onsale";
+  const eventId = url.searchParams.get("eventId");
+
+  let eventQuery = admin
+    .from("events")
+    .select("id,title,status,start_time,zones(id,name_mn,color,sort_order)")
+    .order("start_time", { ascending: true });
+  if (eventId) eventQuery = eventQuery.eq("id", eventId);
+  else if (scope === "onsale") {
+    eventQuery = eventQuery.in("status", ["upcoming", "live"]);
+  }
+  const { data: evData, error: evErr } = await eventQuery;
+  if (evErr) {
+    return c.json({ ok: false, error: evErr.message } as const, 500);
+  }
+  const eventRows = (evData ?? []) as unknown as AdmissionEventRow[];
+
+  // zone -> { event, label, color } and the flat list of zone ids to count.
+  const zoneMeta = new Map<
+    string,
+    { event_id: string; name_mn: string; color: string | null }
+  >();
+  const eventTitle = new Map<string, string>();
+  const zoneIds: string[] = [];
+  for (const e of eventRows) {
+    eventTitle.set(e.id, e.title);
+    for (const z of e.zones ?? []) {
+      zoneMeta.set(z.id, { event_id: e.id, name_mn: z.name_mn, color: z.color });
+      zoneIds.push(z.id);
+    }
+  }
+
+  // Aggregate issued (non-void) vs admitted (used) per zone.
+  const byZone = new Map<string, { sold: number; admitted: number }>();
+  let recent: AdminAdmissionScan[] = [];
+  if (zoneIds.length > 0) {
+    const { data: tix, error: tErr } = await admin
+      .from("venue_tickets")
+      .select("zone_id,status")
+      .in("zone_id", zoneIds);
+    if (tErr) {
+      return c.json({ ok: false, error: tErr.message } as const, 500);
+    }
+    for (const t of (tix ?? []) as { zone_id: string; status: VenueTicketStatus }[]) {
+      if (t.status === "void") continue;
+      const agg = byZone.get(t.zone_id) ?? { sold: 0, admitted: 0 };
+      agg.sold += 1;
+      if (t.status === "used") agg.admitted += 1;
+      byZone.set(t.zone_id, agg);
+    }
+
+    const { data: rs } = await admin
+      .from("venue_tickets")
+      .select("code,zone_id,used_at")
+      .in("zone_id", zoneIds)
+      .eq("status", "used")
+      .order("used_at", { ascending: false })
+      .limit(25);
+    recent = ((rs ?? []) as { code: string; zone_id: string; used_at: string | null }[])
+      .filter((r) => !!r.used_at)
+      .map((r) => {
+        const zm = zoneMeta.get(r.zone_id);
+        return {
+          code: r.code,
+          zone_name_mn: zm?.name_mn ?? null,
+          event_title: zm ? eventTitle.get(zm.event_id) ?? null : null,
+          used_at: r.used_at as string,
+        };
+      });
+  }
+
+  const events: AdminAdmissionEvent[] = eventRows.map((e) => {
+    const zones: AdminAdmissionZone[] = [...(e.zones ?? [])]
+      .sort((a, b) => a.sort_order - b.sort_order)
+      .map((z) => {
+        const agg = byZone.get(z.id) ?? { sold: 0, admitted: 0 };
+        return {
+          zone_id: z.id,
+          name_mn: z.name_mn,
+          color: z.color,
+          sold: agg.sold,
+          admitted: agg.admitted,
+          pct: agg.sold > 0 ? agg.admitted / agg.sold : 0,
+        };
+      });
+    const sold = zones.reduce((s, z) => s + z.sold, 0);
+    const admitted = zones.reduce((s, z) => s + z.admitted, 0);
+    return {
+      event_id: e.id,
+      title: e.title,
+      status: e.status,
+      start_time: e.start_time,
+      sold,
+      admitted,
+      no_show: sold - admitted,
+      pct: sold > 0 ? admitted / sold : 0,
+      zones,
+    };
+  });
+
+  const report: AdminAdmissionReport = { events, recent };
   return c.json({ ok: true, data: report } as const);
 });
 

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import type {
+  AdminAdmissionEvent,
+  AdminAdmissionReport,
   AdminReconciliationReport,
   AdminSellThroughEvent,
   AdminSellThroughReport,
@@ -25,7 +27,7 @@ import {
   ADMIN_TABS_CLS,
 } from "../_adminStyles";
 
-type TabId = "overview" | "recon" | "sales";
+type TabId = "overview" | "recon" | "admission" | "sales";
 
 const pctText = (p: number): string => `${Math.round(p * 100)}%`;
 
@@ -83,6 +85,13 @@ export default function Kiosk() {
         </button>
         <button
           type="button"
+          className={tab === "admission" ? "is-active" : undefined}
+          onClick={() => setTab("admission")}
+        >
+          Нэвтрэлт
+        </button>
+        <button
+          type="button"
           className={tab === "sales" ? "is-active" : undefined}
           onClick={() => setTab("sales")}
         >
@@ -94,6 +103,8 @@ export default function Kiosk() {
         <SellThroughPanel />
       ) : tab === "recon" ? (
         <ReconciliationPanel />
+      ) : tab === "admission" ? (
+        <AdmissionPanel />
       ) : (
         <SalesPanel />
       )}
@@ -435,6 +446,217 @@ function Segmented<T extends string>({
         </button>
       ))}
     </div>
+  );
+}
+
+// ===========================================================================
+// ADMISSION — live turnstile scans vs issued tickets
+// ===========================================================================
+
+function AdmissionPanel() {
+  const [scope, setScope] = useState<SellThroughScope>("onsale");
+  const [report, setReport] = useState<AdminAdmissionReport | null>(null);
+  const [live, setLive] = useState(true);
+
+  const load = useCallback(() => {
+    api.admin.kiosk.admission({ scope }).then((res) => {
+      setReport(res.ok && res.data ? res.data : { events: [], recent: [] });
+    });
+  }, [scope]);
+
+  useEffect(() => {
+    setReport(null);
+    load();
+  }, [load]);
+
+  useEffect(() => {
+    if (!live) return;
+    const iv = window.setInterval(load, 5000);
+    return () => window.clearInterval(iv);
+  }, [live, load]);
+
+  const totals = useMemo(() => {
+    const evs = report?.events ?? [];
+    const sold = evs.reduce((s, e) => s + e.sold, 0);
+    const admitted = evs.reduce((s, e) => s + e.admitted, 0);
+    return {
+      sold,
+      admitted,
+      noShow: sold - admitted,
+      pct: sold > 0 ? admitted / sold : 0,
+    };
+  }, [report]);
+
+  return (
+    <>
+      <div className={ADMIN_FILTERS_CLS}>
+        <Segmented
+          value={scope}
+          onChange={setScope}
+          options={[
+            ["onsale", "Зарж буй"],
+            ["all", "Бүгд"],
+          ]}
+        />
+        <button
+          type="button"
+          onClick={() => setLive((v) => !v)}
+          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-[#e4e4e7] bg-white text-[12.5px] font-medium text-zinc-700 hover:bg-zinc-50"
+        >
+          <span
+            className={`inline-block h-2 w-2 rounded-full ${
+              live ? "bg-emerald-500 animate-pulse" : "bg-zinc-300"
+            }`}
+          />
+          {live ? "Шууд" : "Зогссон"}
+        </button>
+        <button
+          type="button"
+          onClick={load}
+          className="inline-flex items-center h-8 px-3 rounded-md border border-[#e4e4e7] bg-white text-[12.5px] font-medium text-zinc-700 hover:bg-zinc-50"
+        >
+          Шинэчлэх
+        </button>
+      </div>
+
+      {!report ? (
+        <div className={ADMIN_EMPTY_CLS}>Уншиж байна…</div>
+      ) : report.events.length === 0 ? (
+        <div className={ADMIN_EMPTY_CLS}>
+          <strong>Арга хэмжээ алга</strong>
+          Бүс тохируулсан, зарж буй арга хэмжээ одоогоор алга байна.
+        </div>
+      ) : (
+        <>
+          <div className="grid gap-3 mb-5 [grid-template-columns:repeat(4,minmax(0,1fr))] max-[980px]:[grid-template-columns:repeat(2,minmax(0,1fr))]">
+            <StatCard label="Нэвтэрсэн" value={totals.admitted.toLocaleString("en-US")} sub="уншуулсан тасалбар" />
+            <StatCard label="Гарсан тасалбар" value={totals.sold.toLocaleString("en-US")} sub="нийт зарагдсан" />
+            <StatCard label="Ороогүй" value={totals.noShow.toLocaleString("en-US")} sub="хүлээгдэж буй" />
+            <StatCard label="Дүүргэлт" value={pctText(totals.pct)} sub="нэвтэрсэн / зарагдсан" />
+          </div>
+
+          <div className="grid gap-4 [grid-template-columns:1fr_320px] max-[1100px]:[grid-template-columns:1fr]">
+            <div className="flex flex-col gap-4">
+              {report.events.map((e) => (
+                <AdmissionEventCard key={e.event_id} event={e} />
+              ))}
+            </div>
+            <RecentScans report={report} />
+          </div>
+        </>
+      )}
+    </>
+  );
+}
+
+function AdmissionEventCard({ event }: { event: AdminAdmissionEvent }) {
+  const dt = formatDateTime(event.start_time);
+  return (
+    <div className="bg-white border border-[#ececef] rounded-xl overflow-hidden">
+      <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-[#f4f4f5]">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <h3 className="m-0 text-[14.5px] font-semibold text-zinc-900 truncate">
+              {event.title}
+            </h3>
+            <EventStatusBadge status={event.status} />
+          </div>
+          <div className="text-[12px] text-zinc-500 mt-0.5 tabular-nums">
+            {dt.primary}
+            {dt.secondary ? ` · ${dt.secondary}` : ""}
+          </div>
+        </div>
+        <div className="text-right shrink-0">
+          <div className="text-[15px] font-semibold tabular-nums text-zinc-900">
+            {event.admitted}/{event.sold}
+          </div>
+          <div className="text-[12px] text-zinc-500 tabular-nums">
+            {pctText(event.pct)} · {event.no_show} ороогүй
+          </div>
+        </div>
+      </div>
+
+      {event.zones.length === 0 ? (
+        <div className="px-5 py-4 text-[13px] text-zinc-500">Бүс тохируулаагүй.</div>
+      ) : (
+        <table className={ADMIN_TABLE_CLS}>
+          <thead>
+            <tr>
+              <th>Бүс</th>
+              <th style={{ width: "38%" }}>Нэвтрэлт</th>
+              <th style={{ textAlign: "center" }}>Нэвтэрсэн</th>
+              <th style={{ textAlign: "center" }}>Ороогүй</th>
+            </tr>
+          </thead>
+          <tbody>
+            {event.zones.map((z) => (
+              <tr key={z.zone_id}>
+                <td>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="h-3 w-1.5 rounded-full shrink-0"
+                      style={{ background: z.color || "#2230C6" }}
+                      aria-hidden="true"
+                    />
+                    <span className="text-zinc-900 font-medium">{z.name_mn}</span>
+                  </div>
+                </td>
+                <td>
+                  <div className="flex items-center gap-2">
+                    <FillBar pct={z.pct} color={z.color} />
+                    <span className="text-[12px] tabular-nums text-zinc-500 shrink-0 w-9 text-right">
+                      {pctText(z.pct)}
+                    </span>
+                  </div>
+                </td>
+                <td className="tabular-nums text-center">
+                  {z.admitted}/{z.sold}
+                </td>
+                <td className="tabular-nums text-center text-zinc-600">
+                  {Math.max(0, z.sold - z.admitted)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
+function RecentScans({ report }: { report: AdminAdmissionReport }) {
+  return (
+    <aside className="bg-white border border-[#ececef] rounded-xl p-4 self-start">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-[11px] text-zinc-500 uppercase tracking-[.06em] font-medium">
+          Сүүлийн нэвтрэлт
+        </span>
+      </div>
+      {report.recent.length === 0 ? (
+        <p className="text-[13px] text-zinc-500 m-0">Одоогоор нэвтрэлт алга.</p>
+      ) : (
+        <div className="flex flex-col gap-1.5">
+          {report.recent.map((r, i) => {
+            const dt = formatDateTime(r.used_at);
+            return (
+              <div
+                key={`${r.code}-${i}`}
+                className="flex items-center gap-2 text-[12.5px] py-1.5"
+              >
+                <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
+                <span className="font-mono text-zinc-700 truncate">{r.code}</span>
+                <span className="text-zinc-400 truncate hidden sm:inline">
+                  {r.zone_name_mn ?? ""}
+                </span>
+                <span className="ml-auto text-zinc-500 tabular-nums shrink-0">
+                  {dt.secondary || dt.primary}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </aside>
   );
 }
 

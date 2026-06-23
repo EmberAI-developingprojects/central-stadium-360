@@ -480,3 +480,69 @@ export interface AdminReconciliationReport {
   };
   kiosks: AdminReconciliationRow[];
 }
+
+// --- Gate admission — scan an admission ticket at the turnstile --------------
+
+export type ScanVerdict =
+  | "admitted" // valid ticket, just flipped to used
+  | "already_used" // previously admitted
+  | "voided" // ticket was voided
+  | "not_found" // no ticket with this code
+  | "wrong_event"; // ticket belongs to a different event than the gate
+
+export interface KioskScanInput {
+  code: string;
+  /** When the gate is bound to an event, reject tickets from other events. */
+  event_id?: string | null;
+}
+
+export interface KioskScanResult {
+  verdict: ScanVerdict;
+  code: string;
+  zone_name_mn: string | null;
+  event_title: string | null;
+  /** For `admitted`: the moment of admission. For `already_used`: first admission. */
+  used_at: string | null;
+  /** Live tally for the ticket's event, for gate feedback. */
+  admitted: number;
+  sold: number;
+}
+
+// --- Admin live admission dashboard -----------------------------------------
+
+export interface AdminAdmissionZone {
+  zone_id: string;
+  name_mn: string;
+  color: string | null;
+  /** Issued admission tickets (valid + used; excludes void). */
+  sold: number;
+  /** Admitted so far (used). */
+  admitted: number;
+  /** admitted / sold. */
+  pct: number;
+}
+
+export interface AdminAdmissionScan {
+  code: string;
+  zone_name_mn: string | null;
+  event_title: string | null;
+  used_at: string;
+}
+
+export interface AdminAdmissionEvent {
+  event_id: string;
+  title: string;
+  status: EventStatus;
+  start_time: string;
+  sold: number;
+  admitted: number;
+  no_show: number;
+  pct: number;
+  zones: AdminAdmissionZone[];
+}
+
+export interface AdminAdmissionReport {
+  events: AdminAdmissionEvent[];
+  /** Most recent admissions across the reported events. */
+  recent: AdminAdmissionScan[];
+}

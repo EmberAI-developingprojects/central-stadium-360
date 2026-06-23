@@ -6,8 +6,11 @@ import type {
   KioskEbarimt,
   KioskOrderItemInput,
   KioskOrderStatus,
+  KioskScanResult,
   KioskTicketOut,
+  ScanVerdict,
   VenueOrderItem,
+  VenueTicketStatus,
 } from "@cs360/shared";
 import { getSupabaseAdmin } from "./supabase";
 import {
@@ -392,4 +395,152 @@ async function failOrderRow(order: DbVenueOrder): Promise<void> {
       .eq("id", order.id)
       .eq("status", "pending");
   }
+}
+
+// --- Gate admission --------------------------------------------------------
+
+function blankResult(verdict: ScanVerdict, code: string): KioskScanResult {
+  return {
+    verdict,
+    code,
+    zone_name_mn: null,
+    event_title: null,
+    used_at: null,
+    admitted: 0,
+    sold: 0,
+  };
+}
+
+/** Issued (valid+used) and admitted (used) admission-ticket counts for an event. */
+export async function admissionCounts(
+  eventId: string,
+): Promise<{ sold: number; admitted: number }> {
+  const admin = getSupabaseAdmin();
+  if (!admin) return { sold: 0, admitted: 0 };
+  const { data: zoneRows } = await admin
+    .from("zones")
+    .select("id")
+    .eq("event_id", eventId);
+  const zoneIds = (zoneRows ?? []).map((z) => z.id as string);
+  if (zoneIds.length === 0) return { sold: 0, admitted: 0 };
+  const { data: tix } = await admin
+    .from("venue_tickets")
+    .select("status")
+    .in("zone_id", zoneIds);
+  let sold = 0;
+  let admitted = 0;
+  for (const t of (tix ?? []) as { status: VenueTicketStatus }[]) {
+    if (t.status === "void") continue;
+    sold += 1;
+    if (t.status === "used") admitted += 1;
+  }
+  return { sold, admitted };
+}
+
+/**
+ * Redeem an admission ticket at the gate: flip `valid -> used` exactly once.
+ * Business outcomes (admitted / already_used / voided / not_found / wrong_event)
+ * resolve as `ok: true` with a verdict; only infra failures return `ok: false`.
+ */
+export async function redeemTicket(
+  rawCode: string,
+  gateEventId?: string | null,
+): Promise<VenueResult<KioskScanResult>> {
+  const admin = getSupabaseAdmin();
+  if (!admin) return { ok: false, error: "supabase_not_configured", status: 503 };
+
+  const code = rawCode.trim().toUpperCase();
+  if (!code) return { ok: false, error: "empty_code", status: 400 };
+
+  const { data: ticket } = await admin
+    .from("venue_tickets")
+    .select("id,order_id,zone_id,status,used_at")
+    .eq("code", code)
+    .maybeSingle<{
+      id: string;
+      order_id: string;
+      zone_id: string;
+      status: VenueTicketStatus;
+      used_at: string | null;
+    }>();
+
+  if (!ticket) return { ok: true, data: blankResult("not_found", code) };
+
+  // Resolve the ticket's event + zone label (for display and event binding).
+  const { data: order } = await admin
+    .from("venue_orders")
+    .select("event_id,items")
+    .eq("id", ticket.order_id)
+    .maybeSingle<{ event_id: string; items: VenueOrderItem[] }>();
+  const eventId = order?.event_id ?? null;
+  const zoneName =
+    order?.items?.find((it) => it.zone_id === ticket.zone_id)?.zone_name_mn ??
+    null;
+  let eventTitle: string | null = null;
+  if (eventId) {
+    const { data: ev } = await admin
+      .from("events")
+      .select("title")
+      .eq("id", eventId)
+      .maybeSingle<{ title: string }>();
+    eventTitle = ev?.title ?? null;
+  }
+
+  const counts = eventId
+    ? await admissionCounts(eventId)
+    : { sold: 0, admitted: 0 };
+  const base = {
+    code,
+    zone_name_mn: zoneName,
+    event_title: eventTitle,
+    admitted: counts.admitted,
+    sold: counts.sold,
+  };
+
+  // Gate bound to an event rejects foreign tickets without redeeming them.
+  if (gateEventId && eventId && gateEventId !== eventId) {
+    return { ok: true, data: { ...base, verdict: "wrong_event", used_at: null } };
+  }
+  if (ticket.status === "void") {
+    return { ok: true, data: { ...base, verdict: "voided", used_at: null } };
+  }
+  if (ticket.status === "used") {
+    return {
+      ok: true,
+      data: { ...base, verdict: "already_used", used_at: ticket.used_at },
+    };
+  }
+
+  // valid -> used, claimed atomically so a double-scan cannot admit twice.
+  const nowIso = new Date().toISOString();
+  const { data: claimed } = await admin
+    .from("venue_tickets")
+    .update({ status: "used", used_at: nowIso })
+    .eq("id", ticket.id)
+    .eq("status", "valid")
+    .select("id")
+    .maybeSingle<{ id: string }>();
+
+  if (!claimed) {
+    // Lost the race — admitted microseconds earlier by another gate.
+    const { data: fresh } = await admin
+      .from("venue_tickets")
+      .select("used_at")
+      .eq("id", ticket.id)
+      .maybeSingle<{ used_at: string | null }>();
+    return {
+      ok: true,
+      data: { ...base, verdict: "already_used", used_at: fresh?.used_at ?? null },
+    };
+  }
+
+  return {
+    ok: true,
+    data: {
+      ...base,
+      verdict: "admitted",
+      used_at: nowIso,
+      admitted: counts.admitted + 1,
+    },
+  };
 }
