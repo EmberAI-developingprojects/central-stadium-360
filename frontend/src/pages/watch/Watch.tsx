@@ -83,6 +83,8 @@ export default function Watch() {
     return {
       id: ev.id,
       title: ev.title,
+      titleEn: ev.titleEn,
+      descEn: ev.descEn,
       date: ev.date,
       image: ev.image,
       base: ev.base,

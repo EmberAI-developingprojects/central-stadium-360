@@ -3,6 +3,8 @@ export type TabId = "live" | "upcoming" | "tickets";
 export type TicketModalEvent = {
   id: string;
   title: string;
+  titleEn?: string;
+  descEn?: string;
   date: string;
   image: string;
   base: number;

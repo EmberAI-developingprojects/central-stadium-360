@@ -8,6 +8,7 @@ import {
 } from "react";
 import Hls from "hls.js";
 import * as THREE from "three";
+import { useTranslation } from "react-i18next";
 import type { Session } from "../../../auth";
 import { api } from "../../../lib/api";
 import type { WatchCam } from "../../../lib/api";
@@ -15,6 +16,7 @@ import { useStreamLive } from "../hooks/useStreamLive";
 import { CHAT_WS_URL } from "../constants";
 import { fmtElapsed } from "../utils";
 import type { ChatMessage, TicketModalEvent } from "../types";
+import { pickEventLocale } from "../../../lib/eventLocale";
 import {
   VIEWER_ANGLE_ACTIVE_CLS,
   VIEWER_ANGLE_CLS,
@@ -126,6 +128,8 @@ export function ViewerOverlay({
   featuredEvent,
   onClose,
 }: ViewerOverlayProps) {
+  const { i18n } = useTranslation();
+  const loc = pickEventLocale(featuredEvent, i18n.language);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const hlsRef = useRef<Hls | null>(null);
@@ -721,7 +725,7 @@ export function ViewerOverlay({
           </svg>
         </button>
         <div className={VIEWER_TITLE_WRAP_CLS}>
-          <h3 className={VIEWER_TITLE_CLS}>{featuredEvent.title}</h3>
+          <h3 className={VIEWER_TITLE_CLS}>{loc.title}</h3>
           <span className={VIEWER_LIVE_PILL_CLS}>
             <span className={VIEWER_LIVE_PULSE_CLS} aria-hidden="true"></span>
             LIVE · <span>{fmtElapsed(elapsedSec)}</span>

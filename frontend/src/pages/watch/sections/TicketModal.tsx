@@ -12,6 +12,7 @@ import { api } from "../../../lib/api";
 import type { OrderRecord } from "../../../data/store";
 import { formatRemaining, money } from "../utils";
 import type { TicketModalEvent } from "../types";
+import { pickEventLocale } from "../../../lib/eventLocale";
 import {
   TICKET_ALERT_CLS,
   TICKET_CHECKOUT_CLS,
@@ -58,7 +59,8 @@ export function TicketModal({
   onPurchased,
   onWatchSuccess,
 }: TicketModalProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const loc = pickEventLocale(event, i18n.language);
   const [busy, setBusy] = useState(false);
   const [alert, setAlert] = useState("");
   const [checkoutLabel, setCheckoutLabel] = useState<string>(
@@ -227,11 +229,11 @@ export function TicketModal({
         {step === "form" ? (
           <div className={TICKET_MODAL_BODY_CLS}>
             <div className={TICKET_MODAL_COVER_CLS}>
-              <img src={event.image} alt={event.title} />
+              <img src={event.image} alt={loc.title} />
               <div className={TICKET_MODAL_COVER_META_CLS}>
                 <span className={TICKET_MODAL_DATE_CLS}>{event.date}</span>
                 <h2 id="ticketModalTitle" className={TICKET_MODAL_TITLE_CLS}>
-                  {event.title}
+                  {loc.title}
                 </h2>
                 <span className={TICKET_MODAL_VENUE_CLS}>
                   📡 {t("watch_online_stream")}
@@ -362,7 +364,7 @@ export function TicketModal({
           <div className={TICKET_MODAL_SUCCESS_CLS}>
             <h3 className={TICKET_SUCCESS_TITLE_CLS}>{t("ticket_qr_title")}</h3>
             <p className={TICKET_SUCCESS_DESC_CLS}>
-              <strong>{event.title}</strong>
+              <strong>{loc.title}</strong>
               <br />
               {money(invoice.price)}
             </p>
