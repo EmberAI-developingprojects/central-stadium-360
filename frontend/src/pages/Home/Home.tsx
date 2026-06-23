@@ -1123,32 +1123,26 @@ export function Roadmap(_props: { items?: any[] }) {
 
   const allDots = [...botDots, ...topDots].sort((a, b) => a.x - b.x);
 
-  // SVG-ийн PATH үүсгэх: 0-100% координат дээр суурилна
-  const generateCurvedPath = (points: { x: number; y: number }[]) => {
-    if (points.length === 0) return "";
-
-    // Эхний цэгээс бага зэрэг (3%) зүүн талаас эхэлнэ
-    const startX = Math.max(points[0].x - 3, 0);
-    let d = `M ${startX},${points[0].y} L ${points[0].x},${points[0].y}`;
-
-    for (let i = 0; i < points.length - 1; i++) {
-      const x1 = points[i].x;
-      const y1 = points[i].y;
-      const x2 = points[i + 1].x;
-      const y2 = points[i + 1].y;
-
+  const VBW = 1000;
+  const VBH = 380;
+  const buildPath = () => {
+    const pts = allDots.map((p) => ({
+      x: (p.x / 100) * VBW,
+      y: (p.y / 100) * VBH,
+    }));
+    const startX = Math.max(pts[0].x - 30, 0);
+    let d = `M ${startX} ${pts[0].y} L ${pts[0].x} ${pts[0].y}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const { x: x1, y: y1 } = pts[i];
+      const { x: x2, y: y2 } = pts[i + 1];
       const midX = (x1 + x2) / 2;
-      d += ` C ${midX},${y1} ${midX},${y2} ${x2},${y2}`;
+      d += ` C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`;
     }
-
-    // Сүүлийн цэгээс бага зэрэг (3%) баруун талд дуусна
-    const endX = Math.min(points[points.length - 1].x + 3, 100);
-    d += ` L ${endX},${points[points.length - 1].y}`;
-
+    const endX = Math.min(pts[pts.length - 1].x + 30, VBW);
+    d += ` L ${endX} ${pts[pts.length - 1].y}`;
     return d;
   };
-
-  const curvedPath = generateCurvedPath(allDots);
+  const curvedPath = buildPath();
 
   const phaseBase =
     "flex flex-col justify-center min-h-[64px] py-3 pr-[44px] font-[inherit] max-[640px]:[clip-path:none] max-[640px]:m-0 max-[640px]:rounded max-[640px]:py-3 max-[640px]:px-4";
@@ -1209,8 +1203,8 @@ export function Roadmap(_props: { items?: any[] }) {
           data-stagger="4"
         >
           <svg
-            className="absolute inset-0 w-full h-full"
-            viewBox="0 0 100 100"
+            className="absolute inset-0 w-full h-full overflow-visible"
+            viewBox="0 0 1000 380"
             preserveAspectRatio="none"
             aria-hidden="true"
           >
@@ -1221,7 +1215,6 @@ export function Roadmap(_props: { items?: any[] }) {
               fill="none"
               strokeLinecap="round"
               strokeLinejoin="round"
-              vectorEffect="non-scaling-stroke"
             />
           </svg>
 

@@ -37,6 +37,16 @@ function groupByYear(events: EventRecord[]): YearGroup[] {
   return groups;
 }
 
+function formatEventDate(d: Date, lang: string): string {
+  if (lang.toLowerCase().startsWith("mn")) {
+    return `${d.getMonth() + 1}-р сарын ${d.getDate()}`;
+  }
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+  }).format(d);
+}
+
 function EventCard({
   ev,
   isPast = false,
@@ -46,13 +56,11 @@ function EventCard({
   isPast?: boolean;
   stagger?: number;
 }) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const loc = pickEventLocale(ev, i18n.language);
   const d = new Date(ev.start_time);
   const valid = !Number.isNaN(d.getTime());
-  const monthNum = valid ? d.getMonth() + 1 : "";
-  const day = valid ? d.getDate() : "";
-  const dateLabel = valid ? `${monthNum}-р сарын ${day}` : "";
+  const dateLabel = valid ? formatEventDate(d, i18n.language) : "";
 
   const staggerAttr =
     stagger !== undefined
@@ -122,7 +130,7 @@ function EventCard({
               <polygon points="6 4 20 12 6 20 6 4" />
             </svg>
           ) : null}
-          {isPast ? "Нөхөж үзэх" : "Тасалбар авах"}
+          {isPast ? t("events_card_replay") : t("events_card_buy")}
           {!isPast && (
             <svg
               width="14"
@@ -191,7 +199,7 @@ export default function Events() {
     listEvents()
       .then((rows) => setEvents(rows))
       .catch((err: unknown) =>
-        setError(err instanceof Error ? err.message : "Алдаа гарлаа"),
+        setError(err instanceof Error ? err.message : "unknown"),
       );
   }, []);
 
@@ -249,11 +257,11 @@ export default function Events() {
             </h1>
           </header>
 
-          {error && empty(`Алдаа: ${error}`)}
-          {loading && empty("Уншиж байна…")}
+          {error && empty(`${t("events_error_prefix")}: ${error}`)}
+          {loading && empty(t("events_loading"))}
 
           {!loading && !error && upcoming.length === 0 && past.length === 0 && (
-            empty("Одоогоор бүртгэгдсэн арга хэмжээ байхгүй байна.")
+            empty(t("events_empty"))
           )}
 
           {!loading && !error && upcoming.length > 0 && (
@@ -278,7 +286,7 @@ export default function Events() {
                 </svg>
               </span>
               <h2 className="text-[#1a1a1a] text-[20px] font-extrabold tracking-[-0.01em] m-0">
-                Удахгүй болох
+                {t("events_upcoming_section")}
               </h2>
               <span className="text-[12px] font-semibold tabular-nums text-[#9a9a9a]">
                 {upcoming.length}
@@ -322,7 +330,7 @@ export default function Events() {
                 </svg>
               </span>
               <h2 className="text-[#1a1a1a] text-[20px] font-extrabold tracking-[-0.01em] m-0">
-                Дууссан
+                {t("events_past_section")}
               </h2>
               <span className="text-[12px] font-semibold tabular-nums text-[#9a9a9a]">
                 {past.length}
