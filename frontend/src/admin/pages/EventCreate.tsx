@@ -42,6 +42,7 @@ export default function EventCreate() {
   const toast = useToast();
 
   const [name, setName] = useState("");
+  const [desc, setDesc] = useState("");
   const [date, setDate] = useState(""); // yyyy-mm-dd — эхлэх огноо
   const [startTime, setStartTime] = useState(""); // HH:MM
   const [endDate, setEndDate] = useState(""); // yyyy-mm-dd
@@ -94,8 +95,10 @@ export default function EventCreate() {
     setBusy(true);
     try {
       const cover = thumbnailUrl.trim();
+      const trimmedDesc = desc.trim();
       const created = await createEvent({
         title: name.trim(),
+        desc: trimmedDesc || undefined,
         start_time: startTimeIso,
         base: Number(livePrice) || 0,
         live_price: Number(livePrice) || 0,
@@ -150,6 +153,26 @@ export default function EventCreate() {
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Тоглолтын нэр"
                 required
+              />
+            </div>
+
+            <div className={ADMIN_FIELD_CLS}>
+              <label
+                htmlFor="ev-desc"
+                className="flex items-center justify-between"
+              >
+                <span>Тайлбар</span>
+                <span className="text-[11px] text-zinc-400 font-normal">
+                  {desc.length}/600
+                </span>
+              </label>
+              <textarea
+                id="ev-desc"
+                value={desc}
+                onChange={(e) => setDesc(e.target.value.slice(0, 600))}
+                placeholder="Тоглолтын талаар товч мэдээлэл, онцлох тоглогчид, тусгай мэдэгдэл…"
+                rows={5}
+                maxLength={600}
               />
             </div>
 
