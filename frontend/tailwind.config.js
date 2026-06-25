@@ -102,6 +102,21 @@ export default {
           from: { opacity: "0", transform: "translateY(24px)" },
           to: { opacity: "1", transform: "none" },
         },
+        heroGrow: {
+          "0%": {
+            opacity: "0",
+            transform: "scale(.28) translateY(18px)",
+            filter: "blur(14px)",
+            letterSpacing: "-0.04em",
+          },
+          "55%": { opacity: "1", filter: "blur(0)" },
+          "100%": {
+            opacity: "1",
+            transform: "scale(1) translateY(0)",
+            filter: "blur(0)",
+            letterSpacing: "normal",
+          },
+        },
         "partners-marquee": {
           from: { transform: "translateX(0)" },
           to: { transform: "translateX(-50%)" },
@@ -130,6 +145,7 @@ export default {
         "chat-in": "chatIn .25s ease-out",
         "react-rise": "reactRise 2s ease-out forwards",
         "reveal-up": "revealUp 600ms cubic-bezier(.2,.8,.2,1) both",
+        "hero-grow": "heroGrow 1700ms cubic-bezier(.19,1,.22,1) both",
         "partners-marquee": "partners-marquee 40s linear infinite",
         "admin-fade-in": "adminFadeIn 140ms ease-out",
         "admin-scale-in": "adminScaleIn 160ms cubic-bezier(.34,1.56,.64,1) both",

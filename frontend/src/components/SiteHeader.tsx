@@ -15,15 +15,15 @@ const HEADER_SCROLLED_CLS =
 const HEADER_INNER_CLS = "max-w-screen-page mx-auto";
 
 const MAINNAV_CLS =
-  "flex items-center justify-between gap-5 py-[14px] px-0 max-[1340px]:gap-4 max-[1340px]:py-3";
+  "flex items-center justify-between gap-5 py-[14px] px-0 max-[1024px]:gap-4 max-[1024px]:py-3";
 
 const LOGO_CLS =
   "inline-flex items-center gap-3 no-underline text-ink flex-none [transition:transform_0.25s_ease] hover:scale-[1.02]";
 const LOGO_MARK_CLS =
-  "w-auto h-12 rounded-none bg-transparent border-0 flex-none [&_img]:block [&_img]:h-full [&_img]:w-auto [&_img]:drop-shadow-[0_2px_8px_rgba(0,0,0,0.08)] max-[1340px]:h-11 max-[640px]:h-10";
+  "w-auto h-12 rounded-none bg-transparent border-0 flex-none [&_img]:block [&_img]:h-full [&_img]:w-auto [&_img]:drop-shadow-[0_2px_8px_rgba(0,0,0,0.08)] max-[1024px]:h-11 max-[640px]:h-10";
 
 const NAV_LINKS_CLS =
-  "flex items-center list-none m-0 p-0 gap-6 max-[1500px]:gap-5 max-[1400px]:gap-4 max-[1340px]:hidden";
+  "flex items-center list-none m-0 p-0 gap-6 max-[1500px]:gap-5 max-[1400px]:gap-4 max-[1200px]:gap-3 max-[1024px]:hidden";
 const NAV_LINK_A_CLS =
   "relative no-underline text-ink text-[14px] font-semibold whitespace-nowrap [transition:color_0.18s_ease] hover:text-brand-blue max-[1500px]:text-[13.5px] after:content-[''] after:absolute after:left-0 after:right-0 after:-bottom-[6px] after:h-[2px] after:rounded-full after:bg-brand-blue after:scale-x-0 after:origin-center after:[transition:transform_.2s_ease] hover:after:scale-x-100";
 const NAV_LINK_DROPDOWN_TRIGGER_CLS = `${NAV_LINK_A_CLS} inline-flex items-center gap-1.5`;
@@ -39,7 +39,7 @@ const DROPDOWN_CLS =
 const DROPDOWN_A_CLS =
   "block text-[15px] font-medium text-ink rounded-lg whitespace-nowrap py-[9px] px-[14px] no-underline hover:bg-brand-blue-tint hover:text-brand-blue";
 
-const HEADER_AUTH_CLS = "inline-flex items-center gap-3 flex-none max-[1340px]:gap-2.5 max-[480px]:gap-1.5";
+const HEADER_AUTH_CLS = "inline-flex items-center gap-3 flex-none max-[1024px]:gap-2.5 max-[480px]:gap-1.5";
 
 const AUTH_BTN_CLS =
   "inline-flex items-center leading-none gap-2 rounded-full bg-[linear-gradient(135deg,#2230c6_0%,#3a48d8_100%)] text-white text-[14px] font-semibold no-underline py-[10px] px-[18px] [transition:transform_.18s_ease,box-shadow_.22s_ease,filter_.18s_ease] shadow-[0_8px_22px_-8px_rgba(34,48,198,.55),inset_0_1px_0_rgba(255,255,255,0.18)] hover:-translate-y-px hover:shadow-[0_12px_28px_-8px_rgba(34,48,198,.65),inset_0_1px_0_rgba(255,255,255,0.22)] hover:[filter:brightness(1.06)] [&_svg]:w-[16px] [&_svg]:h-[16px] max-[480px]:!w-11 max-[480px]:!h-11 max-[480px]:!p-0 max-[480px]:!justify-center max-[480px]:!gap-0 max-[480px]:[&_svg]:!w-[18px] max-[480px]:[&_svg]:!h-[18px]";
@@ -53,7 +53,7 @@ const AUTH_LABEL_CLS = "max-[480px]:hidden";
 const LANG_SWITCHER_WRAP_CLS = "max-[540px]:hidden";
 
 const HAMBURGER_BTN_CLS =
-  "hidden max-[1340px]:inline-flex items-center justify-center w-11 h-11 rounded-full bg-white border border-solid border-[rgba(31,41,55,0.12)] text-ink [transition:border-color_.15s_ease,box-shadow_.22s_ease,transform_.15s_ease] hover:border-[rgba(34,48,198,0.32)] hover:shadow-[0_8px_22px_-10px_rgba(34,48,198,.45)] hover:-translate-y-px [&_svg]:w-[20px] [&_svg]:h-[20px] max-[480px]:w-10 max-[480px]:h-10 max-[480px]:[&_svg]:w-[18px] max-[480px]:[&_svg]:h-[18px]";
+  "hidden max-[1024px]:inline-flex items-center justify-center w-11 h-11 rounded-full bg-white border border-solid border-[rgba(31,41,55,0.12)] text-ink [transition:border-color_.15s_ease,box-shadow_.22s_ease,transform_.15s_ease] hover:border-[rgba(34,48,198,0.32)] hover:shadow-[0_8px_22px_-10px_rgba(34,48,198,.45)] hover:-translate-y-px [&_svg]:w-[20px] [&_svg]:h-[20px] max-[480px]:w-10 max-[480px]:h-10 max-[480px]:[&_svg]:w-[18px] max-[480px]:[&_svg]:h-[18px]";
 
 const DRAWER_BACKDROP_BASE_CLS =
   "fixed inset-0 bg-[rgba(15,23,42,0.55)] z-[200] [backdrop-filter:blur(2px)] [-webkit-backdrop-filter:blur(2px)] [transition:opacity_.25s_ease]";

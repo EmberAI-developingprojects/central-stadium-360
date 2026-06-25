@@ -1237,7 +1237,7 @@ export function Roadmap(_props: { items?: any[] }) {
               style={{
                 left: `${d.x}%`,
                 top: `${d.y}%`,
-                height: `18.12%`,
+                height: `14.5%`,
               }}
             />
           ))}
@@ -1248,8 +1248,8 @@ export function Roadmap(_props: { items?: any[] }) {
               className="absolute w-px bg-[#4D5670] -translate-x-1/2"
               style={{
                 left: `${d.x}%`,
-                top: `13.12%`,
-                height: `21.26%`,
+                top: `19.88%`,
+                height: `14.5%`,
               }}
             />
           ))}
@@ -1273,7 +1273,7 @@ export function Roadmap(_props: { items?: any[] }) {
           {bot.map((m, i) => (
             <div
               key={`b-${i}`}
-              className="absolute -translate-x-1/2 w-[108px] text-center text-[#4a4a4a] top-[89%] max-[1200px]:w-[92px] max-[900px]:w-[80px]"
+              className="absolute z-[2] -translate-x-1/2 w-[108px] text-center text-[#4a4a4a] top-[89%] max-[1200px]:w-[92px] max-[900px]:w-[80px]"
               style={{ left: `${botDots[i].x}%` }}
             >
               <strong className="block font-extrabold text-[13px] mb-1 text-[#1a1a1a] max-[1200px]:text-[12px] max-[900px]:text-[11px]">
@@ -1287,7 +1287,7 @@ export function Roadmap(_props: { items?: any[] }) {
           {top.map((m, i) => (
             <div
               key={`t-${i}`}
-              className="absolute -translate-x-1/2 w-[108px] text-center text-[#4a4a4a] bottom-[83%] max-[1200px]:w-[92px] max-[900px]:w-[80px]"
+              className="absolute z-[2] -translate-x-1/2 w-[108px] text-center text-[#4a4a4a] bottom-[83%] max-[1200px]:w-[92px] max-[900px]:w-[80px]"
               style={{ left: `${topDots[i].x}%` }}
             >
               <strong className="block font-extrabold text-[13px] mb-1 text-[#1a1a1a] max-[1200px]:text-[12px] max-[900px]:text-[11px]">
@@ -1511,13 +1511,22 @@ function FeaturedNewsHero({ items }: { items: NewsItem[] }) {
           aria-hidden={featured ? "true" : undefined}
         >
           <div className="max-w-[860px] text-center">
-            <span className="inline-flex items-center gap-2 mb-6 px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-sm text-[11px] tracking-[0.18em] uppercase font-semibold text-white/95 max-[640px]:mb-5 max-[640px]:text-[10px]">
+            <span
+              style={{ animationDelay: "0ms" }}
+              className="inline-flex items-center gap-2 mb-6 px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-sm text-[11px] tracking-[0.18em] uppercase font-semibold text-white/95 max-[640px]:mb-5 max-[640px]:text-[10px] motion-safe:animate-hero-grow [transform-origin:center_center] [will-change:transform,opacity,filter] motion-reduce:!animate-none"
+            >
               Тавтай морил
             </span>
-            <h1 className="m-0 text-gold-pale font-extrabold uppercase leading-[1.16] tracking-[0.015em] text-[44px] max-[920px]:text-[32px] max-[640px]:text-[24px] drop-shadow-[0_2px_14px_rgba(0,0,0,0.55)] [text-shadow:0_1px_0_rgba(0,0,0,0.25)]">
+            <h1
+              style={{ animationDelay: "180ms" }}
+              className="m-0 text-gold-pale font-extrabold uppercase leading-[1.16] tracking-[0.015em] text-[44px] max-[920px]:text-[32px] max-[640px]:text-[24px] drop-shadow-[0_2px_14px_rgba(0,0,0,0.55)] [text-shadow:0_1px_0_rgba(0,0,0,0.25)] motion-safe:animate-hero-grow [transform-origin:center_center] [will-change:transform,opacity,filter] motion-reduce:!animate-none"
+            >
               Төв Цэнгэлдэх Хүрээлэн
             </h1>
-            <p className="mt-6 mx-auto max-w-[680px] text-white/85 text-[15px] leading-[1.7] max-[640px]:text-[13px] max-[640px]:mt-5 max-[640px]:leading-[1.6]">
+            <p
+              style={{ animationDelay: "440ms" }}
+              className="mt-6 mx-auto max-w-[680px] text-white/90 text-[17px] font-medium leading-[1.65] max-[640px]:text-[14.5px] max-[640px]:mt-5 max-[640px]:leading-[1.6] motion-safe:animate-hero-grow [transform-origin:center_center] [will-change:transform,opacity,filter] motion-reduce:!animate-none"
+            >
               Монголын спортын зүрх — 1958 оноос хойш
             </p>
           </div>
@@ -1526,8 +1535,14 @@ function FeaturedNewsHero({ items }: { items: NewsItem[] }) {
         <div
           className={`absolute inset-0 grid place-items-center px-6 py-16 max-[640px]:px-5 max-[640px]:py-12 [transition:opacity_.35s_ease] ${featured ? "opacity-100" : "opacity-0 pointer-events-none"}`}
         >
-          <div className="max-w-[860px] text-center">
-            <span className="inline-flex items-center gap-2 mb-6 px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-sm text-[11px] tracking-[0.18em] uppercase font-semibold text-white/95 max-[640px]:mb-5 max-[640px]:text-[10px]">
+          <div
+            key={featured?.id ?? "empty"}
+            className="max-w-[860px] text-center"
+          >
+            <span
+              style={{ animationDelay: "0ms" }}
+              className="inline-flex items-center gap-2 mb-6 px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-sm text-[11px] tracking-[0.18em] uppercase font-semibold text-white/95 max-[640px]:mb-5 max-[640px]:text-[10px] motion-safe:animate-hero-grow [transform-origin:center_center] [will-change:transform,opacity,filter] motion-reduce:!animate-none"
+            >
               <svg
                 width="12"
                 height="12"
@@ -1545,17 +1560,24 @@ function FeaturedNewsHero({ items }: { items: NewsItem[] }) {
               </svg>
               Мэдээ мэдээлэл
             </span>
-            <h1 className="m-0 text-gold-pale font-extrabold uppercase leading-[1.16] tracking-[0.015em] text-[44px] max-[920px]:text-[32px] max-[640px]:text-[24px] drop-shadow-[0_2px_14px_rgba(0,0,0,0.55)] [text-shadow:0_1px_0_rgba(0,0,0,0.25)]">
+            <h1
+              style={{ animationDelay: "180ms" }}
+              className="m-0 text-gold-pale font-extrabold uppercase leading-[1.16] tracking-[0.015em] text-[44px] max-[920px]:text-[32px] max-[640px]:text-[24px] drop-shadow-[0_2px_14px_rgba(0,0,0,0.55)] [text-shadow:0_1px_0_rgba(0,0,0,0.25)] motion-safe:animate-hero-grow [transform-origin:center_center] [will-change:transform,opacity,filter] motion-reduce:!animate-none"
+            >
               {loc.title}
             </h1>
             {excerpt && (
-              <p className="mt-6 mx-auto max-w-[680px] text-white/85 text-[15px] leading-[1.7] max-[640px]:text-[13px] max-[640px]:mt-5 max-[640px]:leading-[1.6]">
+              <p
+                style={{ animationDelay: "440ms" }}
+                className="mt-6 mx-auto max-w-[680px] text-white/90 text-[17px] font-medium leading-[1.65] max-[640px]:text-[14.5px] max-[640px]:mt-5 max-[640px]:leading-[1.6] motion-safe:animate-hero-grow [transform-origin:center_center] [will-change:transform,opacity,filter] motion-reduce:!animate-none"
+              >
                 {excerpt}
               </p>
             )}
             <Link
               to={featured ? `/news/${featured.id}` : "#"}
-              className="inline-flex items-center gap-2 mt-9 px-7 py-3.5 rounded-full border border-white/75 text-white text-[13px] font-semibold tracking-[0.16em] uppercase no-underline hover:bg-white hover:text-ink hover:border-white transition-colors duration-200 max-[640px]:mt-7 max-[640px]:px-6 max-[640px]:py-3 max-[640px]:text-[11.5px]"
+              style={{ animationDelay: "640ms" }}
+              className="inline-flex items-center gap-2 mt-9 px-7 py-3.5 rounded-full border border-white/75 text-white text-[13px] font-semibold tracking-[0.16em] uppercase no-underline hover:bg-white hover:text-ink hover:border-white transition-colors duration-200 max-[640px]:mt-7 max-[640px]:px-6 max-[640px]:py-3 max-[640px]:text-[11.5px] motion-safe:animate-hero-grow [transform-origin:center_center] [will-change:transform,opacity,filter] motion-reduce:!animate-none"
             >
               Дэлгэрэнгүй үзэх
               <svg
