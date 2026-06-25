@@ -29,8 +29,8 @@ type NavItem = {
 const NAV: NavItem[] = [
   { to: "/admin", end: true, label: "Хяналт", icon: IconGrid },
   { to: "/admin/events", label: "Арга хэмжээ", icon: IconCalendar },
-  { to: "/admin/orders", label: " Борлуулалт", icon: IconReceipt },
-  { to: "/admin/kiosk", label: "Касс", icon: IconKiosk },
+  { to: "/admin/orders", label: "360 Борлуулалт", icon: IconReceipt },
+  { to: "/admin/kiosk", label: "Киоск борлуулалт", icon: IconKiosk },
   { to: "/admin/users", label: "Хэрэглэгч", icon: IconUsers },
   { to: "/admin/content", label: "Контент", icon: IconLayout },
   { to: "/admin/history", label: "Түүхэн хэсэг", icon: IconHistory },
