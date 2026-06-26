@@ -846,14 +846,10 @@ function Members({ items = [] }: { items: MemberItem[] }) {
   }));
   const cards = items.length > 0 ? items : fallbackCards;
   const memberCardCls = [
-    "group bg-white rounded-[18px] flex flex-col items-start gap-4 text-left pt-7 px-[26px] pb-6 relative overflow-hidden",
+    "group bg-white rounded-[18px] flex flex-col items-start gap-4 text-left pt-7 px-[26px] pb-6",
     "border border-solid border-[rgba(31,41,55,0.06)] shadow-[0_4px_16px_rgba(0,0,0,0.04)]",
-    "[transition:transform_.45s_cubic-bezier(.34,1.56,.64,1),box-shadow_.35s_ease,border-color_.35s_ease,background-color_.35s_ease]",
-    "hover:border-brand-blue hover:bg-brand-blue hover:[transform:translateY(-8px)_scale(1.015)] hover:shadow-[0_28px_50px_-20px_rgba(34,48,198,0.55)]",
-    "before:content-[''] before:absolute before:top-0 before:h-full before:pointer-events-none before:z-[1] before:left-[-120%] before:w-[60%]",
-    "before:[background:linear-gradient(115deg,transparent_0%,rgba(255,255,255,0)_30%,rgba(255,255,255,0.18)_50%,rgba(255,255,255,0)_70%,transparent_100%)]",
-    "before:[transform:skewX(-18deg)] before:[transition:left_.9s_cubic-bezier(.4,0,.2,1)] hover:before:left-[160%]",
-    "[&>*]:relative [&>*]:z-[2]",
+    "[transition:box-shadow_.25s_ease,border-color_.25s_ease]",
+    "hover:border-[rgba(34,48,198,0.2)] hover:shadow-[0_8px_28px_rgba(0,0,0,0.09)]",
     REVEAL_UP_CLS,
   ].join(" ");
 
