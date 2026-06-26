@@ -48,6 +48,7 @@ const NEW_ITEM: {
     featured: false,
     blocks: [],
     createdAt: new Date().toISOString(),
+    sortOrder: 0,
     labelEn: "",
     titleEn: "",
     bodyEn: "",
