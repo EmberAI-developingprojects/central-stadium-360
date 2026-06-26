@@ -8,10 +8,7 @@ import { getSupabaseAdmin } from "./supabase";
 
 const HOUR_MS = 60 * 60 * 1000;
 const CAMERA_NUMBERS = [1, 2, 3, 4] as const;
-// IVS auto-record sessions are bucketed by the hour the session *started* —
-// which can be slightly before the event's official live_start_at, and the
-// final write of recording-ended.json can land well after live_end_at.
-// Widen the scan window so off-by-an-hour sessions still get discovered.
+
 const DISCOVERY_LOOKBACK_MS = 60 * 60 * 1000;
 const DISCOVERY_LOOKAHEAD_MS = 2 * 60 * 60 * 1000;
 
@@ -28,13 +25,6 @@ function getS3Client(): S3Client | null {
   return s3Client;
 }
 
-/**
- * Parse the AWS account id (5th colon-separated segment) and channel id
- * (last segment after `channel/`) from an IVS channel ARN.
- *
- * Example: arn:aws:ivs:us-east-1:123456789012:channel/AbCdEf123456
- *  → { accountId: "123456789012", channelId: "AbCdEf123456" }
- */
 function parseChannelArn(
   arn: string,
 ): { accountId: string; channelId: string } | null {
@@ -88,20 +78,13 @@ function buildHourPrefix(
   day: number,
   hour: number,
 ): string {
-  // IVS auto-record-to-S3 path segments are NOT zero-padded:
-  //   ivs/v1/<acct>/<ch>/2026/6/16/2/48/<session>/...
   return `ivs/v1/${accountId}/${channelId}/${year}/${month}/${day}/${hour}/`;
 }
 
-/**
- * Given a master.m3u8 key, return the session folder prefix.
- *   ivs/v1/acct/ch/2026/06/10/13/<session>/media/hls/master.m3u8
- *     → ivs/v1/acct/ch/2026/06/10/13/<session>/
- */
 function sessionPrefixFromMasterKey(key: string): string | null {
   const idx = key.indexOf("/media/");
   if (idx < 0) return null;
-  return key.slice(0, idx + 1); // includes trailing slash
+  return key.slice(0, idx + 1);
 }
 
 type EndedJson = {
@@ -260,21 +243,18 @@ async function discoverCamera(
   channelArn: string,
   startMs: number,
   endMs: number,
-): Promise<
-  Pick<
-    DbRecording,
-    | "camera_number"
-    | "channel_arn"
-    | "s3_bucket"
-    | "s3_key_prefix"
-    | "master_playlist_path"
-    | "duration_seconds"
-    | "recording_started_at"
-    | "recording_ended_at"
-    | "status"
-  >
-  | null
-> {
+): Promise<Pick<
+  DbRecording,
+  | "camera_number"
+  | "channel_arn"
+  | "s3_bucket"
+  | "s3_key_prefix"
+  | "master_playlist_path"
+  | "duration_seconds"
+  | "recording_started_at"
+  | "recording_ended_at"
+  | "status"
+> | null> {
   const parsed = parseChannelArn(channelArn);
   if (!parsed) return null;
   const masters = await listMasterKeysForCamera(
@@ -298,8 +278,6 @@ async function discoverCamera(
   const stats = await Promise.all(
     sessionPrefixes.map((p) => evaluateSession(s3, bucket, p)),
   );
-  // Longest by rank (duration_seconds, or segment_count fallback).
-  // 0-ranked sessions are skipped: they have no playable content.
   const valid = stats.filter((s) => s.rank > 0);
   if (valid.length === 0) return null;
   const best = valid.reduce((a, b) => (b.rank > a.rank ? b : a));
@@ -317,12 +295,6 @@ async function discoverCamera(
   };
 }
 
-/**
- * Scan S3 for the event's auto-recordings and upsert the rows into
- * the `recordings` table. Returns the rows for cameras that were found.
- * Cameras with no session in the time range are left without a row;
- * a later retry (or first viewer hit) may fill them in.
- */
 export async function discoverRecordingsForEvent(
   event: Pick<DbEvent, "id" | "live_start_at" | "live_end_at">,
 ): Promise<DbRecording[]> {

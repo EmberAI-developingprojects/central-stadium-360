@@ -5,8 +5,8 @@ const SIGN_TTL_MS = 60 * 60 * 1000;
 export function isCloudFrontConfigured(): boolean {
   return Boolean(
     process.env.AWS_CLOUDFRONT_DOMAIN &&
-      process.env.AWS_CLOUDFRONT_KEY_PAIR_ID &&
-      process.env.AWS_CLOUDFRONT_PRIVATE_KEY_BASE64,
+    process.env.AWS_CLOUDFRONT_KEY_PAIR_ID &&
+    process.env.AWS_CLOUDFRONT_PRIVATE_KEY_BASE64,
   );
 }
 
@@ -14,13 +14,6 @@ function stripLeadingSlash(s: string): string {
   return s.startsWith("/") ? s.slice(1) : s;
 }
 
-/**
- * Sign the master playlist URL with a **wildcard custom policy** that
- * authorizes every object beneath the recording's session prefix. The
- * frontend forwards the resulting signature query params on every HLS
- * child request (variant playlists, `.ts` segments) so CloudFront does
- * not 403 them.
- */
 export function signRecordingUrl(
   masterPath: string,
   sessionPrefix: string,

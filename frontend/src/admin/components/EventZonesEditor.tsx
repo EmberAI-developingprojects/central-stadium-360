@@ -10,18 +10,18 @@ import {
   ADMIN_FIELD_CLS,
 } from "../_adminStyles";
 
-// Local card chrome, matching EventEdit's sections.
 const CARD_CLS =
   "bg-white border border-[#ececef] rounded-2xl overflow-hidden shadow-[0_1px_2px_rgba(24,24,27,0.04)]";
 const CARD_HEAD_CLS =
   "flex items-start gap-3 px-6 pt-5 pb-4 border-b border-[#f4f4f5] bg-gradient-to-b from-[#fafafa] to-white";
 const CARD_HEAD_ICON =
   "shrink-0 inline-flex h-10 w-10 items-center justify-center rounded-xl ring-1 ring-inset bg-amber-50 text-amber-600 ring-amber-100";
-const CARD_HEAD_TITLE = "text-[14.5px] font-semibold tracking-[-0.01em] text-zinc-900 m-0 leading-tight";
+const CARD_HEAD_TITLE =
+  "text-[14.5px] font-semibold tracking-[-0.01em] text-zinc-900 m-0 leading-tight";
 const CARD_HEAD_DESC = "text-[12.5px] text-zinc-500 m-0 mt-0.5 leading-[1.45]";
 
 type Row = {
-  id: string; // "" for an unsaved draft
+  id: string;
   name_mn: string;
   name_en: string;
   desc_mn: string;
@@ -89,8 +89,7 @@ export default function EventZonesEditor({ eventId }: { eventId: string }) {
   const patchRow = (idx: number, patch: Partial<Row>) =>
     setRows((rs) => rs.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
 
-  const addRow = () =>
-    setRows((rs) => [...rs, blankRow(rs.length)]);
+  const addRow = () => setRows((rs) => [...rs, blankRow(rs.length)]);
 
   const saveRow = async (idx: number) => {
     const r = rows[idx];
@@ -117,7 +116,9 @@ export default function EventZonesEditor({ eventId }: { eventId: string }) {
       toast.error(`Хадгалах боломжгүй: ${res.error}`);
       return;
     }
-    setRows((rs) => rs.map((row, i) => (i === idx ? rowFromZone(res.data) : row)));
+    setRows((rs) =>
+      rs.map((row, i) => (i === idx ? rowFromZone(res.data) : row)),
+    );
     toast.success("Бүс хадгалагдлаа.");
   };
 
@@ -156,7 +157,16 @@ export default function EventZonesEditor({ eventId }: { eventId: string }) {
     <section className={CARD_CLS}>
       <header className={CARD_HEAD_CLS}>
         <span className={CARD_HEAD_ICON} aria-hidden="true">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M2 9V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 0 0 4v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-4a2 2 0 0 0 0-4z" />
             <line x1="13" y1="5" x2="13" y2="19" strokeDasharray="2 3" />
           </svg>
@@ -164,14 +174,16 @@ export default function EventZonesEditor({ eventId }: { eventId: string }) {
         <div className="min-w-0 flex-1">
           <h3 className={CARD_HEAD_TITLE}>Биечлэн тасалбар — бүсүүд</h3>
           <p className={CARD_HEAD_DESC}>
-            Цэнгэлдэх дээрх kiosk-д зарагдах бүс бүрийн үнэ ба багтаамж
-            (VIP / Premium / Энгийн). Багтаамж нь суудал биш, тоо хэмжээ.
+            Цэнгэлдэх дээрх kiosk-д зарагдах бүс бүрийн үнэ ба багтаамж (VIP /
+            Premium / Энгийн). Багтаамж нь суудал биш, тоо хэмжээ.
           </p>
         </div>
       </header>
 
       <div className="p-6 flex flex-col gap-4">
-        {!loaded && <div className="text-[13px] text-zinc-500">Уншиж байна…</div>}
+        {!loaded && (
+          <div className="text-[13px] text-zinc-500">Уншиж байна…</div>
+        )}
 
         {loaded && rows.length === 0 && (
           <div className="text-[13px] text-zinc-500">
@@ -212,7 +224,9 @@ export default function EventZonesEditor({ eventId }: { eventId: string }) {
                   inputMode="numeric"
                   min={0}
                   value={r.price || ""}
-                  onChange={(e) => patchRow(idx, { price: Number(e.target.value) || 0 })}
+                  onChange={(e) =>
+                    patchRow(idx, { price: Number(e.target.value) || 0 })
+                  }
                   placeholder="0"
                   className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
@@ -224,7 +238,9 @@ export default function EventZonesEditor({ eventId }: { eventId: string }) {
                   inputMode="numeric"
                   min={0}
                   value={r.capacity || ""}
-                  onChange={(e) => patchRow(idx, { capacity: Number(e.target.value) || 0 })}
+                  onChange={(e) =>
+                    patchRow(idx, { capacity: Number(e.target.value) || 0 })
+                  }
                   placeholder="0"
                   className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
@@ -276,7 +292,17 @@ export default function EventZonesEditor({ eventId }: { eventId: string }) {
           className={`${ADMIN_BTN_CLS} self-start`}
           onClick={addRow}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>

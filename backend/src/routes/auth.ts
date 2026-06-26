@@ -170,13 +170,6 @@ auth.post("/register/phone", async (c) => {
     );
   }
 
-  // Pre-check: reject re-registration of an already-confirmed active phone
-  // before invoking Supabase signUp. The downstream "stale user" fallback only
-  // runs for truly abandoned (unconfirmed or soft-deleted) accounts, so a
-  // genuinely-registered phone could otherwise slip through into a resend-OTP
-  // path and look like the signup was accepted. Best-effort: if any of these
-  // probes throw (e.g. transient admin-API hiccup) we fall through to the
-  // existing signUp + fallback flow rather than 500-ing the whole request.
   try {
     const existingPublicId = await findUserIdByPhone(phone);
     if (existingPublicId) {
@@ -211,7 +204,10 @@ auth.post("/register/phone", async (c) => {
 
   let { data: signUpData, error } = await trySignUp();
 
-  if (error && /already.*registered|already.*exists/i.test(error.message ?? "")) {
+  if (
+    error &&
+    /already.*registered|already.*exists/i.test(error.message ?? "")
+  ) {
     const admin = getSupabaseAdmin();
     if (admin) {
       const authUserId = await findAuthUserIdByPhone(admin, phone);
@@ -221,7 +217,7 @@ auth.post("/register/phone", async (c) => {
         const { data: authUser } =
           await admin.auth.admin.getUserById(authUserId);
         const isConfirmed = Boolean(authUser?.user?.phone_confirmed_at);
-        const isSoftDeleted = !publicUserId; // public.users either deleted or marked deleted
+        const isSoftDeleted = !publicUserId;
 
         if (isConfirmed && !isSoftDeleted) {
           return c.json(
@@ -230,9 +226,7 @@ auth.post("/register/phone", async (c) => {
           );
         }
 
-        // Stale / deleted auth user blocking re-registration → hard delete + retry.
-        const { error: delErr } =
-          await admin.auth.admin.deleteUser(authUserId);
+        const { error: delErr } = await admin.auth.admin.deleteUser(authUserId);
         if (!delErr) {
           ({ data: signUpData, error } = await trySignUp());
         }

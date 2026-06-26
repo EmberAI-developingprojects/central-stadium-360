@@ -20,8 +20,7 @@ const BOX_CLS =
 
 const BOX_FILLED_CLS = "!border-brand-blue/50 bg-brand-blue-tint/40";
 
-const WRAP_CLS =
-  "flex justify-center gap-2 max-[420px]:gap-1.5";
+const WRAP_CLS = "flex justify-center gap-2 max-[420px]:gap-1.5";
 
 export default function OtpInput({
   value,
@@ -53,10 +52,7 @@ export default function OtpInput({
     el?.select();
   };
 
-  const onInputChange = (
-    idx: number,
-    e: ChangeEvent<HTMLInputElement>,
-  ) => {
+  const onInputChange = (idx: number, e: ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value.replace(/\D/g, "");
     if (!raw) {
       setDigit(idx, " ");
@@ -67,7 +63,6 @@ export default function OtpInput({
       if (idx < length - 1) focusIdx(idx + 1);
       return;
     }
-    // Multiple digits (paste or fast typing) — distribute from this index.
     const slice = raw.slice(0, length - idx);
     const arr = value.padEnd(length, " ").slice(0, length).split("");
     for (let i = 0; i < slice.length; i++) arr[idx + i] = slice[i];
@@ -114,11 +109,7 @@ export default function OtpInput({
   };
 
   return (
-    <div
-      className={WRAP_CLS}
-      role="group"
-      aria-label={`${length}-digit code`}
-    >
+    <div className={WRAP_CLS} role="group" aria-label={`${length}-digit code`}>
       {Array.from({ length }).map((_, idx) => {
         const ch = digits[idx];
         const filled = ch && ch !== " ";

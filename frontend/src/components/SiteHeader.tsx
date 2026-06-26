@@ -39,17 +39,14 @@ const DROPDOWN_CLS =
 const DROPDOWN_A_CLS =
   "block text-[15px] font-medium text-ink rounded-lg whitespace-nowrap py-[9px] px-[14px] no-underline hover:bg-brand-blue-tint hover:text-brand-blue";
 
-const HEADER_AUTH_CLS = "inline-flex items-center gap-3 flex-none max-[1024px]:gap-2.5 max-[480px]:gap-1.5";
+const HEADER_AUTH_CLS =
+  "inline-flex items-center gap-3 flex-none max-[1024px]:gap-2.5 max-[480px]:gap-1.5";
 
 const AUTH_BTN_CLS =
   "inline-flex items-center leading-none gap-2 rounded-full bg-[linear-gradient(135deg,#2230c6_0%,#3a48d8_100%)] text-white text-[14px] font-semibold no-underline py-[10px] px-[18px] [transition:transform_.18s_ease,box-shadow_.22s_ease,filter_.18s_ease] shadow-[0_8px_22px_-8px_rgba(34,48,198,.55),inset_0_1px_0_rgba(255,255,255,0.18)] hover:-translate-y-px hover:shadow-[0_12px_28px_-8px_rgba(34,48,198,.65),inset_0_1px_0_rgba(255,255,255,0.22)] hover:[filter:brightness(1.06)] [&_svg]:w-[16px] [&_svg]:h-[16px] max-[480px]:!w-11 max-[480px]:!h-11 max-[480px]:!p-0 max-[480px]:!justify-center max-[480px]:!gap-0 max-[480px]:[&_svg]:!w-[18px] max-[480px]:[&_svg]:!h-[18px]";
 
-// Hide the "Нэвтрэх" text on phones that are narrow enough that the header
-// would otherwise wrap or clip. The icon + aria-label remain accessible.
 const AUTH_LABEL_CLS = "max-[480px]:hidden";
 
-// Hide the inline language switcher on narrow phones — it stays available
-// in the mobile drawer footer.
 const LANG_SWITCHER_WRAP_CLS = "max-[540px]:hidden";
 
 const HAMBURGER_BTN_CLS =
@@ -109,21 +106,39 @@ const buildNavGroups = (t: (k: string) => string): NavGroup[] => [
     href: "/#certificates",
     children: [
       { label: t("nav_transparency_mission"), href: "/transparency/mission" },
-      { label: t("nav_transparency_report"), href: "/transparency/report-2025" },
-      { label: t("nav_transparency_resolution"), href: "/transparency/resolution" },
-      { label: t("nav_transparency_petition"), href: "/transparency/petitions" },
+      {
+        label: t("nav_transparency_report"),
+        href: "/transparency/report-2025",
+      },
+      {
+        label: t("nav_transparency_resolution"),
+        href: "/transparency/resolution",
+      },
+      {
+        label: t("nav_transparency_petition"),
+        href: "/transparency/petitions",
+      },
       { label: t("nav_transparency_hr"), href: "/transparency/hr-policy" },
       {
         label: t("nav_transparency_vacancies"),
         href: "https://www.zangia.mn/company/National-Stadium-of-Mongolia",
       },
-      { label: t("nav_transparency_selection"), href: "/transparency/selection" },
-      { label: t("nav_transparency_evaluation"), href: "/transparency/evaluation" },
+      {
+        label: t("nav_transparency_selection"),
+        href: "/transparency/selection",
+      },
+      {
+        label: t("nav_transparency_evaluation"),
+        href: "/transparency/evaluation",
+      },
       {
         label: t("nav_transparency_glass_account"),
         href: "https://shilendans.gov.mn/organization/96933?ry=2025&group=5",
       },
-      { label: t("nav_transparency_recommendations"), href: "/transparency/recommendations" },
+      {
+        label: t("nav_transparency_recommendations"),
+        href: "/transparency/recommendations",
+      },
     ],
   },
   { label: t("nav_legal"), href: "/legal" },
@@ -237,10 +252,16 @@ export default function SiteHeader() {
                   <Link className={DROPDOWN_A_CLS} to="/transparency/mission">
                     {t("nav_transparency_mission")}
                   </Link>
-                  <Link className={DROPDOWN_A_CLS} to="/transparency/report-2025">
+                  <Link
+                    className={DROPDOWN_A_CLS}
+                    to="/transparency/report-2025"
+                  >
                     {t("nav_transparency_report")}
                   </Link>
-                  <Link className={DROPDOWN_A_CLS} to="/transparency/resolution">
+                  <Link
+                    className={DROPDOWN_A_CLS}
+                    to="/transparency/resolution"
+                  >
                     {t("nav_transparency_resolution")}
                   </Link>
                   <Link className={DROPDOWN_A_CLS} to="/transparency/petitions">
@@ -258,7 +279,10 @@ export default function SiteHeader() {
                   <Link className={DROPDOWN_A_CLS} to="/transparency/selection">
                     {t("nav_transparency_selection")}
                   </Link>
-                  <Link className={DROPDOWN_A_CLS} to="/transparency/evaluation">
+                  <Link
+                    className={DROPDOWN_A_CLS}
+                    to="/transparency/evaluation"
+                  >
                     {t("nav_transparency_evaluation")}
                   </Link>
                   <a
@@ -267,7 +291,10 @@ export default function SiteHeader() {
                   >
                     {t("nav_transparency_glass_account")}
                   </a>
-                  <Link className={DROPDOWN_A_CLS} to="/transparency/recommendations">
+                  <Link
+                    className={DROPDOWN_A_CLS}
+                    to="/transparency/recommendations"
+                  >
                     {t("nav_transparency_recommendations")}
                   </Link>
                 </div>
@@ -313,7 +340,11 @@ export default function SiteHeader() {
               {session && session.identifier ? (
                 <UserMenu />
               ) : (
-                <Link to="/login" className={AUTH_BTN_CLS} aria-label={t("nav_login")}>
+                <Link
+                  to="/login"
+                  className={AUTH_BTN_CLS}
+                  aria-label={t("nav_login")}
+                >
                   <svg
                     viewBox="0 0 24 24"
                     fill="none"

@@ -81,9 +81,7 @@ async function request<T>(
   let json: Record<string, unknown> = {};
   try {
     json = (await res.json()) as Record<string, unknown>;
-  } catch {
-
-  }
+  } catch {}
   if (!res.ok || json.ok === false) {
     return {
       ok: false,
@@ -234,11 +232,9 @@ export const api = {
 
   getHomeContent: () => request<HomeContentResponse>("GET", "/api/content"),
 
-  listHistoryFigures: () =>
-    request<DbHistoryFigure[]>("GET", "/api/history"),
+  listHistoryFigures: () => request<DbHistoryFigure[]>("GET", "/api/history"),
 
-  getWatchToken: () =>
-    request<{ cams: WatchCam[] }>("GET", "/api/watch/token"),
+  getWatchToken: () => request<{ cams: WatchCam[] }>("GET", "/api/watch/token"),
 
   getWatchStatus: () =>
     request<{
@@ -277,7 +273,6 @@ export const api = {
     featureEvent: (id: string) =>
       request<DbEvent>("POST", `/api/admin/events/${id}/feature`),
 
-    // In-person capacity zones (kiosk ticketing).
     listZones: (eventId: string) =>
       request<DbZone[]>(
         "GET",
@@ -366,23 +361,27 @@ export const api = {
     ticketsStats: () =>
       request<AdminTicketStats>("GET", `/api/admin/tickets/stats`),
 
-    createUser: (input: { email: string; password: string; full_name?: string; role?: "user" | "admin" }) =>
-      request<AdminUserRow>("POST", "/api/admin/users", input),
+    createUser: (input: {
+      email: string;
+      password: string;
+      full_name?: string;
+      role?: "user" | "admin";
+    }) => request<AdminUserRow>("POST", "/api/admin/users", input),
     listUsers: () => request<AdminUserRow[]>("GET", "/api/admin/users"),
-    getUser: (id: string) => request<AdminUserRow>("GET", `/api/admin/users/${id}`),
+    getUser: (id: string) =>
+      request<AdminUserRow>("GET", `/api/admin/users/${id}`),
     setUserRole: (id: string, role: UserRole) =>
       request<AdminUserRow>("PATCH", `/api/admin/users/${id}/role`, { role }),
     setUserDisabled: (id: string, disabled: boolean) =>
-      request<AdminUserRow>("PATCH", `/api/admin/users/${id}/disabled`, { disabled }),
+      request<AdminUserRow>("PATCH", `/api/admin/users/${id}/disabled`, {
+        disabled,
+      }),
     deleteUser: (id: string) =>
       request<{ id: string }>("DELETE", `/api/admin/users/${id}`),
 
-    // In-person (kiosk) ticketing — staff POS + sales report.
     kiosk: {
-      listEvents: () =>
-        request<KioskEvent[]>("GET", "/api/admin/kiosk/events"),
-      stats: () =>
-        request<AdminVenueStats>("GET", "/api/admin/kiosk/stats"),
+      listEvents: () => request<KioskEvent[]>("GET", "/api/admin/kiosk/events"),
+      stats: () => request<AdminVenueStats>("GET", "/api/admin/kiosk/stats"),
       sellThrough: (scope?: SellThroughScope) =>
         request<AdminSellThroughReport>(
           "GET",
@@ -477,9 +476,7 @@ export const api = {
       let json: Record<string, unknown> = {};
       try {
         json = (await res.json()) as Record<string, unknown>;
-      } catch {
-
-      }
+      } catch {}
       if (!res.ok || json.ok === false) {
         return {
           ok: false,

@@ -47,7 +47,6 @@ export default function RecordingFormDialog({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  // Reset whenever the dialog opens for a new camera.
   useEffect(() => {
     if (!open) return;
     setChannelArn("");
@@ -59,7 +58,6 @@ export default function RecordingFormDialog({
     setBusy(false);
   }, [open, cameraNumber]);
 
-  // Load env-backed ARNs once per open so the dropdown is populated.
   useEffect(() => {
     if (!open) return;
     let alive = true;
@@ -76,7 +74,6 @@ export default function RecordingFormDialog({
     };
   }, [open, cameraNumber]);
 
-  // Close on Escape.
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -163,7 +160,11 @@ export default function RecordingFormDialog({
             >
               <option value="">— Сонгох —</option>
               {channels.map((c) => (
-                <option key={c.camera_number} value={c.arn ?? ""} disabled={!c.arn}>
+                <option
+                  key={c.camera_number}
+                  value={c.arn ?? ""}
+                  disabled={!c.arn}
+                >
                   Камер {c.camera_number}
                   {c.arn ? ` · ${c.arn.slice(-32)}` : " · тохируулагдаагүй"}
                 </option>
@@ -171,9 +172,7 @@ export default function RecordingFormDialog({
             </select>
           </div>
 
-          <div
-            className="grid gap-4 [grid-template-columns:1fr_2fr] max-[560px]:[grid-template-columns:1fr]"
-          >
+          <div className="grid gap-4 [grid-template-columns:1fr_2fr] max-[560px]:[grid-template-columns:1fr]">
             <div className={ADMIN_FIELD_CLS}>
               <label htmlFor="rec-bucket">S3 bucket</label>
               <input
@@ -204,9 +203,7 @@ export default function RecordingFormDialog({
             </code>
           </div>
 
-          <div
-            className="grid gap-4 [grid-template-columns:1fr_1fr_1fr] max-[640px]:[grid-template-columns:1fr]"
-          >
+          <div className="grid gap-4 [grid-template-columns:1fr_1fr_1fr] max-[640px]:[grid-template-columns:1fr]">
             <div className={ADMIN_FIELD_CLS}>
               <label htmlFor="rec-dur">Үргэлжлэх хугацаа (сек)</label>
               <input

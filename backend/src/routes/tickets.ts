@@ -68,23 +68,15 @@ tickets.post("/create", async (c) => {
 
   const alreadyOwned = await hasPaidTicket(user.id, event.id, ticket_type);
   if (alreadyOwned) {
-    return c.json(
-      { ok: false, error: "ticket_already_owned" } as const,
-      409,
-    );
+    return c.json({ ok: false, error: "ticket_already_owned" } as const, 409);
   }
 
-  const pending = await findRecentPendingTicket(
-    user.id,
-    event.id,
-    ticket_type,
-  );
+  const pending = await findRecentPendingTicket(user.id, event.id, ticket_type);
   if (pending) {
     const reuse = await reusePendingInvoice(pending, event.id);
     if (reuse.ok) {
       return c.json({ ok: true, data: reuse.data } as const);
     }
-    // Stale pending invoice was discarded; fall through to mint a fresh one.
   }
 
   const price =
@@ -103,7 +95,10 @@ tickets.post("/create", async (c) => {
     price,
   });
   if (!res.ok) {
-    return c.json({ ok: false, error: res.error } as const, res.status as 400 | 403 | 404 | 409 | 500 | 502 | 503);
+    return c.json(
+      { ok: false, error: res.error } as const,
+      res.status as 400 | 403 | 404 | 409 | 500 | 502 | 503,
+    );
   }
   return c.json({ ok: true, data: res.data } as const);
 });

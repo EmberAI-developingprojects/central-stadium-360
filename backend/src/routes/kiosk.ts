@@ -19,18 +19,19 @@ const kiosk = new Hono<KioskEnv>();
 const ZONE_COLS =
   "id,event_id,name_mn,name_en,desc_mn,desc_en,price,capacity,sold,color,sort_order,created_at";
 
-// --- QPay callback (public, signature-verified — QPay can't send our key) ----
 kiosk.post("/qpay-callback", async (c) => {
   const orderId = c.req.query("order") ?? "";
   const sig = c.req.query("sig") ?? "";
   const secret = getCallbackSecret();
   if (!secret) {
-    return c.json({ ok: false, error: "qpay_callback_secret_missing" } as const, 503);
+    return c.json(
+      { ok: false, error: "qpay_callback_secret_missing" } as const,
+      503,
+    );
   }
   if (!verifyTicketSignature(orderId, sig, secret)) {
     return c.json({ ok: false, error: "bad_signature" } as const, 401);
   }
-  // Settlement happens inside the status check (idempotent).
   const res = await getKioskOrderStatus(orderId);
   if (!res.ok) {
     return c.json({ ok: false, error: res.error } as const, res.status as 404);
@@ -38,13 +39,15 @@ kiosk.post("/qpay-callback", async (c) => {
   return c.json({ ok: true, data: { status: res.data.status } } as const);
 });
 
-// --- everything below requires the kiosk device key --------------------------
 kiosk.use("*", requireKiosk);
 
 kiosk.get("/events", async (c) => {
   const admin = getSupabaseAdmin();
   if (!admin) {
-    return c.json({ ok: false, error: "supabase_not_configured" } as const, 503);
+    return c.json(
+      { ok: false, error: "supabase_not_configured" } as const,
+      503,
+    );
   }
   const { data, error } = await admin
     .from("events")
@@ -99,7 +102,11 @@ kiosk.post("/orders", async (c) => {
   const parsed = createOrderSchema.safeParse(body);
   if (!parsed.success) {
     return c.json(
-      { ok: false, error: "invalid_input", details: parsed.error.flatten() } as const,
+      {
+        ok: false,
+        error: "invalid_input",
+        details: parsed.error.flatten(),
+      } as const,
       400,
     );
   }
@@ -132,7 +139,11 @@ kiosk.post("/orders/:id/card-result", async (c) => {
   const parsed = cardResultSchema.safeParse(body);
   if (!parsed.success) {
     return c.json(
-      { ok: false, error: "invalid_input", details: parsed.error.flatten() } as const,
+      {
+        ok: false,
+        error: "invalid_input",
+        details: parsed.error.flatten(),
+      } as const,
       400,
     );
   }
@@ -147,7 +158,6 @@ kiosk.post("/orders/:id/card-result", async (c) => {
   return c.json({ ok: true, data: res.data } as const);
 });
 
-// --- Gate admission: redeem an admission ticket at the turnstile -------------
 const scanSchema = z.object({
   code: z.string().trim().min(1),
   event_id: z.string().uuid().nullable().optional(),
@@ -158,11 +168,18 @@ kiosk.post("/scan", async (c) => {
   const parsed = scanSchema.safeParse(body);
   if (!parsed.success) {
     return c.json(
-      { ok: false, error: "invalid_input", details: parsed.error.flatten() } as const,
+      {
+        ok: false,
+        error: "invalid_input",
+        details: parsed.error.flatten(),
+      } as const,
       400,
     );
   }
-  const res = await redeemTicket(parsed.data.code, parsed.data.event_id ?? null);
+  const res = await redeemTicket(
+    parsed.data.code,
+    parsed.data.event_id ?? null,
+  );
   if (!res.ok) {
     return c.json({ ok: false, error: res.error } as const, res.status as 400);
   }

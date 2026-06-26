@@ -1,9 +1,5 @@
 import type { KioskEvent, KioskScanResult } from "@cs360/shared";
 
-// Device-keyed client for the turnstile gate. Unlike `lib/api.ts` (which sends a
-// Supabase user token), the gate authenticates with the static kiosk device key
-// via the `X-Kiosk-Key` header — the same boundary the physical kiosk uses.
-
 const BASE_URL =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "";
 
@@ -33,9 +29,7 @@ async function gateRequest<T>(
   let json: Record<string, unknown> = {};
   try {
     json = (await res.json()) as Record<string, unknown>;
-  } catch {
-    // empty / non-JSON body
-  }
+  } catch {}
   if (!res.ok || json.ok === false) {
     return {
       ok: false,
@@ -47,10 +41,8 @@ async function gateRequest<T>(
 }
 
 export const gate = {
-  /** Events on sale, used to bind a gate to one event. Also validates the key. */
   events: (key: string) =>
     gateRequest<KioskEvent[]>("GET", "/api/kiosk/events", key),
-  /** Redeem an admission ticket code. Returns a verdict, never throws on bad tickets. */
   scan: (key: string, code: string, eventId?: string | null) =>
     gateRequest<KioskScanResult>("POST", "/api/kiosk/scan", key, {
       code,

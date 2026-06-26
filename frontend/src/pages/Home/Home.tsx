@@ -54,8 +54,6 @@ export default function Home() {
   useSmoothAnchors();
   const gatedGo = useGatedNavigate();
 
-  // Hydrate from sessionStorage so re-visits paint instantly with no layout
-  // shift; the background fetch still runs to refresh.
   const [events, setEvents] = useState<EventRecord[]>(() =>
     readCache<EventRecord[]>(HOME_EVENTS_CACHE_KEY, []),
   );
@@ -86,7 +84,7 @@ export default function Home() {
       <Upcoming gatedGo={gatedGo} events={events} />
       <Members items={content.members} />
       <Partners items={content.partners} />
-      <Roadmap items={content.roadmap} />
+      <Roadmap />
       <News items={content.news} />
       <SiteFooter />
     </>
@@ -593,8 +591,6 @@ function Upcoming({ gatedGo, events }: UpcomingProps) {
     setProgress(0);
   };
 
-  // Hide the entire section when there are no upcoming/live events — an
-  // empty dark stage with disabled nav arrows looks broken to visitors.
   if (upcoming.length === 0) return null;
 
   const upNavBase =
@@ -1062,7 +1058,7 @@ function Partners({ items = [] }: { items: Partner[] }) {
                   key={`${p.id}-${i}`}
                   href="#"
                   aria-hidden={i >= items.length ? "true" : undefined}
-                  className="shrink-0 inline-flex items-center justify-center w-[140px] h-[140px] bg-white rounded-[20px] overflow-hidden border border-solid border-[rgba(31,41,55,0.08)] p-[18px] shadow-[0_6px_18px_-10px_rgba(31,41,55,0.18)] [transition:transform_0.25s_ease,box-shadow_0.25s_ease,border-color_0.25s_ease] hover:-translate-y-1 hover:shadow-[0_14px_28px_-12px_rgba(34,48,198,0.35)] hover:border-[rgba(34,48,198,0.25)] max-[720px]:w-24 max-[720px]:h-24 max-[720px]:rounded-2xl max-[720px]:p-3"
+                  className="shrink-0 inline-flex items-center justify-center w-[140px] h-[140px] hover:w-[200px] bg-white rounded-[20px] overflow-hidden border border-solid border-[rgba(31,41,55,0.08)] p-[18px] shadow-[0_6px_18px_-10px_rgba(31,41,55,0.18)] [transition:transform_0.25s_ease,box-shadow_0.25s_ease,border-color_0.25s_ease,width_0.25s_ease] hover:-translate-y-1 hover:shadow-[0_14px_28px_-12px_rgba(34,48,198,0.35)] hover:border-[rgba(34,48,198,0.25)] max-[720px]:w-24 max-[720px]:h-24 max-[720px]:hover:w-36 max-[720px]:rounded-2xl max-[720px]:p-3"
                 >
                   <img
                     src={p.image}
@@ -1080,7 +1076,7 @@ function Partners({ items = [] }: { items: Partner[] }) {
   );
 }
 
-export function Roadmap(_props: { items?: any[] }) {
+export function Roadmap() {
   const { t } = useTranslation();
   type Milestone = { year: string; title: string };
   const bot: Milestone[] = [
@@ -1100,7 +1096,6 @@ export function Roadmap(_props: { items?: any[] }) {
   ];
   const all = [...bot, ...top];
 
-  // Бүх координатыг 0-100% хувиар тооцсон (Бодит харьцаа)
   const botDots = [
     { x: 6.67, y: 71.88 },
     { x: 15.42, y: 71.88 },
@@ -1387,42 +1382,44 @@ function News({ items = [] }: { items: NewsItem[] }) {
           {cards.map((n, i) => {
             const loc = pickNewsLocale(n, i18n.language);
             return (
-            <article
-              key={n.id}
-              className={`flex flex-col items-center text-center group ${REVEAL_UP_CLS}`}
-              data-stagger={i + 1}
-            >
-              <Link
-                to={`/news/${n.id}`}
-                aria-label={loc.title}
-                className="block w-full overflow-hidden rounded-2xl bg-surface-1 [aspect-ratio:4/3] [&_img]:w-full [&_img]:h-full [&_img]:object-cover [&_img]:block [&_img]:[transition:transform_.6s_cubic-bezier(.2,.8,.2,1)] group-hover:[&_img]:scale-[1.04]"
+              <article
+                key={n.id}
+                className={`flex flex-col items-center text-center group ${REVEAL_UP_CLS}`}
+                data-stagger={i + 1}
               >
-                {n.image && <img src={n.image} alt={loc.title} loading="lazy" />}
-              </Link>
-
-              <h3 className="mt-4 text-[13px] font-extrabold leading-[1.5] text-ink w-full line-clamp-3 max-[920px]:text-[13px]">
-                {loc.title}
-              </h3>
-
-              <Link
-                to={`/news/${n.id}`}
-                className="mt-6 inline-flex items-center gap-2 text-[13.5px] font-bold text-brand-blue no-underline group/link hover:gap-3 [transition:gap_.2s_ease] [&_svg]:w-[13px] [&_svg]:h-[13px]"
-              >
-                {t("news_read_more")}
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.4"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
+                <Link
+                  to={`/news/${n.id}`}
+                  aria-label={loc.title}
+                  className="block w-full overflow-hidden rounded-2xl bg-surface-1 [aspect-ratio:4/3] [&_img]:w-full [&_img]:h-full [&_img]:object-cover [&_img]:block [&_img]:[transition:transform_.6s_cubic-bezier(.2,.8,.2,1)] group-hover:[&_img]:scale-[1.04]"
                 >
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                  <polyline points="12 5 19 12 12 19" />
-                </svg>
-              </Link>
-            </article>
+                  {n.image && (
+                    <img src={n.image} alt={loc.title} loading="lazy" />
+                  )}
+                </Link>
+
+                <h3 className="mt-4 text-[13px] font-extrabold leading-[1.5] text-ink w-full line-clamp-3 max-[920px]:text-[13px]">
+                  {loc.title}
+                </h3>
+
+                <Link
+                  to={`/news/${n.id}`}
+                  className="mt-6 inline-flex items-center gap-2 text-[13.5px] font-bold text-brand-blue no-underline group/link hover:gap-3 [transition:gap_.2s_ease] [&_svg]:w-[13px] [&_svg]:h-[13px]"
+                >
+                  {t("news_read_more")}
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                    <polyline points="12 5 19 12 12 19" />
+                  </svg>
+                </Link>
+              </article>
             );
           })}
         </div>
@@ -1447,9 +1444,7 @@ function newsExcerpt(item: NewsItem, body: string, max = 220): string {
 
 function pickFeaturedNews(items: NewsItem[]): NewsItem | null {
   if (!items || items.length === 0) return null;
-  // Hero shows ONLY the admin-selected featured news. No latest-news
-  // fallback — if nothing is marked featured, the hero renders its default
-  // branded placeholder instead.
+
   const featured = items
     .filter((n) => n.featured)
     .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
@@ -1464,8 +1459,6 @@ function FeaturedNewsHero({ items }: { items: NewsItem[] }) {
     : { label: "", title: "", body: "" };
   const excerpt = featured ? newsExcerpt(featured, loc.body) : "";
 
-  // Always reserve the full hero slot — returning null on empty input causes
-  // a 100vh layout shift when the news API resolves and the hero pops in.
   return (
     <section
       className="relative w-full overflow-hidden bg-black text-white isolate -mt-[64px] max-[920px]:-mt-[56px]"

@@ -67,7 +67,10 @@ export default function Gate() {
     setKey(k);
     setEvents(res.data);
     setEventId((cur) => {
-      const next = cur && res.data.some((e) => e.id === cur) ? cur : res.data[0]?.id ?? "";
+      const next =
+        cur && res.data.some((e) => e.id === cur)
+          ? cur
+          : (res.data[0]?.id ?? "");
       if (next) localStorage.setItem(EVENT_LS, next);
       return next;
     });
@@ -75,10 +78,8 @@ export default function Gate() {
     return true;
   }, []);
 
-  // Auto-connect if a key was already stored on this device.
   useEffect(() => {
     if (key && !ready) void connect(key);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const disconnect = () => {
@@ -131,7 +132,9 @@ function GateSetup({
           <div className="text-[13px] uppercase tracking-[.2em] text-zinc-500">
             Төв Цэнгэлдэх
           </div>
-          <h1 className="text-[22px] font-semibold mt-1">Хаалга — тасалбар уншуулах</h1>
+          <h1 className="text-[22px] font-semibold mt-1">
+            Хаалга — тасалбар уншуулах
+          </h1>
           <p className="text-[13px] text-zinc-400 mt-2">
             Энэ төхөөрөмжийн хаалганы түлхүүрийг оруулна уу.
           </p>
@@ -196,12 +199,12 @@ function Scanner({
     setCode("");
     focusInput();
     if (!res.ok) {
-      // Surface transport/auth failures as a synthetic bad verdict.
       const synthetic: KioskScanResult = {
         verdict: "not_found",
         code: value,
         zone_name_mn: null,
-        event_title: res.error === "unauthorized" ? "Түлхүүр буруу" : "Сүлжээний алдаа",
+        event_title:
+          res.error === "unauthorized" ? "Түлхүүр буруу" : "Сүлжээний алдаа",
         used_at: null,
         admitted: 0,
         sold: 0,
@@ -338,7 +341,9 @@ function Scanner({
                             : "bg-red-400"
                       }`}
                     />
-                    <span className="font-mono text-zinc-400 truncate">{h.code}</span>
+                    <span className="font-mono text-zinc-400 truncate">
+                      {h.code}
+                    </span>
                     <span className="ml-auto text-zinc-500">{hv.title}</span>
                   </div>
                 );

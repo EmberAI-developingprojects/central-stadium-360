@@ -63,16 +63,11 @@ adminRecordings.post("/", async (c) => {
       );
     }
     if (error.code === "23503") {
-      return c.json(
-        { ok: false, error: "event_not_found" } as const,
-        404,
-      );
+      return c.json({ ok: false, error: "event_not_found" } as const, 404);
     }
     return c.json({ ok: false, error: error.message } as const, 500);
   }
 
-  // If this event now has 4 ready recordings, mark it archived (but never
-  // downgrade an event already past 'archived').
   const { count, error: countErr } = await admin
     .from("recordings")
     .select("id", { count: "exact", head: true })

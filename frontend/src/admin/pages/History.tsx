@@ -43,7 +43,6 @@ export default function HistoryAdmin() {
     return () => {
       alive = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!items) return <div className={ADMIN_EMPTY_CLS}>Уншиж байна…</div>;

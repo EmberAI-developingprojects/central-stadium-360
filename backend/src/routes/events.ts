@@ -52,7 +52,10 @@ events.get("/", async (c) => {
     return c.json({ ok: false, error: error.message } as const, 500);
   }
 
-  return c.json({ ok: true, data: (data ?? []) as unknown as DbEvent[] } as const);
+  return c.json({
+    ok: true,
+    data: (data ?? []) as unknown as DbEvent[],
+  } as const);
 });
 
 export type ArchivedEventRow = {
@@ -85,7 +88,9 @@ events.get("/archived", async (c) => {
   }
   const now = new Date();
   const nowIso = now.toISOString();
-  const archiveReadyIso = new Date(now.getTime() - 10 * 60 * 1000).toISOString();
+  const archiveReadyIso = new Date(
+    now.getTime() - 10 * 60 * 1000,
+  ).toISOString();
   const { data, error } = await supabase
     .from("events")
     .select(
@@ -214,8 +219,6 @@ events.get("/:id/replay", async (c) => {
     }
     recordings = (recRows ?? []) as DbRecording[];
 
-    // Lazy auto-discovery: if no recordings have been cached yet, scan S3
-    // and persist whatever we find. Cheap (one event per first viewer hit).
     if (recordings.length === 0) {
       const discovered = await discoverRecordingsForEvent(event);
       if (discovered.length > 0) {
@@ -280,10 +283,7 @@ events.post("/:id/buy-replay", requireUser, async (c) => {
 
   const alreadyOwned = await hasPaidTicket(user.id, event.id, "replay");
   if (alreadyOwned) {
-    return c.json(
-      { ok: false, error: "ticket_already_owned" } as const,
-      409,
-    );
+    return c.json({ ok: false, error: "ticket_already_owned" } as const, 409);
   }
 
   const pending = await findRecentPendingTicket(user.id, event.id, "replay");
@@ -292,7 +292,6 @@ events.post("/:id/buy-replay", requireUser, async (c) => {
     if (reuse.ok) {
       return c.json({ ok: true, data: reuse.data } as const);
     }
-    // Stale pending invoice was discarded; fall through to mint a fresh one.
   }
 
   const price = Number(event.replay_price ?? 0);
@@ -303,7 +302,10 @@ events.post("/:id/buy-replay", requireUser, async (c) => {
     price,
   });
   if (!res.ok) {
-    return c.json({ ok: false, error: res.error } as const, res.status as 400 | 403 | 404 | 409 | 500 | 502 | 503);
+    return c.json(
+      { ok: false, error: res.error } as const,
+      res.status as 400 | 403 | 404 | 409 | 500 | 502 | 503,
+    );
   }
   return c.json({ ok: true, data: res.data } as const);
 });

@@ -22,20 +22,29 @@ const SELECT_COLS_NO_EN =
 let eventEnColumnsAvailable: boolean | null = null;
 
 function selectCols(): string {
-  return eventEnColumnsAvailable === false ? SELECT_COLS_NO_EN : SELECT_COLS_FULL;
+  return eventEnColumnsAvailable === false
+    ? SELECT_COLS_NO_EN
+    : SELECT_COLS_FULL;
 }
 
-function isMissingEventEnError(err: { code?: string; message?: string } | null): boolean {
+function isMissingEventEnError(
+  err: { code?: string; message?: string } | null,
+): boolean {
   if (!err) return false;
   return (
     err.code === "42703" ||
     (typeof err.message === "string" &&
-      (err.message.includes("title_en") || err.message.includes("description_en")))
+      (err.message.includes("title_en") ||
+        err.message.includes("description_en")))
   );
 }
 
 function stripEnFields<T extends Record<string, unknown>>(payload: T): T {
-  const { title_en: _t, description_en: _d, ...rest } = payload as T & {
+  const {
+    title_en: _t,
+    description_en: _d,
+    ...rest
+  } = payload as T & {
     title_en?: unknown;
     description_en?: unknown;
   };
@@ -100,14 +109,14 @@ adminEvents.get("/", async (c) => {
   if (error) {
     return c.json({ ok: false, error: error.message } as const, 500);
   }
-  const rows: AdminEventListRow[] = ((data ?? []) as unknown as AdminEventListRaw[]).map(
-    ({ recordings, ...row }) => ({
-      ...row,
-      recording_count: Array.isArray(recordings)
-        ? (recordings[0]?.count ?? 0)
-        : (recordings?.count ?? 0),
-    }),
-  );
+  const rows: AdminEventListRow[] = (
+    (data ?? []) as unknown as AdminEventListRaw[]
+  ).map(({ recordings, ...row }) => ({
+    ...row,
+    recording_count: Array.isArray(recordings)
+      ? (recordings[0]?.count ?? 0)
+      : (recordings?.count ?? 0),
+  }));
   return c.json({ ok: true, data: rows } as const);
 });
 
@@ -341,9 +350,7 @@ adminEvents.post("/:id/rediscover", async (c) => {
     .from("events")
     .select("id,live_start_at,live_end_at")
     .eq("id", id)
-    .maybeSingle<
-      Pick<DbEvent, "id" | "live_start_at" | "live_end_at">
-    >();
+    .maybeSingle<Pick<DbEvent, "id" | "live_start_at" | "live_end_at">>();
   if (evErr) {
     return c.json({ ok: false, error: evErr.message } as const, 500);
   }
@@ -351,18 +358,12 @@ adminEvents.post("/:id/rediscover", async (c) => {
     return c.json({ ok: false, error: "not_found" } as const, 404);
   }
   if (!event.live_start_at || !event.live_end_at) {
-    return c.json(
-      { ok: false, error: "missing_live_window" } as const,
-      409,
-    );
+    return c.json({ ok: false, error: "missing_live_window" } as const, 409);
   }
   const discovered = await discoverRecordingsForEvent(event);
   return c.json({ ok: true, data: discovered } as const);
 });
 
-// ---------------------------------------------------------------------------
-// In-person capacity zones (VIP/Premium/GA) — set price + capacity per event.
-// ---------------------------------------------------------------------------
 const ZONE_COLS =
   "id,event_id,name_mn,name_en,desc_mn,desc_en,price,capacity,sold,color,sort_order,created_at";
 
@@ -382,7 +383,10 @@ const zonePatchSchema = zoneCreateSchema.partial();
 adminEvents.get("/:id/zones", async (c) => {
   const admin = getSupabaseAdmin();
   if (!admin) {
-    return c.json({ ok: false, error: "supabase_not_configured" } as const, 503);
+    return c.json(
+      { ok: false, error: "supabase_not_configured" } as const,
+      503,
+    );
   }
   const { data, error } = await admin
     .from("zones")
@@ -398,13 +402,20 @@ adminEvents.get("/:id/zones", async (c) => {
 adminEvents.post("/:id/zones", async (c) => {
   const admin = getSupabaseAdmin();
   if (!admin) {
-    return c.json({ ok: false, error: "supabase_not_configured" } as const, 503);
+    return c.json(
+      { ok: false, error: "supabase_not_configured" } as const,
+      503,
+    );
   }
   const body = await c.req.json().catch(() => ({}));
   const parsed = zoneCreateSchema.safeParse(body);
   if (!parsed.success) {
     return c.json(
-      { ok: false, error: "invalid_input", details: parsed.error.flatten() } as const,
+      {
+        ok: false,
+        error: "invalid_input",
+        details: parsed.error.flatten(),
+      } as const,
       400,
     );
   }
@@ -422,13 +433,20 @@ adminEvents.post("/:id/zones", async (c) => {
 adminEvents.on(["PATCH", "PUT"], "/:id/zones/:zoneId", async (c) => {
   const admin = getSupabaseAdmin();
   if (!admin) {
-    return c.json({ ok: false, error: "supabase_not_configured" } as const, 503);
+    return c.json(
+      { ok: false, error: "supabase_not_configured" } as const,
+      503,
+    );
   }
   const body = await c.req.json().catch(() => ({}));
   const parsed = zonePatchSchema.safeParse(body);
   if (!parsed.success) {
     return c.json(
-      { ok: false, error: "invalid_input", details: parsed.error.flatten() } as const,
+      {
+        ok: false,
+        error: "invalid_input",
+        details: parsed.error.flatten(),
+      } as const,
       400,
     );
   }
@@ -451,7 +469,10 @@ adminEvents.on(["PATCH", "PUT"], "/:id/zones/:zoneId", async (c) => {
 adminEvents.delete("/:id/zones/:zoneId", async (c) => {
   const admin = getSupabaseAdmin();
   if (!admin) {
-    return c.json({ ok: false, error: "supabase_not_configured" } as const, 503);
+    return c.json(
+      { ok: false, error: "supabase_not_configured" } as const,
+      503,
+    );
   }
   const { error } = await admin
     .from("zones")
