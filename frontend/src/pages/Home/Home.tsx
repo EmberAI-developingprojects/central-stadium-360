@@ -1052,13 +1052,13 @@ function Partners({ items = [] }: { items: Partner[] }) {
             className={`group relative w-full overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)] ${REVEAL_UP_CLS}`}
             data-stagger="2"
           >
-            <div className="flex w-max items-center gap-14 max-[720px]:gap-5 animate-partners-marquee group-hover:[animation-play-state:paused]">
+            <div className="flex w-max items-center gap-14 max-[720px]:gap-5 animate-partners-marquee group-hover:[animation-play-state:paused] py-4">
               {loop.map((p, i) => (
                 <a
                   key={`${p.id}-${i}`}
                   href="#"
                   aria-hidden={i >= items.length ? "true" : undefined}
-                  className="shrink-0 inline-flex items-center justify-center w-[140px] h-[140px] hover:w-[200px] bg-white rounded-[20px] overflow-hidden border border-solid border-[rgba(31,41,55,0.08)] p-[18px] shadow-[0_6px_18px_-10px_rgba(31,41,55,0.18)] [transition:transform_0.25s_ease,box-shadow_0.25s_ease,border-color_0.25s_ease,width_0.25s_ease] hover:-translate-y-1 hover:shadow-[0_14px_28px_-12px_rgba(34,48,198,0.35)] hover:border-[rgba(34,48,198,0.25)] max-[720px]:w-24 max-[720px]:h-24 max-[720px]:hover:w-36 max-[720px]:rounded-2xl max-[720px]:p-3"
+                  className="shrink-0 inline-flex items-center justify-center w-[140px] h-[140px] bg-white rounded-[20px] overflow-hidden border border-solid border-[rgba(31,41,55,0.08)] p-[18px] shadow-[0_6px_18px_-10px_rgba(31,41,55,0.18)] [transition:transform_0.25s_ease,box-shadow_0.25s_ease,border-color_0.25s_ease] hover:-translate-y-2 hover:shadow-[0_14px_28px_-12px_rgba(34,48,198,0.35)] hover:border-[rgba(34,48,198,0.25)] max-[720px]:w-24 max-[720px]:h-24 max-[720px]:rounded-2xl max-[720px]:p-3"
                 >
                   <img
                     src={p.image}
