@@ -1347,7 +1347,9 @@ function News({ items = [] }: { items: NewsItem[] }) {
     );
   }
 
-  const cards = items.slice(0, 6);
+  const cards = [...items]
+    .sort((a, b) => (b.sortOrder ?? 0) - (a.sortOrder ?? 0))
+    .slice(0, 3);
 
   return (
     <section className={sectionCls} id="news">
@@ -1381,7 +1383,7 @@ function News({ items = [] }: { items: NewsItem[] }) {
           </Link>
         </div>
 
-        <div className="grid grid-cols-3 gap-10 max-[920px]:grid-cols-2 max-[920px]:gap-7 max-[640px]:grid-cols-1 max-[640px]:gap-8">
+        <div className="grid grid-cols-3 gap-10 max-[920px]:grid-cols-1 max-[920px]:gap-7 max-[640px]:grid-cols-1 max-[640px]:gap-8">
           {cards.map((n, i) => {
             const loc = pickNewsLocale(n, i18n.language);
             return (
@@ -1398,7 +1400,7 @@ function News({ items = [] }: { items: NewsItem[] }) {
                 {n.image && <img src={n.image} alt={loc.title} loading="lazy" />}
               </Link>
 
-              <h3 className="mt-6 text-[16px] font-extrabold leading-[1.45] text-ink max-w-[340px] max-[920px]:text-[15px]">
+              <h3 className="mt-4 text-[13px] font-extrabold leading-[1.5] text-ink w-full line-clamp-3 max-[920px]:text-[13px]">
                 {loc.title}
               </h3>
 
