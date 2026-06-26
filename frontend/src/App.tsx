@@ -3,9 +3,6 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth, RequireAdmin } from "./auth";
 import Home from "./pages/Home";
 
-// Lazy-load every non-landing page so the initial JS bundle only contains
-// the homepage. Other routes are fetched on demand, which keeps first paint
-// fast and shrinks the admin surface area for public visitors.
 const Events = lazy(() => import("./pages/Events"));
 const EventDetail = lazy(() => import("./pages/EventDetail"));
 const PetitionsOverview = lazy(() => import("./pages/PetitionsOverview"));
@@ -91,94 +88,100 @@ export default function App() {
     <>
       <ScrollToTop />
       <Suspense fallback={<RouteFallback />}>
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <GuestOnly>
-              <Home />
-            </GuestOnly>
-          }
-        />
-        <Route path="/events" element={<Events />} />
-        <Route path="/events/:id" element={<EventDetail />} />
-        <Route path="/transparency/petitions" element={<PetitionsOverview />} />
-        <Route path="/transparency/:slug" element={<TransparencyDocument />} />
-        <Route path="/legal" element={<Legal />} />
-        <Route path="/news" element={<News />} />
-        <Route path="/news/:id" element={<NewsDetail />} />
-        <Route path="/history" element={<History />} />
-        <Route path="/history/:id" element={<HistoryDetail />} />
-        <Route
-          path="/login"
-          element={
-            <GuestOnly>
-              <Login />
-            </GuestOnly>
-          }
-        />
-        <Route
-          path="/register"
-          element={
-            <GuestOnly>
-              <Register />
-            </GuestOnly>
-          }
-        />
-        <Route
-          path="/register/phone"
-          element={
-            <GuestOnly>
-              <RegisterPhone />
-            </GuestOnly>
-          }
-        />
-        <Route
-          path="/register/email"
-          element={
-            <GuestOnly>
-              <RegisterEmail />
-            </GuestOnly>
-          }
-        />
-        <Route
-          path="/forgot-password"
-          element={
-            <GuestOnly>
-              <ForgotPassword />
-            </GuestOnly>
-          }
-        />
-        <Route path="/watch" element={<Watch />} />
-        <Route path="/watch/events/:id" element={<WatchEventDetail />} />
-        <Route path="/watch/:eventId/vod" element={<WatchVOD />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/orders/:code" element={<OrderDetail />} />
-        <Route path="/gate" element={<Gate />} />
-        <Route
-          path="/admin"
-          element={
-            <RequireAdmin>
-              <AdminLayout />
-            </RequireAdmin>
-          }
-        >
-          <Route index element={<Dashboard />} />
-          <Route path="events" element={<EventsList />} />
-          <Route path="events/new" element={<EventCreate />} />
-          <Route path="events/:id" element={<AdminEventDetail />} />
-          <Route path="events/:id/edit" element={<EventEdit />} />
-          <Route path="orders" element={<OrdersList />} />
-          <Route path="orders/:code" element={<OrderView />} />
-          <Route path="kiosk" element={<Kiosk />} />
-          <Route path="users" element={<UsersList />} />
-          <Route path="users/:id" element={<UserView />} />
-          <Route path="content" element={<Content />} />
-          <Route path="history" element={<HistoryAdmin />} />
-        </Route>
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <GuestOnly>
+                <Home />
+              </GuestOnly>
+            }
+          />
+          <Route path="/events" element={<Events />} />
+          <Route path="/events/:id" element={<EventDetail />} />
+          <Route
+            path="/transparency/petitions"
+            element={<PetitionsOverview />}
+          />
+          <Route
+            path="/transparency/:slug"
+            element={<TransparencyDocument />}
+          />
+          <Route path="/legal" element={<Legal />} />
+          <Route path="/news" element={<News />} />
+          <Route path="/news/:id" element={<NewsDetail />} />
+          <Route path="/history" element={<History />} />
+          <Route path="/history/:id" element={<HistoryDetail />} />
+          <Route
+            path="/login"
+            element={
+              <GuestOnly>
+                <Login />
+              </GuestOnly>
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <GuestOnly>
+                <Register />
+              </GuestOnly>
+            }
+          />
+          <Route
+            path="/register/phone"
+            element={
+              <GuestOnly>
+                <RegisterPhone />
+              </GuestOnly>
+            }
+          />
+          <Route
+            path="/register/email"
+            element={
+              <GuestOnly>
+                <RegisterEmail />
+              </GuestOnly>
+            }
+          />
+          <Route
+            path="/forgot-password"
+            element={
+              <GuestOnly>
+                <ForgotPassword />
+              </GuestOnly>
+            }
+          />
+          <Route path="/watch" element={<Watch />} />
+          <Route path="/watch/events/:id" element={<WatchEventDetail />} />
+          <Route path="/watch/:eventId/vod" element={<WatchVOD />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/orders/:code" element={<OrderDetail />} />
+          <Route path="/gate" element={<Gate />} />
+          <Route
+            path="/admin"
+            element={
+              <RequireAdmin>
+                <AdminLayout />
+              </RequireAdmin>
+            }
+          >
+            <Route index element={<Dashboard />} />
+            <Route path="events" element={<EventsList />} />
+            <Route path="events/new" element={<EventCreate />} />
+            <Route path="events/:id" element={<AdminEventDetail />} />
+            <Route path="events/:id/edit" element={<EventEdit />} />
+            <Route path="orders" element={<OrdersList />} />
+            <Route path="orders/:code" element={<OrderView />} />
+            <Route path="kiosk" element={<Kiosk />} />
+            <Route path="users" element={<UsersList />} />
+            <Route path="users/:id" element={<UserView />} />
+            <Route path="content" element={<Content />} />
+            <Route path="history" element={<HistoryAdmin />} />
+          </Route>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </Suspense>
     </>
   );

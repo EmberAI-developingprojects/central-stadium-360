@@ -59,8 +59,6 @@ export default function Watch() {
     const endMs = (e: EventRecord) =>
       e.live_end_at ? new Date(e.live_end_at).getTime() : null;
 
-    // 1) Currently live — requires a known live window. Pick the one that
-    // started most recently (the freshest live event).
     const live = events
       .filter((e) => {
         const en = endMs(e);
@@ -69,11 +67,9 @@ export default function Watch() {
         return s <= now && en >= now;
       })
       .sort((a, b) => startMs(b) - startMs(a));
-    // 2) Next upcoming — earliest start in the future.
     const upcoming = events
       .filter((e) => startMs(e) > now)
       .sort((a, b) => startMs(a) - startMs(b));
-    // 3) Most recent past — latest start in the past.
     const past = events
       .filter((e) => startMs(e) <= now)
       .sort((a, b) => startMs(b) - startMs(a));
@@ -133,8 +129,6 @@ export default function Watch() {
     };
   }, [viewerOpen, modalEvent]);
 
-  // Dark themed page — keep the body background dark so iOS safe-area and
-  // scroll-bounce don't reveal the default white body underneath.
   useEffect(() => {
     const prevBg = document.body.style.backgroundColor;
     document.body.style.backgroundColor = "#0B0F1A";

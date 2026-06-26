@@ -1,7 +1,3 @@
-// Self-hosted TinyMCE bootstrap. Importing the core sets `window.tinymce`,
-// which @tinymce/tinymce-react reuses instead of fetching from cdn.tiny.cloud
-// (so no `apiKey` is needed). Skins and plugins register themselves as
-// resources on import.
 import "tinymce/tinymce";
 import "tinymce/icons/default";
 import "tinymce/themes/silver";

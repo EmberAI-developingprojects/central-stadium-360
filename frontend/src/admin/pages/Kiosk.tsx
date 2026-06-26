@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import type {
   AdminAdmissionEvent,
   AdminAdmissionReport,
@@ -40,7 +46,8 @@ function formatDateTime(iso: string | null | undefined): {
 } {
   if (!iso) return { primary: "—", secondary: "" };
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return { primary: iso.slice(0, 10), secondary: "" };
+  if (Number.isNaN(d.getTime()))
+    return { primary: iso.slice(0, 10), secondary: "" };
   return {
     primary: d.toLocaleDateString("mn-MN", {
       year: "numeric",
@@ -112,10 +119,6 @@ export default function Kiosk() {
   );
 }
 
-// ===========================================================================
-// OVERVIEW — sell-through (per-event / per-zone fill + revenue)
-// ===========================================================================
-
 const EVENT_STATUS: Record<string, { label: string; cls: string }> = {
   live: { label: "Шууд", cls: ADMIN_BADGE_PAID_CLS },
   upcoming: { label: "Удахгүй", cls: "" },
@@ -153,7 +156,10 @@ function SellThroughPanel() {
       setReport(
         res.ok && res.data
           ? res.data
-          : { totals: { capacity: 0, sold: 0, revenue: 0, events: 0 }, events: [] },
+          : {
+              totals: { capacity: 0, sold: 0, revenue: 0, events: 0 },
+              events: [],
+            },
       );
     });
     return () => {
@@ -193,12 +199,28 @@ function SellThroughPanel() {
       ) : (
         <>
           <div className="grid gap-3 mb-5 [grid-template-columns:repeat(4,minmax(0,1fr))] max-[980px]:[grid-template-columns:repeat(2,minmax(0,1fr))]">
-            <StatCard label="Нийт багтаамж" value={report.totals.capacity.toLocaleString("en-US")} sub="суудал / бүс" />
-            <StatCard label="Зарагдсан" value={report.totals.sold.toLocaleString("en-US")} sub="төлөгдсөн тасалбар" />
-            <StatCard label="Орлого" value={money(report.totals.revenue)} sub="биечлэн борлуулалт" />
+            <StatCard
+              label="Нийт багтаамж"
+              value={report.totals.capacity.toLocaleString("en-US")}
+              sub="суудал / бүс"
+            />
+            <StatCard
+              label="Зарагдсан"
+              value={report.totals.sold.toLocaleString("en-US")}
+              sub="төлөгдсөн тасалбар"
+            />
+            <StatCard
+              label="Орлого"
+              value={money(report.totals.revenue)}
+              sub="биечлэн борлуулалт"
+            />
             <StatCard
               label="Дүүргэлт"
-              value={pctText(report.totals.capacity > 0 ? report.totals.sold / report.totals.capacity : 0)}
+              value={pctText(
+                report.totals.capacity > 0
+                  ? report.totals.sold / report.totals.capacity
+                  : 0,
+              )}
               sub="нийт дундаж"
             />
           </div>
@@ -266,7 +288,9 @@ function SellThroughEventCard({ event }: { event: AdminSellThroughEvent }) {
                       style={{ background: z.color || "#2230C6" }}
                       aria-hidden="true"
                     />
-                    <span className="text-zinc-900 font-medium">{z.name_mn}</span>
+                    <span className="text-zinc-900 font-medium">
+                      {z.name_mn}
+                    </span>
                   </div>
                 </td>
                 <td>
@@ -277,13 +301,19 @@ function SellThroughEventCard({ event }: { event: AdminSellThroughEvent }) {
                     </span>
                   </div>
                 </td>
-                <td className="tabular-nums text-zinc-600" style={{ textAlign: "right" }}>
+                <td
+                  className="tabular-nums text-zinc-600"
+                  style={{ textAlign: "right" }}
+                >
                   {money(z.price)}
                 </td>
                 <td className="tabular-nums text-center">
                   {z.sold}/{z.capacity}
                 </td>
-                <td className="tabular-nums text-zinc-900 font-semibold" style={{ textAlign: "right" }}>
+                <td
+                  className="tabular-nums text-zinc-900 font-semibold"
+                  style={{ textAlign: "right" }}
+                >
                   {money(z.revenue)}
                 </td>
               </tr>
@@ -294,10 +324,6 @@ function SellThroughEventCard({ event }: { event: AdminSellThroughEvent }) {
     </div>
   );
 }
-
-// ===========================================================================
-// RECON — cash-up by kiosk / staff + payment mix
-// ===========================================================================
 
 function ReconciliationPanel() {
   const [range, setRange] = useState<ReconRange>("all");
@@ -311,7 +337,13 @@ function ReconciliationPanel() {
       if (res.ok && res.data) setReport(res.data);
       else
         setReport({
-          totals: { revenue: 0, orders: 0, tickets: 0, byMethod: { qpay: 0, card: 0 }, voided: 0 },
+          totals: {
+            revenue: 0,
+            orders: 0,
+            tickets: 0,
+            byMethod: { qpay: 0, card: 0 },
+            voided: 0,
+          },
           kiosks: [],
         });
     });
@@ -351,15 +383,29 @@ function ReconciliationPanel() {
       ) : (
         <>
           <div className="grid gap-3 mb-5 [grid-template-columns:repeat(3,minmax(0,1fr))] max-[980px]:[grid-template-columns:1fr]">
-            <StatCard label="Орлого" value={money(report.totals.revenue)} sub={`${report.totals.orders} төлөгдсөн захиалга`} />
-            <StatCard label="Тасалбар" value={report.totals.tickets.toLocaleString("en-US")} sub="зарагдсан" />
+            <StatCard
+              label="Орлого"
+              value={money(report.totals.revenue)}
+              sub={`${report.totals.orders} төлөгдсөн захиалга`}
+            />
+            <StatCard
+              label="Тасалбар"
+              value={report.totals.tickets.toLocaleString("en-US")}
+              sub="зарагдсан"
+            />
             <div className="bg-white border border-[#ececef] rounded-xl p-4">
               <span className="text-[11px] text-zinc-500 uppercase tracking-[.06em] font-medium">
                 Төлбөрийн хэлбэр
               </span>
               <div className="mt-3 h-2 w-full rounded-full bg-zinc-100 overflow-hidden flex">
-                <div className="h-full bg-zinc-900" style={{ width: `${qpayPct}%` }} />
-                <div className="h-full bg-zinc-300" style={{ width: `${100 - qpayPct}%` }} />
+                <div
+                  className="h-full bg-zinc-900"
+                  style={{ width: `${qpayPct}%` }}
+                />
+                <div
+                  className="h-full bg-zinc-300"
+                  style={{ width: `${100 - qpayPct}%` }}
+                />
               </div>
               <div className="flex justify-between text-[12px] text-zinc-500 mt-2 tabular-nums">
                 <span>QPay {money(mix?.qpay ?? 0)}</span>
@@ -390,7 +436,9 @@ function ReconciliationPanel() {
                   {report.kiosks.map((k) => (
                     <tr key={k.kiosk_id ?? "__none__"}>
                       <td>
-                        <span className="text-zinc-900 font-medium">{k.label}</span>
+                        <span className="text-zinc-900 font-medium">
+                          {k.label}
+                        </span>
                         {k.staff_id && (
                           <span className="ml-2 text-[11px] text-zinc-400">
                             ажилтан
@@ -399,13 +447,22 @@ function ReconciliationPanel() {
                       </td>
                       <td className="tabular-nums text-center">{k.orders}</td>
                       <td className="tabular-nums text-center">{k.tickets}</td>
-                      <td className="tabular-nums text-zinc-600" style={{ textAlign: "right" }}>
+                      <td
+                        className="tabular-nums text-zinc-600"
+                        style={{ textAlign: "right" }}
+                      >
                         {money(k.qpay)}
                       </td>
-                      <td className="tabular-nums text-zinc-600" style={{ textAlign: "right" }}>
+                      <td
+                        className="tabular-nums text-zinc-600"
+                        style={{ textAlign: "right" }}
+                      >
                         {money(k.card)}
                       </td>
-                      <td className="tabular-nums text-zinc-900 font-semibold" style={{ textAlign: "right" }}>
+                      <td
+                        className="tabular-nums text-zinc-900 font-semibold"
+                        style={{ textAlign: "right" }}
+                      >
                         {money(k.revenue)}
                       </td>
                     </tr>
@@ -448,10 +505,6 @@ function Segmented<T extends string>({
     </div>
   );
 }
-
-// ===========================================================================
-// ADMISSION — live turnstile scans vs issued tickets
-// ===========================================================================
 
 function AdmissionPanel() {
   const [scope, setScope] = useState<SellThroughScope>("onsale");
@@ -529,10 +582,26 @@ function AdmissionPanel() {
       ) : (
         <>
           <div className="grid gap-3 mb-5 [grid-template-columns:repeat(4,minmax(0,1fr))] max-[980px]:[grid-template-columns:repeat(2,minmax(0,1fr))]">
-            <StatCard label="Нэвтэрсэн" value={totals.admitted.toLocaleString("en-US")} sub="уншуулсан тасалбар" />
-            <StatCard label="Гарсан тасалбар" value={totals.sold.toLocaleString("en-US")} sub="нийт зарагдсан" />
-            <StatCard label="Ороогүй" value={totals.noShow.toLocaleString("en-US")} sub="хүлээгдэж буй" />
-            <StatCard label="Дүүргэлт" value={pctText(totals.pct)} sub="нэвтэрсэн / зарагдсан" />
+            <StatCard
+              label="Нэвтэрсэн"
+              value={totals.admitted.toLocaleString("en-US")}
+              sub="уншуулсан тасалбар"
+            />
+            <StatCard
+              label="Гарсан тасалбар"
+              value={totals.sold.toLocaleString("en-US")}
+              sub="нийт зарагдсан"
+            />
+            <StatCard
+              label="Ороогүй"
+              value={totals.noShow.toLocaleString("en-US")}
+              sub="хүлээгдэж буй"
+            />
+            <StatCard
+              label="Дүүргэлт"
+              value={pctText(totals.pct)}
+              sub="нэвтэрсэн / зарагдсан"
+            />
           </div>
 
           <div className="grid gap-4 [grid-template-columns:1fr_320px] max-[1100px]:[grid-template-columns:1fr]">
@@ -577,7 +646,9 @@ function AdmissionEventCard({ event }: { event: AdminAdmissionEvent }) {
       </div>
 
       {event.zones.length === 0 ? (
-        <div className="px-5 py-4 text-[13px] text-zinc-500">Бүс тохируулаагүй.</div>
+        <div className="px-5 py-4 text-[13px] text-zinc-500">
+          Бүс тохируулаагүй.
+        </div>
       ) : (
         <table className={ADMIN_TABLE_CLS}>
           <thead>
@@ -598,7 +669,9 @@ function AdmissionEventCard({ event }: { event: AdminAdmissionEvent }) {
                       style={{ background: z.color || "#2230C6" }}
                       aria-hidden="true"
                     />
-                    <span className="text-zinc-900 font-medium">{z.name_mn}</span>
+                    <span className="text-zinc-900 font-medium">
+                      {z.name_mn}
+                    </span>
                   </div>
                 </td>
                 <td>
@@ -644,7 +717,9 @@ function RecentScans({ report }: { report: AdminAdmissionReport }) {
                 className="flex items-center gap-2 text-[12.5px] py-1.5"
               >
                 <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
-                <span className="font-mono text-zinc-700 truncate">{r.code}</span>
+                <span className="font-mono text-zinc-700 truncate">
+                  {r.code}
+                </span>
                 <span className="text-zinc-400 truncate hidden sm:inline">
                   {r.zone_name_mn ?? ""}
                 </span>
@@ -659,10 +734,6 @@ function RecentScans({ report }: { report: AdminAdmissionReport }) {
     </aside>
   );
 }
-
-// ===========================================================================
-// SALES — report
-// ===========================================================================
 
 const STATUS_LABEL: Record<string, string> = {
   paid: "Төлөгдсөн",
@@ -729,9 +800,21 @@ function SalesPanel() {
     <>
       {stats && (
         <div className="grid gap-3 mb-5 [grid-template-columns:repeat(3,minmax(0,1fr))] max-[980px]:[grid-template-columns:1fr]">
-          <StatCard label="Орлого" value={money(stats.revenue)} sub={`${stats.paidCount} төлөгдсөн захиалга`} />
-          <StatCard label="Нийт захиалга" value={String(stats.orderCount)} sub="бүх төлөв" />
-          <StatCard label="Зарагдсан тасалбар" value={String(stats.ticketCount)} sub="биечлэн" />
+          <StatCard
+            label="Орлого"
+            value={money(stats.revenue)}
+            sub={`${stats.paidCount} төлөгдсөн захиалга`}
+          />
+          <StatCard
+            label="Нийт захиалга"
+            value={String(stats.orderCount)}
+            sub="бүх төлөв"
+          />
+          <StatCard
+            label="Зарагдсан тасалбар"
+            value={String(stats.ticketCount)}
+            sub="биечлэн"
+          />
         </div>
       )}
 
@@ -842,7 +925,10 @@ function SalesPanel() {
                         {o.event_title || "—"}
                       </span>
                     </td>
-                    <td className="text-zinc-600 max-w-[220px] truncate" title={zones}>
+                    <td
+                      className="text-zinc-600 max-w-[220px] truncate"
+                      title={zones}
+                    >
                       {zones || "—"}
                     </td>
                     <td className="text-zinc-600">{o.buyer_phone || "—"}</td>
@@ -857,7 +943,9 @@ function SalesPanel() {
                       {o.payment_method || "—"}
                     </td>
                     <td>
-                      <div className="text-zinc-900 tabular-nums">{dt.primary}</div>
+                      <div className="text-zinc-900 tabular-nums">
+                        {dt.primary}
+                      </div>
                       {dt.secondary && (
                         <div className="text-[11.5px] text-zinc-500 mt-0.5 tabular-nums">
                           {dt.secondary}
@@ -869,7 +957,17 @@ function SalesPanel() {
                     </td>
                     <td>
                       <span className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#e4e4e7] bg-white text-zinc-600 group-hover:bg-zinc-50 group-hover:text-zinc-900 transition-colors">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                        >
                           <path d="M5 12h14" />
                           <polyline points="12 5 19 12 12 19" />
                         </svg>
@@ -980,9 +1078,18 @@ function OrderDetailModal({
           ) : (
             <>
               <div className="grid grid-cols-2 gap-3 text-[13px]">
-                <Meta label="Төлөв" value={<StatusBadge status={order.status} />} />
-                <Meta label="Төлбөр" value={(order.payment_method || "—").toUpperCase()} />
-                <Meta label="Огноо" value={`${dt?.primary ?? ""} ${dt?.secondary ?? ""}`} />
+                <Meta
+                  label="Төлөв"
+                  value={<StatusBadge status={order.status} />}
+                />
+                <Meta
+                  label="Төлбөр"
+                  value={(order.payment_method || "—").toUpperCase()}
+                />
+                <Meta
+                  label="Огноо"
+                  value={`${dt?.primary ?? ""} ${dt?.secondary ?? ""}`}
+                />
                 <Meta label="Утас" value={order.buyer_phone || "—"} />
               </div>
 
@@ -1054,13 +1161,7 @@ function OrderDetailModal({
   );
 }
 
-function Meta({
-  label,
-  value,
-}: {
-  label: string;
-  value: ReactNode;
-}) {
+function Meta({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div>
       <div className="text-[11px] text-zinc-500 uppercase tracking-[.06em] font-medium mb-1">

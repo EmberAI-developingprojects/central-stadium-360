@@ -1,4 +1,3 @@
-
 export type ApiOk<T> = { ok: true; data: T };
 export type ApiErr = { ok: false; error: string };
 export type ApiResponse<T> = ApiOk<T> | ApiErr;
@@ -144,7 +143,12 @@ export interface DbHistoryFigure {
   created_at: string;
 }
 
-export type HomeContentSection = "news" | "partners" | "roadmap" | "services" | "hero";
+export type HomeContentSection =
+  | "news"
+  | "partners"
+  | "roadmap"
+  | "services"
+  | "hero";
 
 export interface HomeContentResponse {
   news: DbHomeNews[];
@@ -220,7 +224,6 @@ export interface DbSession {
 }
 
 export interface QPayInvoiceLink {
-
   name: string;
 
   description?: string;
@@ -249,11 +252,6 @@ export interface PaymentStatus {
   paid_at: string | null;
   paid_amount: number;
 }
-
-// ---------------------------------------------------------------------------
-// In-person (kiosk) ticketing — physical admission tickets sold at the stadium
-// kiosk for the same events. Capacity zones, anonymous orders, e-barimt.
-// ---------------------------------------------------------------------------
 
 export type PaymentMethod = "qpay" | "card";
 export type VenueTicketStatus = "valid" | "used" | "void";
@@ -384,24 +382,17 @@ export interface KioskOrderStatus {
   ebarimt: KioskEbarimt | null;
 }
 
-/** Posted by the kiosk after the card terminal + POSAPI complete (card rail). */
 export interface KioskCardResultInput {
   approved: boolean;
   payment_ref?: string;
   ebarimt?: KioskEbarimt;
 }
 
-// ---------------------------------------------------------------------------
-// Admin views over in-person (kiosk) sales — staff POS + sales reporting.
-// ---------------------------------------------------------------------------
-
-/** A venue order as the admin sales report lists it (event title + ticket count joined). */
 export interface AdminVenueOrderRow extends DbVenueOrder {
   event_title: string | null;
   ticket_count: number;
 }
 
-/** A venue order with its minted admission tickets, for the order detail view. */
 export interface AdminVenueOrderDetail extends AdminVenueOrderRow {
   tickets: DbVenueTicket[];
 }
@@ -413,22 +404,17 @@ export interface AdminVenueStats {
   ticketCount: number;
 }
 
-// --- Sell-through report (per-event / per-zone fill + revenue) ---------------
-
 export type SellThroughScope = "onsale" | "all";
 
-/** One capacity zone with its realized (paid) sales. */
 export interface AdminSellThroughZone {
   zone_id: string;
   name_mn: string;
   color: string | null;
   price: number;
   capacity: number;
-  /** Tickets sold via *paid* orders (not reservations). */
   sold: number;
   available: number;
   revenue: number;
-  /** Fill ratio 0..1 (sold / capacity). */
   pct: number;
 }
 
@@ -454,11 +440,8 @@ export interface AdminSellThroughReport {
   events: AdminSellThroughEvent[];
 }
 
-// --- Reconciliation / cash-up (per-kiosk / per-staff) -----------------------
-
 export type ReconRange = "today" | "7d" | "all";
 
-/** Paid sales attributed to one kiosk / staff member. */
 export interface AdminReconciliationRow {
   kiosk_id: string | null;
   label: string;
@@ -481,18 +464,15 @@ export interface AdminReconciliationReport {
   kiosks: AdminReconciliationRow[];
 }
 
-// --- Gate admission — scan an admission ticket at the turnstile --------------
-
 export type ScanVerdict =
-  | "admitted" // valid ticket, just flipped to used
-  | "already_used" // previously admitted
-  | "voided" // ticket was voided
-  | "not_found" // no ticket with this code
-  | "wrong_event"; // ticket belongs to a different event than the gate
+  | "admitted"
+  | "already_used"
+  | "voided"
+  | "not_found"
+  | "wrong_event";
 
 export interface KioskScanInput {
   code: string;
-  /** When the gate is bound to an event, reject tickets from other events. */
   event_id?: string | null;
 }
 
@@ -501,24 +481,17 @@ export interface KioskScanResult {
   code: string;
   zone_name_mn: string | null;
   event_title: string | null;
-  /** For `admitted`: the moment of admission. For `already_used`: first admission. */
   used_at: string | null;
-  /** Live tally for the ticket's event, for gate feedback. */
   admitted: number;
   sold: number;
 }
-
-// --- Admin live admission dashboard -----------------------------------------
 
 export interface AdminAdmissionZone {
   zone_id: string;
   name_mn: string;
   color: string | null;
-  /** Issued admission tickets (valid + used; excludes void). */
   sold: number;
-  /** Admitted so far (used). */
   admitted: number;
-  /** admitted / sold. */
   pct: number;
 }
 
@@ -543,6 +516,5 @@ export interface AdminAdmissionEvent {
 
 export interface AdminAdmissionReport {
   events: AdminAdmissionEvent[];
-  /** Most recent admissions across the reported events. */
   recent: AdminAdmissionScan[];
 }

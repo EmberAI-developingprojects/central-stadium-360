@@ -195,9 +195,6 @@ export function ViewerOverlay({
     });
   }, []);
 
-  // Reuse a single Hls instance across camera switches — recreating it on
-  // every URL change forces a MediaSource teardown and re-init, which adds
-  // ~1s of "switching" latency. `loadSource(newUrl)` is dramatically faster.
   useEffect(() => {
     const video = videoRef.current;
     const url = activeCam?.hlsUrl;
@@ -236,7 +233,6 @@ export function ViewerOverlay({
     }
   }, [activeCam?.hlsUrl]);
 
-  // Tear down Hls only on unmount, so camera switches reuse the instance.
   useEffect(() => {
     return () => {
       if (hlsRef.current) {

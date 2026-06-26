@@ -43,18 +43,17 @@ export default function EventCreate() {
 
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
-  const [date, setDate] = useState(""); // yyyy-mm-dd — эхлэх огноо
-  const [startTime, setStartTime] = useState(""); // HH:MM
-  const [endDate, setEndDate] = useState(""); // yyyy-mm-dd
-  const [endTime, setEndTime] = useState(""); // HH:MM
-  const [replayDays, setReplayDays] = useState(""); // нөхөж үзэх хоног
+  const [date, setDate] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const [replayDays, setReplayDays] = useState("");
   const [livePrice, setLivePrice] = useState("");
   const [replayPrice, setReplayPrice] = useState("");
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  // Дуусах огноог анхдагчаар эхлэх огноотой адил болгох (хэрэглэгч өөрчилж болно).
   useEffect(() => {
     if (date && !endDate) setEndDate(date);
   }, [date, endDate]);

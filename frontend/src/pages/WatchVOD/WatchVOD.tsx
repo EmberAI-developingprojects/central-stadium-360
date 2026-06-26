@@ -56,7 +56,8 @@ const fmtTime = (secs: number) => {
   const h = Math.floor(total / 3600);
   const m = Math.floor((total % 3600) / 60);
   const s = total % 60;
-  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  if (h > 0)
+    return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   return `${m}:${String(s).padStart(2, "0")}`;
 };
 
@@ -83,8 +84,6 @@ export default function WatchVOD() {
   const [loading, setLoading] = useState(true);
   const [previousTicketExpired, setPreviousTicketExpired] = useState(false);
 
-  // Dark-themed page — keep <body> dark so iOS safe-area, scroll bounce,
-  // and any horizontal slack don't reveal the default white body underneath.
   useEffect(() => {
     const prevBg = document.body.style.backgroundColor;
     document.body.style.backgroundColor = "#05080F";
@@ -114,7 +113,6 @@ export default function WatchVOD() {
     void fetchEvent();
   }, [fetchEvent]);
 
-  // Auto-retry every 30s while recordings are still being processed.
   useEffect(() => {
     if (!event?.recordings_pending) return;
     const id = setInterval(() => {
@@ -123,8 +121,6 @@ export default function WatchVOD() {
     return () => clearInterval(id);
   }, [event?.recordings_pending, fetchEvent]);
 
-  // When access is denied, check if user had a previously-paid (now expired)
-  // ticket so the paywall can show a helpful message rather than a generic CTA.
   useEffect(() => {
     if (!eventId || !event || event.has_access) {
       setPreviousTicketExpired(false);
@@ -232,7 +228,10 @@ function ShellChrome({
   children: React.ReactNode;
 }) {
   return (
-    <div className={VIEWER_CLS} style={{ position: "static", minHeight: "100vh" }}>
+    <div
+      className={VIEWER_CLS}
+      style={{ position: "static", minHeight: "100vh" }}
+    >
       <header className={VIEWER_HEADER_CLS}>
         {onBack ? (
           <button
@@ -293,12 +292,9 @@ function VODViewer({ event }: { event: VODEventDetail }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const stageRef = useRef<HTMLElement>(null);
-  // Mutable signature query for the *currently active* recording — read by
-  // the shared HLS loader at request time so we can reuse one Hls instance
-  // across camera switches.
+
   const signQueryRef = useRef<string>("");
-  // recording_id → cached signed URL (1h TTL backend-side; we treat as
-  // stale 5m before that).
+
   const signedCacheRef = useRef<Map<string, SignedEntry>>(new Map());
 
   const recordings = useMemo(
@@ -339,7 +335,6 @@ function VODViewer({ event }: { event: VODEventDetail }) {
       setSwitching(true);
       setSignError(null);
       const cached = signedCacheRef.current.get(recordingId);
-      // Treat URLs as stale 5 min before the backend's 1h expiry.
       const isFresh = cached && cached.expiresAt - Date.now() > 5 * 60 * 1000;
       let url = cached?.url;
       if (!isFresh) {
@@ -361,8 +356,6 @@ function VODViewer({ event }: { event: VODEventDetail }) {
     [],
   );
 
-  // Pre-sign all camera URLs in parallel as soon as recordings are known so
-  // subsequent camera switches don't have to wait for the backend round-trip.
   useEffect(() => {
     if (recordings.length === 0) return;
     let alive = true;
@@ -382,13 +375,11 @@ function VODViewer({ event }: { event: VODEventDetail }) {
     };
   }, [recordings]);
 
-  // Initial load for the first camera.
   useEffect(() => {
     if (recordings.length === 0) return;
     void loadSignedUrl(recordings[0].id, null);
   }, [recordings, loadSignedUrl]);
 
-  // Camera switching keeps the current playback position.
   const switchCamera = useCallback(
     (nextIdx: number) => {
       if (nextIdx === camIdx) return;
@@ -401,15 +392,11 @@ function VODViewer({ event }: { event: VODEventDetail }) {
     [camIdx, recordings, loadSignedUrl],
   );
 
-  // (Re-)attach HLS whenever the signed URL changes. We reuse a single Hls
-  // instance across camera switches — `loadSource(newUrl)` is dramatically
-  // faster than destroy + recreate (no MediaSource teardown, no re-init).
   useEffect(() => {
     const video = videoRef.current;
     const url = currentSrc;
     if (!video || !url) return;
 
-    // Update sign query for the new URL before any loader runs.
     try {
       signQueryRef.current = new URL(url).search.replace(/^\?/, "");
     } catch {
@@ -433,12 +420,6 @@ function VODViewer({ event }: { event: VODEventDetail }) {
     if (Hls.isSupported()) {
       let hls = hlsRef.current;
       if (!hls) {
-        // CloudFront signs the master with a wildcard custom policy; the
-        // Policy/Signature/Key-Pair-Id query params live only on the master
-        // URL. HLS resolves variant playlists & .ts segments as relative
-        // refs (which drops the base URL's query) — so we rewrite every
-        // child request URL to carry the same signature, otherwise
-        // CloudFront 403s them and the player stalls.
         const BaseLoader = Hls.DefaultConfig.loader;
         const signRef = signQueryRef;
         class SignedLoader extends BaseLoader {
@@ -486,8 +467,7 @@ function VODViewer({ event }: { event: VODEventDetail }) {
       hls.loadSource(url);
       const onLoaded = () => applyPendingSeek();
       video.addEventListener("loadedmetadata", onLoaded, { once: true });
-      // Only remove the listener on re-run; the Hls instance is reused and
-      // torn down once in the unmount-only effect below.
+
       return () => {
         video.removeEventListener("loadedmetadata", onLoaded);
       };
@@ -501,7 +481,6 @@ function VODViewer({ event }: { event: VODEventDetail }) {
     }
   }, [currentSrc]);
 
-  // Tear down Hls only on unmount, so camera switches reuse the instance.
   useEffect(() => {
     return () => {
       if (hlsRef.current) {
@@ -544,7 +523,6 @@ function VODViewer({ event }: { event: VODEventDetail }) {
     };
   }, [seeking]);
 
-  // 360° sphere renderer (mirrors live ViewerOverlay).
   useEffect(() => {
     const canvas = canvasRef.current;
     const video = videoRef.current;
@@ -646,7 +624,6 @@ function VODViewer({ event }: { event: VODEventDetail }) {
     };
   }, [is360]);
 
-  // Close quality menu when clicking outside.
   useEffect(() => {
     if (!qualityOpen) return;
     const onDown = (e: MouseEvent | TouchEvent) => {
@@ -661,7 +638,6 @@ function VODViewer({ event }: { event: VODEventDetail }) {
     };
   }, [qualityOpen]);
 
-  // Fullscreen tracking.
   useEffect(() => {
     const onFs = () => {
       const doc = document as FullscreenDocument;
@@ -679,7 +655,6 @@ function VODViewer({ event }: { event: VODEventDetail }) {
     };
   }, []);
 
-  // Idle-hide controls when in fullscreen.
   useEffect(() => {
     if (!isFs && !pseudoFs) {
       setIdle(false);
@@ -912,9 +887,7 @@ function VODViewer({ event }: { event: VODEventDetail }) {
               aria-live="polite"
             >
               <div className="text-center text-white">
-                <p className="text-[14px] font-semibold m-0">
-                  {signError}
-                </p>
+                <p className="text-[14px] font-semibold m-0">{signError}</p>
                 <button
                   type="button"
                   onClick={() => activeRecording && switchCamera(camIdx)}
@@ -926,7 +899,6 @@ function VODViewer({ event }: { event: VODEventDetail }) {
             </div>
           )}
         </div>
-
 
         <div
           className={VIEWER_MOBILE_CAMS_CLS}
@@ -1091,13 +1063,14 @@ function VODViewer({ event }: { event: VODEventDetail }) {
           <div className={VIEWER_CONTROLS_RIGHT_CLS}>
             {(() => {
               const visible = qualityLevels.filter(
-                (l) => l.height === 480 || l.height === 720 || l.height === 1080,
+                (l) =>
+                  l.height === 480 || l.height === 720 || l.height === 1080,
               );
               const currentLabel =
                 qualityIdx === -1
                   ? "Auto"
-                  : (qualityLevels.find((l) => l.index === qualityIdx)
-                      ?.label ?? "Auto");
+                  : (qualityLevels.find((l) => l.index === qualityIdx)?.label ??
+                    "Auto");
               return (
                 <div
                   ref={qualityRef}
@@ -1135,7 +1108,10 @@ function VODViewer({ event }: { event: VODEventDetail }) {
                     >
                       {[
                         { idx: -1, label: "Auto" },
-                        ...visible.map((l) => ({ idx: l.index, label: l.label })),
+                        ...visible.map((l) => ({
+                          idx: l.index,
+                          label: l.label,
+                        })),
                       ].map((opt) => {
                         const selected = opt.idx === qualityIdx;
                         return (

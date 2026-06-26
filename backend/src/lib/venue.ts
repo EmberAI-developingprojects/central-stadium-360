@@ -49,12 +49,12 @@ function backendUrl(): string {
   );
 }
 
-/** Create an in-person order: reserve capacity, persist, and (QPay rail) make an invoice. */
 export async function createKioskOrder(
   input: KioskCreateOrderInput,
 ): Promise<VenueResult<KioskCreateOrderResponse>> {
   const admin = getSupabaseAdmin();
-  if (!admin) return { ok: false, error: "supabase_not_configured", status: 503 };
+  if (!admin)
+    return { ok: false, error: "supabase_not_configured", status: 503 };
 
   const items = (input.items ?? []).filter((i) => i && i.qty > 0);
   if (items.length === 0) return { ok: false, error: "no_items", status: 400 };
@@ -84,7 +84,6 @@ export async function createKioskOrder(
     }
   }
 
-  // Reserve capacity atomically, rolling back anything already taken on failure.
   const reserved: KioskOrderItemInput[] = [];
   for (const i of items) {
     const { data: ok, error } = await admin.rpc("reserve_zone", {
@@ -127,12 +126,10 @@ export async function createKioskOrder(
     return { ok: false, error: "order_insert_failed", status: 500 };
   }
 
-  // Card rail: the kiosk charges via the bridge, then POSTs /card-result.
   if (input.method === "card") {
     return { ok: true, data: { order_id: orderId, reference: orderId, total } };
   }
 
-  // QPay rail: make an invoice with a signed callback.
   if (!isQPayConfigured()) {
     await failOrder(orderId, reserved);
     return { ok: false, error: "qpay_not_configured", status: 503 };
@@ -176,7 +173,8 @@ export async function getKioskOrderStatus(
   orderId: string,
 ): Promise<VenueResult<KioskOrderStatus>> {
   const admin = getSupabaseAdmin();
-  if (!admin) return { ok: false, error: "supabase_not_configured", status: 503 };
+  if (!admin)
+    return { ok: false, error: "supabase_not_configured", status: 503 };
 
   const order = await loadOrder(orderId);
   if (!order) return { ok: false, error: "not_found", status: 404 };
@@ -217,7 +215,8 @@ export async function applyCardResult(
   ebarimt: KioskEbarimt | undefined,
 ): Promise<VenueResult<KioskOrderStatus>> {
   const admin = getSupabaseAdmin();
-  if (!admin) return { ok: false, error: "supabase_not_configured", status: 503 };
+  if (!admin)
+    return { ok: false, error: "supabase_not_configured", status: 503 };
 
   const order = await loadOrder(orderId);
   if (!order) return { ok: false, error: "not_found", status: 404 };
@@ -236,8 +235,6 @@ export async function applyCardResult(
   return { ok: true, data: settled };
 }
 
-// --- internals -------------------------------------------------------------
-
 async function settleOrder(
   order: DbVenueOrder,
   opts: { paymentId?: string | null; ebarimt?: KioskEbarimt },
@@ -245,8 +242,6 @@ async function settleOrder(
   const admin = getSupabaseAdmin()!;
   const nowIso = new Date().toISOString();
 
-  // Atomically claim the pending->paid transition so concurrent polls /
-  // callbacks settle exactly once.
   const { data: claimed } = await admin
     .from("venue_orders")
     .update({ status: "paid", paid_at: nowIso })
@@ -256,12 +251,10 @@ async function settleOrder(
     .maybeSingle<{ id: string }>();
 
   if (!claimed) {
-    // Someone else already settled it — return the persisted view.
     const fresh = (await loadOrder(order.id)) ?? order;
     return loadOrderView(fresh);
   }
 
-  // Mint one printed ticket per admission.
   const out: KioskTicketOut[] = [];
   const rows: { order_id: string; zone_id: string; code: string }[] = [];
   for (const it of order.items) {
@@ -279,7 +272,6 @@ async function settleOrder(
     await admin.from("venue_tickets").insert(rows);
   }
 
-  // Resolve the e-barimt: card rail supplies it (POSAPI); QPay rail issues it now.
   let ebarimt: KioskEbarimt | null = opts.ebarimt ?? null;
   let ebarimtId: string | null = null;
   if (!ebarimt && order.payment_method === "qpay" && opts.paymentId) {
@@ -288,7 +280,6 @@ async function settleOrder(
       ebarimt = { qrData: r.ebarimt_qr_data, lottery: r.ebarimt_lottery };
       ebarimtId = r.id;
     } catch (err) {
-      // Never fail a paid sale on e-barimt — log and continue; can be retried.
       console.error("ebarimt_create_failed", order.id, err);
     }
   }
@@ -331,9 +322,7 @@ async function loadOrderView(order: DbVenueOrder): Promise<KioskOrderStatus> {
     .from("venue_tickets")
     .select("code,zone_id")
     .eq("order_id", order.id);
-  const names = new Map(
-    order.items.map((it) => [it.zone_id, it] as const),
-  );
+  const names = new Map(order.items.map((it) => [it.zone_id, it] as const));
   const out: KioskTicketOut[] = (tickets ?? []).map((t) => {
     const it = names.get(t.zone_id);
     return {
@@ -372,7 +361,6 @@ async function releaseItems(items: KioskOrderItemInput[]): Promise<void> {
   }
 }
 
-/** Release capacity and delete a never-paid order (QPay/setup failure). */
 async function failOrder(
   orderId: string,
   reserved: KioskOrderItemInput[],
@@ -382,7 +370,6 @@ async function failOrder(
   if (admin) await admin.from("venue_orders").delete().eq("id", orderId);
 }
 
-/** Cancel a pending order (e.g. card declined): release capacity, mark cancelled. */
 async function failOrderRow(order: DbVenueOrder): Promise<void> {
   await releaseItems(
     order.items.map((it) => ({ zone_id: it.zone_id, qty: it.qty })),
@@ -397,8 +384,6 @@ async function failOrderRow(order: DbVenueOrder): Promise<void> {
   }
 }
 
-// --- Gate admission --------------------------------------------------------
-
 function blankResult(verdict: ScanVerdict, code: string): KioskScanResult {
   return {
     verdict,
@@ -411,7 +396,6 @@ function blankResult(verdict: ScanVerdict, code: string): KioskScanResult {
   };
 }
 
-/** Issued (valid+used) and admitted (used) admission-ticket counts for an event. */
 export async function admissionCounts(
   eventId: string,
 ): Promise<{ sold: number; admitted: number }> {
@@ -437,17 +421,13 @@ export async function admissionCounts(
   return { sold, admitted };
 }
 
-/**
- * Redeem an admission ticket at the gate: flip `valid -> used` exactly once.
- * Business outcomes (admitted / already_used / voided / not_found / wrong_event)
- * resolve as `ok: true` with a verdict; only infra failures return `ok: false`.
- */
 export async function redeemTicket(
   rawCode: string,
   gateEventId?: string | null,
 ): Promise<VenueResult<KioskScanResult>> {
   const admin = getSupabaseAdmin();
-  if (!admin) return { ok: false, error: "supabase_not_configured", status: 503 };
+  if (!admin)
+    return { ok: false, error: "supabase_not_configured", status: 503 };
 
   const code = rawCode.trim().toUpperCase();
   if (!code) return { ok: false, error: "empty_code", status: 400 };
@@ -466,7 +446,6 @@ export async function redeemTicket(
 
   if (!ticket) return { ok: true, data: blankResult("not_found", code) };
 
-  // Resolve the ticket's event + zone label (for display and event binding).
   const { data: order } = await admin
     .from("venue_orders")
     .select("event_id,items")
@@ -497,9 +476,11 @@ export async function redeemTicket(
     sold: counts.sold,
   };
 
-  // Gate bound to an event rejects foreign tickets without redeeming them.
   if (gateEventId && eventId && gateEventId !== eventId) {
-    return { ok: true, data: { ...base, verdict: "wrong_event", used_at: null } };
+    return {
+      ok: true,
+      data: { ...base, verdict: "wrong_event", used_at: null },
+    };
   }
   if (ticket.status === "void") {
     return { ok: true, data: { ...base, verdict: "voided", used_at: null } };
@@ -511,7 +492,6 @@ export async function redeemTicket(
     };
   }
 
-  // valid -> used, claimed atomically so a double-scan cannot admit twice.
   const nowIso = new Date().toISOString();
   const { data: claimed } = await admin
     .from("venue_tickets")
@@ -522,7 +502,6 @@ export async function redeemTicket(
     .maybeSingle<{ id: string }>();
 
   if (!claimed) {
-    // Lost the race — admitted microseconds earlier by another gate.
     const { data: fresh } = await admin
       .from("venue_tickets")
       .select("used_at")
@@ -530,7 +509,11 @@ export async function redeemTicket(
       .maybeSingle<{ used_at: string | null }>();
     return {
       ok: true,
-      data: { ...base, verdict: "already_used", used_at: fresh?.used_at ?? null },
+      data: {
+        ...base,
+        verdict: "already_used",
+        used_at: fresh?.used_at ?? null,
+      },
     };
   }
 

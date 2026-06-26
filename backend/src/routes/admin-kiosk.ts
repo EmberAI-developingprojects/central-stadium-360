@@ -34,11 +34,6 @@ import {
   getKioskOrderStatus,
 } from "../lib/venue";
 
-// Admin-authenticated counterpart to the device-keyed /kiosk routes: lets a
-// signed-in staff member sell in-person tickets from the admin panel, and read
-// back the in-person sales they generate. The order lifecycle reuses the exact
-// same venue domain logic as the physical kiosk (capacity reservation, QPay /
-// card settlement, e-barimt) — only the auth boundary differs.
 const adminKiosk = new Hono<AuthEnv>();
 
 adminKiosk.use("*", requireUser);
@@ -49,11 +44,13 @@ const ZONE_COLS =
 const ORDER_COLS =
   "id,event_id,reference,status,items,total,payment_method,qpay_invoice_id,paid_at,buyer_phone,ebarimt_id,ebarimt_qr_data,ebarimt_lottery,kiosk_id,created_at";
 
-// --- POS: events currently on sale, with their in-person zones ---------------
 adminKiosk.get("/events", async (c) => {
   const admin = getSupabaseAdmin();
   if (!admin) {
-    return c.json({ ok: false, error: "supabase_not_configured" } as const, 503);
+    return c.json(
+      { ok: false, error: "supabase_not_configured" } as const,
+      503,
+    );
   }
   const { data, error } = await admin
     .from("events")
@@ -88,11 +85,13 @@ adminKiosk.get("/events", async (c) => {
   return c.json({ ok: true, data: events } as const);
 });
 
-// --- Report: aggregate counts ------------------------------------------------
 adminKiosk.get("/stats", async (c) => {
   const admin = getSupabaseAdmin();
   if (!admin) {
-    return c.json({ ok: false, error: "supabase_not_configured" } as const, 503);
+    return c.json(
+      { ok: false, error: "supabase_not_configured" } as const,
+      503,
+    );
   }
   const { data, error } = await admin
     .from("venue_orders")
@@ -116,7 +115,6 @@ adminKiosk.get("/stats", async (c) => {
   return c.json({ ok: true, data: stats } as const);
 });
 
-// --- Report: sell-through (per-event / per-zone fill + realized revenue) ------
 type SellThroughEventRow = {
   id: string;
   title: string;
@@ -128,11 +126,13 @@ type SellThroughEventRow = {
 adminKiosk.get("/sell-through", async (c) => {
   const admin = getSupabaseAdmin();
   if (!admin) {
-    return c.json({ ok: false, error: "supabase_not_configured" } as const, 503);
+    return c.json(
+      { ok: false, error: "supabase_not_configured" } as const,
+      503,
+    );
   }
-  const scope = new URL(c.req.url).searchParams.get("scope") === "all"
-    ? "all"
-    : "onsale";
+  const scope =
+    new URL(c.req.url).searchParams.get("scope") === "all" ? "all" : "onsale";
 
   let eventQuery = admin
     .from("events")
@@ -148,7 +148,6 @@ adminKiosk.get("/sell-through", async (c) => {
   const eventRows = (evData ?? []) as unknown as SellThroughEventRow[];
   const eventIds = eventRows.map((e) => e.id);
 
-  // Realized sales come from *paid* orders, aggregated per zone.
   const byZone = new Map<string, { sold: number; revenue: number }>();
   if (eventIds.length > 0) {
     const { data: paidData, error: paidErr } = await admin
@@ -215,7 +214,6 @@ adminKiosk.get("/sell-through", async (c) => {
   return c.json({ ok: true, data: report } as const);
 });
 
-// --- Report: reconciliation / cash-up (per-kiosk / per-staff) ----------------
 type ReconOrderRow = {
   id: string;
   kiosk_id: string | null;
@@ -228,7 +226,10 @@ type ReconOrderRow = {
 adminKiosk.get("/reconciliation", async (c) => {
   const admin = getSupabaseAdmin();
   if (!admin) {
-    return c.json({ ok: false, error: "supabase_not_configured" } as const, 503);
+    return c.json(
+      { ok: false, error: "supabase_not_configured" } as const,
+      503,
+    );
   }
   const url = new URL(c.req.url);
   const range = url.searchParams.get("range");
@@ -264,7 +265,6 @@ adminKiosk.get("/reconciliation", async (c) => {
       (!cutoff || (!!o.paid_at && o.paid_at >= cutoff)),
   ).length;
 
-  // Tickets minted per paid order, tallied back to a kiosk.
   const paidIds = paid.map((o) => o.id);
   const ticketsByOrder = new Map<string, number>();
   if (paidIds.length > 0) {
@@ -277,7 +277,6 @@ adminKiosk.get("/reconciliation", async (c) => {
     }
   }
 
-  // Resolve admin:<id> kiosk ids to staff names.
   const staffIds = [
     ...new Set(
       paid
@@ -292,12 +291,17 @@ adminKiosk.get("/reconciliation", async (c) => {
       .from("users")
       .select("id,full_name")
       .in("id", staffIds);
-    for (const u of (users ?? []) as { id: string; full_name: string | null }[]) {
+    for (const u of (users ?? []) as {
+      id: string;
+      full_name: string | null;
+    }[]) {
       staffNames.set(u.id, u.full_name || "Ажилтан");
     }
   }
 
-  const labelFor = (kioskId: string | null): { label: string; staffId: string | null } => {
+  const labelFor = (
+    kioskId: string | null,
+  ): { label: string; staffId: string | null } => {
     if (!kioskId) return { label: "Тодорхойгүй", staffId: null };
     if (kioskId.startsWith("admin:")) {
       const sid = kioskId.slice("admin:".length);
@@ -348,19 +352,26 @@ adminKiosk.get("/reconciliation", async (c) => {
   return c.json({ ok: true, data: report } as const);
 });
 
-// --- Report: live admission (turnstile scans vs issued tickets) --------------
 type AdmissionEventRow = {
   id: string;
   title: string;
   status: AdminAdmissionEvent["status"];
   start_time: string;
-  zones: { id: string; name_mn: string; color: string | null; sort_order: number }[];
+  zones: {
+    id: string;
+    name_mn: string;
+    color: string | null;
+    sort_order: number;
+  }[];
 };
 
 adminKiosk.get("/admission", async (c) => {
   const admin = getSupabaseAdmin();
   if (!admin) {
-    return c.json({ ok: false, error: "supabase_not_configured" } as const, 503);
+    return c.json(
+      { ok: false, error: "supabase_not_configured" } as const,
+      503,
+    );
   }
   const url = new URL(c.req.url);
   const scope = url.searchParams.get("scope") === "all" ? "all" : "onsale";
@@ -380,7 +391,6 @@ adminKiosk.get("/admission", async (c) => {
   }
   const eventRows = (evData ?? []) as unknown as AdmissionEventRow[];
 
-  // zone -> { event, label, color } and the flat list of zone ids to count.
   const zoneMeta = new Map<
     string,
     { event_id: string; name_mn: string; color: string | null }
@@ -390,12 +400,15 @@ adminKiosk.get("/admission", async (c) => {
   for (const e of eventRows) {
     eventTitle.set(e.id, e.title);
     for (const z of e.zones ?? []) {
-      zoneMeta.set(z.id, { event_id: e.id, name_mn: z.name_mn, color: z.color });
+      zoneMeta.set(z.id, {
+        event_id: e.id,
+        name_mn: z.name_mn,
+        color: z.color,
+      });
       zoneIds.push(z.id);
     }
   }
 
-  // Aggregate issued (non-void) vs admitted (used) per zone.
   const byZone = new Map<string, { sold: number; admitted: number }>();
   let recent: AdminAdmissionScan[] = [];
   if (zoneIds.length > 0) {
@@ -406,7 +419,10 @@ adminKiosk.get("/admission", async (c) => {
     if (tErr) {
       return c.json({ ok: false, error: tErr.message } as const, 500);
     }
-    for (const t of (tix ?? []) as { zone_id: string; status: VenueTicketStatus }[]) {
+    for (const t of (tix ?? []) as {
+      zone_id: string;
+      status: VenueTicketStatus;
+    }[]) {
       if (t.status === "void") continue;
       const agg = byZone.get(t.zone_id) ?? { sold: 0, admitted: 0 };
       agg.sold += 1;
@@ -421,14 +437,16 @@ adminKiosk.get("/admission", async (c) => {
       .eq("status", "used")
       .order("used_at", { ascending: false })
       .limit(25);
-    recent = ((rs ?? []) as { code: string; zone_id: string; used_at: string | null }[])
+    recent = (
+      (rs ?? []) as { code: string; zone_id: string; used_at: string | null }[]
+    )
       .filter((r) => !!r.used_at)
       .map((r) => {
         const zm = zoneMeta.get(r.zone_id);
         return {
           code: r.code,
           zone_name_mn: zm?.name_mn ?? null,
-          event_title: zm ? eventTitle.get(zm.event_id) ?? null : null,
+          event_title: zm ? (eventTitle.get(zm.event_id) ?? null) : null,
           used_at: r.used_at as string,
         };
       });
@@ -467,7 +485,6 @@ adminKiosk.get("/admission", async (c) => {
   return c.json({ ok: true, data: report } as const);
 });
 
-// --- Report: list venue orders -----------------------------------------------
 type RawOrderRow = DbVenueOrder & {
   events: { title: string | null } | null;
   venue_tickets: { count: number }[] | null;
@@ -476,7 +493,10 @@ type RawOrderRow = DbVenueOrder & {
 adminKiosk.get("/orders", async (c) => {
   const admin = getSupabaseAdmin();
   if (!admin) {
-    return c.json({ ok: false, error: "supabase_not_configured" } as const, 503);
+    return c.json(
+      { ok: false, error: "supabase_not_configured" } as const,
+      503,
+    );
   }
   const url = new URL(c.req.url);
   const status = url.searchParams.get("status");
@@ -506,7 +526,6 @@ adminKiosk.get("/orders", async (c) => {
   return c.json({ ok: true, data: rows } as const);
 });
 
-// --- POS: create an in-person order (reuses the kiosk domain logic) ----------
 const createOrderSchema = z.object({
   event_id: z.string().uuid(),
   items: z
@@ -526,7 +545,11 @@ adminKiosk.post("/orders", async (c) => {
   const parsed = createOrderSchema.safeParse(body);
   if (!parsed.success) {
     return c.json(
-      { ok: false, error: "invalid_input", details: parsed.error.flatten() } as const,
+      {
+        ok: false,
+        error: "invalid_input",
+        details: parsed.error.flatten(),
+      } as const,
       400,
     );
   }
@@ -541,7 +564,6 @@ adminKiosk.post("/orders", async (c) => {
   return c.json({ ok: true, data: res.data } as const);
 });
 
-// --- POS: poll/settle a pending order ---------------------------------------
 adminKiosk.get("/orders/:id/status", async (c) => {
   const res = await getKioskOrderStatus(c.req.param("id"));
   if (!res.ok) {
@@ -550,7 +572,6 @@ adminKiosk.get("/orders/:id/status", async (c) => {
   return c.json({ ok: true, data: res.data } as const);
 });
 
-// --- POS: settle a card / cash sale at the counter --------------------------
 const cardResultSchema = z.object({
   approved: z.boolean(),
   ebarimt: z.object({ qrData: z.string(), lottery: z.string() }).optional(),
@@ -561,7 +582,11 @@ adminKiosk.post("/orders/:id/card-result", async (c) => {
   const parsed = cardResultSchema.safeParse(body);
   if (!parsed.success) {
     return c.json(
-      { ok: false, error: "invalid_input", details: parsed.error.flatten() } as const,
+      {
+        ok: false,
+        error: "invalid_input",
+        details: parsed.error.flatten(),
+      } as const,
       400,
     );
   }
@@ -576,11 +601,13 @@ adminKiosk.post("/orders/:id/card-result", async (c) => {
   return c.json({ ok: true, data: res.data } as const);
 });
 
-// --- Report: a single venue order with its minted tickets -------------------
 adminKiosk.get("/orders/:id", async (c) => {
   const admin = getSupabaseAdmin();
   if (!admin) {
-    return c.json({ ok: false, error: "supabase_not_configured" } as const, 503);
+    return c.json(
+      { ok: false, error: "supabase_not_configured" } as const,
+      503,
+    );
   }
   const id = c.req.param("id");
   const { data, error } = await admin
