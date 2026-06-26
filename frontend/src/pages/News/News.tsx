@@ -73,9 +73,7 @@ export default function News() {
 
   const sorted = useMemo(() => {
     if (!items) return [];
-    return [...items].sort((a, b) =>
-      (b.createdAt || "").localeCompare(a.createdAt || ""),
-    );
+    return [...items].sort((a, b) => (b.sortOrder ?? 0) - (a.sortOrder ?? 0));
   }, [items]);
 
   const loading = items === null;

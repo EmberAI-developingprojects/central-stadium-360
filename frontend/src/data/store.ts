@@ -86,6 +86,7 @@ export type NewsItem = {
   featured: boolean;
   blocks: NewsBlock[];
   createdAt: string;
+  sortOrder: number;
   labelEn?: string;
   titleEn?: string;
   bodyEn?: string;
@@ -338,6 +339,7 @@ function dbToNews(row: DbHomeNews): NewsItem {
         )
       : [],
     createdAt: row.created_at,
+    sortOrder: row.sort_order ?? 0,
     labelEn: row.label_en ?? "",
     titleEn: row.title_en ?? "",
     bodyEn: row.body_en ?? "",
