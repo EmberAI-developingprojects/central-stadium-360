@@ -7,10 +7,11 @@ import useRevealOnScroll from "../../hooks/useRevealOnScroll";
 import { REVEAL_UP_CLS } from "../../hooks/_revealCls";
 import { listHistoryFigures } from "../../data/history";
 import type { HistoryFigure } from "../../data/history";
+import { pickHistoryLocale } from "../../lib/historyLocale";
 
 export default function History() {
   useRevealOnScroll();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [items, setItems] = useState<HistoryFigure[]>([]);
 
   useEffect(() => {
@@ -49,7 +50,9 @@ export default function History() {
             </div>
           ) : (
             <div className="grid gap-8 [grid-template-columns:repeat(3,minmax(0,1fr))] max-[920px]:gap-6 max-[920px]:[grid-template-columns:repeat(2,minmax(0,1fr))] max-[600px]:[grid-template-columns:1fr]">
-              {items.map((f, i) => (
+              {items.map((f, i) => {
+                const loc = pickHistoryLocale(f, i18n.language);
+                return (
                 <Link
                   key={f.id}
                   to={`/history/${f.id}`}
@@ -60,7 +63,7 @@ export default function History() {
                     {f.image ? (
                       <img
                         src={f.image}
-                        alt={f.name}
+                        alt={loc.name}
                         loading="lazy"
                         className="absolute inset-0 w-full h-full object-cover object-center [transition:transform_.7s_cubic-bezier(.2,.8,.2,1),filter_.5s_ease] group-hover:scale-[1.06] [filter:saturate(0.9)] group-hover:[filter:saturate(1)]"
                       />
@@ -90,7 +93,7 @@ export default function History() {
                     <div className="absolute top-4 left-4 flex flex-col items-start gap-0">
                       <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/12 backdrop-blur-md border border-white/20 text-white text-[10px] font-semibold tracking-[0.14em] uppercase">
                         <span className="w-1 h-1 rounded-full bg-gold-pale" />
-                        {f.role}
+                        {loc.role}
                       </div>
                     </div>
 
@@ -100,15 +103,15 @@ export default function History() {
                         {f.yearEnd ? ` — ${f.yearEnd}` : ` — ${t("history_year_present")}`}
                       </div>
                       <h3 className="m-0 text-white text-[22px] font-extrabold leading-[1.18] tracking-[-0.015em] drop-shadow-[0_2px_10px_rgba(0,0,0,0.45)] max-[640px]:text-[18px]">
-                        {f.name}
+                        {loc.name}
                       </h3>
                     </div>
                   </div>
 
                   <div className="p-6 max-[640px]:p-5">
-                    {f.bio ? (
+                    {loc.bio ? (
                       <p className="m-0 text-ink-soft text-[13.5px] leading-[1.65] line-clamp-3 max-[640px]:text-[12.5px]">
-                        {f.bio}
+                        {loc.bio}
                       </p>
                     ) : (
                       <p className="m-0 text-zinc-400 italic text-[13px] leading-[1.6]">
@@ -134,7 +137,8 @@ export default function History() {
                     </div>
                   </div>
                 </Link>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

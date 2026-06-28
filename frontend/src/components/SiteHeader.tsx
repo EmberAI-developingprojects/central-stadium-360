@@ -100,7 +100,16 @@ type NavGroup = {
 
 const buildNavGroups = (t: (k: string) => string): NavGroup[] => [
   { label: t("nav_events"), href: "/events" },
-  { label: t("nav_history"), href: "/history" },
+  {
+    label: t("nav_about"),
+    href: "/about/intro",
+    children: [
+      { label: t("nav_about_intro"), href: "/about/intro" },
+      { label: t("nav_about_history"), href: "/about/intro#history" },
+      { label: t("nav_about_director"), href: "/about/director" },
+      { label: t("nav_about_structure"), href: "/about/structure" },
+    ],
+  },
   {
     label: t("nav_transparency"),
     href: "/#certificates",
@@ -224,10 +233,39 @@ export default function SiteHeader() {
                   {t("nav_events")}
                 </Link>
               </li>
-              <li>
-                <Link to="/history" className={NAV_LINK_A_CLS}>
-                  {t("nav_history")}
+              <li className={HAS_DROPDOWN_LI_CLS}>
+                <Link
+                  to="/about/intro"
+                  className={NAV_LINK_DROPDOWN_TRIGGER_CLS}
+                >
+                  {t("nav_about")}
+                  <svg
+                    className={CARET_CLS}
+                    viewBox="0 0 10 6"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M1 1l4 4 4-4" />
+                  </svg>
                 </Link>
+                <div className={DROPDOWN_CLS} role="menu">
+                  <Link className={DROPDOWN_A_CLS} to="/about/intro">
+                    {t("nav_about_intro")}
+                  </Link>
+                  <Link className={DROPDOWN_A_CLS} to="/about/intro#history">
+                    {t("nav_about_history")}
+                  </Link>
+                  <Link className={DROPDOWN_A_CLS} to="/about/director">
+                    {t("nav_about_director")}
+                  </Link>
+                  <Link className={DROPDOWN_A_CLS} to="/about/structure">
+                    {t("nav_about_structure")}
+                  </Link>
+                </div>
               </li>
               <li className={HAS_DROPDOWN_LI_CLS}>
                 <Link

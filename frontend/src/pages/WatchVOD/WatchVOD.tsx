@@ -359,19 +359,30 @@ function VODViewer({ event }: { event: VODEventDetail }) {
   useEffect(() => {
     if (recordings.length === 0) return;
     let alive = true;
+    const ctrl = new AbortController();
     void Promise.all(
       recordings.map(async (rec) => {
-        if (signedCacheRef.current.has(rec.id)) return;
-        const res = await api.signRecordingUrl(rec.id);
-        if (!alive || !res.ok) return;
-        signedCacheRef.current.set(rec.id, {
-          url: res.data.url,
-          expiresAt: new Date(res.data.expires_at).getTime(),
-        });
+        let entry = signedCacheRef.current.get(rec.id);
+        if (!entry) {
+          const res = await api.signRecordingUrl(rec.id);
+          if (!alive || !res.ok) return;
+          entry = {
+            url: res.data.url,
+            expiresAt: new Date(res.data.expires_at).getTime(),
+          };
+          signedCacheRef.current.set(rec.id, entry);
+        }
+        try {
+          await fetch(entry.url, {
+            signal: ctrl.signal,
+            cache: "force-cache",
+          });
+        } catch {}
       }),
     );
     return () => {
       alive = false;
+      ctrl.abort();
     };
   }, [recordings]);
 
@@ -437,8 +448,11 @@ function VODViewer({ event }: { event: VODEventDetail }) {
           }
         }
         hls = new Hls({
-          startLevel: -1,
+          startLevel: 0,
           capLevelToPlayerSize: true,
+          maxBufferLength: 10,
+          maxMaxBufferLength: 30,
+          backBufferLength: 0,
           loader: SignedLoader,
         });
         hlsRef.current = hls;
@@ -494,12 +508,58 @@ function VODViewer({ event }: { event: VODEventDetail }) {
     if (hlsRef.current) hlsRef.current.currentLevel = qualityIdx;
   }, [qualityIdx]);
 
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const audioSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const audioGainRef = useRef<GainNode | null>(null);
+  const AUDIO_BOOST = 4;
+
+  const ensureAudioBoost = useCallback(() => {
+    const video = videoRef.current;
+    if (!video || audioSourceRef.current) return;
+    try {
+      const AC =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext?: typeof AudioContext })
+          .webkitAudioContext;
+      if (!AC) return;
+      const ctx = new AC();
+      const source = ctx.createMediaElementSource(video);
+      const gain = ctx.createGain();
+      gain.gain.value = AUDIO_BOOST;
+      source.connect(gain);
+      gain.connect(ctx.destination);
+      audioCtxRef.current = ctx;
+      audioSourceRef.current = source;
+      audioGainRef.current = gain;
+    } catch (err) {
+      console.warn("[vod-audio] boost init failed:", err);
+    }
+  }, []);
+
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
     v.muted = muted;
     v.volume = volume / 100;
-  }, [muted, volume]);
+    if (!muted && volume > 0) {
+      ensureAudioBoost();
+      if (audioCtxRef.current?.state === "suspended") {
+        audioCtxRef.current.resume().catch(() => {});
+      }
+    }
+  }, [muted, volume, ensureAudioBoost]);
+
+  useEffect(() => {
+    return () => {
+      const ctx = audioCtxRef.current;
+      if (ctx) {
+        ctx.close().catch(() => {});
+        audioCtxRef.current = null;
+        audioSourceRef.current = null;
+        audioGainRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const v = videoRef.current;
@@ -716,6 +776,60 @@ function VODViewer({ event }: { event: VODEventDetail }) {
     if (v.paused) v.play();
     else v.pause();
   };
+
+  const skipBack = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.currentTime = Math.max(0, v.currentTime - 15);
+  };
+
+  const skipForward = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    const max = Number.isFinite(duration) && duration > 0 ? duration : v.duration;
+    v.currentTime = Math.min(max || v.currentTime, v.currentTime + 15);
+  };
+
+  const previewVideoRef = useRef<HTMLVideoElement>(null);
+  const previewHlsRef = useRef<Hls | null>(null);
+
+  useEffect(() => {
+    const v = previewVideoRef.current;
+    const url = currentSrc;
+    if (!v || !url) return;
+    v.muted = true;
+    if (Hls.isSupported()) {
+      let hls = previewHlsRef.current;
+      if (!hls) {
+        hls = new Hls({ startLevel: 0, autoStartLoad: false });
+        previewHlsRef.current = hls;
+        hls.attachMedia(v);
+      }
+      hls.loadSource(url);
+      hls.startLoad();
+    } else if (v.canPlayType("application/vnd.apple.mpegurl")) {
+      v.src = url;
+    }
+  }, [currentSrc]);
+
+  useEffect(() => {
+    return () => {
+      if (previewHlsRef.current) {
+        previewHlsRef.current.destroy();
+        previewHlsRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!seeking) return;
+    const pv = previewVideoRef.current;
+    if (pv && Number.isFinite(currentTime)) {
+      try {
+        pv.currentTime = currentTime;
+      } catch {}
+    }
+  }, [currentTime, seeking]);
 
   const toggleMute = () =>
     setMuted((m) => {
@@ -959,6 +1073,27 @@ function VODViewer({ event }: { event: VODEventDetail }) {
           <div className={VIEWER_CONTROLS_LEFT_CLS}>
             <button
               type="button"
+              className={VIEWER_ICON_BTN_CLS}
+              onClick={skipBack}
+              aria-label="15 секунд хойшоо"
+              title="15 сек хойшоо"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M3 12a9 9 0 1 0 3-6.7" />
+                <polyline points="3 4 3 10 9 10" />
+                <text x="12" y="16" fontSize="8" fontWeight="700" fill="currentColor" stroke="none" textAnchor="middle">15</text>
+              </svg>
+            </button>
+            <button
+              type="button"
               className={`${VIEWER_ICON_BTN_CLS}${paused ? " is-paused" : ""}`}
               onClick={togglePlay}
               aria-label="Тоглуулах/Зогсоох"
@@ -979,6 +1114,27 @@ function VODViewer({ event }: { event: VODEventDetail }) {
                 aria-hidden="true"
               >
                 <path d="M8 5v14l11-7z" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              className={VIEWER_ICON_BTN_CLS}
+              onClick={skipForward}
+              aria-label="15 секунд урагшаа"
+              title="15 сек урагшаа"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M21 12a9 9 0 1 1-3-6.7" />
+                <polyline points="21 4 21 10 15 10" />
+                <text x="12" y="16" fontSize="8" fontWeight="700" fill="currentColor" stroke="none" textAnchor="middle">15</text>
               </svg>
             </button>
             <button
@@ -1030,13 +1186,37 @@ function VODViewer({ event }: { event: VODEventDetail }) {
             </span>
           </div>
 
-          <div className="flex-1 min-w-0 px-2 flex items-center gap-2.5 max-[720px]:[flex-basis:100%] max-[720px]:order-3 max-[720px]:px-1 max-[720px]:gap-3">
+          <div className="relative flex-1 min-w-0 px-2 flex items-center gap-2.5 max-[720px]:[flex-basis:100%] max-[720px]:order-3 max-[720px]:px-1 max-[720px]:gap-3">
+            {seeking && duration > 0 && (
+              <div
+                className="absolute bottom-full mb-3 z-[5] pointer-events-none"
+                style={{
+                  left: `calc(${Math.min(100, Math.max(0, (currentTime / duration) * 100))}% )`,
+                  transform: "translateX(-50%)",
+                }}
+              >
+                <div className="rounded-[10px] overflow-hidden bg-black border border-solid border-[rgba(255,255,255,0.18)] shadow-[0_12px_28px_-8px_rgba(0,0,0,0.7)]">
+                  <video
+                    ref={previewVideoRef}
+                    muted
+                    playsInline
+                    preload="auto"
+                    className="block w-[148px] aspect-video object-cover bg-black"
+                  />
+                </div>
+                <div className="text-center mt-1 text-[11px] font-bold tracking-[.04em] text-white bg-[rgba(11,15,26,0.8)] py-0.5 px-2 rounded-full inline-block left-1/2 -translate-x-1/2 relative tabular-nums">
+                  {fmtTime(currentTime)}
+                </div>
+              </div>
+            )}
             <input
               type="range"
               min={0}
               max={Number.isFinite(duration) && duration > 0 ? duration : 1}
               step={0.1}
               value={Math.min(currentTime, duration || currentTime)}
+              onMouseDown={() => setSeeking(true)}
+              onTouchStart={() => setSeeking(true)}
               onChange={onSeekInput}
               onMouseUp={onSeekCommit}
               onTouchEnd={onSeekCommit}

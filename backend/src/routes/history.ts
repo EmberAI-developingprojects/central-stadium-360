@@ -8,8 +8,63 @@ import {
   type AuthEnv,
 } from "../middleware/require-user";
 
-const FIGURE_COLS =
+type SupabaseAdmin = NonNullable<ReturnType<typeof getSupabaseAdmin>>;
+
+const FIGURE_COLS_FULL =
+  "id,name,role,year_start,year_end,image,bio,name_en,role_en,bio_en,sort_order,created_at";
+const FIGURE_COLS_NO_EN =
   "id,name,role,year_start,year_end,image,bio,sort_order,created_at";
+
+let enColumnsAvailable: boolean | null = null;
+
+function pickFigureCols(): string {
+  return enColumnsAvailable === false ? FIGURE_COLS_NO_EN : FIGURE_COLS_FULL;
+}
+
+function isMissingColumnError(err: unknown, column: string): boolean {
+  if (!err || typeof err !== "object") return false;
+  const e = err as { code?: string; message?: string };
+  return (
+    e.code === "42703" ||
+    (typeof e.message === "string" && e.message.includes(column))
+  );
+}
+
+function isMissingEnColumnError(err: unknown): boolean {
+  return (
+    isMissingColumnError(err, "name_en") ||
+    isMissingColumnError(err, "role_en") ||
+    isMissingColumnError(err, "bio_en")
+  );
+}
+
+type FigureQueryResult = {
+  data: Array<Record<string, unknown>> | null;
+  error: { code?: string; message?: string } | null;
+};
+
+const queryFigures = async (
+  admin: SupabaseAdmin,
+  cols: string,
+): Promise<FigureQueryResult> => {
+  const res = await admin
+    .from("history_figures")
+    .select(cols)
+    .order("sort_order", { ascending: true });
+  return res as unknown as FigureQueryResult;
+};
+
+const insertFigures = async (
+  admin: SupabaseAdmin,
+  rows: Array<Record<string, unknown>>,
+  cols: string,
+): Promise<FigureQueryResult> => {
+  const res = await admin
+    .from("history_figures")
+    .insert(rows)
+    .select(cols);
+  return res as unknown as FigureQueryResult;
+};
 
 const figureSchema = z.object({
   id: z.string().uuid().optional(),
@@ -19,6 +74,9 @@ const figureSchema = z.object({
   year_end: z.string().default(""),
   image: z.string().nullable().optional(),
   bio: z.string().default(""),
+  name_en: z.string().nullable().optional(),
+  role_en: z.string().nullable().optional(),
+  bio_en: z.string().nullable().optional(),
 });
 
 const figuresSchema = z.array(figureSchema);
@@ -33,16 +91,22 @@ publicHistory.get("/", async (c) => {
       503,
     );
   }
-  const { data, error } = await admin
-    .from("history_figures")
-    .select(FIGURE_COLS)
-    .order("sort_order", { ascending: true });
-  if (error) {
-    return c.json({ ok: false, error: error.message } as const, 500);
+  let result = await queryFigures(admin, pickFigureCols());
+  if (result.error && isMissingEnColumnError(result.error)) {
+    enColumnsAvailable = false;
+    result = await queryFigures(admin, FIGURE_COLS_NO_EN);
+  } else if (!result.error) {
+    enColumnsAvailable = true;
+  }
+  if (result.error) {
+    return c.json(
+      { ok: false, error: result.error.message ?? "query_failed" } as const,
+      500,
+    );
   }
   return c.json({
     ok: true,
-    data: (data ?? []) as DbHistoryFigure[],
+    data: (result.data ?? []) as unknown as DbHistoryFigure[],
   } as const);
 });
 
@@ -59,16 +123,22 @@ adminHistory.get("/", async (c) => {
       503,
     );
   }
-  const { data, error } = await admin
-    .from("history_figures")
-    .select(FIGURE_COLS)
-    .order("sort_order", { ascending: true });
-  if (error) {
-    return c.json({ ok: false, error: error.message } as const, 500);
+  let result = await queryFigures(admin, pickFigureCols());
+  if (result.error && isMissingEnColumnError(result.error)) {
+    enColumnsAvailable = false;
+    result = await queryFigures(admin, FIGURE_COLS_NO_EN);
+  } else if (!result.error) {
+    enColumnsAvailable = true;
+  }
+  if (result.error) {
+    return c.json(
+      { ok: false, error: result.error.message ?? "query_failed" } as const,
+      500,
+    );
   }
   return c.json({
     ok: true,
-    data: (data ?? []) as DbHistoryFigure[],
+    data: (result.data ?? []) as unknown as DbHistoryFigure[],
   } as const);
 });
 
@@ -105,7 +175,7 @@ adminHistory.put("/", async (c) => {
     return c.json({ ok: true, data: [] } as const);
   }
 
-  const rows = parsed.data.map((it, i) => {
+  const rows: Array<Record<string, unknown>> = parsed.data.map((it, i) => {
     const { id: _omit, ...rest } = it as { id?: string } & Record<
       string,
       unknown
@@ -113,17 +183,45 @@ adminHistory.put("/", async (c) => {
     return { ...rest, sort_order: i };
   });
 
-  const { data, error: insErr } = await admin
-    .from("history_figures")
-    .insert(rows)
-    .select(FIGURE_COLS);
+  const stripEnFields = (
+    rs: Array<Record<string, unknown>>,
+  ): Array<Record<string, unknown>> =>
+    rs.map((r) => {
+      const {
+        name_en: _n,
+        role_en: _r,
+        bio_en: _b,
+        ...rest
+      } = r as {
+        name_en?: unknown;
+        role_en?: unknown;
+        bio_en?: unknown;
+      } & Record<string, unknown>;
+      return rest;
+    });
 
-  if (insErr) {
-    return c.json({ ok: false, error: insErr.message } as const, 500);
+  let result = await insertFigures(
+    admin,
+    enColumnsAvailable === false ? stripEnFields(rows) : rows,
+    pickFigureCols(),
+  );
+
+  if (result.error && isMissingEnColumnError(result.error)) {
+    enColumnsAvailable = false;
+    result = await insertFigures(admin, stripEnFields(rows), FIGURE_COLS_NO_EN);
+  } else if (!result.error) {
+    enColumnsAvailable = true;
+  }
+
+  if (result.error) {
+    return c.json(
+      { ok: false, error: result.error.message ?? "insert_failed" } as const,
+      500,
+    );
   }
   return c.json({
     ok: true,
-    data: (data ?? []) as DbHistoryFigure[],
+    data: (result.data ?? []) as unknown as DbHistoryFigure[],
   } as const);
 });
 

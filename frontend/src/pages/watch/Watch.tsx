@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useRequireAuth } from "../../auth";
 import UserMenu from "../../components/UserMenu";
@@ -24,13 +24,13 @@ import type { TabId, TicketModalEvent } from "./types";
 import { LiveSection } from "./sections/LiveSection";
 import { UpcomingSection } from "./sections/UpcomingSection";
 import { TicketsSection } from "./sections/TicketsSection";
-import { ViewerOverlay } from "./sections/ViewerOverlay";
 import { TicketModal } from "./sections/TicketModal";
 
 export default function Watch() {
   const { t } = useTranslation();
   const session = useRequireAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const hashId = location.hash.slice(1);
   const initialTab: TabId = isTabId(hashId) ? hashId : "live";
@@ -38,7 +38,6 @@ export default function Watch() {
   const [tickets, setTickets] = useState<OrderRecord[]>([]);
   const [events, setEvents] = useState<EventRecord[]>([]);
   const [modalEvent, setModalEvent] = useState<TicketModalEvent | null>(null);
-  const [viewerOpen, setViewerOpen] = useState(false);
 
   const refreshTickets = useCallback(() => {
     listMyOrders().then((all) =>
@@ -112,8 +111,13 @@ export default function Watch() {
   );
   const closeTicketModal = useCallback(() => setModalEvent(null), []);
 
-  const openViewer = useCallback(() => setViewerOpen(true), []);
-  const closeViewer = useCallback(() => setViewerOpen(false), []);
+  const openViewer = useCallback(
+    (id?: string) => {
+      const targetId = id ?? featuredEvent.id;
+      navigate(`/watch/live/${targetId}`);
+    },
+    [navigate, featuredEvent.id],
+  );
 
   const goSection = useCallback((id: TabId) => {
     setActiveTab(id);
@@ -122,12 +126,11 @@ export default function Watch() {
   }, []);
 
   useEffect(() => {
-    const open = viewerOpen || !!modalEvent;
-    document.body.style.overflow = open ? "hidden" : "";
+    document.body.style.overflow = modalEvent ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };
-  }, [viewerOpen, modalEvent]);
+  }, [modalEvent]);
 
   useEffect(() => {
     const prevBg = document.body.style.backgroundColor;
@@ -231,14 +234,6 @@ export default function Watch() {
           onWatch={openViewer}
         />
       </main>
-
-      {viewerOpen && (
-        <ViewerOverlay
-          session={session}
-          featuredEvent={featuredEvent}
-          onClose={closeViewer}
-        />
-      )}
 
       {modalEvent && (
         <TicketModal

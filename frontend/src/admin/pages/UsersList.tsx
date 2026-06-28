@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   createUser,
@@ -10,10 +10,16 @@ import {
 import type { UserRecord, UserRole } from "../../data/store";
 import { useConfirm } from "../components/ConfirmDialog";
 import { useToast } from "../components/Toast";
+import { EmptyState } from "../components/EmptyState";
+import {
+  SkeletonFilters,
+  SkeletonStatGrid,
+  SkeletonTable,
+} from "../components/Skeleton";
+import { useSearchHotkey } from "../hooks/useSearchHotkey";
 import {
   ADMIN_BTN_CLS,
   ADMIN_BTN_PRIMARY_CLS,
-  ADMIN_EMPTY_CLS,
   ADMIN_FIELD_CLS,
   ADMIN_FILTERS_CLS,
   ADMIN_LINK_CLS,
@@ -32,6 +38,8 @@ export default function UsersList() {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<RoleFilter>("all");
   const [showModal, setShowModal] = useState(false);
+  const searchRef = useRef<HTMLInputElement | null>(null);
+  useSearchHotkey(searchRef);
 
   const load = () => {
     Promise.all([listUsers(), listOrders()]).then(([all, orders]) => {
@@ -165,7 +173,9 @@ export default function UsersList() {
         </button>
       </div>
 
-      {users && users.length > 0 && (
+      {!users ? (
+        <SkeletonStatGrid count={4} />
+      ) : users.length > 0 ? (
         <div className="grid gap-3 mb-5 [grid-template-columns:repeat(4,minmax(0,1fr))] max-[980px]:[grid-template-columns:repeat(2,minmax(0,1fr))]">
           <StatCard
             label="Нийт хэрэглэгч"
@@ -195,7 +205,7 @@ export default function UsersList() {
             accent={stats.disabled > 0 ? "disabled" : undefined}
           />
         </div>
-      )}
+      ) : null}
 
       <div className={ADMIN_FILTERS_CLS}>
         <div className="relative">
@@ -215,12 +225,36 @@ export default function UsersList() {
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
           <input
+            ref={searchRef}
             type="search"
-            placeholder="Нэр / Хаягаар хайх…"
+            placeholder="Хайх"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             className="!pl-9"
           />
+          {q && (
+            <button
+              type="button"
+              onClick={() => setQ("")}
+              aria-label="Хайлт цэвэрлэх"
+              className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-6 w-6 items-center justify-center rounded text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100"
+            >
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          )}
         </div>
         <div className="inline-flex bg-white border border-[#e4e4e7] rounded-md p-0.5 gap-0.5">
           {(
@@ -257,14 +291,41 @@ export default function UsersList() {
       </div>
 
       {!users ? (
-        <div className={ADMIN_EMPTY_CLS}>Уншиж байна…</div>
+        <SkeletonTable columns={5} rows={6} />
       ) : filtered.length === 0 ? (
-        <div className={ADMIN_EMPTY_CLS}>
-          <strong>Хэрэглэгч олдсонгүй</strong>
-          {q || filter !== "all"
-            ? "Хайлт болон шүүлтүүрээ тохируулна уу."
-            : "Эхний хэрэглэгчээ нэмэхийн тулд «Шинэ хэрэглэгч» товч дээр дарна уу."}
-        </div>
+        q || filter !== "all" ? (
+          <EmptyState
+            variant="search"
+            title="Хэрэглэгч олдсонгүй"
+            description="Хайлт болон шүүлтүүрээ тохируулна уу."
+            action={
+              <button
+                type="button"
+                className={ADMIN_BTN_CLS}
+                onClick={() => {
+                  setQ("");
+                  setFilter("all");
+                }}
+              >
+                Шүүлтүүр арилгах
+              </button>
+            }
+          />
+        ) : (
+          <EmptyState
+            title="Хэрэглэгч алга"
+            description="Эхний хэрэглэгчээ нэмэхийн тулд «Шинэ хэрэглэгч» товч дээр дарна уу."
+            action={
+              <button
+                type="button"
+                className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_PRIMARY_CLS}`}
+                onClick={() => setShowModal(true)}
+              >
+                + Шинэ хэрэглэгч
+              </button>
+            }
+          />
+        )
       ) : (
         <div className={ADMIN_TABLE_WRAP_CLS}>
           <table className={ADMIN_TABLE_CLS}>
@@ -555,7 +616,7 @@ function AddUserModal({
             <label>И-мэйл *</label>
             <input
               type="email"
-              placeholder="user@example.com"
+              placeholder="И-мэйл хаяг"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -577,7 +638,7 @@ function AddUserModal({
             <label>Бүтэн нэр</label>
             <input
               type="text"
-              placeholder="Овог Нэр"
+              placeholder="Нэр"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
             />

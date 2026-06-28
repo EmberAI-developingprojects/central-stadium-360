@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { DbEvent, DbRecording, DbZone } from "@cs360/shared";
 import { getSupabaseAdmin } from "../lib/supabase";
 import { discoverRecordingsForEvent } from "../lib/recordings";
+import { stopAllCameraStreams } from "../lib/ivs";
 import {
   requireUser,
   requireAdmin,
@@ -362,6 +363,50 @@ adminEvents.post("/:id/rediscover", async (c) => {
   }
   const discovered = await discoverRecordingsForEvent(event);
   return c.json({ ok: true, data: discovered } as const);
+});
+
+adminEvents.post("/:id/end-live", async (c) => {
+  const admin = getSupabaseAdmin();
+  if (!admin) {
+    return c.json(
+      { ok: false, error: "supabase_not_configured" } as const,
+      503,
+    );
+  }
+  const id = c.req.param("id");
+  const { data: event, error: evErr } = await admin
+    .from("events")
+    .select("id,live_start_at,live_end_at")
+    .eq("id", id)
+    .maybeSingle<Pick<DbEvent, "id" | "live_start_at" | "live_end_at">>();
+  if (evErr) {
+    return c.json({ ok: false, error: evErr.message } as const, 500);
+  }
+  if (!event) {
+    return c.json({ ok: false, error: "not_found" } as const, 404);
+  }
+
+  const stopResult = await stopAllCameraStreams();
+  console.info(
+    `[end-live] event=${id} stopped=${stopResult.stopped.length} alreadyOffline=${stopResult.alreadyOffline.length} failed=${stopResult.failed.length}`,
+  );
+
+  // Wait for IVS to flush recording-ended.json (reconnect window grace).
+  await new Promise((r) => setTimeout(r, 5000));
+
+  let discovered: DbRecording[] = [];
+  if (event.live_start_at && event.live_end_at) {
+    try {
+      discovered = await discoverRecordingsForEvent(event);
+    } catch (err) {
+      console.warn("[end-live] post-stop discover failed:", err);
+    }
+  }
+
+  return c.json({
+    ok: true,
+    data: { stop: stopResult, recordings: discovered },
+  } as const);
 });
 
 const ZONE_COLS =

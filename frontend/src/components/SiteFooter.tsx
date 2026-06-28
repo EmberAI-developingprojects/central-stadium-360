@@ -123,12 +123,12 @@ export default function SiteFooter() {
                 </Link>
               </li>
               <li>
-                <Link className={linkCls} to="/#contact">
+                <Link className={linkCls} to="/contact">
                   {t("footer_help")}
                 </Link>
               </li>
               <li>
-                <Link className={linkCls} to="/#contact">
+                <Link className={linkCls} to="/contact">
                   {t("footer_contact")}
                 </Link>
               </li>

@@ -65,8 +65,9 @@ export const ADMIN_STAT_CARD_CLS =
 export const ADMIN_SPARKLINE_CLS = "w-full h-[160px] block";
 
 export const ADMIN_BTN_CLS =
-  "inline-flex items-center justify-center gap-1.5 h-9 px-3.5 rounded-md font-[inherit] text-[13px] font-medium border border-[#e4e4e7] bg-white text-zinc-900 cursor-pointer transition-colors no-underline " +
+  "inline-flex items-center justify-center gap-1.5 h-9 px-3.5 rounded-md font-[inherit] text-[13px] font-medium border border-[#e4e4e7] bg-white text-zinc-900 cursor-pointer transition-colors no-underline outline-none " +
   "hover:bg-zinc-50 hover:border-zinc-300 active:bg-zinc-100 " +
+  "focus-visible:ring-2 focus-visible:ring-zinc-900/15 focus-visible:border-zinc-400 " +
   "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-[#e4e4e7]";
 export const ADMIN_BTN_PRIMARY_CLS =
   "!bg-zinc-900 !border-zinc-900 !text-white hover:!bg-zinc-800 hover:!border-zinc-800 active:!bg-zinc-950";
@@ -77,12 +78,13 @@ export const ADMIN_BTN_GHOST_CLS =
 export const ADMIN_BTN_SM_CLS = "!h-8 !px-2.5 !text-[12.5px]";
 
 export const ADMIN_TABLE_WRAP_CLS =
-  "bg-white border border-[#ececef] rounded-xl overflow-hidden";
+  "bg-white border border-[#ececef] rounded-xl overflow-auto max-h-[calc(100vh-280px)] [scrollbar-gutter:stable]";
 export const ADMIN_TABLE_CLS =
   "w-full border-collapse text-[13px] " +
-  "[&_th]:text-left [&_th]:py-3 [&_th]:px-4 [&_th]:border-b [&_th]:border-[#ececef] [&_th]:align-middle [&_th]:bg-[#fafafa] [&_th]:text-zinc-500 [&_th]:font-medium [&_th]:text-[11px] [&_th]:uppercase [&_th]:tracking-[.06em] " +
+  "[&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-[2] " +
+  "[&_th]:text-left [&_th]:py-3 [&_th]:px-4 [&_th]:border-b [&_th]:border-[#ececef] [&_th]:align-middle [&_th]:bg-[#fafafa] [&_th]:text-zinc-500 [&_th]:font-medium [&_th]:text-[11px] [&_th]:uppercase [&_th]:tracking-[.06em] [&_th]:whitespace-nowrap " +
   "[&_td]:text-left [&_td]:py-3.5 [&_td]:px-4 [&_td]:border-b [&_td]:border-[#f4f4f5] [&_td]:align-middle [&_td]:text-zinc-700 " +
-  "[&_tr:last-child_td]:border-b-0 [&_tbody_tr]:transition-colors [&_tbody_tr:hover]:bg-[#fafafa]";
+  "[&_tr:last-child_td]:border-b-0 [&_tbody_tr]:transition-colors [&_tbody_tr:hover]:bg-[#fafafa] [&_tbody_tr:focus-within]:bg-[#f4f4f5]";
 
 export const ADMIN_TABLE_THUMB_CLS =
   "w-[60px] h-[36px] rounded-md bg-zinc-100 [background-size:cover] [background-position:center] inline-block ring-1 ring-inset ring-[#ececef]";
@@ -99,10 +101,14 @@ export const ADMIN_FIELD_CLS =
   "[&_label]:text-[12.5px] [&_label]:text-zinc-700 [&_label]:font-medium [&_label]:leading-tight " +
   "[&_input]:font-[inherit] [&_input]:text-[13.5px] [&_input]:h-10 [&_input]:px-3 [&_input]:bg-white [&_input]:border [&_input]:border-[#e4e4e7] [&_input]:rounded-md [&_input]:text-zinc-900 [&_input]:outline-none [&_input]:transition-shadow " +
   "[&_input::placeholder]:text-zinc-400 " +
+  "[&_input:hover:not(:focus):not(:disabled)]:border-zinc-300 " +
   "[&_input:focus]:border-zinc-400 [&_input:focus]:shadow-[0_0_0_3px_rgba(24,24,27,0.06)] " +
+  "[&_input:disabled]:bg-zinc-50 [&_input:disabled]:text-zinc-400 [&_input:disabled]:cursor-not-allowed " +
   "[&_textarea]:font-[inherit] [&_textarea]:text-[13.5px] [&_textarea]:py-2.5 [&_textarea]:px-3 [&_textarea]:bg-white [&_textarea]:border [&_textarea]:border-[#e4e4e7] [&_textarea]:rounded-md [&_textarea]:text-zinc-900 [&_textarea]:outline-none [&_textarea]:transition-shadow [&_textarea]:resize-y [&_textarea]:min-h-[96px] " +
   "[&_textarea::placeholder]:text-zinc-400 " +
+  "[&_textarea:hover:not(:focus):not(:disabled)]:border-zinc-300 " +
   "[&_textarea:focus]:border-zinc-400 [&_textarea:focus]:shadow-[0_0_0_3px_rgba(24,24,27,0.06)] " +
+  "[&_textarea:disabled]:bg-zinc-50 [&_textarea:disabled]:text-zinc-400 [&_textarea:disabled]:cursor-not-allowed " +
   "[&_select]:font-[inherit] [&_select]:text-[13.5px] [&_select]:h-10 [&_select]:px-3 [&_select]:bg-white [&_select]:border [&_select]:border-[#e4e4e7] [&_select]:rounded-md [&_select]:text-zinc-900 [&_select]:outline-none [&_select]:transition-shadow " +
   "[&_select:focus]:border-zinc-400 [&_select:focus]:shadow-[0_0_0_3px_rgba(24,24,27,0.06)]";
 

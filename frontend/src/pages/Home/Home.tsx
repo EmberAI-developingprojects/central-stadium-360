@@ -125,14 +125,14 @@ const DEFAULT_MEMBER_KEYS: DefaultMemberKey[] = [
   {
     id: "svc-3",
     iconKey: "news",
-    href: "#",
+    href: "/news",
     titleKey: "home_services_card3_title",
     descKey: "home_services_card3_desc",
   },
   {
     id: "svc-4",
     iconKey: "chat",
-    href: "#",
+    href: "/contact",
     titleKey: "home_services_card4_title",
     descKey: "home_services_card4_desc",
   },
@@ -844,8 +844,8 @@ function Members({ items = [] }: { items: MemberItem[] }) {
   const memberCardCls = [
     "group bg-white rounded-[18px] flex flex-col items-start gap-4 text-left pt-7 px-[26px] pb-6",
     "border border-solid border-[rgba(31,41,55,0.06)] shadow-[0_4px_16px_rgba(0,0,0,0.04)]",
-    "[transition:box-shadow_.25s_ease,border-color_.25s_ease]",
-    "hover:border-[rgba(34,48,198,0.2)] hover:shadow-[0_8px_28px_rgba(0,0,0,0.09)]",
+    "[transition:background-color_.25s_ease,box-shadow_.25s_ease,border-color_.25s_ease]",
+    "hover:bg-brand-blue hover:border-[rgba(34,48,198,0.2)] hover:shadow-[0_8px_28px_rgba(0,0,0,0.09)]",
     REVEAL_UP_CLS,
   ].join(" ");
 

@@ -263,7 +263,7 @@ export const VIEWER_LIVE_PULSE_CLS =
   "rounded-full bg-[#ef4444] w-[7px] h-[7px] shadow-[0_0_0_0_rgba(239,68,68,0.9)] [animation:live-pulse_1.4s_ease-in-out_infinite]";
 
 export const VIEWER_STATS_CLS =
-  "inline-flex items-center gap-2 max-[720px]:[grid-column:1/-1] max-[720px]:justify-self-stretch max-[720px]:justify-between";
+  "inline-flex items-center gap-2 max-[720px]:hidden";
 export const VIEWER_STAT_CLS =
   "inline-flex items-center gap-2 rounded-full text-[13px] font-semibold py-2 px-[14px] bg-[rgba(255,255,255,0.06)] border border-solid border-[rgba(255,255,255,0.08)] [font-variant-numeric:tabular-nums] [&_svg]:w-4 [&_svg]:h-4";
 export const VIEWER_ICON_BTN_CLS =

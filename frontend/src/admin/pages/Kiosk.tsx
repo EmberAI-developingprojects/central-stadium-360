@@ -20,6 +20,7 @@ import type {
   TicketStatus,
 } from "@cs360/shared";
 import { api } from "../../lib/api";
+import { LoadingState } from "../components/Skeleton";
 import {
   ADMIN_BADGE_CANCELLED_CLS,
   ADMIN_BADGE_CLS,
@@ -190,7 +191,7 @@ function SellThroughPanel() {
       </div>
 
       {!report ? (
-        <div className={ADMIN_EMPTY_CLS}>Уншиж байна…</div>
+        <LoadingState />
       ) : report.events.length === 0 ? (
         <div className={ADMIN_EMPTY_CLS}>
           <strong>Арга хэмжээ алга</strong>
@@ -379,7 +380,7 @@ function ReconciliationPanel() {
       </div>
 
       {!report ? (
-        <div className={ADMIN_EMPTY_CLS}>Уншиж байна…</div>
+        <LoadingState />
       ) : (
         <>
           <div className="grid gap-3 mb-5 [grid-template-columns:repeat(3,minmax(0,1fr))] max-[980px]:[grid-template-columns:1fr]">
@@ -573,7 +574,7 @@ function AdmissionPanel() {
       </div>
 
       {!report ? (
-        <div className={ADMIN_EMPTY_CLS}>Уншиж байна…</div>
+        <LoadingState />
       ) : report.events.length === 0 ? (
         <div className={ADMIN_EMPTY_CLS}>
           <strong>Арга хэмжээ алга</strong>
@@ -837,7 +838,7 @@ function SalesPanel() {
           </svg>
           <input
             type="search"
-            placeholder="Лавлах дугаар, арга хэмжээ, утсаар хайх…"
+            placeholder="Хайх"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             className="!pl-9 !min-w-[300px]"
@@ -877,7 +878,7 @@ function SalesPanel() {
       </div>
 
       {!filtered ? (
-        <div className={ADMIN_EMPTY_CLS}>Уншиж байна…</div>
+        <LoadingState />
       ) : filtered.length === 0 ? (
         <div className={ADMIN_EMPTY_CLS}>
           <strong>Захиалга алга</strong>

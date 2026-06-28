@@ -4,11 +4,12 @@ import type { AdminTicketRow, DbRecording, EventStatus } from "@cs360/shared";
 import { api } from "../../lib/api";
 import type { EventRecord } from "../../data/store";
 import RecordingFormDialog from "../components/RecordingFormDialog";
+import { LoadingState } from "../components/Skeleton";
+import { EmptyState } from "../components/EmptyState";
 import {
   ADMIN_BTN_CLS,
   ADMIN_BTN_GHOST_CLS,
   ADMIN_BTN_PRIMARY_CLS,
-  ADMIN_EMPTY_CLS,
   ADMIN_PAGE_HEADER_CLS,
 } from "../_adminStyles";
 
@@ -136,6 +137,8 @@ export default function EventDetail() {
   const [dialogCam, setDialogCam] = useState<number | null>(null);
   const [rediscovering, setRediscovering] = useState(false);
   const [rediscoverMsg, setRediscoverMsg] = useState<string | null>(null);
+  const [endingLive, setEndingLive] = useState(false);
+  const [endLiveMsg, setEndLiveMsg] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     if (!id) return;
@@ -189,24 +192,53 @@ export default function EventDetail() {
     void refresh();
   }, [id, rediscovering, refresh]);
 
+  const onEndLive = useCallback(async () => {
+    if (!id || endingLive) return;
+    if (
+      !window.confirm(
+        "Шууд дамжуулалтыг хүчээр зогсоох уу? Бүх камерын IVS stream-ыг зогсоож, бичлэгийг finalize хийнэ.",
+      )
+    )
+      return;
+    setEndingLive(true);
+    setEndLiveMsg(null);
+    const res = await api.admin.endLive(id);
+    setEndingLive(false);
+    if (!res.ok) {
+      setEndLiveMsg(`Алдаа: ${res.error}`);
+      return;
+    }
+    const { stop, recordings: discovered } = res.data;
+    const parts: string[] = [];
+    if (stop.stopped.length > 0) parts.push(`${stop.stopped.length} зогссон`);
+    if (stop.alreadyOffline.length > 0)
+      parts.push(`${stop.alreadyOffline.length} аль хэдийн offline`);
+    if (stop.failed.length > 0) parts.push(`${stop.failed.length} алдаа`);
+    setEndLiveMsg(
+      `${parts.join(", ") || "Үйлдэл хийгдсэн"}. Бичлэг: ${discovered.length}/4 камер.`,
+    );
+    void refresh();
+  }, [id, endingLive, refresh]);
+
   if (loading && !event) {
-    return <div className={ADMIN_EMPTY_CLS}>Уншиж байна…</div>;
+    return <LoadingState label="Арга хэмжээ уншиж байна…" />;
   }
 
   if (!event) {
     return (
-      <div className={ADMIN_EMPTY_CLS}>
-        <strong>Олдсонгүй</strong>
-        {error || "Арга хэмжээ олдсонгүй."}
-        <div className="mt-3">
+      <EmptyState
+        variant="error"
+        title="Олдсонгүй"
+        description={error || "Арга хэмжээ олдсонгүй."}
+        action={
           <Link
             to="/admin/events"
             className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_GHOST_CLS}`}
           >
             ← Жагсаалт
           </Link>
-        </div>
-      </div>
+        }
+      />
     );
   }
 
@@ -376,22 +408,34 @@ export default function EventDetail() {
             );
           })}
         </div>
-        {(canRediscover(event, readyCount) || rediscoverMsg) && (
+        {(canRediscover(event, readyCount) || rediscoverMsg || endLiveMsg) && (
           <div className="flex items-center justify-between gap-3 flex-wrap px-5 py-4 border-t border-[#f4f4f5] bg-zinc-50/60">
             <div className="text-[12.5px] text-zinc-600">
-              {rediscoverMsg ??
+              {endLiveMsg ??
+                rediscoverMsg ??
                 "Зарим камерт бичлэг олдсонгүй. AWS S3-аас дахин хайхыг оролдоно уу."}
             </div>
-            {canRediscover(event, readyCount) && (
+            <div className="flex items-center gap-2 shrink-0">
               <button
                 type="button"
-                onClick={onRediscover}
-                disabled={rediscovering}
-                className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_GHOST_CLS} shrink-0`}
+                onClick={onEndLive}
+                disabled={endingLive || rediscovering}
+                className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_GHOST_CLS}`}
+                title="Бүх IVS stream-ыг зогсоож, бичлэгийг finalize хийнэ"
               >
-                {rediscovering ? "Хайж байна…" : "Дахин хайх"}
+                {endingLive ? "Зогсоож байна…" : "Live зогсоох"}
               </button>
-            )}
+              {canRediscover(event, readyCount) && (
+                <button
+                  type="button"
+                  onClick={onRediscover}
+                  disabled={rediscovering || endingLive}
+                  className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_GHOST_CLS}`}
+                >
+                  {rediscovering ? "Хайж байна…" : "Дахин хайх"}
+                </button>
+              )}
+            </div>
           </div>
         )}
       </section>

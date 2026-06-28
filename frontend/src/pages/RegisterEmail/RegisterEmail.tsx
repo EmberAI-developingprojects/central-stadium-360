@@ -260,7 +260,7 @@ export default function RegisterEmail() {
                 className={INPUT_CLS}
                 type="email"
                 name="email"
-                placeholder="name@gmail.com"
+                placeholder="И-мэйл"
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}

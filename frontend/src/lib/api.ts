@@ -306,6 +306,16 @@ export const api = {
         "POST",
         `/api/admin/events/${encodeURIComponent(eventId)}/rediscover`,
       ),
+    endLive: (eventId: string) =>
+      request<{
+        stop: {
+          total: number;
+          stopped: string[];
+          alreadyOffline: string[];
+          failed: Array<{ arn: string; error: string }>;
+        };
+        recordings: DbRecording[];
+      }>("POST", `/api/admin/events/${encodeURIComponent(eventId)}/end-live`),
     createRecording: (input: {
       event_id: string;
       camera_number: number;

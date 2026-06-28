@@ -8,6 +8,10 @@ const EventDetail = lazy(() => import("./pages/EventDetail"));
 const PetitionsOverview = lazy(() => import("./pages/PetitionsOverview"));
 const TransparencyDocument = lazy(() => import("./pages/TransparencyDocument"));
 const Legal = lazy(() => import("./pages/Legal"));
+const Contact = lazy(() => import("./pages/Contact"));
+const AboutIntro = lazy(() => import("./pages/About/AboutIntro"));
+const AboutDirector = lazy(() => import("./pages/About/AboutDirector"));
+const AboutStructure = lazy(() => import("./pages/About/AboutStructure"));
 const WatchVOD = lazy(() => import("./pages/WatchVOD"));
 const WatchEventDetail = lazy(() => import("./pages/WatchEventDetail"));
 const NewsDetail = lazy(() => import("./pages/NewsDetail"));
@@ -18,10 +22,10 @@ const RegisterPhone = lazy(() => import("./pages/RegisterPhone"));
 const RegisterEmail = lazy(() => import("./pages/RegisterEmail"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const Watch = lazy(() => import("./pages/watch"));
+const WatchLive = lazy(() => import("./pages/watch-live/WatchLive"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Profile = lazy(() => import("./pages/Profile"));
 const OrderDetail = lazy(() => import("./pages/OrderDetail"));
-const History = lazy(() => import("./pages/History"));
 const HistoryDetail = lazy(() => import("./pages/HistoryDetail"));
 const AdminLayout = lazy(() => import("./admin/AdminLayout"));
 const Dashboard = lazy(() => import("./admin/pages/Dashboard"));
@@ -108,9 +112,16 @@ export default function App() {
             element={<TransparencyDocument />}
           />
           <Route path="/legal" element={<Legal />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/about/intro" element={<AboutIntro />} />
+          <Route path="/about/director" element={<AboutDirector />} />
+          <Route path="/about/structure" element={<AboutStructure />} />
           <Route path="/news" element={<News />} />
           <Route path="/news/:id" element={<NewsDetail />} />
-          <Route path="/history" element={<History />} />
+          <Route
+            path="/history"
+            element={<Navigate to="/about/intro#history" replace />}
+          />
           <Route path="/history/:id" element={<HistoryDetail />} />
           <Route
             path="/login"
@@ -153,6 +164,7 @@ export default function App() {
             }
           />
           <Route path="/watch" element={<Watch />} />
+          <Route path="/watch/live/:eventId" element={<WatchLive />} />
           <Route path="/watch/events/:id" element={<WatchEventDetail />} />
           <Route path="/watch/:eventId/vod" element={<WatchVOD />} />
           <Route path="/profile" element={<Profile />} />

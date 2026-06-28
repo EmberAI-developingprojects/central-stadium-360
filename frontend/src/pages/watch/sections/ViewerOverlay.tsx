@@ -45,7 +45,6 @@ import {
   VIEWER_CONTROLS_RIGHT_CLS,
   VIEWER_HEADER_CLS,
   VIEWER_ICON_BTN_CLS,
-  VIEWER_ICON_BTN_ON_CLS,
   VIEWER_LIVE_PILL_CLS,
   VIEWER_LIVE_PULSE_CLS,
   VIEWER_MAIN_CAM_CLS,
@@ -82,9 +81,14 @@ type FullscreenElement = HTMLElement & {
   webkitRequestFullscreen?: () => Promise<void> | void;
 };
 
+type VideoFullscreenElement = HTMLVideoElement & {
+  webkitEnterFullscreen?: () => void;
+  webkitExitFullscreen?: () => void;
+};
+
 type QualityLevel = { index: number; height: number; label: string };
 
-type ReactionId = "horse" | "archery" | "wrestler";
+type ReactionId = "like" | "love" | "fire";
 
 const REACTIONS: Array<{
   id: ReactionId;
@@ -93,22 +97,22 @@ const REACTIONS: Array<{
   path: string;
 }> = [
   {
-    id: "horse",
-    label: "Морь",
-    color: "#eab308",
-    path: "M4 10c0-4.4 3.6-8 8-8s8 3.6 8 8v12h-4V10c0-2.2-1.8-4-4-4s-4 1.8-4 4v12H4V10z",
+    id: "like",
+    label: "Like",
+    color: "#3b82f6",
+    path: "M7 22V11M2 13v7a2 2 0 0 0 2 2h3V11H4a2 2 0 0 0-2 2zM21.5 11h-7l1-5a2 2 0 0 0-2-2.5L7 11v11h11.7a2 2 0 0 0 2-1.6l1.5-7a2 2 0 0 0-2-2.4z",
   },
   {
-    id: "archery",
-    label: "Сур харвах",
-    color: "#0ea5e9",
-    path: "M5 3c-.55 0-1 .45-1 1v16c0 .55.45 1 1 1s1-.45 1-1v-2.5c4-.7 7-4.2 7-7.5s-3-6.8-7-7.5V4c0-.55-.45-1-1-1zM22 12l-5-4v3H8v2h9v3l5-4z",
+    id: "love",
+    label: "Love",
+    color: "#ef4444",
+    path: "M12 21s-7-4.5-9.5-9C1 9 2.5 5 6 5c2 0 3.5 1.5 4.5 3C11.5 6.5 13 5 15 5c3.5 0 5 4 3.5 7-2.5 4.5-9.5 9-9.5 9z",
   },
   {
-    id: "wrestler",
-    label: "Бөх",
-    color: "#dc2626",
-    path: "M6.5 2a2.5 2.5 0 100 5 2.5 2.5 0 000-5zm11 0a2.5 2.5 0 100 5 2.5 2.5 0 000-5zM3 12c-.55 0-1 .45-1 1v7c0 .55.45 1 1 1h2.5l1.5-5h.5v5h2v-6c0-1 1-2 2-2s2 1 2 2v6h2v-5h.5l1.5 5H21c.55 0 1-.45 1-1v-7c0-.55-.45-1-1-1-1 0-1.5 0-3 1l-3 1.5h-6L6 13c-1.5-1-2-1-3-1z",
+    id: "fire",
+    label: "Fire",
+    color: "#f59e0b",
+    path: "M12 2s4 4 4 8a4 4 0 0 1-8 0c0-1 .5-2 1-2.5C10 9 8 11 8 13.5a5 5 0 0 0 10 0c0-3-2-5.5-2-8 0-1.5-1-3-4-3.5z",
   },
 ];
 
@@ -135,6 +139,9 @@ export function ViewerOverlay({
   const hlsRef = useRef<Hls | null>(null);
   const stageRef = useRef<HTMLElement>(null);
   const chatListRef = useRef<HTMLDivElement>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const audioSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const audioGainRef = useRef<GainNode | null>(null);
 
   const [cams, setCams] = useState<WatchCam[]>([]);
   const [camIdx, setCamIdx] = useState(0);
@@ -147,7 +154,6 @@ export function ViewerOverlay({
   const [qualityIdx, setQualityIdx] = useState(-1);
   const [qualityOpen, setQualityOpen] = useState(false);
   const qualityRef = useRef<HTMLDivElement>(null);
-  const [cc, setCc] = useState(false);
   const [isFs, setIsFs] = useState(false);
   const [pseudoFs, setPseudoFs] = useState(false);
   const [idle, setIdle] = useState(false);
@@ -165,6 +171,7 @@ export function ViewerOverlay({
   >([]);
   const bubbleIdRef = useRef(0);
   const [camPickerOpen, setCamPickerOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
   const [lastActionAt, setLastActionAt] = useState<number | null>(null);
   const [, setCooldownTick] = useState(0);
 
@@ -195,6 +202,20 @@ export function ViewerOverlay({
     });
   }, []);
 
+  // Warm browser cache with all camera manifests so HLS switch skips the
+  // m3u8 round-trip on first camera change.
+  useEffect(() => {
+    if (cams.length === 0) return;
+    const ctrl = new AbortController();
+    for (const cam of cams) {
+      if (!cam.hlsUrl) continue;
+      fetch(cam.hlsUrl, { signal: ctrl.signal, cache: "force-cache" }).catch(
+        () => {},
+      );
+    }
+    return () => ctrl.abort();
+  }, [cams]);
+
   useEffect(() => {
     const video = videoRef.current;
     const url = activeCam?.hlsUrl;
@@ -206,7 +227,14 @@ export function ViewerOverlay({
     if (Hls.isSupported()) {
       let hls = hlsRef.current;
       if (!hls) {
-        hls = new Hls({ startLevel: -1, capLevelToPlayerSize: true });
+        hls = new Hls({
+          startLevel: 0,
+          capLevelToPlayerSize: true,
+          maxBufferLength: 10,
+          maxMaxBufferLength: 30,
+          lowLatencyMode: true,
+          backBufferLength: 0,
+        });
         hlsRef.current = hls;
         hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
           const levels: QualityLevel[] = data.levels.map((l, i) => ({
@@ -246,11 +274,42 @@ export function ViewerOverlay({
     if (hlsRef.current) hlsRef.current.currentLevel = qualityIdx;
   }, [qualityIdx]);
 
+  const AUDIO_BOOST = 4;
+
+  const ensureAudioBoost = useCallback(() => {
+    const video = videoRef.current;
+    if (!video || audioSourceRef.current) return;
+    try {
+      const AC =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext?: typeof AudioContext })
+          .webkitAudioContext;
+      if (!AC) return;
+      const ctx = new AC();
+      const source = ctx.createMediaElementSource(video);
+      const gain = ctx.createGain();
+      gain.gain.value = AUDIO_BOOST;
+      source.connect(gain);
+      gain.connect(ctx.destination);
+      audioCtxRef.current = ctx;
+      audioSourceRef.current = source;
+      audioGainRef.current = gain;
+    } catch (err) {
+      console.warn("[audio] boost init failed:", err);
+    }
+  }, []);
+
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
     v.muted = muted;
     v.volume = volume / 100;
+    if (!muted && volume > 0) {
+      ensureAudioBoost();
+      if (audioCtxRef.current?.state === "suspended") {
+        audioCtxRef.current.resume().catch(() => {});
+      }
+    }
     const syncPlay = () => setPaused(v.paused);
     v.addEventListener("play", syncPlay);
     v.addEventListener("pause", syncPlay);
@@ -258,7 +317,19 @@ export function ViewerOverlay({
       v.removeEventListener("play", syncPlay);
       v.removeEventListener("pause", syncPlay);
     };
-  }, [muted, volume]);
+  }, [muted, volume, ensureAudioBoost]);
+
+  useEffect(() => {
+    return () => {
+      const ctx = audioCtxRef.current;
+      if (ctx) {
+        ctx.close().catch(() => {});
+        audioCtxRef.current = null;
+        audioSourceRef.current = null;
+        audioGainRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -376,6 +447,7 @@ export function ViewerOverlay({
 
   const toggleStageFs = useCallback(async () => {
     const stage = stageRef.current as FullscreenElement | null;
+    const video = videoRef.current as VideoFullscreenElement | null;
     const doc = document as FullscreenDocument;
     const inFs = doc.fullscreenElement || doc.webkitFullscreenElement;
 
@@ -386,42 +458,79 @@ export function ViewerOverlay({
         } catch {}
       }
       if (pseudoFs) setPseudoFs(false);
+      try {
+        video?.webkitExitFullscreen?.();
+      } catch {}
       return;
     }
 
+    // 1. Try element-level fullscreen on the stage. iOS Safari 16.4+ and all
+    //    modern desktops support this. For 360° this is mandatory because we
+    //    need the canvas (not the raw equirectangular video) to be visible.
     if (stage) {
-      const requestFs =
-        stage.requestFullscreen?.bind(stage) ||
-        stage.webkitRequestFullscreen?.bind(stage);
-      if (requestFs) {
+      if (stage.requestFullscreen) {
         try {
-          await requestFs();
-          if (doc.fullscreenElement || doc.webkitFullscreenElement) return;
+          await stage.requestFullscreen();
+          return;
+        } catch {}
+      }
+      if (stage.webkitRequestFullscreen) {
+        try {
+          await stage.webkitRequestFullscreen();
+          return;
         } catch {}
       }
     }
 
-    setPseudoFs(true);
-  }, [pseudoFs]);
-
-  const exitFsAndClose = useCallback(async () => {
-    const doc = document as FullscreenDocument;
-    const inFs = doc.fullscreenElement || doc.webkitFullscreenElement;
-    if (inFs) {
+    // 2. Legacy iOS Safari (<16.4): only <video> can go fullscreen. Use it for
+    //    flat 2D cameras. For 360°, prefer pseudoFs (don't degrade to flat).
+    if (!is360 && video?.webkitEnterFullscreen) {
       try {
-        await (doc.exitFullscreen || doc.webkitExitFullscreen)?.call(doc);
+        video.webkitEnterFullscreen();
+        return;
       } catch {}
     }
-    if (pseudoFs) setPseudoFs(false);
-    onClose();
-  }, [pseudoFs, onClose]);
+
+    setPseudoFs(true);
+  }, [pseudoFs, is360]);
 
   useEffect(() => {
-    window.history.pushState({ cs360Viewer: true }, "");
-    const onPop = () => onClose();
-    window.addEventListener("popstate", onPop);
-    return () => window.removeEventListener("popstate", onPop);
-  }, [onClose]);
+    const mq = window.matchMedia("(orientation: landscape)");
+    let lastTrigger = 0;
+    const onChange = (e: MediaQueryListEvent) => {
+      const doc = document as FullscreenDocument;
+      const inFs = !!(
+        doc.fullscreenElement || doc.webkitFullscreenElement
+      );
+      const video = videoRef.current as VideoFullscreenElement | null;
+      const inVideoFs =
+        !!doc.webkitFullscreenElement &&
+        doc.webkitFullscreenElement === video;
+      const now = Date.now();
+      if (now - lastTrigger < 600) return;
+      lastTrigger = now;
+      if (e.matches) {
+        if (!inFs && !pseudoFs && !inVideoFs) {
+          toggleStageFs();
+        }
+      } else {
+        if (pseudoFs) setPseudoFs(false);
+        if (inFs) {
+          (doc.exitFullscreen || doc.webkitExitFullscreen)?.call(doc);
+        }
+        try {
+          video?.webkitExitFullscreen?.();
+        } catch {}
+      }
+    };
+    if (typeof mq.addEventListener === "function") {
+      mq.addEventListener("change", onChange);
+      return () => mq.removeEventListener("change", onChange);
+    }
+    mq.addListener(onChange);
+    return () => mq.removeListener(onChange);
+  }, [pseudoFs, toggleStageFs]);
+
 
   useEffect(() => {
     const onFs = () => {
@@ -494,6 +603,10 @@ export function ViewerOverlay({
     const list = chatListRef.current;
     if (list) list.scrollTop = list.scrollHeight;
   }, [chat]);
+
+  useEffect(() => {
+    if (isFs || pseudoFs) setChatOpen(false);
+  }, [isFs, pseudoFs]);
 
   useEffect(() => {
     if (!CHAT_WS_URL) return;
@@ -874,10 +987,15 @@ export function ViewerOverlay({
               playsInline
               muted={muted}
               style={{
+                position: "absolute",
+                inset: 0,
                 width: "100%",
                 height: "100%",
                 objectFit: isFs || pseudoFs ? "cover" : "contain",
-                display: is360 ? "none" : "block",
+                display: "block",
+                zIndex: is360 ? 0 : 1,
+                pointerEvents: is360 ? "none" : "auto",
+                opacity: is360 ? 0 : 1,
               }}
               poster={featuredEvent.image}
               onDoubleClick={toggleStageFs}
@@ -885,11 +1003,14 @@ export function ViewerOverlay({
             <canvas
               ref={canvasRef}
               style={{
+                position: "absolute",
+                inset: 0,
                 width: "100%",
                 height: "100%",
                 display: is360 ? "block" : "none",
                 cursor: "grab",
                 touchAction: "none",
+                zIndex: 2,
               }}
               onDoubleClick={toggleStageFs}
             />
@@ -926,28 +1047,6 @@ export function ViewerOverlay({
               </div>
             )}
           </div>
-
-          {(isFs || pseudoFs) && (
-            <button
-              type="button"
-              onClick={exitFsAndClose}
-              aria-label="Буцах"
-              title="Буцах"
-              className="absolute top-4 left-4 z-[3] w-[44px] h-[44px] rounded-full text-white grid place-items-center cursor-pointer bg-[rgba(11,15,26,0.7)] [backdrop-filter:blur(8px)] [-webkit-backdrop-filter:blur(8px)] border border-solid border-[rgba(255,255,255,0.14)] [transition:background_.15s_ease,opacity_.25s_ease] hover:bg-[rgba(11,15,26,0.9)] [.is-idle_&]:opacity-0 [.is-idle_&]:pointer-events-none [&_svg]:w-5 [&_svg]:h-5"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-            </button>
-          )}
 
           {activeCam && (
             <span className={VIEWER_MAIN_CAM_CLS}>
@@ -1173,23 +1272,9 @@ export function ViewerOverlay({
                       onClick={() => setQualityOpen((o) => !o)}
                       aria-haspopup="listbox"
                       aria-expanded={qualityOpen}
-                      className="inline-flex items-center justify-between gap-2 min-w-[78px] bg-[rgba(255,255,255,0.06)] border border-solid border-[rgba(255,255,255,0.1)] text-white font-semibold text-[12.5px] pt-[7px] pr-2.5 pb-[7px] pl-3 rounded-[9px] cursor-pointer [transition:background_.15s_ease,border-color_.15s_ease] hover:bg-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] max-[720px]:text-[11.5px] max-[720px]:pt-1.5 max-[720px]:pb-1.5 max-[720px]:pl-2"
+                      className="inline-flex items-center justify-center gap-2 min-w-[78px] bg-[rgba(255,255,255,0.06)] border border-solid border-[rgba(255,255,255,0.1)] text-white font-semibold text-[12.5px] py-[7px] px-3 rounded-[9px] cursor-pointer [transition:background_.15s_ease,border-color_.15s_ease] hover:bg-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] max-[720px]:text-[11.5px] max-[720px]:py-1.5 max-[720px]:px-2"
                     >
                       <span>{currentLabel}</span>
-                      <svg
-                        viewBox="0 0 10 6"
-                        width="9"
-                        height="5"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.6"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden="true"
-                        className={`shrink-0 [transition:transform_.15s_ease] ${qualityOpen ? "rotate-180" : ""}`}
-                      >
-                        <path d="M1 1l4 4 4-4" />
-                      </svg>
                     </button>
                     {qualityOpen && (
                       <ul
@@ -1248,10 +1333,10 @@ export function ViewerOverlay({
               })()}
               <button
                 type="button"
-                className={`${VIEWER_ICON_BTN_CLS}${cc ? " " + VIEWER_ICON_BTN_ON_CLS : ""}`}
-                onClick={() => setCc((c) => !c)}
-                aria-label="Хадмал"
-                title="Хадмал"
+                className={VIEWER_ICON_BTN_CLS}
+                onClick={toggleStageFs}
+                aria-label="Бүтэн дэлгэц"
+                title="Бүтэн дэлгэц"
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -1262,16 +1347,32 @@ export function ViewerOverlay({
                   strokeLinejoin="round"
                   aria-hidden="true"
                 >
-                  <rect x="3" y="5" width="18" height="14" rx="2" />
-                  <path d="M7 13a2 2 0 1 0 0-2" />
-                  <path d="M14 13a2 2 0 1 0 0-2" />
+                  <polyline points="15 3 21 3 21 9" />
+                  <polyline points="9 21 3 21 3 15" />
+                  <line x1="21" y1="3" x2="14" y2="10" />
+                  <line x1="3" y1="21" x2="10" y2="14" />
                 </svg>
               </button>
             </div>
           </div>
         </section>
 
-        <aside className={VIEWER_CHAT_CLS} aria-label="Шууд чат">
+        {chatOpen && (
+          <div
+            className="hidden max-[1100px]:block fixed inset-0 z-[140] bg-black/40 [animation:tmFade_.2s_ease]"
+            onClick={() => setChatOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+
+        <aside
+          className={
+            chatOpen
+              ? `${VIEWER_CHAT_CLS} max-[1100px]:!fixed max-[1100px]:!left-0 max-[1100px]:!right-0 max-[1100px]:!bottom-0 max-[1100px]:!top-[60vh] max-[1100px]:!z-[150] max-[1100px]:!rounded-t-[20px] max-[1100px]:!rounded-b-none max-[1100px]:!bg-[#0b1220] max-[1100px]:shadow-[0_-12px_32px_-12px_rgba(0,0,0,0.6)] max-[1100px]:![animation:tmSlideUp_.25s_ease] max-[1100px]:[will-change:transform]`
+              : `${VIEWER_CHAT_CLS} max-[1100px]:hidden`
+          }
+          aria-label="Шууд чат"
+        >
           <header className={VIEWER_CHAT_HEAD_CLS}>
             <svg
               viewBox="0 0 24 24"
@@ -1302,6 +1403,25 @@ export function ViewerOverlay({
               }}
             />
             <span className={VIEWER_CHAT_COUNT_CLS}>{chat.length}</span>
+            <button
+              type="button"
+              onClick={() => setChatOpen(false)}
+              aria-label="Чат хаах"
+              className="hidden max-[1100px]:grid ml-2 w-8 h-8 rounded-full place-items-center bg-[rgba(255,255,255,0.08)] border-0 cursor-pointer text-white [transition:background_.15s_ease] hover:bg-[rgba(255,255,255,0.16)] [&_svg]:!w-3.5 [&_svg]:!h-3.5"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
           </header>
           <div
             className={VIEWER_CHAT_LIST_CLS}
@@ -1352,7 +1472,7 @@ export function ViewerOverlay({
                   ? "Холбогдож байна…"
                   : inCooldown
                     ? `Дахин ${cooldownSecs}с-ийн дараа илгээнэ`
-                    : "Мессеж бичих…"
+                    : "Мессеж"
               }
               maxLength={140}
               value={chatInput}
@@ -1381,6 +1501,33 @@ export function ViewerOverlay({
             </button>
           </form>
         </aside>
+
+        {!chatOpen && !isFs && !pseudoFs && (
+          <button
+            type="button"
+            onClick={() => setChatOpen(true)}
+            aria-label="Шууд чат нээх"
+            className="hidden max-[1100px]:inline-flex fixed bottom-5 right-4 z-[120] items-center gap-2 py-2.5 px-4 rounded-full bg-brand-blue text-white text-sm font-bold border-0 cursor-pointer shadow-[0_12px_28px_-8px_rgba(34,48,198,0.7)] [transition:transform_.15s_ease,background_.15s_ease] active:scale-95 hover:bg-brand-blue-soft [&_svg]:w-4 [&_svg]:h-4"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+            Чат
+            {chat.length > 0 && (
+              <span className="text-[10.5px] font-extrabold py-0.5 px-1.5 rounded-full bg-white/20">
+                {chat.length}
+              </span>
+            )}
+          </button>
+        )}
 
         <button
           type="button"

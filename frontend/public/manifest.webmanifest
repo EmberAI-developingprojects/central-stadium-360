@@ -1,0 +1,25 @@
+{
+  "name": "Төв Цэнгэлдэх Хүрээлэн",
+  "short_name": "CS360",
+  "description": "Төв Цэнгэлдэх Хүрээлэн — 360° шууд дамжуулал",
+  "start_url": "/watch",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#05080F",
+  "theme_color": "#2230C6",
+  "icons": [
+    {
+      "src": "/assets/images/brand/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/images/brand/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

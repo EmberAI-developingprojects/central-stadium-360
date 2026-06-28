@@ -10,6 +10,8 @@ import {
 import type { OrderRecord, UserRecord, UserRole } from "../../data/store";
 import { useConfirm } from "../components/ConfirmDialog";
 import { useToast } from "../components/Toast";
+import { LoadingState } from "../components/Skeleton";
+import { EmptyState } from "../components/EmptyState";
 import {
   ADMIN_ACTIONS_CLS,
   ADMIN_BADGE_ADMIN_CLS,
@@ -24,7 +26,6 @@ import {
   ADMIN_BTN_PRIMARY_CLS,
   ADMIN_BTN_SM_CLS,
   ADMIN_CARD_CLS,
-  ADMIN_EMPTY_CLS,
   ADMIN_GRID_2_CLS,
   ADMIN_GRID_CLS,
   ADMIN_PAGE_HEADER_CLS,
@@ -73,7 +74,7 @@ export default function UserView() {
   }, [id]);
 
   if (user === undefined)
-    return <div className={ADMIN_EMPTY_CLS}>Уншиж байна…</div>;
+    return <LoadingState label="Хэрэглэгчийн мэдээлэл уншиж байна…" />;
   if (!user) {
     return (
       <>
@@ -85,6 +86,16 @@ export default function UserView() {
             ← Жагсаалт руу
           </Link>
         </div>
+        <EmptyState
+          variant="error"
+          title="Хүсэлт оруулсан хэрэглэгч байхгүй"
+          description="ID буруу эсвэл хэрэглэгч устгагдсан байж болзошгүй."
+          action={
+            <Link to="/admin/users" className={ADMIN_BTN_CLS}>
+              ← Бүх хэрэглэгч
+            </Link>
+          }
+        />
       </>
     );
   }
@@ -280,8 +291,10 @@ export default function UserView() {
       <div className={ADMIN_CARD_CLS}>
         <h3>Захиалгууд ({orders.length})</h3>
         {orders.length === 0 ? (
-          <div className={ADMIN_EMPTY_CLS} style={{ border: 0, padding: 0 }}>
-            <strong>Захиалга алга</strong>
+          <div className="text-zinc-500 text-[13px] py-2">
+            <strong className="block text-zinc-900 font-semibold text-[14px] mb-1">
+              Захиалга алга
+            </strong>
             Энэ хэрэглэгч одоогоор тасалбар аваагүй байна.
           </div>
         ) : (

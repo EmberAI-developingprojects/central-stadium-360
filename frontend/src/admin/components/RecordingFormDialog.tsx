@@ -180,7 +180,7 @@ export default function RecordingFormDialog({
                 type="text"
                 value={bucket}
                 onChange={(e) => setBucket(e.target.value)}
-                placeholder="360stadium"
+                placeholder="Bucket name"
               />
             </div>
             <div className={ADMIN_FIELD_CLS}>
@@ -190,7 +190,7 @@ export default function RecordingFormDialog({
                 type="text"
                 value={keyPrefix}
                 onChange={(e) => setKeyPrefix(e.target.value)}
-                placeholder="ivs/v1/376715673271/abc123/2026/06/15/14/stream-xyz/"
+                placeholder="S3 key prefix"
                 required
               />
             </div>

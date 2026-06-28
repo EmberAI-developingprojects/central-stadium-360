@@ -33,10 +33,15 @@ export function useToast(): ToastApi {
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
-  const push = useCallback((kind: ToastKind, message: string, duration = 3200) => {
-    const id = Date.now() + Math.random();
-    setToasts((arr) => [...arr, { id, kind, message, duration }]);
-  }, []);
+  const push = useCallback(
+    (kind: ToastKind, message: string, duration?: number) => {
+      const fallback = kind === "error" ? 5200 : 3200;
+      const finalDuration = duration ?? fallback;
+      const id = Date.now() + Math.random();
+      setToasts((arr) => [...arr, { id, kind, message, duration: finalDuration }]);
+    },
+    [],
+  );
 
   const remove = useCallback((id: number) => {
     setToasts((arr) => arr.filter((t) => t.id !== id));
@@ -91,10 +96,17 @@ function ToastItemView({
         ? "bg-red-100 text-red-700"
         : "bg-zinc-100 text-zinc-700";
 
+  const barColor =
+    item.kind === "success"
+      ? "bg-emerald-400/70"
+      : item.kind === "error"
+        ? "bg-red-400/70"
+        : "bg-zinc-400/70";
+
   return (
     <div
       role="status"
-      className={`pointer-events-auto flex items-start gap-2.5 min-w-[280px] max-w-[360px] rounded-lg border ${style} shadow-[0_8px_24px_rgba(0,0,0,0.08)] py-2.5 pl-3 pr-2.5 animate-admin-slide-in-right`}
+      className={`pointer-events-auto relative flex items-start gap-2.5 min-w-[280px] max-w-[360px] rounded-lg border ${style} shadow-[0_8px_24px_rgba(0,0,0,0.08)] py-2.5 pl-3 pr-2.5 animate-admin-slide-in-right overflow-hidden`}
     >
       <span
         className={`shrink-0 mt-px inline-flex h-5 w-5 items-center justify-center rounded-full ${iconBg}`}
@@ -126,6 +138,17 @@ function ToastItemView({
           <line x1="6" y1="6" x2="18" y2="18" />
         </svg>
       </button>
+      {item.duration > 0 && (
+        <span
+          aria-hidden="true"
+          className={`absolute left-0 bottom-0 h-[2px] w-full origin-left ${barColor} animate-admin-toast-progress`}
+          style={
+            {
+              ["--toast-duration" as string]: `${item.duration}ms`,
+            } as React.CSSProperties
+          }
+        />
+      )}
     </div>
   );
 }
