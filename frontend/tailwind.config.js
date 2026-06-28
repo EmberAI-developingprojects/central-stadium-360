@@ -133,6 +133,14 @@ export default {
           from: { opacity: "0", transform: "translateX(16px)" },
           to: { opacity: "1", transform: "translateX(0)" },
         },
+        adminShimmer: {
+          "0%": { backgroundPosition: "200% 0" },
+          "100%": { backgroundPosition: "-200% 0" },
+        },
+        adminToastProgress: {
+          from: { transform: "scaleX(1)" },
+          to: { transform: "scaleX(0)" },
+        },
       },
       animation: {
         "login-pop": "loginPop .55s cubic-bezier(.34, 1.56, .64, 1) both",
@@ -150,6 +158,8 @@ export default {
         "admin-fade-in": "adminFadeIn 140ms ease-out",
         "admin-scale-in": "adminScaleIn 160ms cubic-bezier(.34,1.56,.64,1) both",
         "admin-slide-in-right": "adminSlideInRight 200ms cubic-bezier(.2,.8,.2,1) both",
+        "admin-shimmer": "adminShimmer 1.4s linear infinite",
+        "admin-toast-progress": "adminToastProgress var(--toast-duration,3200ms) linear forwards",
       },
       maxWidth: {
         "screen-page": "1300px",

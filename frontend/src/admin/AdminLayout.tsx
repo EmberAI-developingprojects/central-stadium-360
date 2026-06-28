@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import type { ComponentType } from "react";
+import { useEffect, useState, type ComponentType } from "react";
 import { useAuth } from "../auth";
 import { ConfirmProvider } from "./components/ConfirmDialog";
 import { ToastProvider } from "./components/Toast";
@@ -102,9 +102,45 @@ function AdminShell({
   identifier?: string;
   onLogout: () => void;
 }) {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const loc = useLocation();
+
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [loc.pathname]);
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setDrawerOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [drawerOpen]);
+
   return (
     <div className={ADMIN_SHELL_CLS}>
-      <aside className={ADMIN_SIDEBAR_CLS} aria-label="Админ цэс">
+      {drawerOpen && (
+        <button
+          type="button"
+          onClick={() => setDrawerOpen(false)}
+          aria-label="Цэс хаах"
+          className="fixed inset-0 z-[80] hidden max-[980px]:block bg-black/40 backdrop-blur-[2px] animate-admin-fade-in"
+        />
+      )}
+      <aside
+        className={`${ADMIN_SIDEBAR_CLS} max-[980px]:fixed max-[980px]:inset-y-0 max-[980px]:left-0 max-[980px]:z-[90] max-[980px]:w-[260px] max-[980px]:shadow-[0_24px_48px_-12px_rgba(0,0,0,0.18)] max-[980px]:transition-transform max-[980px]:duration-200 ${
+          drawerOpen
+            ? "max-[980px]:translate-x-0"
+            : "max-[980px]:-translate-x-full"
+        }`}
+        aria-label="Админ цэс"
+      >
         <div className={ADMIN_BRAND_CLS}>
           <div className={ADMIN_BRAND_MARK_CLS}>TC</div>
           <div className={ADMIN_BRAND_TEXT_CLS}>
@@ -146,10 +182,32 @@ function AdminShell({
 
       <div className={ADMIN_MAIN_CLS}>
         <header className={ADMIN_TOPBAR_CLS}>
+          <button
+            type="button"
+            onClick={() => setDrawerOpen(true)}
+            aria-label="Цэс нээх"
+            className="hidden max-[980px]:inline-flex h-9 w-9 mr-2 items-center justify-center rounded-md text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
           <h1>{title}</h1>
           <div className={ADMIN_TOPBAR_SPACER_CLS} />
           <div className={ADMIN_TOPBAR_USER_CLS}>
-            <span>{fullname || identifier}</span>
+            <span className="max-[640px]:hidden">{fullname || identifier}</span>
             <span className={ADMIN_AVATAR_CLS} aria-hidden="true">
               {initials}
             </span>

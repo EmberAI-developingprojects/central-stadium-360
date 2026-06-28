@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   deleteEvent,
@@ -9,10 +9,16 @@ import type { AdminEventRecord } from "../../data/store";
 import type { EventStatus } from "@cs360/shared";
 import { useConfirm } from "../components/ConfirmDialog";
 import { useToast } from "../components/Toast";
+import { EmptyState } from "../components/EmptyState";
+import {
+  SkeletonFilters,
+  SkeletonStatGrid,
+  SkeletonTable,
+} from "../components/Skeleton";
+import { useSearchHotkey } from "../hooks/useSearchHotkey";
 import {
   ADMIN_BTN_CLS,
   ADMIN_BTN_PRIMARY_CLS,
-  ADMIN_EMPTY_CLS,
   ADMIN_FILTERS_CLS,
   ADMIN_PAGE_HEADER_CLS,
   ADMIN_TABLE_CLS,
@@ -106,6 +112,8 @@ export default function EventsList() {
   const [salesByEvent, setSalesByEvent] = useState<Record<string, number>>({});
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const searchRef = useRef<HTMLInputElement | null>(null);
+  useSearchHotkey(searchRef);
   const load = () => {
     Promise.all([listAdminEvents(), listOrders({ status: "paid" })]).then(
       ([evts, orders]) => {
@@ -176,7 +184,21 @@ export default function EventsList() {
     });
   }, [enriched, q, statusFilter]);
 
-  if (!events) return <div className={ADMIN_EMPTY_CLS}>Уншиж байна…</div>;
+  if (!events) {
+    return (
+      <>
+        <div className={ADMIN_PAGE_HEADER_CLS}>
+          <div>
+            <h2>Арга хэмжээ</h2>
+            <p>Удахгүй болох тоглолтуудыг үүсгэх, засах.</p>
+          </div>
+        </div>
+        <SkeletonStatGrid count={3} />
+        <SkeletonFilters />
+        <SkeletonTable columns={6} rows={6} />
+      </>
+    );
+  }
 
   return (
     <>
@@ -241,12 +263,36 @@ export default function EventsList() {
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
             <input
+              ref={searchRef}
               type="search"
-              placeholder="Гарчиг / ангилалаар хайх…"
+              placeholder="Хайх"
               value={q}
               onChange={(e) => setQ(e.target.value)}
               className="!pl-9"
             />
+            {q && (
+              <button
+                type="button"
+                onClick={() => setQ("")}
+                aria-label="Хайлт цэвэрлэх"
+                className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-6 w-6 items-center justify-center rounded text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100"
+              >
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            )}
           </div>
           <div className="inline-flex bg-white border border-[#e4e4e7] rounded-md p-0.5 gap-0.5">
             {(
@@ -283,15 +329,38 @@ export default function EventsList() {
       )}
 
       {events.length === 0 ? (
-        <div className={ADMIN_EMPTY_CLS}>
-          <strong>Арга хэмжээ алга</strong>
-          Эхлэхийн тулд «Шинэ арга хэмжээ» товч дээр дарна уу.
-        </div>
+        <EmptyState
+          title="Арга хэмжээ алга"
+          description="Эхлэхийн тулд «Шинэ арга хэмжээ» товч дээр дарна уу."
+          action={
+            <Link
+              to="/admin/events/new"
+              className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_PRIMARY_CLS}`}
+            >
+              + Шинэ арга хэмжээ
+            </Link>
+          }
+        />
       ) : filtered.length === 0 ? (
-        <div className={ADMIN_EMPTY_CLS}>
-          <strong>Тохирох арга хэмжээ олдсонгүй</strong>
-          Хайлт болон шүүлтүүрээ тохируулна уу.
-        </div>
+        <EmptyState
+          variant="search"
+          title="Тохирох арга хэмжээ олдсонгүй"
+          description="Хайлт болон шүүлтүүрээ тохируулна уу."
+          action={
+            (q || statusFilter !== "all") && (
+              <button
+                type="button"
+                className={ADMIN_BTN_CLS}
+                onClick={() => {
+                  setQ("");
+                  setStatusFilter("all");
+                }}
+              >
+                Шүүлтүүр арилгах
+              </button>
+            )
+          }
+        />
       ) : (
         <div className={ADMIN_TABLE_WRAP_CLS}>
           <table className={ADMIN_TABLE_CLS}>

@@ -347,7 +347,7 @@ export default function RegisterPhone() {
                   className={REG_INPUT_PHONE_CLS}
                   type="tel"
                   name="phone"
-                  placeholder="8800 0000"
+                  placeholder="Утас"
                   inputMode="numeric"
                   maxLength={9}
                   autoComplete="tel-national"

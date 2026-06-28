@@ -5,6 +5,8 @@ import { getHomeContent, updateHomeContent } from "../../data/store";
 import { api } from "../../lib/api";
 import { useToast } from "../components/Toast";
 import { useConfirm } from "../components/ConfirmDialog";
+import { EmptyState } from "../components/EmptyState";
+import { SkeletonCardList } from "../components/Skeleton";
 import type {
   HomeContent,
   NewsItem,
@@ -20,7 +22,6 @@ import {
   ADMIN_BTN_PRIMARY_CLS,
   ADMIN_BTN_SM_CLS,
   ADMIN_CARD_CLS,
-  ADMIN_EMPTY_CLS,
   ADMIN_FIELD_CLS,
   ADMIN_FORM_ROW_CLS,
   ADMIN_IMAGE_PREVIEW_CLS,
@@ -74,7 +75,19 @@ export default function Content() {
     getHomeContent().then(setContent);
   }, []);
 
-  if (!content) return <div className={ADMIN_EMPTY_CLS}>Уншиж байна…</div>;
+  if (!content) {
+    return (
+      <>
+        <div className={ADMIN_PAGE_HEADER_CLS}>
+          <div>
+            <h2>Контент засварлагч</h2>
+            <p>Нүүр хуудсанд харагдах мэдээ, хамтрагчийн картууд.</p>
+          </div>
+        </div>
+        <SkeletonCardList rows={4} />
+      </>
+    );
+  }
 
   const section = content[tab] || [];
 
@@ -251,10 +264,19 @@ export default function Content() {
       </div>
 
       {section.length === 0 ? (
-        <div className={ADMIN_EMPTY_CLS}>
-          <strong>Мөр алга</strong>
-          «+ Шинэ мөр» товчоор шинээр нэмнэ үү.
-        </div>
+        <EmptyState
+          title="Мөр алга"
+          description="«+ Шинэ мөр» товчоор шинээр нэмнэ үү."
+          action={
+            <button
+              type="button"
+              className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_PRIMARY_CLS}`}
+              onClick={addItem}
+            >
+              + Шинэ мөр
+            </button>
+          }
+        />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {tab === "news" &&
@@ -615,7 +637,7 @@ function NewsRow({
           <input
             value={item.image || ""}
             onChange={(e) => onChange({ image: e.target.value })}
-            placeholder="https://… эсвэл доороос файл оруулна уу"
+            placeholder="Зургийн URL"
           />
         </div>
       </div>
@@ -696,69 +718,41 @@ function EnglishSection({
   const hasAny = !!(item.titleEn || item.bodyEn || item.labelEn);
   const [open, setOpen] = useState(hasAny);
   return (
-    <div
-      style={{
-        marginTop: 18,
-        borderTop: "1px dashed #ececef",
-        paddingTop: 14,
-      }}
-    >
+    <div style={{ marginTop: 8, paddingTop: 16, borderTop: "1px solid #ececef" }}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 8,
-          background: "transparent",
-          border: 0,
-          padding: 0,
-          cursor: "pointer",
-          color: "#1f2937",
-          fontSize: 13,
-          fontWeight: 600,
-        }}
+        className="inline-flex items-center gap-1.5 bg-transparent border-0 p-0 cursor-pointer text-zinc-600 hover:text-zinc-900 text-[12.5px] font-medium transition-colors"
       >
-        <span
-          style={{
-            display: "inline-flex",
-            transition: "transform .15s ease",
-            transform: open ? "rotate(90deg)" : "rotate(0deg)",
-          }}
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="transition-transform text-zinc-400"
+          style={{ transform: open ? "rotate(90deg)" : "rotate(0deg)" }}
           aria-hidden="true"
         >
-          ▸
-        </span>
-        English хувилбар (заавал биш)
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+        Англи орчуулга
         {hasAny && !open && (
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              color: "#059669",
-              background: "#d1fae5",
-              borderRadius: 6,
-              padding: "2px 8px",
-            }}
-          >
-            Бөглөсөн
-          </span>
+          <span className="text-[11px] text-zinc-400">· бөглөсөн</span>
         )}
       </button>
       {open && (
-        <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ fontSize: 12, color: "#64748b" }}>
-            Хэрэв сайтын хэлийг англи болгоход энэ мэдээг англиар харуулахыг
-            хүсвэл доорх талбаруудыг өөрөө орчуулж бөглөнө үү. Хоосон үлдээвэл
-            монгол хувилбар нь харагдана.
-          </div>
+        <div className="mt-3 flex flex-col gap-4">
           <div className={ADMIN_FORM_ROW_CLS}>
             <div className={ADMIN_FIELD_CLS}>
               <label>Шошго (EN)</label>
               <input
                 value={item.labelEn || ""}
                 onChange={(e) => onChange({ labelEn: e.target.value })}
-                placeholder="e.g. New"
+                placeholder="Label"
               />
             </div>
             <div className={ADMIN_FIELD_CLS}>
@@ -766,7 +760,7 @@ function EnglishSection({
               <input
                 value={item.titleEn || ""}
                 onChange={(e) => onChange({ titleEn: e.target.value })}
-                placeholder="English title"
+                placeholder="Title"
               />
             </div>
           </div>
@@ -879,7 +873,7 @@ function PartnerRow({
           <input
             value={item.image || ""}
             onChange={(e) => onChange({ image: e.target.value })}
-            placeholder="https://… эсвэл доороос файл сонгоно уу"
+            placeholder="Зургийн URL"
           />
         </div>
         <div className={ADMIN_FIELD_CLS}>
@@ -887,7 +881,7 @@ function PartnerRow({
           <input
             value={item.alt || ""}
             onChange={(e) => onChange({ alt: e.target.value })}
-            placeholder="Жишээ нь: Партнёр байгууллагын лого"
+            placeholder="Тайлбар"
           />
         </div>
       </div>

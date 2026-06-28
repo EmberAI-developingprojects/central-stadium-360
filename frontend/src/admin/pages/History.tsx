@@ -8,12 +8,13 @@ import type { HistoryFigure } from "../../data/history";
 import { api } from "../../lib/api";
 import { useConfirm } from "../components/ConfirmDialog";
 import { useToast } from "../components/Toast";
+import { EmptyState } from "../components/EmptyState";
+import { SkeletonCardList } from "../components/Skeleton";
 import {
   ADMIN_BTN_CLS,
   ADMIN_BTN_DANGER_CLS,
   ADMIN_BTN_PRIMARY_CLS,
   ADMIN_BTN_SM_CLS,
-  ADMIN_EMPTY_CLS,
   ADMIN_FIELD_CLS,
   ADMIN_FORM_ROW_CLS,
   ADMIN_PAGE_HEADER_CLS,
@@ -45,7 +46,22 @@ export default function HistoryAdmin() {
     };
   }, []);
 
-  if (!items) return <div className={ADMIN_EMPTY_CLS}>Уншиж байна…</div>;
+  if (!items) {
+    return (
+      <>
+        <div className={ADMIN_PAGE_HEADER_CLS}>
+          <div>
+            <h2>Түүхэн хэсэг</h2>
+            <p>
+              Төв цэнгэлдэх хүрээлэнгийн түүхэн хүмүүсийг (гүйцэтгэх захирал гэх
+              мэт) карт хэлбэрээр нэмж засварлана.
+            </p>
+          </div>
+        </div>
+        <SkeletonCardList rows={4} />
+      </>
+    );
+  }
 
   const openAdd = () => {
     setEditing({ ...newHistoryFigure(), role: DEFAULT_ROLE });
@@ -122,10 +138,10 @@ export default function HistoryAdmin() {
       </div>
 
       {items.length === 0 ? (
-        <div className={ADMIN_EMPTY_CLS}>
-          <strong>Одоогоор түүхэн хүн бүртгээгүй байна</strong>
-          Дээрх "Шинээр нэмэх" товчийг дарж эхний картаа үүсгэнэ үү.
-        </div>
+        <EmptyState
+          title="Одоогоор түүхэн хүн бүртгээгүй байна"
+          description="Дээр баруун буланд байрлах «+ Шинээр нэмэх» товч дээр дарж эхний картаа үүсгэнэ үү."
+        />
       ) : (
         <div className="flex flex-col gap-3">
           {items.map((it, idx) => (
@@ -304,7 +320,7 @@ function FigureModal({
               type="text"
               value={draft.name}
               onChange={(e) => patch({ name: e.target.value })}
-              placeholder="Жнь: Дэмбэрэлийн Дамдин"
+              placeholder="Нэр"
               autoFocus
             />
           </div>
@@ -316,7 +332,7 @@ function FigureModal({
                 type="text"
                 value={draft.yearStart}
                 onChange={(e) => patch({ yearStart: e.target.value })}
-                placeholder="1958"
+                placeholder="Хэдэн оноос"
               />
             </div>
             <div className={ADMIN_FIELD_CLS}>
@@ -325,7 +341,7 @@ function FigureModal({
                 type="text"
                 value={draft.yearEnd}
                 onChange={(e) => patch({ yearEnd: e.target.value })}
-                placeholder="1965 (өнөөг хүртэл бол хоосон)"
+                placeholder="Хэдэн он хүртэл"
               />
             </div>
           </div>
@@ -341,10 +357,12 @@ function FigureModal({
             <textarea
               value={draft.bio}
               onChange={(e) => patch({ bio: e.target.value })}
-              placeholder="Энэ хүний түүхэн үүрэг, гавьяа, дурсамж…"
+              placeholder="Намтар"
               rows={6}
             />
           </div>
+
+          <FigureEnglishSection draft={draft} patch={patch} />
         </div>
 
         <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-[#ececef] bg-[#fafafa]">
@@ -366,6 +384,79 @@ function FigureModal({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function FigureEnglishSection({
+  draft,
+  patch,
+}: {
+  draft: HistoryFigure;
+  patch: (p: Partial<HistoryFigure>) => void;
+}) {
+  const hasAny = !!(draft.nameEn || draft.roleEn || draft.bioEn);
+  const [open, setOpen] = useState(hasAny);
+  return (
+    <div style={{ marginTop: 8, paddingTop: 16, borderTop: "1px solid #ececef" }}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center gap-1.5 bg-transparent border-0 p-0 cursor-pointer text-zinc-600 hover:text-zinc-900 text-[12.5px] font-medium transition-colors"
+      >
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="transition-transform text-zinc-400"
+          style={{ transform: open ? "rotate(90deg)" : "rotate(0deg)" }}
+          aria-hidden="true"
+        >
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+        Англи орчуулга
+        {hasAny && !open && (
+          <span className="text-[11px] text-zinc-400">· бөглөсөн</span>
+        )}
+      </button>
+      {open && (
+        <div className="mt-3 flex flex-col gap-4">
+          <div className={ADMIN_FORM_ROW_CLS}>
+            <div className={ADMIN_FIELD_CLS}>
+              <label>Нэр (EN)</label>
+              <input
+                type="text"
+                value={draft.nameEn}
+                onChange={(e) => patch({ nameEn: e.target.value })}
+                placeholder="Name"
+              />
+            </div>
+            <div className={ADMIN_FIELD_CLS}>
+              <label>Албан тушаал (EN)</label>
+              <input
+                type="text"
+                value={draft.roleEn}
+                onChange={(e) => patch({ roleEn: e.target.value })}
+                placeholder="Role"
+              />
+            </div>
+          </div>
+          <div className={ADMIN_FIELD_CLS}>
+            <label>Намтар (EN)</label>
+            <textarea
+              value={draft.bioEn}
+              onChange={(e) => patch({ bioEn: e.target.value })}
+              placeholder="Biography"
+              rows={6}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

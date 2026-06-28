@@ -203,7 +203,7 @@ export default function EventZonesEditor({ eventId }: { eventId: string }) {
                 <input
                   value={r.name_mn}
                   onChange={(e) => patchRow(idx, { name_mn: e.target.value })}
-                  placeholder="VIP — Ширээний үйлчилгээ"
+                  placeholder="Бүсийн нэр"
                 />
               </div>
               <div className={ADMIN_FIELD_CLS}>
@@ -211,7 +211,7 @@ export default function EventZonesEditor({ eventId }: { eventId: string }) {
                 <input
                   value={r.name_en}
                   onChange={(e) => patchRow(idx, { name_en: e.target.value })}
-                  placeholder="VIP — Table service"
+                  placeholder="Name"
                 />
               </div>
             </div>

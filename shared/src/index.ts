@@ -139,6 +139,9 @@ export interface DbHistoryFigure {
   year_end: string;
   image: string | null;
   bio: string;
+  name_en: string | null;
+  role_en: string | null;
+  bio_en: string | null;
   sort_order: number;
   created_at: string;
 }

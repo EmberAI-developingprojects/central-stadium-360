@@ -1,9 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { listOrders } from "../../data/store";
 import type { OrderRecord, OrderStatus } from "../../data/store";
+import { EmptyState } from "../components/EmptyState";
 import {
-  ADMIN_EMPTY_CLS,
+  SkeletonFilters,
+  SkeletonStatGrid,
+  SkeletonTable,
+} from "../components/Skeleton";
+import { useDebouncedValue } from "../hooks/useDebouncedValue";
+import { useSearchHotkey } from "../hooks/useSearchHotkey";
+import {
+  ADMIN_BTN_CLS,
   ADMIN_FILTERS_CLS,
   ADMIN_PAGE_HEADER_CLS,
   ADMIN_TABLE_CLS,
@@ -45,14 +53,17 @@ export default function OrdersList() {
   const [allOrders, setAllOrders] = useState<OrderRecord[] | null>(null);
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<StatusFilter>("all");
+  const debouncedQ = useDebouncedValue(q, 250);
+  const searchRef = useRef<HTMLInputElement | null>(null);
+  useSearchHotkey(searchRef);
 
   useEffect(() => {
     listOrders().then(setAllOrders);
   }, []);
 
   useEffect(() => {
-    listOrders({ q, status }).then(setOrders);
-  }, [q, status]);
+    listOrders({ q: debouncedQ, status }).then(setOrders);
+  }, [debouncedQ, status]);
 
   const stats = useMemo(() => {
     const list = allOrders || [];
@@ -78,7 +89,9 @@ export default function OrdersList() {
         </div>
       </div>
 
-      {allOrders && allOrders.length > 0 && (
+      {!allOrders ? (
+        <SkeletonStatGrid count={2} />
+      ) : allOrders.length > 0 ? (
         <div className="grid gap-3 mb-5 [grid-template-columns:repeat(2,minmax(0,1fr))] max-[980px]:[grid-template-columns:1fr]">
           <StatCard label="Нийт захиалга" value={stats.total.toString()} />
           <StatCard
@@ -87,7 +100,7 @@ export default function OrdersList() {
             accent={stats.refunded > 0 ? "refunded" : undefined}
           />
         </div>
-      )}
+      ) : null}
 
       <div className={ADMIN_FILTERS_CLS}>
         <div className="relative">
@@ -107,12 +120,36 @@ export default function OrdersList() {
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
           <input
+            ref={searchRef}
             type="search"
-            placeholder="Код, хэрэглэгч, арга хэмжээгээр хайх…"
+            placeholder="Хайх"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             className="!pl-9 !min-w-[300px]"
           />
+          {q && (
+            <button
+              type="button"
+              onClick={() => setQ("")}
+              aria-label="Хайлт цэвэрлэх"
+              className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-6 w-6 items-center justify-center rounded text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100"
+            >
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          )}
         </div>
         <div className="inline-flex bg-white border border-[#e4e4e7] rounded-md p-0.5 gap-0.5">
           {(
@@ -148,14 +185,32 @@ export default function OrdersList() {
       </div>
 
       {!orders ? (
-        <div className={ADMIN_EMPTY_CLS}>Уншиж байна…</div>
+        <SkeletonTable columns={8} rows={6} />
       ) : orders.length === 0 ? (
-        <div className={ADMIN_EMPTY_CLS}>
-          <strong>Захиалга алга</strong>
-          {q || status !== "all"
-            ? "Хайлтын үр дүнд таарсан захиалга алга байна."
-            : "Одоогоор захиалга бүртгэгдээгүй байна."}
-        </div>
+        q || status !== "all" ? (
+          <EmptyState
+            variant="search"
+            title="Тохирох захиалга олдсонгүй"
+            description="Хайлтын үр дүнд таарсан захиалга алга байна."
+            action={
+              <button
+                type="button"
+                className={ADMIN_BTN_CLS}
+                onClick={() => {
+                  setQ("");
+                  setStatus("all");
+                }}
+              >
+                Шүүлтүүр арилгах
+              </button>
+            }
+          />
+        ) : (
+          <EmptyState
+            title="Захиалга алга"
+            description="Одоогоор захиалга бүртгэгдээгүй байна."
+          />
+        )
       ) : (
         <div className={ADMIN_TABLE_WRAP_CLS}>
           <table className={ADMIN_TABLE_CLS}>

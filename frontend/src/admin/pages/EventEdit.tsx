@@ -18,13 +18,13 @@ import { useConfirm } from "../components/ConfirmDialog";
 import DatePicker from "../components/DatePicker";
 import EventZonesEditor from "../components/EventZonesEditor";
 import { useToast } from "../components/Toast";
+import { LoadingState } from "../components/Skeleton";
 import {
   ADMIN_ALERT_CLS,
   ADMIN_BTN_CLS,
   ADMIN_BTN_DANGER_CLS,
   ADMIN_BTN_GHOST_CLS,
   ADMIN_BTN_SM_CLS,
-  ADMIN_EMPTY_CLS,
   ADMIN_FIELD_CLS,
   ADMIN_PAGE_HEADER_CLS,
 } from "../_adminStyles";
@@ -172,7 +172,7 @@ export default function EventEdit() {
     });
   }, [id, isNew]);
 
-  if (!loaded) return <div className={ADMIN_EMPTY_CLS}>Уншиж байна…</div>;
+  if (!loaded) return <LoadingState label="Арга хэмжээ уншиж байна…" />;
 
   const update = (patch: Partial<EventRecord>) =>
     setForm((f) => ({ ...f, ...patch }));
@@ -366,7 +366,7 @@ export default function EventEdit() {
                     onChange={(e) =>
                       update({ title: e.target.value.slice(0, 120) })
                     }
-                    placeholder="Тоглолтын нэр"
+                    placeholder="Нэр"
                     maxLength={120}
                     required
                   />
@@ -577,7 +577,7 @@ export default function EventEdit() {
                     onChange={(e) =>
                       update({ desc: e.target.value.slice(0, 600) })
                     }
-                    placeholder="Тоглолтын талаар товч мэдээлэл, онцлох тоглогчид, тусгай мэдэгдэл…"
+                    placeholder="Тайлбар"
                     rows={5}
                     maxLength={600}
                   />
@@ -671,7 +671,7 @@ export default function EventEdit() {
                             n > 0 ? addDaysIso(form.live_end_at, n) : null,
                         });
                       }}
-                      placeholder="Хэд хоногийн турш нөхөж үзэх боломжтой өдрийн тоог оруул"
+                      placeholder="Хоногийн тоо"
                       className="!pr-16 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0"
                       disabled={!form.live_end_at}
                     />
@@ -903,7 +903,7 @@ export default function EventEdit() {
                     id="evt-img-url"
                     value={form.image}
                     onChange={(e) => update({ image: e.target.value })}
-                    placeholder="https://… эсвэл /assets/images/events/…"
+                    placeholder="Зургийн URL"
                   />
                 </div>
               </div>
@@ -1000,34 +1000,34 @@ function EventEnglishSection({
   const hasAny = !!(form.titleEn || form.descEn);
   const [open, setOpen] = useState(hasAny);
   return (
-    <div className="mt-4 rounded-2xl bg-gradient-to-br from-indigo-50 to-blue-50 border border-solid border-indigo-200/70 shadow-[0_2px_8px_-2px_rgba(34,48,198,0.08)] p-5">
+    <div style={{ marginTop: 8, paddingTop: 16, borderTop: "1px solid #ececef" }}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-2.5 bg-transparent border-0 p-0 cursor-pointer text-indigo-900 text-[14px] font-bold"
+        className="inline-flex items-center gap-1.5 bg-transparent border-0 p-0 cursor-pointer text-zinc-600 hover:text-zinc-900 text-[12.5px] font-medium transition-colors"
       >
-        <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-indigo-600 text-white text-[12px] font-extrabold tracking-wider shadow-sm">
-          EN
-        </span>
-        <span
-          className="inline-flex transition-transform text-indigo-500"
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="transition-transform text-zinc-400"
           style={{ transform: open ? "rotate(90deg)" : "rotate(0deg)" }}
           aria-hidden="true"
         >
-          ▸
-        </span>
-        English хувилбар <span className="text-[12px] font-medium text-indigo-500">(заавал биш)</span>
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+        Англи орчуулга
         {hasAny && !open && (
-          <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-100 rounded-md px-2 py-0.5">
-            ✓ Бөглөсөн
-          </span>
+          <span className="text-[11px] text-zinc-400">· бөглөсөн</span>
         )}
       </button>
       {open && (
-        <div className="mt-4 flex flex-col gap-3">
-          <div className="text-[12.5px] text-indigo-900/75 leading-relaxed bg-white/60 rounded-lg px-3 py-2.5 border border-solid border-indigo-100">
-            💡 Сайтын хэлийг англи болгож харахад энэ арга хэмжээг англиар харуулахыг хүсвэл доорх талбаруудыг бөглөнө үү. Хоосон үлдээвэл монгол хувилбар нь харагдана.
-          </div>
+        <div className="mt-3 flex flex-col gap-4">
           <div className={ADMIN_FIELD_CLS}>
             <label htmlFor="evt-title-en" className="flex items-center justify-between">
               <span>Гарчиг (EN)</span>
@@ -1039,7 +1039,7 @@ function EventEnglishSection({
               id="evt-title-en"
               value={form.titleEn || ""}
               onChange={(e) => update({ titleEn: e.target.value.slice(0, 120) })}
-              placeholder="English title"
+              placeholder="Name"
               maxLength={120}
             />
           </div>
@@ -1054,7 +1054,7 @@ function EventEnglishSection({
               id="evt-desc-en"
               value={form.descEn || ""}
               onChange={(e) => update({ descEn: e.target.value.slice(0, 600) })}
-              placeholder="Short summary in English…"
+              placeholder="Description"
               rows={5}
               maxLength={600}
             />

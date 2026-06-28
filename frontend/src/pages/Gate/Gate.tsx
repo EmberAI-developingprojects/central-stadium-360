@@ -311,7 +311,7 @@ function Scanner({
             inputMode="text"
             autoComplete="off"
             spellCheck={false}
-            placeholder="Тасалбарын код…"
+            placeholder="Тасалбарын код"
             className="h-14 px-4 rounded-xl bg-zinc-900 border border-zinc-800 text-white text-[18px] font-mono tracking-wide text-center outline-none focus:border-zinc-600 disabled:opacity-40"
           />
           <button

@@ -25,6 +25,91 @@ const CARD_BODY_CLS = "p-6 flex flex-col gap-5";
 const TWO_COL_CLS =
   "grid gap-5 [grid-template-columns:repeat(2,minmax(0,1fr))] max-[760px]:[grid-template-columns:1fr]";
 
+function EventEnglishSection({
+  nameEn,
+  descEn,
+  onChangeName,
+  onChangeDesc,
+}: {
+  nameEn: string;
+  descEn: string;
+  onChangeName: (v: string) => void;
+  onChangeDesc: (v: string) => void;
+}) {
+  const hasAny = !!(nameEn || descEn);
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ marginTop: 8, paddingTop: 16, borderTop: "1px solid #ececef" }}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center gap-1.5 bg-transparent border-0 p-0 cursor-pointer text-zinc-600 hover:text-zinc-900 text-[12.5px] font-medium transition-colors"
+      >
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="transition-transform text-zinc-400"
+          style={{ transform: open ? "rotate(90deg)" : "rotate(0deg)" }}
+          aria-hidden="true"
+        >
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+        Англи орчуулга
+        {hasAny && !open && (
+          <span className="text-[11px] text-zinc-400">· бөглөсөн</span>
+        )}
+      </button>
+      {open && (
+        <div className="mt-3 flex flex-col gap-4">
+          <div className={ADMIN_FIELD_CLS}>
+            <label
+              htmlFor="ev-name-en"
+              className="flex items-center justify-between"
+            >
+              <span>Нэр (EN)</span>
+              <span className="text-[11px] text-zinc-400 font-normal">
+                {nameEn.length}/120
+              </span>
+            </label>
+            <input
+              id="ev-name-en"
+              value={nameEn}
+              onChange={(e) => onChangeName(e.target.value.slice(0, 120))}
+              placeholder="Name"
+              maxLength={120}
+            />
+          </div>
+          <div className={ADMIN_FIELD_CLS}>
+            <label
+              htmlFor="ev-desc-en"
+              className="flex items-center justify-between"
+            >
+              <span>Тайлбар (EN)</span>
+              <span className="text-[11px] text-zinc-400 font-normal">
+                {descEn.length}/600
+              </span>
+            </label>
+            <textarea
+              id="ev-desc-en"
+              value={descEn}
+              onChange={(e) => onChangeDesc(e.target.value.slice(0, 600))}
+              placeholder="Description"
+              rows={5}
+              maxLength={600}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function combineDateTime(date: string, time: string): string | null {
   if (!date || !time) return null;
   const d = new Date(`${date}T${time}`);
@@ -51,6 +136,8 @@ export default function EventCreate() {
   const [livePrice, setLivePrice] = useState("");
   const [replayPrice, setReplayPrice] = useState("");
   const [thumbnailUrl, setThumbnailUrl] = useState("");
+  const [nameEn, setNameEn] = useState("");
+  const [descEn, setDescEn] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -98,6 +185,8 @@ export default function EventCreate() {
       const created = await createEvent({
         title: name.trim(),
         desc: trimmedDesc || undefined,
+        titleEn: nameEn.trim() || undefined,
+        descEn: descEn.trim() || undefined,
         start_time: startTimeIso,
         base: Number(livePrice) || 0,
         live_price: Number(livePrice) || 0,
@@ -150,7 +239,7 @@ export default function EventCreate() {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Тоглолтын нэр"
+                placeholder="Нэр"
                 required
               />
             </div>
@@ -169,7 +258,7 @@ export default function EventCreate() {
                 id="ev-desc"
                 value={desc}
                 onChange={(e) => setDesc(e.target.value.slice(0, 600))}
-                placeholder="Тоглолтын талаар товч мэдээлэл, онцлох тоглогчид, тусгай мэдэгдэл…"
+                placeholder="Тайлбар"
                 rows={5}
                 maxLength={600}
               />
@@ -218,6 +307,13 @@ export default function EventCreate() {
               </div>
             </div>
 
+            <EventEnglishSection
+              nameEn={nameEn}
+              descEn={descEn}
+              onChangeName={setNameEn}
+              onChangeDesc={setDescEn}
+            />
+
             <div className={ADMIN_FIELD_CLS}>
               <label htmlFor="ev-thumb">Нүүр зургийн URL</label>
               <input
@@ -225,7 +321,7 @@ export default function EventCreate() {
                 type="url"
                 value={thumbnailUrl}
                 onChange={(e) => setThumbnailUrl(e.target.value)}
-                placeholder="https://…/cover.jpg"
+                placeholder="Зургийн URL"
               />
             </div>
           </div>
@@ -282,7 +378,7 @@ export default function EventCreate() {
                   onChange={(e) =>
                     setReplayDays(e.target.value.replace(/[^0-9]/g, ""))
                   }
-                  placeholder="Хэд хоногийн турш нөхөж үзэх боломжтой өдрийн тоог оруул"
+                  placeholder="Хоногийн тоо"
                   className="!pr-16 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0"
                 />
                 <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[12.5px] text-zinc-500">

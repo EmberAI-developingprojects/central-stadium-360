@@ -205,7 +205,7 @@ export default function Profile() {
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="Жишээ: 99999999"
+                placeholder="Утас"
                 autoComplete="tel"
                 inputMode="tel"
               />

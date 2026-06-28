@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getOrder } from "../../data/store";
 import type { OrderRecord } from "../../data/store";
+import { LoadingState } from "../components/Skeleton";
+import { EmptyState } from "../components/EmptyState";
 import {
   ADMIN_BTN_CLS,
   ADMIN_BTN_GHOST_CLS,
   ADMIN_CARD_CLS,
-  ADMIN_EMPTY_CLS,
   ADMIN_GRID_CLS,
   ADMIN_PAGE_HEADER_CLS,
 } from "../_adminStyles";
@@ -61,8 +62,7 @@ export default function OrderView() {
     getOrder(code).then((o) => setOrder(o));
   }, [code]);
 
-  if (order === undefined)
-    return <div className={ADMIN_EMPTY_CLS}>Уншиж байна…</div>;
+  if (order === undefined) return <LoadingState label="Захиалга уншиж байна…" />;
   if (!order) {
     return (
       <>
@@ -74,6 +74,16 @@ export default function OrderView() {
             ← Жагсаалт руу
           </Link>
         </div>
+        <EmptyState
+          variant="error"
+          title="Хүсэлт оруулсан захиалга байхгүй"
+          description="Код буруу эсвэл захиалга устгагдсан байж болзошгүй."
+          action={
+            <Link to="/admin/orders" className={ADMIN_BTN_CLS}>
+              ← Бүх захиалга
+            </Link>
+          }
+        />
       </>
     );
   }

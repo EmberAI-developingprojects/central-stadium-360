@@ -88,10 +88,31 @@ function sessionPrefixFromMasterKey(key: string): string | null {
 }
 
 type EndedJson = {
-  recording_duration_ms?: number;
   recording_started_at?: string;
   recording_ended_at?: string;
+  recording_status?: string;
+  media?: {
+    hls?: {
+      duration_ms?: number;
+    };
+  };
 };
+
+function endedDurationMs(ended: EndedJson | null): number | null {
+  if (!ended) return null;
+  const hlsMs = ended.media?.hls?.duration_ms;
+  if (typeof hlsMs === "number" && hlsMs > 0) return hlsMs;
+  const start = ended.recording_started_at
+    ? new Date(ended.recording_started_at).getTime()
+    : NaN;
+  const end = ended.recording_ended_at
+    ? new Date(ended.recording_ended_at).getTime()
+    : NaN;
+  if (Number.isFinite(start) && Number.isFinite(end) && end > start) {
+    return end - start;
+  }
+  return null;
+}
 
 async function readEndedJson(
   s3: S3Client,
@@ -171,8 +192,9 @@ async function evaluateSession(
   sessionPrefix: string,
 ): Promise<SessionStats> {
   const ended = await readEndedJson(s3, bucket, sessionPrefix);
-  if (ended && typeof ended.recording_duration_ms === "number") {
-    const durationSeconds = Math.floor(ended.recording_duration_ms / 1000);
+  const durationMs = endedDurationMs(ended);
+  if (ended && durationMs !== null) {
+    const durationSeconds = Math.floor(durationMs / 1000);
     return {
       sessionPrefix,
       durationSeconds,
@@ -184,7 +206,7 @@ async function evaluateSession(
   }
   const segmentCount = await countSegmentsFallback(s3, bucket, sessionPrefix);
   console.warn(
-    `[recordings] partial recording: ${sessionPrefix} missing events/recording-ended.json (segment_count=${segmentCount})`,
+    `[recordings] partial recording: ${sessionPrefix} missing or incomplete recording-ended.json (segment_count=${segmentCount})`,
   );
   return {
     sessionPrefix,

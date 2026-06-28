@@ -9,6 +9,9 @@ export type HistoryFigure = {
   yearEnd: string;
   image: string;
   bio: string;
+  nameEn: string;
+  roleEn: string;
+  bioEn: string;
   createdAt: string;
 };
 
@@ -21,6 +24,9 @@ function fromDb(row: DbHistoryFigure): HistoryFigure {
     yearEnd: row.year_end,
     image: row.image ?? "",
     bio: row.bio,
+    nameEn: row.name_en ?? "",
+    roleEn: row.role_en ?? "",
+    bioEn: row.bio_en ?? "",
     createdAt: row.created_at,
   };
 }
@@ -33,6 +39,9 @@ function toDbPayload(items: HistoryFigure[]): Partial<DbHistoryFigure>[] {
     year_end: it.yearEnd,
     image: it.image || null,
     bio: it.bio,
+    name_en: it.nameEn?.trim() ? it.nameEn : null,
+    role_en: it.roleEn?.trim() ? it.roleEn : null,
+    bio_en: it.bioEn?.trim() ? it.bioEn : null,
   }));
 }
 
@@ -81,6 +90,9 @@ export function newHistoryFigure(): HistoryFigure {
     yearEnd: "",
     image: "",
     bio: "",
+    nameEn: "",
+    roleEn: "",
+    bioEn: "",
     createdAt: new Date().toISOString(),
   };
 }

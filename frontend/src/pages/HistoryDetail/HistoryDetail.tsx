@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import SiteHeader from "../../components/SiteHeader";
 import SiteFooter from "../../components/SiteFooter";
 import useRevealOnScroll from "../../hooks/useRevealOnScroll";
 import { REVEAL_UP_CLS } from "../../hooks/_revealCls";
 import { listHistoryFigures } from "../../data/history";
 import type { HistoryFigure } from "../../data/history";
+import { pickHistoryLocale } from "../../lib/historyLocale";
 
 export default function HistoryDetail() {
   useRevealOnScroll();
+  const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const [all, setAll] = useState<HistoryFigure[] | null>(null);
 
@@ -20,7 +23,9 @@ export default function HistoryDetail() {
     return (
       <div className="min-h-screen bg-white">
         <SiteHeader />
-        <div className="py-24 text-center text-ink-soft">Уншиж байна…</div>
+        <div className="py-24 text-center text-ink-soft">
+          {t("history_detail_loading")}
+        </div>
         <SiteFooter />
       </div>
     );
@@ -34,16 +39,16 @@ export default function HistoryDetail() {
         <SiteHeader />
         <div className="max-w-screen-page mx-auto py-24 px-6 text-center">
           <h1 className="text-[28px] font-extrabold text-ink m-0 mb-3">
-            Олдсонгүй
+            {t("history_detail_not_found_title")}
           </h1>
           <p className="text-ink-soft mb-6">
-            Хүсэлт оруулсан түүхэн хүний мэдээлэл олдсонгүй.
+            {t("history_detail_not_found_desc")}
           </p>
           <Link
-            to="/history"
+            to="/about/intro#history"
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-brand-blue text-white text-[13px] font-semibold no-underline hover:bg-brand-blue-soft transition-colors"
           >
-            ← Түүхэн хэсэг рүү буцах
+            ← {t("history_detail_back_to_list")}
           </Link>
         </div>
         <SiteFooter />
@@ -53,8 +58,10 @@ export default function HistoryDetail() {
 
   const idx = all.findIndex((f) => f.id === figure.id);
   const others = all.filter((f) => f.id !== figure.id).slice(0, 3);
+  const loc = pickHistoryLocale(figure, i18n.language);
+  const presentLabel = t("about_history_present");
   const yearText = `${figure.yearStart}${
-    figure.yearEnd ? ` — ${figure.yearEnd}` : " — одоо"
+    figure.yearEnd ? ` — ${figure.yearEnd}` : ` — ${presentLabel}`
   }`;
   return (
     <div className="min-h-screen bg-[#fafaf7]">
@@ -75,7 +82,7 @@ export default function HistoryDetail() {
 
         <div className="relative max-w-screen-page mx-auto px-6 pt-32 pb-12 max-[920px]:pt-24 max-[920px]:pb-10 max-[640px]:px-5">
           <Link
-            to="/history"
+            to="/about/intro#history"
             className={`inline-flex items-center gap-2 text-white/85 text-[12.5px] font-semibold tracking-[0.12em] uppercase no-underline hover:text-white transition-colors mb-6 ${REVEAL_UP_CLS}`}
           >
             <svg
@@ -90,7 +97,7 @@ export default function HistoryDetail() {
             >
               <polyline points="15 18 9 12 15 6" />
             </svg>
-            Түүхэн хэсэг
+            {t("history_detail_back")}
           </Link>
 
           <div
@@ -98,14 +105,14 @@ export default function HistoryDetail() {
           >
             <span className="w-1.5 h-1.5 rounded-full bg-gold-pale" />
             <span className="text-[11px] font-semibold tracking-[0.18em] uppercase text-gold-pale">
-              {figure.role}
+              {loc.role}
             </span>
           </div>
 
           <h1
             className={`m-0 text-white font-extrabold leading-[1.06] tracking-[-0.025em] text-[56px] max-[920px]:text-[40px] max-[640px]:text-[28px] max-w-[820px] drop-shadow-[0_2px_14px_rgba(0,0,0,0.4)] ${REVEAL_UP_CLS}`}
           >
-            {figure.name}
+            {loc.name}
           </h1>
 
           <div
@@ -136,7 +143,7 @@ export default function HistoryDetail() {
                 {figure.image ? (
                   <img
                     src={figure.image}
-                    alt={figure.name}
+                    alt={loc.name}
                     className="block w-full h-auto object-contain"
                   />
                 ) : (
@@ -158,8 +165,14 @@ export default function HistoryDetail() {
 
               <div className="mt-7 px-1">
                 <div className="grid grid-cols-2 gap-5 max-[640px]:gap-4">
-                  <FactRow label="Албан тушаал" value={figure.role} />
-                  <FactRow label="Удирдсан хугацаа" value={yearText} />
+                  <FactRow
+                    label={t("history_detail_position_label")}
+                    value={loc.role}
+                  />
+                  <FactRow
+                    label={t("history_detail_tenure_label")}
+                    value={yearText}
+                  />
                 </div>
               </div>
             </aside>
@@ -171,20 +184,26 @@ export default function HistoryDetail() {
               <div className="flex items-center gap-3 mb-6">
                 <span className="w-10 h-px bg-gold-from" />
                 <span className="font-serif italic text-gold-from text-[14px] tracking-[0.04em]">
-                  Намтар
+                  {t("history_detail_bio_label")}
                 </span>
                 <span className="flex-1 h-px bg-[#ecece5]" />
               </div>
 
-              {figure.bio ? (
+              {loc.bioIsFallback && (
+                <div className="mb-5 px-4 py-3 rounded-lg bg-brand-blue/5 border border-brand-blue/15 text-brand-blue-darker text-[13px] leading-[1.55]">
+                  {t("history_detail_translation_pending")}
+                </div>
+              )}
+
+              {loc.bio ? (
                 <div className="text-ink text-[17px] leading-[1.8] tracking-[-0.005em] whitespace-pre-line max-[640px]:text-[15px] max-[640px]:leading-[1.72] [&_p]:m-0 [&_p+p]:mt-5 [&_p:first-child::first-letter]:text-[58px] [&_p:first-child::first-letter]:font-serif [&_p:first-child::first-letter]:font-bold [&_p:first-child::first-letter]:float-left [&_p:first-child::first-letter]:leading-[0.95] [&_p:first-child::first-letter]:mr-2.5 [&_p:first-child::first-letter]:mt-1 [&_p:first-child::first-letter]:text-brand-blue-darker max-[640px]:[&_p:first-child::first-letter]:text-[44px]">
-                  {figure.bio.split(/\n\n+/).map((para, i) => (
+                  {loc.bio.split(/\n\n+/).map((para, i) => (
                     <p key={i}>{para}</p>
                   ))}
                 </div>
               ) : (
                 <p className="text-zinc-400 italic m-0 text-[15px]">
-                  Намтрын мэдээлэл оруулагдаагүй байна.
+                  {t("history_detail_no_bio")}
                 </p>
               )}
 
@@ -211,14 +230,20 @@ export default function HistoryDetail() {
               <div className={`flex items-center gap-4 mb-8 ${REVEAL_UP_CLS}`}>
                 <span className="w-10 h-px bg-ink/30" />
                 <h2 className="m-0 font-serif italic text-ink text-[22px] tracking-[-0.01em] max-[640px]:text-[18px]">
-                  Бусад түүхэн хүмүүс
+                  {t("history_detail_others_heading")}
                 </h2>
                 <span className="flex-1 h-px bg-[#ecece5]" />
               </div>
 
               <div className="grid gap-5 [grid-template-columns:repeat(3,minmax(0,1fr))] max-[920px]:[grid-template-columns:repeat(2,minmax(0,1fr))] max-[600px]:[grid-template-columns:1fr]">
                 {others.map((o, i) => (
-                  <OtherFigureCard key={o.id} figure={o} stagger={i + 1} />
+                  <OtherFigureCard
+                    key={o.id}
+                    figure={o}
+                    stagger={i + 1}
+                    language={i18n.language}
+                    presentLabel={presentLabel}
+                  />
                 ))}
               </div>
             </div>
@@ -245,12 +270,17 @@ function FactRow({ label, value }: { label: string; value: string }) {
 function OtherFigureCard({
   figure,
   stagger,
+  language,
+  presentLabel,
 }: {
   figure: HistoryFigure;
   stagger: number;
+  language: string;
+  presentLabel: string;
 }) {
+  const loc = pickHistoryLocale(figure, language);
   const years = `${figure.yearStart}${
-    figure.yearEnd ? ` — ${figure.yearEnd}` : " — одоо"
+    figure.yearEnd ? ` — ${figure.yearEnd}` : ` — ${presentLabel}`
   }`;
   return (
     <Link
@@ -262,7 +292,7 @@ function OtherFigureCard({
         {figure.image ? (
           <img
             src={figure.image}
-            alt={figure.name}
+            alt={loc.name}
             loading="lazy"
             className="absolute inset-0 w-full h-full object-cover object-center [filter:saturate(0.92)] [transition:transform_.6s_cubic-bezier(.2,.8,.2,1),filter_.5s_ease] group-hover:scale-[1.05] group-hover:[filter:saturate(1)]"
           />
@@ -288,13 +318,13 @@ function OtherFigureCard({
             {years}
           </div>
           <div className="text-white text-[15px] font-bold leading-[1.25] drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
-            {figure.name}
+            {loc.name}
           </div>
         </div>
       </div>
       <div className="px-4 py-3.5 flex items-center justify-between">
         <span className="text-[11px] font-semibold tracking-[0.12em] uppercase text-ink-soft">
-          {figure.role}
+          {loc.role}
         </span>
         <svg
           width="13"

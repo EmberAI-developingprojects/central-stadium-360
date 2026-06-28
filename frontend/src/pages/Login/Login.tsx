@@ -233,7 +233,7 @@ export default function Login() {
                   inputMode="numeric"
                   autoComplete="one-time-code"
                   maxLength={8}
-                  placeholder="123456"
+                  placeholder="Код"
                   value={code}
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
                   required
