@@ -96,6 +96,7 @@ export type Partner = {
   id: string;
   image: string;
   alt: string;
+  href?: string;
 };
 
 export type RoadmapItem = {
@@ -346,7 +347,12 @@ function dbToNews(row: DbHomeNews): NewsItem {
   };
 }
 function dbToPartner(row: DbHomePartner): Partner {
-  return { id: row.id, image: row.image, alt: row.alt };
+  return {
+    id: row.id,
+    image: row.image,
+    alt: row.alt,
+    href: row.href || undefined,
+  };
 }
 function dbToRoadmap(row: DbHomeRoadmap): RoadmapItem {
   return {
@@ -381,7 +387,11 @@ function toNewsPayload(items: NewsItem[]): Partial<DbHomeNews>[] {
   }));
 }
 function toPartnerPayload(items: Partner[]): Partial<DbHomePartner>[] {
-  return items.map((it) => ({ image: it.image, alt: it.alt }));
+  return items.map((it) => ({
+    image: it.image,
+    alt: it.alt,
+    href: it.href ?? "",
+  }));
 }
 function toRoadmapPayload(items: RoadmapItem[]): Partial<DbHomeRoadmap>[] {
   return items.map((it) => ({

@@ -127,6 +127,11 @@ const REACTION_BY_ID: Record<ReactionId, (typeof REACTIONS)[number]> =
 
 const COOLDOWN_MS = 45_000;
 
+const MIN_ZOOM = 1;
+const MAX_ZOOM = 4;
+const ZOOM_STEP = 0.25;
+const BASE_FOV = 75;
+
 export function ViewerOverlay({
   session,
   featuredEvent,
@@ -174,6 +179,11 @@ export function ViewerOverlay({
   const [chatOpen, setChatOpen] = useState(false);
   const [lastActionAt, setLastActionAt] = useState<number | null>(null);
   const [, setCooldownTick] = useState(0);
+  const [zoom, setZoom] = useState(1);
+  const zoomRef = useRef(1);
+  useEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
 
   useEffect(() => {
     if (lastActionAt === null) return;
@@ -195,6 +205,10 @@ export function ViewerOverlay({
 
   const activeCam = cams[camIdx] ?? null;
   const is360 = activeCam?.type === "360";
+
+  useEffect(() => {
+    setZoom(1);
+  }, [activeCam?.id]);
 
   useEffect(() => {
     api.getWatchToken().then((res) => {
@@ -228,17 +242,10 @@ export function ViewerOverlay({
       let hls = hlsRef.current;
       if (!hls) {
         hls = new Hls({
-          // -1 lets ABR pick the starting rendition from measured bandwidth
-          // instead of pinning playback to the lowest level.
-          startLevel: -1,
-          // All cameras here are 360°: the viewer only sees a ~75° slice of the
-          // equirectangular frame, so we want the FULL source resolution and
-          // must NOT cap quality to the on-screen element size.
-          capLevelToPlayerSize: false,
-          // A little more buffer headroom so ABR can safely climb to the higher
-          // renditions without risking a rebuffer (still live-friendly).
-          maxBufferLength: 20,
-          maxMaxBufferLength: 60,
+          startLevel: 0,
+          capLevelToPlayerSize: true,
+          maxBufferLength: 10,
+          maxMaxBufferLength: 30,
           lowLatencyMode: true,
           backBufferLength: 0,
         });
@@ -248,13 +255,17 @@ export function ViewerOverlay({
             index: i,
             height: l.height,
             label:
-              l.height >= 1080
-                ? "1080p"
-                : l.height >= 720
-                  ? "720p"
-                  : l.height >= 480
-                    ? "480p"
-                    : `${l.height}p`,
+              l.height >= 2160
+                ? "2160p"
+                : l.height >= 1440
+                  ? "1440p"
+                  : l.height >= 1080
+                    ? "1080p"
+                    : l.height >= 720
+                      ? "720p"
+                      : l.height >= 480
+                        ? "480p"
+                        : `${l.height}p`,
           }));
           setQualityLevels(levels);
           video.play().catch(() => {});
@@ -369,6 +380,8 @@ export function ViewerOverlay({
       prevY = 0;
     let rotX = 0,
       rotY = 0;
+    let pinchInitialDist = 0;
+    let pinchInitialZoom = 1;
 
     const applyRot = () => {
       cam3.rotation.order = "YXZ";
@@ -383,8 +396,9 @@ export function ViewerOverlay({
     };
     const onMove = (x: number, y: number) => {
       if (!isDragging) return;
-      rotY += (x - prevX) * 0.25;
-      rotX = Math.max(-85, Math.min(85, rotX + (y - prevY) * 0.25));
+      const sens = 0.25 / Math.max(1, zoomRef.current);
+      rotY += (x - prevX) * sens;
+      rotX = Math.max(-85, Math.min(85, rotX + (y - prevY) * sens));
       prevX = x;
       prevY = y;
       applyRot();
@@ -397,11 +411,44 @@ export function ViewerOverlay({
     const onMouseMove = (e: MouseEvent) => onMove(e.clientX, e.clientY);
     const onTouchStart = (e: TouchEvent) => {
       e.preventDefault();
-      onDown(e.touches[0].clientX, e.touches[0].clientY);
+      if (e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        pinchInitialDist = Math.sqrt(dx * dx + dy * dy);
+        pinchInitialZoom = zoomRef.current;
+        isDragging = false;
+      } else if (e.touches.length === 1) {
+        onDown(e.touches[0].clientX, e.touches[0].clientY);
+      }
     };
     const onTouchMove = (e: TouchEvent) => {
       e.preventDefault();
-      onMove(e.touches[0].clientX, e.touches[0].clientY);
+      if (e.touches.length === 2 && pinchInitialDist > 0) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const ratio = dist / pinchInitialDist;
+        const next = Math.max(
+          MIN_ZOOM,
+          Math.min(MAX_ZOOM, pinchInitialZoom * ratio),
+        );
+        setZoom(next);
+      } else if (e.touches.length === 1) {
+        onMove(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    };
+    const onTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) pinchInitialDist = 0;
+      if (e.touches.length === 1) {
+        onDown(e.touches[0].clientX, e.touches[0].clientY);
+      } else if (e.touches.length === 0) {
+        onUp();
+      }
+    };
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const delta = -e.deltaY * 0.002;
+      setZoom((z) => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z + delta)));
     };
 
     canvas.addEventListener("mousedown", onMouseDown);
@@ -409,7 +456,9 @@ export function ViewerOverlay({
     window.addEventListener("mouseup", onUp);
     canvas.addEventListener("touchstart", onTouchStart, { passive: false });
     canvas.addEventListener("touchmove", onTouchMove, { passive: false });
-    canvas.addEventListener("touchend", onUp);
+    canvas.addEventListener("touchend", onTouchEnd);
+    canvas.addEventListener("touchcancel", onTouchEnd);
+    canvas.addEventListener("wheel", onWheel, { passive: false });
 
     const ro = new ResizeObserver(() => {
       renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
@@ -421,6 +470,11 @@ export function ViewerOverlay({
     let animId: number;
     const animate = () => {
       animId = requestAnimationFrame(animate);
+      const targetFov = BASE_FOV / Math.max(1, zoomRef.current);
+      if (Math.abs(cam3.fov - targetFov) > 0.01) {
+        cam3.fov = targetFov;
+        cam3.updateProjectionMatrix();
+      }
       texture.needsUpdate = true;
       renderer.render(scene, cam3);
     };
@@ -435,7 +489,9 @@ export function ViewerOverlay({
       window.removeEventListener("mouseup", onUp);
       canvas.removeEventListener("touchstart", onTouchStart);
       canvas.removeEventListener("touchmove", onTouchMove);
-      canvas.removeEventListener("touchend", onUp);
+      canvas.removeEventListener("touchend", onTouchEnd);
+      canvas.removeEventListener("touchcancel", onTouchEnd);
+      canvas.removeEventListener("wheel", onWheel);
     };
   }, [is360]);
 
@@ -506,13 +562,10 @@ export function ViewerOverlay({
     let lastTrigger = 0;
     const onChange = (e: MediaQueryListEvent) => {
       const doc = document as FullscreenDocument;
-      const inFs = !!(
-        doc.fullscreenElement || doc.webkitFullscreenElement
-      );
+      const inFs = !!(doc.fullscreenElement || doc.webkitFullscreenElement);
       const video = videoRef.current as VideoFullscreenElement | null;
       const inVideoFs =
-        !!doc.webkitFullscreenElement &&
-        doc.webkitFullscreenElement === video;
+        !!doc.webkitFullscreenElement && doc.webkitFullscreenElement === video;
       const now = Date.now();
       if (now - lastTrigger < 600) return;
       lastTrigger = now;
@@ -537,7 +590,6 @@ export function ViewerOverlay({
     mq.addListener(onChange);
     return () => mq.removeListener(onChange);
   }, [pseudoFs, toggleStageFs]);
-
 
   useEffect(() => {
     const onFs = () => {
@@ -1258,10 +1310,86 @@ export function ViewerOverlay({
             </div>
 
             <div className={VIEWER_CONTROLS_RIGHT_CLS}>
+              {is360 && (
+                <div
+                  className="inline-flex items-center gap-1 mr-1 max-[720px]:gap-0.5"
+                  role="group"
+                  aria-label="Зураг томруулах"
+                >
+                  <button
+                    type="button"
+                    className={VIEWER_ICON_BTN_CLS}
+                    onClick={() =>
+                      setZoom((z) =>
+                        Math.max(MIN_ZOOM, +(z - ZOOM_STEP).toFixed(2)),
+                      )
+                    }
+                    aria-label="Бага"
+                    title="Бага"
+                    disabled={zoom <= MIN_ZOOM}
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <circle cx="11" cy="11" r="7" />
+                      <line x1="21" y1="21" x2="16" y2="16" />
+                      <line x1="8" y1="11" x2="14" y2="11" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    className={VIEWER_ICON_BTN_CLS}
+                    onClick={() =>
+                      setZoom((z) =>
+                        Math.min(MAX_ZOOM, +(z + ZOOM_STEP).toFixed(2)),
+                      )
+                    }
+                    aria-label="Том"
+                    title="Том"
+                    disabled={zoom >= MAX_ZOOM}
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <circle cx="11" cy="11" r="7" />
+                      <line x1="21" y1="21" x2="16" y2="16" />
+                      <line x1="8" y1="11" x2="14" y2="11" />
+                      <line x1="11" y1="8" x2="11" y2="14" />
+                    </svg>
+                  </button>
+                  {zoom > MIN_ZOOM && (
+                    <button
+                      type="button"
+                      onClick={() => setZoom(1)}
+                      aria-label="Анхны хэмжээ"
+                      title="Reset"
+                      className="inline-flex items-center justify-center h-[34px] min-w-[44px] px-2 rounded-full text-[11px] font-extrabold tracking-[.08em] text-[rgba(255,255,255,0.9)] bg-[rgba(255,255,255,0.06)] border border-solid border-[rgba(255,255,255,0.18)] cursor-pointer [transition:background_.15s_ease,border-color_.15s_ease] hover:bg-[rgba(255,255,255,0.12)] hover:border-[rgba(255,255,255,0.32)] max-[720px]:min-w-[40px] max-[720px]:text-[10.5px]"
+                    >
+                      {zoom.toFixed(1)}×
+                    </button>
+                  )}
+                </div>
+              )}
               {(() => {
                 const visibleLevels = qualityLevels.filter(
                   (l) =>
-                    l.height === 480 || l.height === 720 || l.height === 1080,
+                    l.height === 480 ||
+                    l.height === 720 ||
+                    l.height === 1080 ||
+                    l.height === 1440 ||
+                    l.height === 2160,
                 );
                 const currentLabel =
                   qualityIdx === -1

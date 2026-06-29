@@ -58,6 +58,7 @@ const NEW_ITEM: {
     id: "partner-" + Math.random().toString(36).slice(2, 7),
     image: "",
     alt: "Партнёр байгууллага",
+    href: "",
   }),
 };
 
@@ -884,6 +885,15 @@ function PartnerRow({
             placeholder="Тайлбар"
           />
         </div>
+      </div>
+      <div className={ADMIN_FIELD_CLS}>
+        <label>Веб хаяг (заавал биш)</label>
+        <input
+          value={item.href || ""}
+          onChange={(e) => onChange({ href: e.target.value })}
+          placeholder="https://example.mn"
+          inputMode="url"
+        />
       </div>
       <div className={ADMIN_FIELD_CLS}>
         <label>Зураг оруулах</label>
