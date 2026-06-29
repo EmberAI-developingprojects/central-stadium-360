@@ -99,6 +99,7 @@ export interface DbHomePartner {
   id: string;
   image: string;
   alt: string;
+  href: string;
   sort_order: number;
   created_at: string;
 }

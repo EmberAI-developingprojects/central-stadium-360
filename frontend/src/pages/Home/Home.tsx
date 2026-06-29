@@ -29,6 +29,49 @@ const EMPTY_CONTENT: HomeContent = {
   hero: [],
 };
 
+const STATIC_PARTNERS: Partner[] = [
+  {
+    id: "p1",
+    image: "/assets/images/partners/partner-1.png",
+    alt: "Монголын Үндэсний Олимпийн Хороо",
+    href: "https://olympic.mn",
+  },
+  {
+    id: "p2",
+    image: "/assets/images/partners/partner-2.jpeg",
+    alt: "Монгол Улсын Засгийн газар",
+    href: "https://mongolia.gov.mn",
+  },
+  {
+    id: "p3",
+    image: "/assets/images/partners/partner-3.png",
+    alt: "Партнёр 3",
+  },
+  {
+    id: "p4",
+    image: "/assets/images/partners/partner-4.png",
+    alt: "Намрын ногоон өдрүүд — Үндэсний үйлдвэрлэгчид",
+  },
+  {
+    id: "p5",
+    image: "/assets/images/partners/LogoT.webp",
+    alt: "Партнёр 5",
+  },
+  {
+    id: "p6",
+    image: "/assets/images/partners/ad0c4ccd-a055-472a-aa21-1dc056def10f.jpg",
+    alt: "Монгол Улсын Соёлын яам",
+    href: "https://moc.gov.mn",
+  },
+  {
+    id: "p7",
+    image:
+      "/assets/images/partners/485805154_693233113229983_1842200449251181263_n.jpg",
+    alt: "APU Company",
+    href: "https://apu.mn",
+  },
+];
+
 const HOME_CONTENT_CACHE_KEY = "cs360:home:content";
 const HOME_EVENTS_CACHE_KEY = "cs360:home:events";
 
@@ -83,7 +126,9 @@ export default function Home() {
       <Stats />
       <Upcoming gatedGo={gatedGo} events={events} />
       <Members items={content.members} />
-      <Partners items={content.partners} />
+      <Partners
+        items={content.partners.length > 0 ? content.partners : STATIC_PARTNERS}
+      />
       <Roadmap />
       <News items={content.news} />
       <SiteFooter />
@@ -1053,21 +1098,27 @@ function Partners({ items = [] }: { items: Partner[] }) {
             data-stagger="2"
           >
             <div className="flex w-max items-center gap-14 max-[720px]:gap-5 animate-partners-marquee group-hover:[animation-play-state:paused] py-4">
-              {loop.map((p, i) => (
-                <a
-                  key={`${p.id}-${i}`}
-                  href="#"
-                  aria-hidden={i >= items.length ? "true" : undefined}
-                  className="shrink-0 inline-flex items-center justify-center w-[140px] h-[140px] bg-white rounded-[20px] overflow-hidden border border-solid border-[rgba(31,41,55,0.08)] p-[18px] shadow-[0_6px_18px_-10px_rgba(31,41,55,0.18)] [transition:transform_0.25s_ease,box-shadow_0.25s_ease,border-color_0.25s_ease] hover:-translate-y-2 hover:shadow-[0_14px_28px_-12px_rgba(34,48,198,0.35)] hover:border-[rgba(34,48,198,0.25)] max-[720px]:w-24 max-[720px]:h-24 max-[720px]:rounded-2xl max-[720px]:p-3"
-                >
-                  <img
-                    src={p.image}
-                    alt={p.alt || "Партнёр байгууллага"}
-                    loading="lazy"
-                    className="w-full h-full max-w-full object-contain block"
-                  />
-                </a>
-              ))}
+              {loop.map((p, i) => {
+                const isExternal = !!p.href && /^https?:\/\//i.test(p.href);
+                return (
+                  <a
+                    key={`${p.id}-${i}`}
+                    href={p.href || "#"}
+                    target={isExternal ? "_blank" : undefined}
+                    rel={isExternal ? "noopener noreferrer" : undefined}
+                    aria-hidden={i >= items.length ? "true" : undefined}
+                    tabIndex={i >= items.length ? -1 : undefined}
+                    className="shrink-0 inline-flex items-center justify-center w-[110px] h-[110px] bg-white rounded-[16px] overflow-hidden border border-solid border-[rgba(31,41,55,0.08)] shadow-[0_6px_18px_-10px_rgba(31,41,55,0.18)] [transition:transform_0.25s_ease,box-shadow_0.25s_ease,border-color_0.25s_ease] hover:-translate-y-2 hover:shadow-[0_14px_28px_-12px_rgba(34,48,198,0.35)] hover:border-[rgba(34,48,198,0.25)] max-[720px]:w-20 max-[720px]:h-20 max-[720px]:rounded-xl"
+                  >
+                    <img
+                      src={p.image}
+                      alt={p.alt || "Партнёр байгууллага"}
+                      loading="lazy"
+                      className="w-full h-full object-cover block"
+                    />
+                  </a>
+                );
+              })}
             </div>
           </div>
         )}

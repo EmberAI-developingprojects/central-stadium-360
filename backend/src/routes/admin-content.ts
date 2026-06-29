@@ -47,7 +47,12 @@ function pickNewsCols(): string {
   }
   return blocksColumnAvailable === false ? NEWS_COLS_NO_BLOCKS : NEWS_COLS_FULL;
 }
-const PARTNER_COLS = "id,image,alt,sort_order,created_at";
+const PARTNER_COLS_FULL = "id,image,alt,href,sort_order,created_at";
+const PARTNER_COLS_NO_HREF = "id,image,alt,sort_order,created_at";
+let partnerHrefAvailable: boolean | null = null;
+function pickPartnerCols(): string {
+  return partnerHrefAvailable === false ? PARTNER_COLS_NO_HREF : PARTNER_COLS_FULL;
+}
 const ROADMAP_COLS = "id,year,title,position,sort_order,created_at";
 const SERVICE_COLS =
   "id,title,description,icon_key,href,badge,sort_order,created_at";
@@ -74,6 +79,7 @@ const partnerItemSchema = z.object({
   id: z.string().uuid().optional(),
   image: z.string().default(""),
   alt: z.string().default(""),
+  href: z.string().default(""),
 });
 
 const roadmapItemSchema = z.object({
@@ -210,6 +216,24 @@ adminContent.put("/:section", async (c) => {
     insErr = retry.error;
   }
 
+  if (
+    insErr &&
+    section === "partners" &&
+    isMissingColumnError(insErr, "href")
+  ) {
+    partnerHrefAvailable = false;
+    const rowsNoHref = rows.map((r) => {
+      const { href: _h, ...rest } = r as { href?: unknown } & Record<
+        string,
+        unknown
+      >;
+      return rest;
+    });
+    const retry = await admin.from(table).insert(rowsNoHref).select("*");
+    data = retry.data;
+    insErr = retry.error;
+  }
+
   if (insErr && section === "news" && isMissingColumnError(insErr, "blocks")) {
     blocksColumnAvailable = false;
     const rowsNoBlocks = rows.map((r) => {
@@ -288,10 +312,10 @@ async function loadHomeContent(): Promise<
     if (enColumnsAvailable === null) enColumnsAvailable = true;
   }
 
-  const [partners, roadmap, services, hero] = await Promise.all([
+  let [partners, roadmap, services, hero] = await Promise.all([
     admin
       .from("home_partners")
-      .select(PARTNER_COLS)
+      .select(pickPartnerCols())
       .order("sort_order", { ascending: true }),
     admin
       .from("home_roadmap")
@@ -307,6 +331,16 @@ async function loadHomeContent(): Promise<
       .order("slot", { ascending: true }),
   ]);
 
+  if (partners.error && isMissingColumnError(partners.error, "href")) {
+    partnerHrefAvailable = false;
+    partners = await admin
+      .from("home_partners")
+      .select(pickPartnerCols())
+      .order("sort_order", { ascending: true });
+  } else if (!partners.error && partnerHrefAvailable === null) {
+    partnerHrefAvailable = true;
+  }
+
   for (const r of [news, partners, roadmap, services]) {
     if (r.error) return { error: r.error.message ?? "query_failed" };
   }
@@ -316,9 +350,19 @@ async function loadHomeContent(): Promise<
     blocks: Array.isArray(r.blocks) ? (r.blocks as DbHomeNews["blocks"]) : [],
   }));
 
+  const partnersNormalized: DbHomePartner[] = (partners.data ?? []).map(
+    (r) => {
+      const row = r as unknown as Partial<DbHomePartner> & { href?: unknown };
+      return {
+        ...(row as DbHomePartner),
+        href: typeof row.href === "string" ? row.href : "",
+      };
+    },
+  );
+
   return {
     news: newsNormalized,
-    partners: (partners.data ?? []) as DbHomePartner[],
+    partners: partnersNormalized,
     roadmap: (roadmap.data ?? []) as DbHomeRoadmap[],
     services: (services.data ?? []) as DbHomeService[],
     hero: hero.error ? [] : ((hero.data ?? []) as DbHomeHero[]),
