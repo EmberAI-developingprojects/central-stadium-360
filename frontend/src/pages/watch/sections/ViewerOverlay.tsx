@@ -228,10 +228,17 @@ export function ViewerOverlay({
       let hls = hlsRef.current;
       if (!hls) {
         hls = new Hls({
-          startLevel: 0,
-          capLevelToPlayerSize: true,
-          maxBufferLength: 10,
-          maxMaxBufferLength: 30,
+          // -1 lets ABR pick the starting rendition from measured bandwidth
+          // instead of pinning playback to the lowest level.
+          startLevel: -1,
+          // All cameras here are 360°: the viewer only sees a ~75° slice of the
+          // equirectangular frame, so we want the FULL source resolution and
+          // must NOT cap quality to the on-screen element size.
+          capLevelToPlayerSize: false,
+          // A little more buffer headroom so ABR can safely climb to the higher
+          // renditions without risking a rebuffer (still live-friendly).
+          maxBufferLength: 20,
+          maxMaxBufferLength: 60,
           lowLatencyMode: true,
           backBufferLength: 0,
         });
