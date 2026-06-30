@@ -1,0 +1,27 @@
+# --- Secrets ---
+.env
+*.env.local
+backend/.env
+
+# --- IDE ---
+.idea/
+.vscode/
+*.iml
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- Heavy raw source assets (regenerable / too large for git) ---
+tool/source/
+
+# --- Build / dependency artifacts (also covered by sub-package .gitignores) ---
+node_modules/
+dist/
+*.log
+
+# Debug symbols
+*.pdb
+
+# Flutter golden test failure artifacts
+frontend/test/failures/

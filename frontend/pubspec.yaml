@@ -1,0 +1,43 @@
+name: stadium_kiosk
+description: Self-service event ticketing kiosk for the National Stadium (Цэнгэлдэх хүрээлэн).
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # Borderless full-screen kiosk window on Windows desktop.
+  window_manager: ^0.4.3
+  # Live Ulaanbaatar weather (Open-Meteo, no API key).
+  http: ^1.2.0
+  # Looping host character video (transparent VP9 WebM) on the home screen.
+  video_player: ^2.9.2
+  # Real, scannable QR rendering for the digital entry ticket + И-Баримт receipt.
+  qr_flutter: ^4.1.0
+  # Future integration points:
+  #   rive          -> animated mascot (replaces CustomPainter placeholder)
+  #   cupertino_icons, intl, google_fonts, http, firebase_*  -> as features land
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/events/
+    - assets/brand/
+    - assets/character/
+  fonts:
+    # Display headlines — bold, characterful. Full Latin + Cyrillic + Mongolian.
+    - family: YU Buyan Bold
+      fonts:
+        - asset: assets/fonts/YubuyanBold.ttf
+    # Clean modern sans (body / UI). Variable wght 200–800, full Cyrillic.
+    - family: Manrope
+      fonts:
+        - asset: assets/fonts/Manrope.ttf

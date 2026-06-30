@@ -1,0 +1,9 @@
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    # Mock data + some inline widgets legitimately can't be const; keep the
+    # signal-to-noise high by not enforcing const everywhere.
+    prefer_const_constructors: false
+    prefer_const_constructors_in_immutables: false
+    avoid_print: false
