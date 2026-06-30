@@ -22,9 +22,18 @@ export const config = {
   printWidthMm: Number(process.env.PRINT_WIDTH_MM ?? 72),
   /** On-box card POS terminal service/SDK base URL. */
   posServiceUrl: process.env.POS_SERVICE_URL ?? 'http://localhost:7081',
-  /** Which PaymentTerminal driver to use: 'mock' (default, no hardware) or
+  /** Which PaymentTerminal driver to use: 'mock' (default, no hardware),
+   *  'verifone' (Verifone ECR terminal over serial/USB — see posSerial*), or
    *  'golomt' (Golomt Integrated POS — once provisioned & spec'd). */
   posDriver: process.env.POS_DRIVER ?? 'mock',
+  /** Serial/USB port the Verifone ECR terminal is wired to (Windows: COMn). */
+  posSerialPort: process.env.POS_SERIAL_PORT ?? 'COM3',
+  /** Line speed. Nominal over USB-CDC; honoured on a true RS-232 link. */
+  posSerialBaud: Number(process.env.POS_SERIAL_BAUD ?? 9600),
+  /** Timeout for a single ACK/control byte from the terminal (ms). */
+  posAckTimeoutMs: Number(process.env.POS_ACK_TIMEOUT_MS ?? 4000),
+  /** Timeout for a full sale response — includes cardholder tap/PIN (ms). */
+  posResponseTimeoutMs: Number(process.env.POS_RESPONSE_TIMEOUT_MS ?? 120000),
 
   /** Resend API key for emailing the digital ticket + И-Баримт. Empty → the
    *  email route runs in simulate mode (no mail sent), so dev works keyless. */

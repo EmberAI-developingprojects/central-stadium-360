@@ -5,6 +5,23 @@ import { terminal } from '../pos/index.js';
 
 export const posRouter = Router();
 
+/**
+ * GET /pos/probe — install-time diagnostic. Runs the driver's liveness check
+ * (Verifone: an ENQ/ACK handshake over the serial link) WITHOUT starting any
+ * transaction, so a technician can confirm the terminal is wired and reachable.
+ */
+posRouter.get('/probe', async (_req, res) => {
+  if (!terminal.probe) {
+    return res.status(501).json({ ok: false, driver: terminal.name, error: 'probe_unsupported' });
+  }
+  try {
+    const result = await terminal.probe();
+    res.json({ ...result, driver: terminal.name });
+  } catch (e) {
+    res.status(502).json({ ok: false, driver: terminal.name, error: 'probe_failed', detail: String(e) });
+  }
+});
+
 const ChargeBody = z.object({
   orderRef: z.string().min(1),
   amount: z.number().int().positive(), // MNT

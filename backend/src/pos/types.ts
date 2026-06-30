@@ -49,8 +49,15 @@ export interface SettlementRow {
 }
 
 export interface PaymentTerminal {
-  /** Driver name for logs/diagnostics, e.g. "mock" | "golomt". */
+  /** Driver name for logs/diagnostics, e.g. "mock" | "verifone" | "golomt". */
   readonly name: string;
+
+  /**
+   * Optional liveness check that starts NO transaction (e.g. an ECR ENQ/ACK
+   * handshake). Exposed at GET /pos/probe for install-time diagnostics; drivers
+   * without a hardware link (mock) may omit it.
+   */
+  probe?(): Promise<{ ok: true; port?: string }>;
 
   /**
    * Take a card payment for `amount` MNT against `orderRef`.
