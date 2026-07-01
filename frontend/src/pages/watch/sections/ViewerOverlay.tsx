@@ -241,13 +241,22 @@ export function ViewerOverlay({
     if (Hls.isSupported()) {
       let hls = hlsRef.current;
       if (!hls) {
+        const isMobile =
+          typeof navigator !== "undefined" &&
+          /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
         hls = new Hls({
-          startLevel: 0,
-          capLevelToPlayerSize: true,
-          maxBufferLength: 10,
-          maxMaxBufferLength: 30,
+          startLevel: -1,
+          capLevelToPlayerSize: isMobile,
+          maxBufferLength: 30,
+          maxMaxBufferLength: 60,
+          maxBufferSize: 120 * 1000 * 1000,
           lowLatencyMode: true,
-          backBufferLength: 0,
+          backBufferLength: 10,
+          abrEwmaDefaultEstimate: 20_000_000,
+          abrBandWidthFactor: 0.95,
+          abrBandWidthUpFactor: 0.8,
+          capLevelOnFPSDrop: true,
+          startFragPrefetch: true,
         });
         hlsRef.current = hls;
         hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
@@ -362,12 +371,21 @@ export function ViewerOverlay({
       1000,
     );
     cam3.position.set(0, 0, 0.01);
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    const renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: true,
+      powerPreference: "high-performance",
+    });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 3));
     renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
 
     const texture = new THREE.VideoTexture(video);
     texture.colorSpace = THREE.SRGBColorSpace;
-    const geometry = new THREE.SphereGeometry(5, 64, 40);
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.generateMipmaps = false;
+    texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    const geometry = new THREE.SphereGeometry(5, 128, 80);
     geometry.scale(-1, 1, 1);
     const sphere = new THREE.Mesh(
       geometry,

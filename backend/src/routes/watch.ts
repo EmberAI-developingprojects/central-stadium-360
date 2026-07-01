@@ -1,5 +1,4 @@
 import { Hono } from "hono";
-import { createSign, createPrivateKey } from "node:crypto";
 import type { AuthEnv } from "../middleware/require-user";
 import { requireUser } from "../middleware/require-user";
 import { markUserViewed } from "../lib/tickets";
@@ -24,82 +23,9 @@ const CAM_DEFS: Omit<WatchCam, "hlsUrl">[] = [
   { id: "cam4", label: "cam4", sub: "CAM 04 · 360°", type: "360" },
 ];
 
-function b64url(input: string | Buffer): string {
-  const b64 = Buffer.isBuffer(input)
-    ? input.toString("base64")
-    : Buffer.from(input).toString("base64");
-  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-
-function derToRawEcdsa(derSig: Buffer, coordBytes: number): Buffer {
-  let pos = 1;
-  if (derSig[pos]! & 0x80) {
-    pos += 1 + (derSig[pos]! & 0x7f);
-  } else {
-    pos += 1;
-  }
-
-  pos++;
-  const rLen = derSig[pos++]!;
-  const r = derSig.subarray(pos, pos + rLen);
-  pos += rLen;
-
-  pos++;
-  const sLen = derSig[pos++]!;
-  const s = derSig.subarray(pos, pos + sLen);
-
-  const pad = (n: Buffer) => {
-    const stripped = n[0] === 0 ? n.subarray(1) : n;
-    const out = Buffer.alloc(coordBytes, 0);
-    stripped.copy(out, coordBytes - stripped.length);
-    return out;
-  };
-
-  return Buffer.concat([pad(r), pad(s)]);
-}
-
-function signIvsToken(
-  channelArn: string,
-  keyArn: string,
-  keyDer: Buffer,
-): string {
-  const kid = keyArn.split("/").pop()!;
-  const header = b64url(JSON.stringify({ alg: "ES384", kid }));
-  const payload = b64url(
-    JSON.stringify({
-      "aws:channel-arn": channelArn,
-      exp: Math.floor(Date.now() / 1000) + 21600,
-    }),
-  );
-  const signingInput = `${header}.${payload}`;
-
-  const privateKey = createPrivateKey({
-    key: keyDer,
-    format: "der",
-    type: "pkcs8",
-  });
-  const signer = createSign("SHA384");
-  signer.update(signingInput);
-  const derSig = signer.sign(privateKey);
-  const rawSig = derToRawEcdsa(derSig, 48);
-
-  return `${signingInput}.${b64url(rawSig)}`;
-}
-
 function buildCamUrls(): { id: string; url: string | null }[] {
-  const keyArn = process.env.IVS_PLAYBACK_KEY_ARN ?? "";
-  const privateKeyB64 = process.env.IVS_PRIVATE_KEY_BASE64 ?? "";
-  const useAuth = Boolean(keyArn && privateKeyB64);
-  const keyDer = useAuth ? Buffer.from(privateKeyB64, "base64") : null;
-
   return CAM_DEFS.map((cam) => {
-    const rawUrl = process.env[`AWS_IVS_${cam.id.toUpperCase()}_URL`] ?? null;
-    const channelArn = process.env[`AWS_IVS_${cam.id.toUpperCase()}_ARN`] ?? "";
-    if (!rawUrl) return { id: cam.id, url: null };
-    if (useAuth && keyDer && channelArn) {
-      const token = signIvsToken(channelArn, keyArn, keyDer);
-      return { id: cam.id, url: `${rawUrl}?token=${token}` };
-    }
+    const rawUrl = process.env[`WOWZA_${cam.id.toUpperCase()}_URL`] ?? null;
     return { id: cam.id, url: rawUrl };
   });
 }
