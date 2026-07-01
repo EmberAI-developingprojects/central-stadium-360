@@ -447,15 +447,21 @@ function VODViewer({ event }: { event: VODEventDetail }) {
             return super.load(context, config, callbacks);
           }
         }
+        const isMobileVod =
+          typeof navigator !== "undefined" &&
+          /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
         hls = new Hls({
           startLevel: -1,
-          capLevelToPlayerSize: false,
+          capLevelToPlayerSize: isMobileVod,
           maxBufferLength: 30,
           maxMaxBufferLength: 60,
+          maxBufferSize: 120 * 1000 * 1000,
           backBufferLength: 30,
-          abrEwmaDefaultEstimate: 5_000_000,
+          abrEwmaDefaultEstimate: 20_000_000,
           abrBandWidthFactor: 0.95,
-          abrBandWidthUpFactor: 0.75,
+          abrBandWidthUpFactor: 0.8,
+          capLevelOnFPSDrop: true,
+          startFragPrefetch: true,
           loader: SignedLoader,
         });
         hlsRef.current = hls;
@@ -599,12 +605,17 @@ function VODViewer({ event }: { event: VODEventDetail }) {
       1000,
     );
     cam3.position.set(0, 0, 0.01);
+    const isMobile3DVod =
+      typeof navigator !== "undefined" &&
+      /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     const renderer = new THREE.WebGLRenderer({
       canvas,
       antialias: true,
       powerPreference: "high-performance",
     });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 3));
+    renderer.setPixelRatio(
+      Math.min(window.devicePixelRatio || 1, isMobile3DVod ? 2 : 3),
+    );
     renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
 
     const texture = new THREE.VideoTexture(video);
