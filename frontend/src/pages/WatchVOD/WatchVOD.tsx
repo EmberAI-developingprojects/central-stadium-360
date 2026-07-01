@@ -448,11 +448,14 @@ function VODViewer({ event }: { event: VODEventDetail }) {
           }
         }
         hls = new Hls({
-          startLevel: 0,
-          capLevelToPlayerSize: true,
-          maxBufferLength: 10,
-          maxMaxBufferLength: 30,
-          backBufferLength: 0,
+          startLevel: -1,
+          capLevelToPlayerSize: false,
+          maxBufferLength: 30,
+          maxMaxBufferLength: 60,
+          backBufferLength: 30,
+          abrEwmaDefaultEstimate: 5_000_000,
+          abrBandWidthFactor: 0.95,
+          abrBandWidthUpFactor: 0.75,
           loader: SignedLoader,
         });
         hlsRef.current = hls;
@@ -596,12 +599,21 @@ function VODViewer({ event }: { event: VODEventDetail }) {
       1000,
     );
     cam3.position.set(0, 0, 0.01);
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    const renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: true,
+      powerPreference: "high-performance",
+    });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 3));
     renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
 
     const texture = new THREE.VideoTexture(video);
     texture.colorSpace = THREE.SRGBColorSpace;
-    const geometry = new THREE.SphereGeometry(5, 64, 40);
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.generateMipmaps = false;
+    texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    const geometry = new THREE.SphereGeometry(5, 128, 80);
     geometry.scale(-1, 1, 1);
     const sphere = new THREE.Mesh(
       geometry,
