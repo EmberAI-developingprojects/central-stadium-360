@@ -371,12 +371,17 @@ export function ViewerOverlay({
       1000,
     );
     cam3.position.set(0, 0, 0.01);
+    const isMobile3D =
+      typeof navigator !== "undefined" &&
+      /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     const renderer = new THREE.WebGLRenderer({
       canvas,
       antialias: true,
       powerPreference: "high-performance",
     });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 3));
+    renderer.setPixelRatio(
+      Math.min(window.devicePixelRatio || 1, isMobile3D ? 2 : 3),
+    );
     renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
 
     const texture = new THREE.VideoTexture(video);
