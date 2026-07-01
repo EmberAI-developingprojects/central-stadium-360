@@ -1264,7 +1264,7 @@ export function ViewerOverlay({
                 title={
                   isAtLive ? "Шууд дамжуулалт" : "Шууд дамжуулалт руу шилжих"
                 }
-                className={`inline-flex items-center gap-1.5 h-[34px] px-3 rounded-full text-[11px] font-extrabold tracking-[.12em] cursor-pointer border border-solid [transition:background_.15s_ease,color_.15s_ease,border-color_.15s_ease] ${
+                className={`inline-flex items-center gap-1.5 h-[34px] px-3 rounded-full text-[11px] font-extrabold tracking-[.12em] cursor-pointer border border-solid [transition:background_.15s_ease,color_.15s_ease,border-color_.15s_ease] max-[720px]:!h-[32px] max-[720px]:!px-2 max-[720px]:!gap-1 max-[720px]:!text-[10.5px] max-[720px]:!tracking-[.06em] ${
                   isAtLive
                     ? "bg-[rgba(229,57,53,0.14)] border-[rgba(229,57,53,0.45)] text-white cursor-default"
                     : "bg-[rgba(255,255,255,0.06)] border-[rgba(255,255,255,0.18)] text-[rgba(255,255,255,0.85)] hover:bg-[rgba(229,57,53,0.14)] hover:border-[rgba(229,57,53,0.45)] hover:text-white"
@@ -1375,7 +1375,7 @@ export function ViewerOverlay({
                       onClick={() => setZoom(1)}
                       aria-label="Анхны хэмжээ"
                       title="Reset"
-                      className="inline-flex items-center justify-center h-[34px] min-w-[44px] px-2 rounded-full text-[11px] font-extrabold tracking-[.08em] text-[rgba(255,255,255,0.9)] bg-[rgba(255,255,255,0.06)] border border-solid border-[rgba(255,255,255,0.18)] cursor-pointer [transition:background_.15s_ease,border-color_.15s_ease] hover:bg-[rgba(255,255,255,0.12)] hover:border-[rgba(255,255,255,0.32)] max-[720px]:min-w-[40px] max-[720px]:text-[10.5px]"
+                      className="inline-flex items-center justify-center h-[34px] min-w-[44px] px-2 rounded-full text-[11px] font-extrabold tracking-[.08em] text-[rgba(255,255,255,0.9)] bg-[rgba(255,255,255,0.06)] border border-solid border-[rgba(255,255,255,0.18)] cursor-pointer [transition:background_.15s_ease,border-color_.15s_ease] hover:bg-[rgba(255,255,255,0.12)] hover:border-[rgba(255,255,255,0.32)] max-[720px]:!h-[32px] max-[720px]:!min-w-[34px] max-[720px]:!px-1.5 max-[720px]:!text-[10px]"
                     >
                       {zoom.toFixed(1)}×
                     </button>
@@ -1407,7 +1407,7 @@ export function ViewerOverlay({
                       aria-label="Чанар"
                       aria-haspopup="listbox"
                       aria-expanded={qualityOpen}
-                      className="inline-flex items-center justify-center gap-2 min-w-[78px] bg-[rgba(255,255,255,0.06)] border border-solid border-[rgba(255,255,255,0.1)] text-white font-semibold text-[12.5px] py-[7px] px-3 rounded-[9px] cursor-pointer [transition:background_.15s_ease,border-color_.15s_ease] hover:bg-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] max-[720px]:text-[11.5px] max-[720px]:py-1.5 max-[720px]:px-2"
+                      className="inline-flex items-center justify-center gap-2 min-w-[78px] bg-[rgba(255,255,255,0.06)] border border-solid border-[rgba(255,255,255,0.1)] text-white font-semibold text-[12.5px] py-[7px] px-3 rounded-[9px] cursor-pointer [transition:background_.15s_ease,border-color_.15s_ease] hover:bg-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] max-[720px]:!min-w-[54px] max-[720px]:!text-[11px] max-[720px]:!py-1.5 max-[720px]:!px-2 max-[720px]:!rounded-[8px]"
                     >
                       <span>{currentLabel}</span>
                     </button>
