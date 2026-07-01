@@ -43,7 +43,7 @@ const HEADER_AUTH_CLS =
   "inline-flex items-center gap-3 flex-none max-[1024px]:gap-2.5 max-[480px]:gap-1.5";
 
 const AUTH_BTN_CLS =
-  "inline-flex items-center leading-none gap-2 rounded-full bg-[linear-gradient(135deg,#2230c6_0%,#3a48d8_100%)] text-white text-[14px] font-semibold no-underline py-[10px] px-[18px] [transition:transform_.18s_ease,box-shadow_.22s_ease,filter_.18s_ease] shadow-[0_8px_22px_-8px_rgba(34,48,198,.55),inset_0_1px_0_rgba(255,255,255,0.18)] hover:-translate-y-px hover:shadow-[0_12px_28px_-8px_rgba(34,48,198,.65),inset_0_1px_0_rgba(255,255,255,0.22)] hover:[filter:brightness(1.06)] [&_svg]:w-[16px] [&_svg]:h-[16px] max-[480px]:!w-11 max-[480px]:!h-11 max-[480px]:!p-0 max-[480px]:!justify-center max-[480px]:!gap-0 max-[480px]:[&_svg]:!w-[18px] max-[480px]:[&_svg]:!h-[18px]";
+  "inline-flex items-center leading-none gap-2 rounded-full bg-[linear-gradient(135deg,#d94a4a_0%,#e86464_100%)] text-white text-[14px] font-semibold no-underline py-[10px] px-[18px] [transition:transform_.18s_ease,box-shadow_.22s_ease,filter_.18s_ease] shadow-[0_8px_22px_-8px_rgba(217,74,74,.55),inset_0_1px_0_rgba(255,255,255,0.18)] hover:-translate-y-px hover:shadow-[0_12px_28px_-8px_rgba(217,74,74,.65),inset_0_1px_0_rgba(255,255,255,0.22)] hover:[filter:brightness(1.06)] [&_svg]:w-[16px] [&_svg]:h-[16px] max-[480px]:!w-11 max-[480px]:!h-11 max-[480px]:!p-0 max-[480px]:!justify-center max-[480px]:!gap-0 max-[480px]:[&_svg]:!w-[18px] max-[480px]:[&_svg]:!h-[18px]";
 
 const AUTH_LABEL_CLS = "max-[480px]:hidden";
 

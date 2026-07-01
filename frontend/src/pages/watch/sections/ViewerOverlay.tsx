@@ -1401,10 +1401,10 @@ export function ViewerOverlay({
                     ref={qualityRef}
                     className="relative inline-flex items-center gap-2 text-xs text-[rgba(255,255,255,0.7)] max-[720px]:gap-1.5"
                   >
-                    <span>Чанар</span>
                     <button
                       type="button"
                       onClick={() => setQualityOpen((o) => !o)}
+                      aria-label="Чанар"
                       aria-haspopup="listbox"
                       aria-expanded={qualityOpen}
                       className="inline-flex items-center justify-center gap-2 min-w-[78px] bg-[rgba(255,255,255,0.06)] border border-solid border-[rgba(255,255,255,0.1)] text-white font-semibold text-[12.5px] py-[7px] px-3 rounded-[9px] cursor-pointer [transition:background_.15s_ease,border-color_.15s_ease] hover:bg-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] max-[720px]:text-[11.5px] max-[720px]:py-1.5 max-[720px]:px-2"
