@@ -1398,7 +1398,7 @@ export function ViewerOverlay({
                       onClick={() => setZoom(1)}
                       aria-label="Анхны хэмжээ"
                       title="Reset"
-                      className="inline-flex items-center justify-center h-[34px] min-w-[44px] px-2 rounded-full text-[11px] font-extrabold tracking-[.08em] text-[rgba(255,255,255,0.9)] bg-[rgba(255,255,255,0.06)] border border-solid border-[rgba(255,255,255,0.18)] cursor-pointer [transition:background_.15s_ease,border-color_.15s_ease] hover:bg-[rgba(255,255,255,0.12)] hover:border-[rgba(255,255,255,0.32)] max-[720px]:!h-[32px] max-[720px]:!min-w-[34px] max-[720px]:!px-1.5 max-[720px]:!text-[10px]"
+                      className="inline-flex items-center justify-center h-[34px] min-w-[44px] px-2 rounded-full text-[11px] font-extrabold tracking-[.08em] text-[rgba(255,255,255,0.9)] bg-[rgba(255,255,255,0.06)] border border-solid border-[rgba(255,255,255,0.18)] cursor-pointer [transition:background_.15s_ease,border-color_.15s_ease] hover:bg-[rgba(255,255,255,0.12)] hover:border-[rgba(255,255,255,0.32)] max-[720px]:!hidden"
                     >
                       {zoom.toFixed(1)}×
                     </button>
