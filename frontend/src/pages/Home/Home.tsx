@@ -106,13 +106,17 @@ export default function Home() {
 
   useEffect(() => {
     let alive = true;
-    Promise.all([listEvents(), getHomeContent()]).then(([evts, c]) => {
-      if (!alive) return;
-      setEvents(evts);
-      setContent(c);
-      writeCache(HOME_EVENTS_CACHE_KEY, evts);
-      writeCache(HOME_CONTENT_CACHE_KEY, c);
-    });
+    Promise.all([listEvents(), getHomeContent()])
+      .then(([evts, c]) => {
+        if (!alive) return;
+        setEvents(evts);
+        setContent(c);
+        writeCache(HOME_EVENTS_CACHE_KEY, evts);
+        writeCache(HOME_CONTENT_CACHE_KEY, c);
+      })
+      .catch(() => {
+        // Keep whatever the sessionStorage cache / defaults already rendered.
+      });
     return () => {
       alive = false;
     };

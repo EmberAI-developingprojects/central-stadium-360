@@ -6,7 +6,12 @@ import {
   getSupabaseForAccessToken,
 } from "../lib/supabase-anon";
 import { getSupabaseAdmin } from "../lib/supabase";
-import { checkIdentifierLimit, checkIpLimit } from "../lib/rate-limit";
+import {
+  checkIdentifierLimit,
+  checkIpLimit,
+  checkOtpIdentifierLimit,
+  checkOtpIpLimit,
+} from "../lib/rate-limit";
 import { sendSms } from "../lib/sms";
 import { randomInt } from "node:crypto";
 
@@ -89,12 +94,16 @@ const forgotResetSchema = z.object({
 });
 
 function getClientIp(c: Context): string {
-  return (
-    c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ||
-    c.req.header("x-real-ip") ||
-    c.req.header("cf-connecting-ip") ||
-    "0.0.0.0"
-  );
+  // Cloud Run's front end appends the real client IP as the LAST
+  // x-forwarded-for entry; earlier entries are client-supplied and spoofable,
+  // so taking the first one would let attackers rotate their rate-limit key.
+  const xff = c.req.header("x-forwarded-for");
+  const last = xff
+    ?.split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .pop();
+  return last || c.req.header("x-real-ip") || "0.0.0.0";
 }
 
 function getBearer(authHeader: string | undefined): string | null {
@@ -122,8 +131,10 @@ async function applyRateLimits(
   identifier: string,
 ): Promise<Response | null> {
   const ip = getClientIp(c);
-  const byId = checkIdentifierLimit(identifier);
-  const byIp = checkIpLimit(ip);
+  const [byId, byIp] = await Promise.all([
+    checkIdentifierLimit(identifier),
+    checkIpLimit(ip),
+  ]);
   if (byId.success && byIp.success) return null;
   const reset = Math.max(byId.reset, byIp.reset);
   const retryAfter = Math.max(1, Math.ceil((reset - Date.now()) / 1000));
@@ -488,31 +499,73 @@ auth.post("/resend-code", async (c) => {
 });
 
 const RESET_OTP_TTL_SECONDS = 5 * 60;
-const RESET_OTP_PREFIX = "cs360:auth:reset:";
+const RESET_OTP_MAX_ATTEMPTS = 5;
 
-const otpStore = new Map<string, { code: string; expiresAt: number }>();
+type AdminClient = NonNullable<ReturnType<typeof getSupabaseAdmin>>;
 
-function setResetOtp(phone: string, code: string): void {
-  const key = `${RESET_OTP_PREFIX}${phone}`;
-  otpStore.set(key, {
+// OTPs live in the auth_reset_otps table so they survive restarts and are
+// visible to every Cloud Run instance, not just the one that sent the SMS.
+async function setResetOtp(
+  admin: AdminClient,
+  phone: string,
+  code: string,
+): Promise<boolean> {
+  const { error } = await admin.from("auth_reset_otps").upsert({
+    phone,
     code,
-    expiresAt: Date.now() + RESET_OTP_TTL_SECONDS * 1000,
+    attempts: 0,
+    expires_at: new Date(
+      Date.now() + RESET_OTP_TTL_SECONDS * 1000,
+    ).toISOString(),
   });
+  return !error;
 }
 
-function getResetOtp(phone: string): string | null {
-  const key = `${RESET_OTP_PREFIX}${phone}`;
-  const entry = otpStore.get(key);
-  if (!entry) return null;
-  if (entry.expiresAt < Date.now()) {
-    otpStore.delete(key);
-    return null;
-  }
-  return entry.code;
+// Atomic check via RPC: wrong codes increment the attempt counter and the
+// row is deleted once RESET_OTP_MAX_ATTEMPTS is reached. A correct code
+// does not consume the row (reset deletes it after the password update).
+async function checkResetOtp(
+  admin: AdminClient,
+  phone: string,
+  code: string,
+): Promise<boolean> {
+  const { data, error } = await admin.rpc("consume_reset_otp", {
+    p_phone: phone,
+    p_code: code,
+    p_max_attempts: RESET_OTP_MAX_ATTEMPTS,
+  });
+  return !error && data === "ok";
 }
 
-function deleteResetOtp(phone: string): void {
-  otpStore.delete(`${RESET_OTP_PREFIX}${phone}`);
+async function deleteResetOtp(
+  admin: AdminClient,
+  phone: string,
+): Promise<void> {
+  await admin.from("auth_reset_otps").delete().eq("phone", phone);
+}
+
+async function applyOtpAttemptLimits(
+  c: Context,
+  phone: string,
+): Promise<Response | null> {
+  const ip = getClientIp(c);
+  const [byId, byIp] = await Promise.all([
+    checkOtpIdentifierLimit(phone),
+    checkOtpIpLimit(ip),
+  ]);
+  if (byId.success && byIp.success) return null;
+  const reset = Math.max(byId.reset, byIp.reset);
+  const retryAfter = Math.max(1, Math.ceil((reset - Date.now()) / 1000));
+  c.header("Retry-After", String(retryAfter));
+  return c.json(
+    {
+      ok: false,
+      error: "rate_limited",
+      retryAfterSeconds: retryAfter,
+      scope: !byId.success ? "identifier" : "ip",
+    } as const,
+    429,
+  );
 }
 
 async function findUserIdByPhone(phone: string): Promise<string | null> {
@@ -577,7 +630,10 @@ auth.post("/forgot-password/send", async (c) => {
   }
 
   const otp = String(randomInt(0, 1_000_000)).padStart(6, "0");
-  setResetOtp(phone, otp);
+  const stored = await setResetOtp(admin, phone, otp);
+  if (!stored) {
+    return c.json({ ok: false, error: "otp_store_failed" } as const, 502);
+  }
 
   try {
     await sendSms({ phone, otp });
@@ -597,8 +653,18 @@ auth.post("/forgot-password/verify", async (c) => {
   if (!parsed.success) return invalidInput(c, parsed);
   const { phone, code } = parsed.data;
 
-  const stored = getResetOtp(phone);
-  if (!stored || stored !== code) {
+  const limited = await applyOtpAttemptLimits(c, phone);
+  if (limited) return limited;
+
+  const admin = getSupabaseAdmin();
+  if (!admin) {
+    return c.json(
+      { ok: false, error: "supabase_not_configured" } as const,
+      503,
+    );
+  }
+
+  if (!(await checkResetOtp(admin, phone, code))) {
     return c.json({ ok: false, error: "otp_invalid" } as const, 401);
   }
   return c.json({ ok: true, data: { phone } } as const);
@@ -610,6 +676,9 @@ auth.post("/forgot-password/reset", async (c) => {
   if (!parsed.success) return invalidInput(c, parsed);
   const { phone, code, password } = parsed.data;
 
+  const limited = await applyOtpAttemptLimits(c, phone);
+  if (limited) return limited;
+
   const admin = getSupabaseAdmin();
   if (!admin) {
     return c.json(
@@ -618,8 +687,7 @@ auth.post("/forgot-password/reset", async (c) => {
     );
   }
 
-  const stored = getResetOtp(phone);
-  if (!stored || stored !== code) {
+  if (!(await checkResetOtp(admin, phone, code))) {
     return c.json({ ok: false, error: "otp_invalid" } as const, 401);
   }
 
@@ -638,7 +706,7 @@ auth.post("/forgot-password/reset", async (c) => {
     );
   }
 
-  deleteResetOtp(phone);
+  await deleteResetOtp(admin, phone);
   return c.json({ ok: true, data: { phone } } as const);
 });
 

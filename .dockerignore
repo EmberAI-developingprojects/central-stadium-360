@@ -1,0 +1,27 @@
+# Docker reads only the context-root ignore file. cloudbuild.yaml builds with
+# the repo root as context (docker build -f backend/Dockerfile .), so this file
+# is what actually keeps secrets and junk out of the image.
+
+# Secrets — never allow these into an image layer
+**/.env
+**/.env.*
+!**/.env.example
+secrets/
+env-vars.yaml
+**/*.pem
+
+# Not needed by the backend image
+.git/
+.github/
+node_modules
+**/node_modules
+frontend/
+loadtest/
+supabase/
+cloudbuild.yaml
+s3-cors.json
+**/*.md
+.vscode/
+.idea/
+.DS_Store
+**/*.log

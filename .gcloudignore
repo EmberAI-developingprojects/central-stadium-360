@@ -1,0 +1,19 @@
+# Controls what `gcloud builds submit` uploads to the Cloud Build staging
+# bucket. Without this, untracked local files (env-vars.yaml, secrets/,
+# .env files) would be tarred and uploaded alongside the source.
+.git/
+.gitignore
+
+# Secrets
+**/.env
+**/.env.*
+!**/.env.example
+secrets/
+env-vars.yaml
+**/*.pem
+
+# Bulk that the backend build never needs
+node_modules
+**/node_modules
+frontend/node_modules
+loadtest/
