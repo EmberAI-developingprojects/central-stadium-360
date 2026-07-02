@@ -160,7 +160,7 @@ export default function WatchVOD() {
           {t("vod_not_found")}
           <div className="mt-5">
             <Link
-              to="/archive"
+              to="/watch"
               className="inline-flex items-center gap-2 py-[10px] px-4 rounded-[10px] bg-[rgba(255,255,255,0.06)] border border-solid border-[rgba(255,255,255,0.12)] text-white text-[13px] font-bold no-underline hover:bg-[rgba(255,255,255,0.12)]"
             >
               {t("vod_back")}
@@ -173,7 +173,7 @@ export default function WatchVOD() {
 
   if (!event.has_access) {
     return (
-      <ShellChrome title={event.name} onBack={() => navigate("/archive")}>
+      <ShellChrome title={event.name} onBack={() => navigate("/watch")}>
         <ReplayPaywall
           event={event}
           onPaid={() => void fetchEvent()}
@@ -185,14 +185,14 @@ export default function WatchVOD() {
 
   if (event.recordings_pending) {
     return (
-      <ShellChrome title={event.name} onBack={() => navigate("/archive")}>
+      <ShellChrome title={event.name} onBack={() => navigate("/watch")}>
         <RecordingsPending />
       </ShellChrome>
     );
   }
 
   return (
-    <ShellChrome title={event.name} onBack={() => navigate("/archive")}>
+    <ShellChrome title={event.name} onBack={() => navigate("/watch")}>
       <VODViewer event={event} />
     </ShellChrome>
   );
@@ -254,7 +254,7 @@ function ShellChrome({
           </button>
         ) : (
           <Link
-            to="/archive"
+            to="/watch"
             aria-label="Нөхөж үзэх"
             className="w-[38px] h-[38px] rounded-full text-white grid place-items-center bg-[rgba(255,255,255,0.08)] border border-solid border-[rgba(255,255,255,0.1)] no-underline [&_svg]:w-[18px] [&_svg]:h-[18px]"
           >

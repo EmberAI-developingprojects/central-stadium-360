@@ -28,6 +28,7 @@
   "archive_watch_replay": "Watch again",
   "archive_buy_replay": "Replay ticket",
   "archive_recordings_count": "{{count}} cameras",
+  "watch_load_error": "Failed to load. Please check your connection and try again.",
   "vod_loading": "Loading…",
   "vod_not_found": "This event has no replay available or it has expired.",
   "vod_back": "Back",

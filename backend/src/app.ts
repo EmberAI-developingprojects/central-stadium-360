@@ -31,10 +31,28 @@ app.use("*", async (c, next) => {
   return requestLogger(c, next);
 });
 app.use("*", compress());
+
+const DEV_ORIGINS = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:5174",
+];
+
+const allowedOrigins = new Set(
+  [
+    process.env.FRONTEND_URL,
+    ...(process.env.CORS_ALLOWED_ORIGINS?.split(",") ?? []),
+    ...(process.env.NODE_ENV === "production" ? [] : DEV_ORIGINS),
+  ]
+    .map((o) => o?.trim().replace(/\/$/, ""))
+    .filter((o): o is string => Boolean(o)),
+);
+
 app.use(
   "*",
   cors({
-    origin: (origin) => origin ?? "*",
+    origin: (origin) => (allowedOrigins.has(origin) ? origin : null),
     credentials: true,
   }),
 );
