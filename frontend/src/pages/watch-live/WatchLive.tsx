@@ -43,7 +43,11 @@ export default function WatchLive() {
         if (alive) setEvents(evts);
       })
       .catch(() => {
-        if (alive) setLoadFailed(true);
+        if (!alive) return;
+        // Dev-only: with the auth bypass on (no backend/Supabase), fall back to an
+        // empty list so the player renders via FEATURED_FALLBACK for UI preview.
+        if (import.meta.env.VITE_DEV_AUTH === "1") setEvents([]);
+        else setLoadFailed(true);
       });
     return () => {
       alive = false;
