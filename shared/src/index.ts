@@ -17,6 +17,27 @@ export type EventStatus =
   | "expired";
 export type TicketStatus = "pending" | "paid" | "cancelled" | "refunded";
 export type TicketType = "live" | "replay";
+
+/**
+ * Licensing tiers. Platform-wide fixed prices (MNT). Every tier grants LIVE
+ * access on `maxDevices` concurrent devices; only `multi5` bundles replay.
+ */
+export type TicketTier = "standard" | "multi3" | "multi5";
+
+export interface TierSpec {
+  id: TicketTier;
+  price: number;
+  maxDevices: number;
+  replay: boolean;
+}
+
+export const TICKET_TIERS: Record<TicketTier, TierSpec> = {
+  standard: { id: "standard", price: 9900, maxDevices: 1, replay: false },
+  multi3: { id: "multi3", price: 14900, maxDevices: 3, replay: false },
+  multi5: { id: "multi5", price: 19900, maxDevices: 5, replay: true },
+};
+
+export const TICKET_TIER_ORDER: TicketTier[] = ["standard", "multi3", "multi5"];
 export type RecordingStatus = "recording" | "processing" | "ready" | "expired";
 
 export interface DbUser {
@@ -178,6 +199,10 @@ export interface DbTicket {
   event_id: string;
   status: TicketStatus;
   ticket_type: TicketType;
+  /** Licensing tier. Optional for back-compat with rows created before tiers. */
+  tier?: TicketTier;
+  /** Concurrent-device cap for this ticket's tier. */
+  max_devices?: number;
   price: number;
   qpay_invoice_id: string | null;
   created_at: string;

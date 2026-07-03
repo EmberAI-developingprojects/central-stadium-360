@@ -246,6 +246,7 @@ export const api = {
   createTicket: (input: {
     event_id: string;
     ticket_type?: "live" | "replay";
+    tier?: "standard" | "multi3" | "multi5";
   }) => request<TicketCreateResponse>("POST", "/api/tickets/create", input),
 
   getPaymentStatus: (invoiceId: string) =>
