@@ -31,13 +31,6 @@ import {
   VIEWER_CHAT_HEAD_CLS,
   VIEWER_CHAT_LIST_CLS,
   VIEWER_CHAT_SEND_CLS,
-  VIEWER_CAM_PICKER_BTN_CLS,
-  VIEWER_CAM_SHEET_BACKDROP_CLS,
-  VIEWER_CAM_SHEET_CLS,
-  VIEWER_CAM_SHEET_HEAD_CLS,
-  VIEWER_CAM_SHEET_TITLE_CLS,
-  VIEWER_CAM_SHEET_CLOSE_CLS,
-  VIEWER_CAM_SHEET_LIST_CLS,
   VIEWER_CLOSE_CLS,
   VIEWER_CLS,
   VIEWER_CONTROLS_CLS,
@@ -45,8 +38,7 @@ import {
   VIEWER_CONTROLS_RIGHT_CLS,
   VIEWER_HEADER_CLS,
   VIEWER_ICON_BTN_CLS,
-  VIEWER_LIVE_PILL_CLS,
-  VIEWER_LIVE_PULSE_CLS,
+  VIEWER_MAIN_CAM_BASE_CLS,
   VIEWER_MAIN_CAM_CLS,
   VIEWER_MOBILE_CAM_CLS,
   VIEWER_MOBILE_CAM_LABEL_CLS,
@@ -55,12 +47,8 @@ import {
   VIEWER_MSG_CLS,
   VIEWER_MSG_MINE_CLS,
   VIEWER_MSG_NAME_CLS,
-  VIEWER_REACT_CLS,
-  VIEWER_REACT_FLOAT_CLS,
-  VIEWER_REACTIONS_CLS,
   VIEWER_STAGE_CLS,
   VIEWER_STAGE_SHELL_CLS,
-  VIEWER_STATS_CLS,
   VIEWER_TITLE_CLS,
   VIEWER_TITLE_WRAP_CLS,
   VIEWER_VOL_CLS,
@@ -88,44 +76,11 @@ type VideoFullscreenElement = HTMLVideoElement & {
 
 type QualityLevel = { index: number; height: number; label: string };
 
-type ReactionId = "like" | "love" | "fire";
+// Chat spam throttle: one send per 10s per viewer.
+const COOLDOWN_MS = 10_000;
 
-const REACTIONS: Array<{
-  id: ReactionId;
-  label: string;
-  color: string;
-  path: string;
-}> = [
-  {
-    id: "like",
-    label: "Like",
-    color: "#3b82f6",
-    path: "M7 22V11M2 13v7a2 2 0 0 0 2 2h3V11H4a2 2 0 0 0-2 2zM21.5 11h-7l1-5a2 2 0 0 0-2-2.5L7 11v11h11.7a2 2 0 0 0 2-1.6l1.5-7a2 2 0 0 0-2-2.4z",
-  },
-  {
-    id: "love",
-    label: "Love",
-    color: "#ef4444",
-    path: "M12 21s-7-4.5-9.5-9C1 9 2.5 5 6 5c2 0 3.5 1.5 4.5 3C11.5 6.5 13 5 15 5c3.5 0 5 4 3.5 7-2.5 4.5-9.5 9-9.5 9z",
-  },
-  {
-    id: "fire",
-    label: "Fire",
-    color: "#f59e0b",
-    path: "M12 2s4 4 4 8a4 4 0 0 1-8 0c0-1 .5-2 1-2.5C10 9 8 11 8 13.5a5 5 0 0 0 10 0c0-3-2-5.5-2-8 0-1.5-1-3-4-3.5z",
-  },
-];
-
-const REACTION_BY_ID: Record<ReactionId, (typeof REACTIONS)[number]> =
-  REACTIONS.reduce(
-    (acc, r) => {
-      acc[r.id] = r;
-      return acc;
-    },
-    {} as Record<ReactionId, (typeof REACTIONS)[number]>,
-  );
-
-const COOLDOWN_MS = 45_000;
+// Persisted position for the draggable floating "open chat" button. Null = the
+// default bottom-right anchor; once dragged we store {x,y} viewport coords.
 
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 4;
@@ -151,6 +106,7 @@ export function ViewerOverlay({
   const [cams, setCams] = useState<WatchCam[]>([]);
   const [camIdx, setCamIdx] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [buffering, setBuffering] = useState(false);
   const [muted, setMuted] = useState(true);
   const [volume, setVolume] = useState(60);
   const [elapsedSec, setElapsedSec] = useState(0);
@@ -159,9 +115,14 @@ export function ViewerOverlay({
   const [qualityIdx, setQualityIdx] = useState(-1);
   const [qualityOpen, setQualityOpen] = useState(false);
   const qualityRef = useRef<HTMLDivElement>(null);
+  const qualityRefM = useRef<HTMLDivElement>(null); // mobile on-video quality menu
+  // Mobile tap-to-reveal controls (auto-hide while playing).
+  const [mCtl, setMCtl] = useState(false);
+  const onVideoTapRef = useRef<() => void>(() => {});
   const [isFs, setIsFs] = useState(false);
   const [pseudoFs, setPseudoFs] = useState(false);
   const [idle, setIdle] = useState(false);
+  const overControlsRef = useRef(false); // pointer parked on the control bar
   const [isAtLive, setIsAtLive] = useState(true);
   const [chat, setChat] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
@@ -171,12 +132,6 @@ export function ViewerOverlay({
     Math.random().toString(36).slice(2, 10) +
       Math.random().toString(36).slice(2, 10),
   );
-  const [bubbles, setBubbles] = useState<
-    Array<{ id: number; reaction: ReactionId; left: string; duration: string }>
-  >([]);
-  const bubbleIdRef = useRef(0);
-  const [camPickerOpen, setCamPickerOpen] = useState(false);
-  const [chatOpen, setChatOpen] = useState(false);
   const [lastActionAt, setLastActionAt] = useState<number | null>(null);
   const [, setCooldownTick] = useState(0);
   const [zoom, setZoom] = useState(1);
@@ -277,6 +232,16 @@ export function ViewerOverlay({
                         : `${l.height}p`,
           }));
           setQualityLevels(levels);
+          // Default to the highest-resolution rendition (not Auto).
+          const highest = levels.reduce(
+            (a, b) => (b.height > a.height ? b : a),
+            levels[0],
+          );
+          const h = hlsRef.current;
+          if (highest && h) {
+            setQualityIdx(highest.index);
+            h.currentLevel = highest.index;
+          }
           video.play().catch(() => {});
         });
         hls.attachMedia(video);
@@ -346,6 +311,28 @@ export function ViewerOverlay({
     };
   }, [muted, volume, ensureAudioBoost]);
 
+  // Buffering indicator: show a spinner when the live stream stalls waiting for
+  // data, hide it as soon as frames resume. `waiting`/`stalled` while paused is
+  // expected (user paused), so the render guards on !paused.
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    const onWaiting = () => setBuffering(true);
+    const onResume = () => setBuffering(false);
+    v.addEventListener("waiting", onWaiting);
+    v.addEventListener("stalled", onWaiting);
+    v.addEventListener("playing", onResume);
+    v.addEventListener("canplay", onResume);
+    v.addEventListener("pause", onResume);
+    return () => {
+      v.removeEventListener("waiting", onWaiting);
+      v.removeEventListener("stalled", onWaiting);
+      v.removeEventListener("playing", onResume);
+      v.removeEventListener("canplay", onResume);
+      v.removeEventListener("pause", onResume);
+    };
+  }, []);
+
   useEffect(() => {
     return () => {
       const ctx = audioCtxRef.current;
@@ -405,6 +392,12 @@ export function ViewerOverlay({
       rotY = 0;
     let pinchInitialDist = 0;
     let pinchInitialZoom = 1;
+    // Tap detection: a short, low-movement press (not a drag/pinch) on the video
+    // toggles play/pause on mobile — YouTube-style tap-on-video.
+    let tapDownX = 0;
+    let tapDownY = 0;
+    let tapDownT = 0;
+    let tapMoved = false;
 
     const applyRot = () => {
       cam3.rotation.order = "YXZ";
@@ -416,9 +409,16 @@ export function ViewerOverlay({
       isDragging = true;
       prevX = x;
       prevY = y;
+      tapDownX = x;
+      tapDownY = y;
+      tapDownT = performance.now();
+      tapMoved = false;
     };
     const onMove = (x: number, y: number) => {
       if (!isDragging) return;
+      if (Math.abs(x - tapDownX) > 8 || Math.abs(y - tapDownY) > 8) {
+        tapMoved = true;
+      }
       const sens = 0.25 / Math.max(1, zoomRef.current);
       rotY += (x - prevX) * sens;
       rotX = Math.max(-85, Math.min(85, rotX + (y - prevY) * sens));
@@ -428,6 +428,15 @@ export function ViewerOverlay({
     };
     const onUp = () => {
       isDragging = false;
+      // Treat a quick, still press as a tap → toggle the controls overlay
+      // (mobile only; desktop has its own control bar).
+      if (
+        !tapMoved &&
+        performance.now() - tapDownT < 400 &&
+        window.innerWidth <= 1100
+      ) {
+        onVideoTapRef.current();
+      }
     };
 
     const onMouseDown = (e: MouseEvent) => onDown(e.clientX, e.clientY);
@@ -440,6 +449,7 @@ export function ViewerOverlay({
         pinchInitialDist = Math.sqrt(dx * dx + dy * dy);
         pinchInitialZoom = zoomRef.current;
         isDragging = false;
+        tapMoved = true; // a pinch is never a tap
       } else if (e.touches.length === 1) {
         onDown(e.touches[0].clientX, e.touches[0].clientY);
       }
@@ -632,18 +642,18 @@ export function ViewerOverlay({
     };
   }, []);
 
+  // Auto-hide controls when the pointer is idle over the video (YouTube-style),
+  // on both desktop overlay and fullscreen.
   useEffect(() => {
-    if (!isFs && !pseudoFs) {
-      setIdle(false);
-      return;
-    }
     let t: ReturnType<typeof setTimeout> | null = null;
     const stage = stageRef.current;
     if (!stage) return;
     const onActivity = () => {
       setIdle(false);
       if (t) clearTimeout(t);
-      t = setTimeout(() => setIdle(true), 3500);
+      t = setTimeout(() => {
+        if (!overControlsRef.current) setIdle(true);
+      }, 3500);
     };
     const onLeave = () => setIdle(false);
     stage.addEventListener("mousemove", onActivity);
@@ -658,7 +668,7 @@ export function ViewerOverlay({
       stage.removeEventListener("touchstart", onActivity);
       stage.removeEventListener("touchmove", onActivity);
     };
-  }, [isFs, pseudoFs]);
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -685,10 +695,6 @@ export function ViewerOverlay({
     const list = chatListRef.current;
     if (list) list.scrollTop = list.scrollHeight;
   }, [chat]);
-
-  useEffect(() => {
-    if (isFs || pseudoFs) setChatOpen(false);
-  }, [isFs, pseudoFs]);
 
   useEffect(() => {
     if (!CHAT_WS_URL) return;
@@ -767,11 +773,24 @@ export function ViewerOverlay({
     };
   }, []);
 
+  // Auto-unmute once on the first user interaction (autoplay starts muted by
+  // browser rule). Respects a later manual mute — we only ever unmute once.
+  const autoUnmutedRef = useRef(false);
+  const ensureUnmuted = () => {
+    if (autoUnmutedRef.current) return;
+    autoUnmutedRef.current = true;
+    const v = videoRef.current;
+    if (v) v.muted = false;
+    setMuted(false);
+  };
+
   const togglePlay = () => {
     const v = videoRef.current;
     if (!v) return;
-    if (v.paused) v.play();
-    else v.pause();
+    if (v.paused) {
+      ensureUnmuted();
+      v.play();
+    } else v.pause();
   };
 
   const jumpToLive = useCallback(() => {
@@ -812,8 +831,10 @@ export function ViewerOverlay({
   useEffect(() => {
     if (!qualityOpen) return;
     const onDown = (e: MouseEvent | TouchEvent) => {
-      const root = qualityRef.current;
-      if (root && !root.contains(e.target as Node)) setQualityOpen(false);
+      const t = e.target as Node;
+      const inDesktop = qualityRef.current?.contains(t);
+      const inMobile = qualityRefM.current?.contains(t);
+      if (!inDesktop && !inMobile) setQualityOpen(false);
     };
     document.addEventListener("mousedown", onDown);
     document.addEventListener("touchstart", onDown, { passive: true });
@@ -822,6 +843,26 @@ export function ViewerOverlay({
       document.removeEventListener("touchstart", onDown);
     };
   }, [qualityOpen]);
+
+  // Tapping the video toggles the mobile controls overlay (called from the
+  // 360° drag effect, which owns the canvas touch handlers).
+  useEffect(() => {
+    onVideoTapRef.current = () => {
+      ensureUnmuted();
+      setMCtl((v) => !v);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // Auto-hide the overlay while playing (keep it up when paused or menu open).
+  useEffect(() => {
+    if (!mCtl || paused || qualityOpen) return;
+    const id = window.setTimeout(() => setMCtl(false), 3500);
+    return () => window.clearTimeout(id);
+  }, [mCtl, paused, qualityOpen]);
+  // Reveal controls whenever playback pauses.
+  useEffect(() => {
+    if (paused) setMCtl(true);
+  }, [paused]);
 
   const toggleMute = () =>
     setMuted((m) => {
@@ -844,22 +885,6 @@ export function ViewerOverlay({
     } catch {}
   };
 
-  const emitReact = (reaction: ReactionId) => {
-    if (inCooldown) return;
-    setLastActionAt(Date.now());
-    for (let i = 0; i < 5; i++) {
-      setTimeout(() => {
-        const id = ++bubbleIdRef.current;
-        const left = 15 + Math.random() * 70 + "%";
-        const duration = 1.6 + Math.random() * 0.8 + "s";
-        setBubbles((prev) => [...prev, { id, reaction, left, duration }]);
-        setTimeout(
-          () => setBubbles((prev) => prev.filter((b) => b.id !== id)),
-          2500,
-        );
-      }, i * 80);
-    }
-  };
 
   const onChatSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -917,61 +942,6 @@ export function ViewerOverlay({
         </button>
         <div className={VIEWER_TITLE_WRAP_CLS}>
           <h3 className={VIEWER_TITLE_CLS}>{loc.title}</h3>
-          <span className={VIEWER_LIVE_PILL_CLS}>
-            <span className={VIEWER_LIVE_PULSE_CLS} aria-hidden="true"></span>
-            LIVE · <span>{fmtElapsed(elapsedSec)}</span>
-          </span>
-        </div>
-        <div className={VIEWER_STATS_CLS}>
-          <button
-            type="button"
-            className={VIEWER_ICON_BTN_CLS}
-            onClick={togglePip}
-            aria-label="Жижиг цонх (PiP)"
-            title="Жижиг цонх"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <rect x="3" y="5" width="18" height="14" rx="2" />
-              <rect
-                x="13"
-                y="11"
-                width="6"
-                height="5"
-                rx="1"
-                fill="currentColor"
-              />
-            </svg>
-          </button>
-          <button
-            type="button"
-            className={VIEWER_ICON_BTN_CLS}
-            onClick={toggleStageFs}
-            aria-label="Бүтэн дэлгэц"
-            title="Бүтэн дэлгэц"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <polyline points="15 3 21 3 21 9" />
-              <polyline points="9 21 3 21 3 15" />
-              <line x1="21" y1="3" x2="14" y2="10" />
-              <line x1="3" y1="21" x2="10" y2="14" />
-            </svg>
-          </button>
         </div>
       </header>
 
@@ -1081,6 +1051,11 @@ export function ViewerOverlay({
               }}
               poster={featuredEvent.image}
               onDoubleClick={toggleStageFs}
+              onClick={() => {
+                // Non-360 cams: the canvas tap-detection doesn't run, so wire
+                // tap-to-reveal directly on the video for mobile.
+                if (!is360 && window.innerWidth <= 1100) onVideoTapRef.current();
+              }}
             />
             <canvas
               ref={canvasRef}
@@ -1128,6 +1103,218 @@ export function ViewerOverlay({
                 </span>
               </div>
             )}
+
+            {buffering && !paused && activeCam?.hlsUrl && (
+              <div
+                role="status"
+                aria-label="Ачааллаж байна"
+                className="absolute inset-0 z-[3] grid place-items-center pointer-events-none"
+              >
+                <span
+                  aria-hidden="true"
+                  className="w-12 h-12 rounded-full border-[3px] border-white/25 border-t-white animate-spin [filter:drop-shadow(0_2px_6px_rgba(0,0,0,0.6))]"
+                />
+              </div>
+            )}
+
+            {/* YouTube-style tap-to-reveal controls (mobile). Tap the video to
+                toggle; auto-hides while playing. Center = play/pause,
+                bottom-left = LIVE + elapsed, bottom-right = fullscreen,
+                top-right gear = quality (defaults to highest). */}
+            <div
+              className={`hidden max-[1100px]:block absolute inset-0 z-[4] [transition:opacity_.2s_ease] ${
+                mCtl ? "opacity-100" : "opacity-0 pointer-events-none"
+              }`}
+            >
+              {/* scrim — tap an empty area to hide the controls */}
+              <button
+                type="button"
+                aria-label="Хяналт нуух"
+                onClick={() => setMCtl(false)}
+                className="absolute inset-0 w-full h-full bg-black/25 border-0 cursor-default"
+              />
+
+              {/* top-left: active camera + quality label (mirrors the desktop
+                  VIEWER_MAIN_CAM_CLS badge; revealed/hidden with the controls).
+                  pointer-events-none so a tap on it still hits the scrim and
+                  dismisses the overlay. */}
+              {activeCam && (
+                <span
+                  className={`absolute top-2 left-2 z-[1] inline-block max-w-[70%] truncate pointer-events-none ${VIEWER_MAIN_CAM_BASE_CLS}`}
+                >
+                  <strong>{activeCam.label}</strong> · <span>{subLabel}</span>
+                </span>
+              )}
+
+              {/* top-right: quality gear + menu */}
+              {(() => {
+                const visibleLevels = qualityLevels.filter(
+                  (l) =>
+                    l.height === 480 ||
+                    l.height === 720 ||
+                    l.height === 1080 ||
+                    l.height === 1440 ||
+                    l.height === 2160,
+                );
+                const currentHeight =
+                  qualityIdx === -1
+                    ? (visibleLevels[visibleLevels.length - 1]?.height ?? 0)
+                    : (qualityLevels.find((l) => l.index === qualityIdx)
+                        ?.height ?? 0);
+                return (
+                  <div ref={qualityRefM} className="absolute top-2 right-2">
+                    <button
+                      type="button"
+                      onClick={() => setQualityOpen((o) => !o)}
+                      aria-label="Чанар"
+                      aria-haspopup="listbox"
+                      aria-expanded={qualityOpen}
+                      className="relative w-11 h-11 grid place-items-center rounded-full bg-black/45 text-white active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white [&_svg]:w-[22px] [&_svg]:h-[22px]"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.7"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        <circle cx="12" cy="12" r="3" />
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                      </svg>
+                      {currentHeight >= 720 && (
+                        <span className="absolute -top-0.5 -right-0.5 text-[8px] font-extrabold leading-none px-1 py-[1px] rounded-[3px] bg-[#ff0000] text-white">
+                          HD
+                        </span>
+                      )}
+                    </button>
+                    {qualityOpen && (
+                      <ul
+                        role="listbox"
+                        aria-label="Чанар"
+                        className="absolute top-full right-0 mt-2 z-[20] min-w-[130px] p-1 list-none rounded-[12px] bg-[rgba(17,22,35,0.97)] border border-solid border-[rgba(255,255,255,0.1)] shadow-[0_18px_40px_-12px_rgba(0,0,0,0.7)]"
+                      >
+                        {[
+                          { idx: -1, label: "Auto" },
+                          ...visibleLevels.map((l) => ({
+                            idx: l.index,
+                            label: l.label,
+                          })),
+                        ].map((opt) => {
+                          const selected = opt.idx === qualityIdx;
+                          return (
+                            <li key={opt.idx}>
+                              <button
+                                type="button"
+                                role="option"
+                                aria-selected={selected}
+                                onClick={() => {
+                                  setQualityIdx(opt.idx);
+                                  setQualityOpen(false);
+                                }}
+                                className={`w-full inline-flex items-center gap-2 text-left font-semibold text-[13px] py-2.5 px-3 rounded-[8px] bg-transparent border-0 text-white active:bg-[rgba(255,255,255,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/70 ${
+                                  selected ? "bg-[rgba(34,48,198,0.28)]" : ""
+                                }`}
+                              >
+                                <span
+                                  aria-hidden="true"
+                                  className={`inline-flex w-3.5 justify-center ${
+                                    selected ? "opacity-100" : "opacity-0"
+                                  }`}
+                                >
+                                  <svg
+                                    viewBox="0 0 24 24"
+                                    width="12"
+                                    height="12"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="3"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  >
+                                    <polyline points="20 6 9 17 4 12" />
+                                  </svg>
+                                </span>
+                                {opt.label}
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* center: play / pause */}
+              <button
+                type="button"
+                onClick={togglePlay}
+                aria-label={paused ? "Тоглуулах" : "Түр зогсоох"}
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[72px] h-[72px] rounded-full bg-black/50 [backdrop-filter:blur(4px)] [-webkit-backdrop-filter:blur(4px)] grid place-items-center text-white active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white [&_svg]:w-9 [&_svg]:h-9"
+              >
+                {paused ? (
+                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <rect x="6" y="5" width="4" height="14" rx="1" />
+                    <rect x="14" y="5" width="4" height="14" rx="1" />
+                  </svg>
+                )}
+              </button>
+
+              {/* bottom-left: LIVE + elapsed running time */}
+              <div className="absolute bottom-3 left-3 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={jumpToLive}
+                  aria-label="Шууд"
+                  className={`inline-flex items-center gap-1.5 h-8 px-2.5 rounded-full text-[11px] font-extrabold tracking-[.1em] border border-solid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${
+                    isAtLive
+                      ? "bg-[rgba(229,57,53,0.22)] border-[rgba(229,57,53,0.5)] text-white"
+                      : "bg-[rgba(255,255,255,0.1)] border-[rgba(255,255,255,0.18)] text-[rgba(255,255,255,0.75)]"
+                  }`}
+                >
+                  <span
+                    className={`w-[7px] h-[7px] rounded-full ${
+                      isAtLive
+                        ? "bg-[#ef4444] [animation:live-pulse_1.4s_ease-in-out_infinite] motion-reduce:[animation:none]"
+                        : "bg-[rgba(255,255,255,0.5)]"
+                    }`}
+                  />
+                  LIVE
+                </button>
+                <span className="text-white text-[12px] font-semibold [font-variant-numeric:tabular-nums] [text-shadow:0_1px_3px_rgba(0,0,0,0.9)]">
+                  {fmtElapsed(elapsedSec)}
+                </span>
+              </div>
+
+              {/* bottom-right: fullscreen */}
+              <button
+                type="button"
+                onClick={toggleStageFs}
+                aria-label="Бүтэн дэлгэц"
+                className="absolute bottom-3 right-3 w-11 h-11 grid place-items-center rounded-full bg-black/45 text-white active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white [&_svg]:w-[22px] [&_svg]:h-[22px]"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <polyline points="15 3 21 3 21 9" />
+                  <polyline points="9 21 3 21 3 15" />
+                  <line x1="21" y1="3" x2="14" y2="10" />
+                  <line x1="3" y1="21" x2="10" y2="14" />
+                </svg>
+              </button>
+            </div>
           </div>
 
           {activeCam && (
@@ -1135,24 +1322,6 @@ export function ViewerOverlay({
               <strong>{activeCam.label}</strong> · <span>{subLabel}</span>
             </span>
           )}
-
-          <div className={VIEWER_REACT_FLOAT_CLS} aria-hidden="true">
-            {bubbles.map((b) => {
-              const r = REACTION_BY_ID[b.reaction];
-              return (
-                <svg
-                  key={b.id}
-                  viewBox="0 0 24 24"
-                  fill={r.color}
-                  aria-hidden="true"
-                  className="absolute bottom-20 w-8 h-8 opacity-0 [animation:reactRise_2s_ease-out_forwards] [will-change:transform,opacity] [filter:drop-shadow(0_4px_8px_rgba(0,0,0,0.5))]"
-                  style={{ left: b.left, animationDuration: b.duration }}
-                >
-                  <path d={r.path} />
-                </svg>
-              );
-            })}
-          </div>
 
           <div
             className={VIEWER_MOBILE_CAMS_CLS}
@@ -1210,7 +1379,25 @@ export function ViewerOverlay({
             ))}
           </div>
 
-          <div className={VIEWER_CONTROLS_CLS}>
+          <div
+            className={VIEWER_CONTROLS_CLS}
+            onMouseEnter={() => {
+              overControlsRef.current = true;
+              setIdle(false);
+            }}
+            onMouseLeave={() => {
+              overControlsRef.current = false;
+            }}
+          >
+            {/* Red live progress line (full, since we're at the live edge) with
+                a knob at the live edge — YouTube live style. */}
+            <div
+              className="absolute top-2 left-0 right-0 h-[3px] bg-[rgba(255,255,255,0.26)]"
+              aria-hidden="true"
+            >
+              <div className="absolute inset-y-0 left-0 right-0 bg-[#ff0000]" />
+              <span className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-[13px] h-[13px] rounded-full bg-[#ff0000] shadow-[0_0_0_1px_rgba(0,0,0,0.15)]" />
+            </div>
             <div className={VIEWER_CONTROLS_LEFT_CLS}>
               <button
                 type="button"
@@ -1287,14 +1474,14 @@ export function ViewerOverlay({
                 title={
                   isAtLive ? "Шууд дамжуулалт" : "Шууд дамжуулалт руу шилжих"
                 }
-                className={`inline-flex items-center gap-1.5 h-[34px] px-3 rounded-full text-[11px] font-extrabold tracking-[.12em] cursor-pointer border border-solid [transition:background_.15s_ease,color_.15s_ease,border-color_.15s_ease] max-[720px]:!h-[32px] max-[720px]:!px-2 max-[720px]:!gap-1 max-[720px]:!text-[10.5px] max-[720px]:!tracking-[.06em] ${
+                className={`inline-flex items-center gap-1.5 h-[34px] px-3 rounded-full text-[11px] font-extrabold tracking-[.12em] cursor-pointer border border-solid [transition:background_.15s_ease,color_.15s_ease,border-color_.15s_ease] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/90 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b0f1a] max-[720px]:!h-[32px] max-[720px]:!px-2 max-[720px]:!gap-1 max-[720px]:!text-[10.5px] max-[720px]:!tracking-[.06em] ${
                   isAtLive
                     ? "bg-[rgba(229,57,53,0.14)] border-[rgba(229,57,53,0.45)] text-white cursor-default"
                     : "bg-[rgba(255,255,255,0.06)] border-[rgba(255,255,255,0.18)] text-[rgba(255,255,255,0.85)] hover:bg-[rgba(229,57,53,0.14)] hover:border-[rgba(229,57,53,0.45)] hover:text-white"
                 }`}
               >
                 <span
-                  className={`w-[7px] h-[7px] rounded-full bg-[#ef4444] ${
+                  className={`w-[7px] h-[7px] rounded-full bg-[#ef4444] motion-reduce:[animation:none] ${
                     isAtLive
                       ? "[animation:live-pulse_1.4s_ease-in-out_infinite]"
                       : ""
@@ -1302,34 +1489,10 @@ export function ViewerOverlay({
                   aria-hidden="true"
                 />
                 LIVE
+                <span className="ml-1 font-semibold text-[rgba(255,255,255,0.72)] [font-variant-numeric:tabular-nums]">
+                  {fmtElapsed(elapsedSec)}
+                </span>
               </button>
-            </div>
-
-            <div
-              className={VIEWER_REACTIONS_CLS}
-              role="group"
-              aria-label="Реакц"
-            >
-              {REACTIONS.map((r) => (
-                <button
-                  key={r.id}
-                  type="button"
-                  className={`${VIEWER_REACT_CLS} grid place-items-center ${inCooldown ? "opacity-40 cursor-not-allowed hover:bg-transparent hover:scale-100" : ""}`}
-                  aria-label={r.label}
-                  title={inCooldown ? `${cooldownSecs}с дараа` : r.label}
-                  disabled={inCooldown}
-                  onClick={() => emitReact(r.id)}
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill={r.color}
-                    aria-hidden="true"
-                    className="w-5 h-5"
-                  >
-                    <path d={r.path} />
-                  </svg>
-                </button>
-              ))}
             </div>
 
             <div className={VIEWER_CONTROLS_RIGHT_CLS}>
@@ -1398,7 +1561,7 @@ export function ViewerOverlay({
                       onClick={() => setZoom(1)}
                       aria-label="Анхны хэмжээ"
                       title="Reset"
-                      className="inline-flex items-center justify-center h-[34px] min-w-[44px] px-2 rounded-full text-[11px] font-extrabold tracking-[.08em] text-[rgba(255,255,255,0.9)] bg-[rgba(255,255,255,0.06)] border border-solid border-[rgba(255,255,255,0.18)] cursor-pointer [transition:background_.15s_ease,border-color_.15s_ease] hover:bg-[rgba(255,255,255,0.12)] hover:border-[rgba(255,255,255,0.32)] max-[720px]:!hidden"
+                      className="inline-flex items-center justify-center h-[34px] min-w-[44px] px-2 rounded-full text-[11px] font-extrabold tracking-[.08em] text-[rgba(255,255,255,0.9)] bg-[rgba(255,255,255,0.06)] border border-solid border-[rgba(255,255,255,0.18)] cursor-pointer [transition:background_.15s_ease,border-color_.15s_ease] hover:bg-[rgba(255,255,255,0.12)] hover:border-[rgba(255,255,255,0.32)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/90 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b0f1a] max-[720px]:!hidden"
                     >
                       {zoom.toFixed(1)}×
                     </button>
@@ -1414,25 +1577,42 @@ export function ViewerOverlay({
                     l.height === 1440 ||
                     l.height === 2160,
                 );
-                const currentLabel =
+                const currentHeight =
                   qualityIdx === -1
-                    ? "Auto"
+                    ? (visibleLevels[visibleLevels.length - 1]?.height ?? 0)
                     : (qualityLevels.find((l) => l.index === qualityIdx)
-                        ?.label ?? "Auto");
+                        ?.height ?? 0);
                 return (
                   <div
                     ref={qualityRef}
-                    className="relative inline-flex items-center gap-2 text-xs text-[rgba(255,255,255,0.7)] max-[720px]:gap-1.5"
+                    className="relative inline-flex items-center gap-2 text-xs text-[rgba(255,255,255,0.7)]"
                   >
                     <button
                       type="button"
                       onClick={() => setQualityOpen((o) => !o)}
-                      aria-label="Чанар"
+                      aria-label="Тохиргоо"
                       aria-haspopup="listbox"
                       aria-expanded={qualityOpen}
-                      className="inline-flex items-center justify-center gap-2 min-w-[78px] bg-[rgba(255,255,255,0.06)] border border-solid border-[rgba(255,255,255,0.1)] text-white font-semibold text-[12.5px] py-[7px] px-3 rounded-[9px] cursor-pointer [transition:background_.15s_ease,border-color_.15s_ease] hover:bg-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)] max-[720px]:!min-w-[54px] max-[720px]:!text-[11px] max-[720px]:!py-1.5 max-[720px]:!px-2 max-[720px]:!rounded-[8px]"
+                      className={`relative ${VIEWER_ICON_BTN_CLS}`}
                     >
-                      <span>{currentLabel}</span>
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.7"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                        className={qualityOpen ? "[transform:rotate(30deg)] [transition:transform_.2s]" : "[transition:transform_.2s]"}
+                      >
+                        <circle cx="12" cy="12" r="3" />
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                      </svg>
+                      {currentHeight >= 720 && (
+                        <span className="absolute -top-1 -right-1 text-[8px] font-extrabold leading-none px-1 py-[1px] rounded-[3px] bg-[#ff0000] text-white">
+                          HD
+                        </span>
+                      )}
                     </button>
                     {qualityOpen && (
                       <ul
@@ -1458,7 +1638,7 @@ export function ViewerOverlay({
                                   setQualityIdx(opt.idx);
                                   setQualityOpen(false);
                                 }}
-                                className={`w-full inline-flex items-center gap-2 text-left font-semibold text-[12.5px] py-2 px-3 rounded-[8px] cursor-pointer bg-transparent border-0 text-white [transition:background_.12s_ease] hover:bg-[rgba(255,255,255,0.08)] ${
+                                className={`w-full inline-flex items-center gap-2 text-left font-semibold text-[12.5px] py-2 px-3 rounded-[8px] cursor-pointer bg-transparent border-0 text-white [transition:background_.12s_ease] hover:bg-[rgba(255,255,255,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/70 ${
                                   selected ? "bg-[rgba(34,48,198,0.25)]" : ""
                                 }`}
                               >
@@ -1492,6 +1672,34 @@ export function ViewerOverlay({
               <button
                 type="button"
                 className={VIEWER_ICON_BTN_CLS}
+                onClick={togglePip}
+                aria-label="Мини тоглуулагч"
+                title="Мини тоглуулагч"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <rect x="3" y="4" width="18" height="15" rx="2" />
+                  <rect
+                    x="12"
+                    y="11"
+                    width="7"
+                    height="5"
+                    rx="1"
+                    fill="currentColor"
+                    stroke="none"
+                  />
+                </svg>
+              </button>
+              <button
+                type="button"
+                className={VIEWER_ICON_BTN_CLS}
                 onClick={toggleStageFs}
                 aria-label="Бүтэн дэлгэц"
                 title="Бүтэн дэлгэц"
@@ -1515,22 +1723,9 @@ export function ViewerOverlay({
           </div>
         </section>
 
-        {chatOpen && (
-          <div
-            className="hidden max-[1100px]:block fixed inset-0 z-[140] bg-black/40 [animation:tmFade_.2s_ease]"
-            onClick={() => setChatOpen(false)}
-            aria-hidden="true"
-          />
-        )}
-
-        <aside
-          className={
-            chatOpen
-              ? `${VIEWER_CHAT_CLS} max-[1100px]:!fixed max-[1100px]:!left-0 max-[1100px]:!right-0 max-[1100px]:!bottom-0 max-[1100px]:!top-[60vh] max-[1100px]:!z-[150] max-[1100px]:!rounded-t-[20px] max-[1100px]:!rounded-b-none max-[1100px]:!bg-[#0b1220] max-[1100px]:shadow-[0_-12px_32px_-12px_rgba(0,0,0,0.6)] max-[1100px]:![animation:tmSlideUp_.25s_ease] max-[1100px]:[will-change:transform]`
-              : `${VIEWER_CHAT_CLS} max-[1100px]:hidden`
-          }
-          aria-label="Шууд чат"
-        >
+        {/* YouTube-style: chat is docked inline below the player on mobile
+            (no floating button, no covering sheet). */}
+        <aside className={VIEWER_CHAT_CLS} aria-label="Шууд чат">
           <header className={VIEWER_CHAT_HEAD_CLS}>
             <svg
               viewBox="0 0 24 24"
@@ -1561,25 +1756,6 @@ export function ViewerOverlay({
               }}
             />
             <span className={VIEWER_CHAT_COUNT_CLS}>{chat.length}</span>
-            <button
-              type="button"
-              onClick={() => setChatOpen(false)}
-              aria-label="Чат хаах"
-              className="hidden max-[1100px]:grid ml-2 w-8 h-8 rounded-full place-items-center bg-[rgba(255,255,255,0.08)] border-0 cursor-pointer text-white [transition:background_.15s_ease] hover:bg-[rgba(255,255,255,0.16)] [&_svg]:!w-3.5 [&_svg]:!h-3.5"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
           </header>
           <div
             className={VIEWER_CHAT_LIST_CLS}
@@ -1660,159 +1836,7 @@ export function ViewerOverlay({
           </form>
         </aside>
 
-        {!chatOpen && !isFs && !pseudoFs && (
-          <button
-            type="button"
-            onClick={() => setChatOpen(true)}
-            aria-label="Шууд чат нээх"
-            className="hidden max-[1100px]:inline-flex fixed bottom-5 right-4 z-[120] items-center gap-2 py-2.5 px-4 rounded-full bg-brand-blue text-white text-sm font-bold border-0 cursor-pointer shadow-[0_12px_28px_-8px_rgba(34,48,198,0.7)] [transition:transform_.15s_ease,background_.15s_ease] active:scale-95 hover:bg-brand-blue-soft [&_svg]:w-4 [&_svg]:h-4"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
-            Чат
-            {chat.length > 0 && (
-              <span className="text-[10.5px] font-extrabold py-0.5 px-1.5 rounded-full bg-white/20">
-                {chat.length}
-              </span>
-            )}
-          </button>
-        )}
-
-        <button
-          type="button"
-          className={VIEWER_CAM_PICKER_BTN_CLS}
-          onClick={() => setCamPickerOpen(true)}
-          aria-label="Камер сонгох"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-            <circle cx="12" cy="13" r="4" />
-          </svg>
-          {activeCam ? `Камер: ${activeCam.label}` : "Камер сонгох"}
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-            style={{ marginLeft: "auto" }}
-          >
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
-        </button>
       </div>
-
-      {camPickerOpen && (
-        <>
-          <div
-            className={VIEWER_CAM_SHEET_BACKDROP_CLS}
-            onClick={() => setCamPickerOpen(false)}
-          />
-          <div
-            className={VIEWER_CAM_SHEET_CLS}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Камер сонгох"
-          >
-            <header className={VIEWER_CAM_SHEET_HEAD_CLS}>
-              <h4 className={VIEWER_CAM_SHEET_TITLE_CLS}>Камерын өнцөг</h4>
-              <button
-                type="button"
-                className={VIEWER_CAM_SHEET_CLOSE_CLS}
-                onClick={() => setCamPickerOpen(false)}
-                aria-label="Хаах"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            </header>
-            <div className={VIEWER_CAM_SHEET_LIST_CLS}>
-              {cams.map((cam, i) => (
-                <button
-                  key={cam.id}
-                  type="button"
-                  className={`${VIEWER_ANGLE_CLS}${camIdx === i ? " " + VIEWER_ANGLE_ACTIVE_CLS : ""}`}
-                  onClick={() => {
-                    setCamIdx(i);
-                    setCamPickerOpen(false);
-                  }}
-                >
-                  <span
-                    className={VIEWER_ANGLE_THUMB_CLS}
-                    style={{ background: "#0b1929", position: "relative" }}
-                  >
-                    {featuredEvent.image && (
-                      <img
-                        src={featuredEvent.image}
-                        alt=""
-                        aria-hidden="true"
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                          opacity: camIdx === i ? 0.5 : 0.35,
-                        }}
-                      />
-                    )}
-                    <span className={VIEWER_ANGLE_LIVE_CLS}></span>
-                    {cam.type === "360" && (
-                      <span
-                        style={{
-                          position: "absolute",
-                          bottom: 4,
-                          right: 4,
-                          fontSize: 9,
-                          fontWeight: 700,
-                          background: "rgba(0,0,0,0.7)",
-                          color: "#60a5fa",
-                          padding: "1px 4px",
-                          borderRadius: 3,
-                          letterSpacing: "0.06em",
-                        }}
-                      >
-                        360°
-                      </span>
-                    )}
-                  </span>
-                  <span className={VIEWER_ANGLE_LABEL_CLS}>
-                    <strong>{cam.label}</strong>
-                    <small>{cam.sub}</small>
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </>
-      )}
     </div>
   );
 }

@@ -155,14 +155,16 @@ export const TICKETS_EMPTY_CLS =
 export const TICKETS_EMPTY_ICON_CLS =
   "w-16 h-16 mx-auto mb-4 rounded-[18px] bg-[rgba(34,48,198,0.16)] text-brand-blue-soft grid place-items-center [&_svg]:w-[30px] [&_svg]:h-[30px]";
 
+// Uses dvh (not vh) so the Android Chrome dynamic toolbar can't push the modal —
+// and its checkout button — below the visible viewport (buy-ticket Android fix).
 export const TICKET_MODAL_CLS =
-  "fixed inset-0 z-[200] grid place-items-center p-6";
+  "fixed inset-0 z-[200] grid place-items-center p-6 [height:100dvh]";
 
 export const TICKET_MODAL_BACKDROP_CLS =
   "absolute inset-0 bg-[rgba(5,8,16,0.72)] [backdrop-filter:blur(8px)] [-webkit-backdrop-filter:blur(8px)] [animation:tmFade_.25s_ease]";
 
 export const TICKET_MODAL_CARD_CLS =
-  "relative overflow-auto rounded-[20px] w-[min(880px,100%)] max-h-[92vh] bg-[#11172A] text-[rgba(255,255,255,0.88)] border border-solid border-[rgba(255,255,255,0.08)] shadow-[0_40px_80px_-30px_rgba(0,0,0,0.8)] [animation:tmPop_.35s_cubic-bezier(.34,1.56,.64,1)_both]";
+  "relative overflow-auto rounded-[20px] w-[min(880px,100%)] max-h-[92dvh] bg-[#11172A] text-[rgba(255,255,255,0.88)] border border-solid border-[rgba(255,255,255,0.08)] shadow-[0_40px_80px_-30px_rgba(0,0,0,0.8)] [animation:tmPop_.35s_cubic-bezier(.34,1.56,.64,1)_both]";
 
 export const TICKET_MODAL_CLOSE_CLS =
   "absolute z-[2] w-9 h-9 rounded-full text-white grid cursor-pointer top-[14px] right-[14px] bg-[rgba(255,255,255,0.08)] border border-solid border-[rgba(255,255,255,0.1)] place-items-center [transition:background_.15s_ease] hover:bg-[rgba(255,255,255,0.16)] [&_svg]:w-4 [&_svg]:h-4";
@@ -252,7 +254,7 @@ export const VIEWER_HEADER_CLS =
   "grid items-center gap-[18px] flex-none [grid-template-columns:auto_1fr_auto] py-[14px] px-[22px] bg-[rgba(11,15,26,0.92)] border-b border-solid border-[rgba(255,255,255,0.06)] max-[720px]:[grid-template-columns:auto_1fr] max-[720px]:py-2.5 max-[720px]:px-[14px]";
 
 export const VIEWER_CLOSE_CLS =
-  "w-[38px] h-[38px] rounded-full text-white cursor-pointer grid place-items-center bg-[rgba(255,255,255,0.08)] border border-solid border-[rgba(255,255,255,0.1)] [transition:background_.15s_ease,transform_.15s_ease] hover:bg-[rgba(255,255,255,0.16)] hover:[transform:rotate(90deg)] [&_svg]:w-[18px] [&_svg]:h-[18px]";
+  "w-[38px] h-[38px] rounded-full text-white cursor-pointer grid place-items-center bg-[rgba(255,255,255,0.08)] border border-solid border-[rgba(255,255,255,0.1)] [transition:background_.15s_ease,transform_.15s_ease] hover:bg-[rgba(255,255,255,0.16)] hover:[transform:rotate(90deg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/90 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b0f1a] [&_svg]:w-[18px] [&_svg]:h-[18px]";
 
 export const VIEWER_TITLE_WRAP_CLS = "flex items-center gap-[14px] min-w-0";
 export const VIEWER_TITLE_CLS =
@@ -267,16 +269,16 @@ export const VIEWER_STATS_CLS =
 export const VIEWER_STAT_CLS =
   "inline-flex items-center gap-2 rounded-full text-[13px] font-semibold py-2 px-[14px] bg-[rgba(255,255,255,0.06)] border border-solid border-[rgba(255,255,255,0.08)] [font-variant-numeric:tabular-nums] [&_svg]:w-4 [&_svg]:h-4";
 export const VIEWER_ICON_BTN_CLS =
-  "w-[38px] h-[38px] rounded-[10px] text-white cursor-pointer grid place-items-center bg-[rgba(255,255,255,0.06)] border border-solid border-[rgba(255,255,255,0.08)] [transition:background_.15s_ease,color_.15s_ease,transform_.15s_ease] hover:bg-brand-blue hover:-translate-y-px [&_svg]:w-[17px] [&_svg]:h-[17px] max-[720px]:!w-[33px] max-[720px]:!h-[33px] max-[720px]:!rounded-[9px] max-[720px]:shrink-0 max-[720px]:[&_svg]:!w-[15px] max-[720px]:[&_svg]:!h-[15px]";
+  "w-[38px] h-[38px] rounded-[10px] text-white cursor-pointer grid place-items-center bg-[rgba(255,255,255,0.06)] border border-solid border-[rgba(255,255,255,0.08)] [transition:background_.15s_ease,color_.15s_ease,transform_.15s_ease] hover:bg-brand-blue hover:-translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/90 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b0f1a] disabled:opacity-40 disabled:cursor-default disabled:hover:bg-[rgba(255,255,255,0.06)] disabled:hover:translate-y-0 [&_svg]:w-[17px] [&_svg]:h-[17px] max-[720px]:!w-[44px] max-[720px]:!h-[44px] max-[720px]:!rounded-[12px] max-[720px]:shrink-0 max-[720px]:[&_svg]:!w-[20px] max-[720px]:[&_svg]:!h-[20px]";
 export const VIEWER_ICON_BTN_ON_CLS = "is-on !bg-brand-blue";
 
 export const VIEWER_BODY_CLS =
-  "flex-1 min-h-0 min-w-0 max-w-full w-full gap-[18px] p-[16px] overflow-x-hidden overflow-y-auto grid [grid-template-columns:132px_minmax(0,1fr)_300px] max-[1100px]:!flex max-[1100px]:!flex-col max-[720px]:p-2.5 max-[720px]:gap-2";
+  "flex-1 min-h-0 min-w-0 max-w-full w-full gap-[18px] p-[16px] overflow-x-hidden overflow-y-auto grid [grid-template-columns:132px_minmax(0,1fr)_300px] max-[1100px]:!flex max-[1100px]:!flex-col max-[1100px]:!pt-0 max-[720px]:px-2.5 max-[720px]:pb-2.5 max-[720px]:gap-2";
 
 export const VIEWER_ANGLES_CLS =
   "flex flex-col gap-2.5 min-h-0 overflow-y-auto overflow-x-hidden pr-1 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-[rgba(255,255,255,0.1)] [&::-webkit-scrollbar-thumb]:rounded-full max-[1100px]:hidden";
 export const VIEWER_ANGLE_CLS =
-  "block bg-transparent border-0 p-0 cursor-pointer text-left text-white [transition:transform_.2s_ease,opacity_.2s_ease] opacity-70 hover:opacity-100 hover:-translate-y-0.5 [&.is-active]:opacity-100";
+  "block bg-transparent border-0 p-0.5 rounded-[12px] cursor-pointer text-left text-white [transition:transform_.2s_ease,opacity_.2s_ease] opacity-70 hover:opacity-100 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-white/90 focus-visible:ring-offset-2 focus-visible:ring-offset-[#05080F] [&.is-active]:opacity-100";
 export const VIEWER_ANGLE_ACTIVE_CLS = "is-active";
 export const VIEWER_ANGLE_THUMB_CLS =
   "block relative rounded-[10px] overflow-hidden [aspect-ratio:16/9] bg-black border border-solid border-[rgba(255,255,255,0.08)] [transition:border-color_.2s_ease,box-shadow_.2s_ease] [.is-active_&]:!border-brand-blue [.is-active_&]:!border-2 [.is-active_&]:shadow-[0_10px_24px_-10px_rgba(34,48,198,0.75),0_0_0_2px_rgba(245,158,11,0.18)] [&_video]:w-full [&_video]:h-full [&_video]:object-cover [&_video]:block";
@@ -293,14 +295,14 @@ export const VFX_VIDEO_CLS: Record<
   band: "[&_video]:[transform:scale(1.25)_translate(-8%,4%)] [&_video]:[filter:contrast(1.05)_saturate(1.1)]",
 };
 export const VIEWER_ANGLE_LIVE_CLS =
-  "absolute w-2 h-2 rounded-full top-2 left-2 bg-[#E53935] shadow-[0_0_0_0_rgba(229,57,53,0.6)] [animation:live-pulse_1.4s_ease-in-out_infinite]";
+  "absolute w-2 h-2 rounded-full top-2 left-2 bg-[#E53935] shadow-[0_0_0_0_rgba(229,57,53,0.6)] [animation:live-pulse_1.4s_ease-in-out_infinite] motion-reduce:[animation:none]";
 export const VIEWER_ANGLE_LABEL_CLS =
   "flex flex-col mt-1.5 text-[11.5px] leading-[1.25] [&_strong]:text-white [&_strong]:font-bold [&_strong]:truncate [&_small]:text-[9.5px] [&_small]:uppercase [&_small]:text-[rgba(255,255,255,0.45)] [&_small]:tracking-[.08em] [&_small]:truncate [.is-active_&_strong]:text-brand-blue-soft";
 
 export const VIEWER_MOBILE_CAMS_CLS =
   "hidden max-[1100px]:flex flex-row gap-2 overflow-x-auto overflow-y-hidden -mx-2.5 px-2.5 pb-1.5 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [.is-fs_&]:!hidden";
 export const VIEWER_MOBILE_CAM_CLS =
-  "shrink-0 w-[116px] block bg-transparent border-0 p-0 cursor-pointer text-left text-white snap-start [transition:opacity_.15s_ease,transform_.15s_ease] opacity-65 [&.is-active]:opacity-100 active:scale-[0.97]";
+  "shrink-0 w-[116px] block bg-transparent border-0 p-0.5 rounded-[12px] cursor-pointer text-left text-white snap-start [transition:opacity_.15s_ease,transform_.15s_ease] opacity-65 [&.is-active]:opacity-100 active:scale-[0.97] focus-visible:outline-none focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-white/90 focus-visible:ring-offset-2 focus-visible:ring-offset-[#05080F]";
 export const VIEWER_MOBILE_CAM_THUMB_CLS =
   "block relative rounded-[10px] overflow-hidden aspect-[16/9] bg-black border border-solid border-[rgba(255,255,255,0.1)] [transition:border-color_.15s_ease,box-shadow_.15s_ease] [.is-active_&]:!border-2 [.is-active_&]:!border-brand-blue [.is-active_&]:shadow-[0_8px_22px_-10px_rgba(34,48,198,0.75),0_0_0_2px_rgba(245,158,11,0.18)]";
 export const VIEWER_MOBILE_CAM_LABEL_CLS =
@@ -309,27 +311,35 @@ export const VIEWER_MOBILE_CAM_LABEL_CLS =
 export const VIEWER_STAGE_CLS =
   "relative min-h-0 min-w-0 max-w-full flex flex-col gap-3 max-[1100px]:w-full [&.is-fs]:w-screen [&.is-fs]:h-screen [&.is-fs]:p-0 [&.is-fs]:bg-black [&.is-fs]:gap-0 [&.is-fs.is-idle]:cursor-none";
 export const VIEWER_STAGE_SHELL_CLS =
-  "flex-1 min-h-0 relative rounded-2xl overflow-hidden bg-black shadow-[0_40px_80px_-40px_rgba(0,0,0,0.9),0_0_80px_-30px_rgba(34,48,198,0.45),inset_0_0_0_1px_rgba(255,255,255,0.04)] max-[1100px]:!flex-none max-[1100px]:w-full max-[1100px]:!h-[calc((100vw-20px)*9/16)] max-[1100px]:!max-h-[70vh] max-[720px]:!h-[calc((100vw-20px)*9/16)] max-[720px]:!max-h-none [@media_(max-height:500px)]:!max-h-[calc(100dvh-220px)] [.is-fs_&]:!flex-1 [.is-fs_&]:!h-auto [.is-fs_&]:!max-h-none [.is-fs_&]:rounded-none [.is-fs_&]:shadow-none [&_video]:w-full [&_video]:h-full [&_video]:object-cover [&_video]:block [&_video]:[transition:transform_.35s_ease,filter_.35s_ease]";
+  "flex-1 min-h-0 relative rounded-2xl overflow-hidden bg-black shadow-[0_40px_80px_-40px_rgba(0,0,0,0.9),0_0_80px_-30px_rgba(34,48,198,0.45),inset_0_0_0_1px_rgba(255,255,255,0.04)] max-[1100px]:!flex-none max-[1100px]:!w-screen max-[1100px]:!mx-[calc(50%-50vw)] max-[1100px]:!h-[calc(100vw*9/16)] max-[1100px]:!max-h-[70vh] max-[1100px]:!rounded-none max-[1100px]:!shadow-none max-[720px]:!h-[calc(100vw*9/16)] max-[720px]:!max-h-none [@media_(max-height:500px)]:!max-h-[calc(100dvh-220px)] [.is-fs_&]:!flex-1 [.is-fs_&]:!h-auto [.is-fs_&]:!max-h-none [.is-fs_&]:rounded-none [.is-fs_&]:shadow-none [&_video]:w-full [&_video]:h-full [&_video]:object-cover [&_video]:block [&_video]:[transition:transform_.35s_ease,filter_.35s_ease]";
+// Shared visual for the active-camera badge, used by both the desktop top-left
+// chip and the mobile tap-to-reveal overlay so they look identical.
+export const VIEWER_MAIN_CAM_BASE_CLS =
+  "bg-[rgba(11,15,26,0.7)] [backdrop-filter:blur(8px)] [-webkit-backdrop-filter:blur(8px)] py-[7px] px-[13px] rounded-full text-xs text-[rgba(255,255,255,0.9)] tracking-[.04em] [&_strong]:text-white [&_strong]:font-bold [&_strong]:mr-1";
+
 export const VIEWER_MAIN_CAM_CLS =
-  "absolute top-4 left-4 z-[2] bg-[rgba(11,15,26,0.7)] [backdrop-filter:blur(8px)] [-webkit-backdrop-filter:blur(8px)] py-[7px] px-[13px] rounded-full text-xs text-[rgba(255,255,255,0.9)] tracking-[.04em] [&_strong]:text-white [&_strong]:font-bold [&_strong]:mr-1 [.is-fs_&]:top-[22px] [.is-fs_&]:left-[22px] [.is-fs_&]:[transition:opacity_.25s_ease] [.is-fs.is-idle_&]:opacity-0";
+  `absolute top-4 left-4 z-[2] max-[1100px]:hidden ${VIEWER_MAIN_CAM_BASE_CLS} [.is-fs_&]:top-[22px] [.is-fs_&]:left-[22px] [.is-fs_&]:[transition:opacity_.25s_ease] [.is-fs.is-idle_&]:opacity-0`;
 
 export const VIEWER_REACT_FLOAT_CLS =
   "absolute inset-0 pointer-events-none overflow-hidden";
 
+// Desktop: YouTube-style control bar overlaid on the bottom of the video with a
+// gradient scrim; auto-hides when the pointer is idle. Fullscreen keeps the
+// centered glass card. Hidden on mobile (the on-video overlay handles it).
 export const VIEWER_CONTROLS_CLS =
-  "flex-none min-w-0 grid [grid-template-columns:minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 py-2.5 px-[14px] bg-[rgba(255,255,255,0.04)] border border-solid border-[rgba(255,255,255,0.08)] rounded-[14px] [.is-fs_&]:absolute [.is-fs_&]:left-1/2 [.is-fs_&]:bottom-6 [.is-fs_&]:[transform:translateX(-50%)] [.is-fs_&]:w-[min(900px,calc(100vw-32px))] [.is-fs_&]:bg-[rgba(11,15,26,0.65)] [.is-fs_&]:[backdrop-filter:blur(14px)_saturate(160%)] [.is-fs_&]:[-webkit-backdrop-filter:blur(14px)_saturate(160%)] [.is-fs_&]:border-[rgba(255,255,255,0.12)] [.is-fs_&]:shadow-[0_18px_40px_-10px_rgba(0,0,0,0.6)] [.is-fs_&]:opacity-100 [.is-fs_&]:[transition:opacity_.25s_ease] [.is-fs.is-idle_&]:!opacity-0 [.is-fs.is-idle_&]:pointer-events-none max-[720px]:!flex max-[720px]:!flex-wrap max-[720px]:!items-center max-[720px]:!justify-between max-[720px]:gap-y-2.5 max-[720px]:gap-x-1 max-[720px]:py-2.5 max-[720px]:px-2.5 max-[720px]:rounded-[16px] max-[720px]:!bg-[rgba(11,15,26,0.85)] max-[720px]:!border-[rgba(255,255,255,0.10)]";
+  "absolute inset-x-0 bottom-0 z-[5] flex items-center justify-between gap-4 px-4 pt-9 pb-2.5 [background:linear-gradient(to_top,rgba(0,0,0,0.8),rgba(0,0,0,0.14),transparent)] [transition:opacity_.25s_ease] [.is-idle_&]:opacity-0 [.is-idle_&]:pointer-events-none [.is-fs_&]:!inset-x-auto [.is-fs_&]:!left-1/2 [.is-fs_&]:!bottom-6 [.is-fs_&]:[transform:translateX(-50%)] [.is-fs_&]:!w-[min(900px,calc(100vw-32px))] [.is-fs_&]:!rounded-[14px] [.is-fs_&]:!pt-2.5 [.is-fs_&]:!bg-[rgba(11,15,26,0.65)] [.is-fs_&]:[backdrop-filter:blur(14px)_saturate(160%)] [.is-fs_&]:[-webkit-backdrop-filter:blur(14px)_saturate(160%)] [.is-fs_&]:border [.is-fs_&]:border-solid [.is-fs_&]:border-[rgba(255,255,255,0.12)] [.is-fs.is-idle_&]:!opacity-0 [.is-fs.is-idle_&]:pointer-events-none max-[1100px]:!hidden";
 export const VIEWER_CONTROLS_LEFT_CLS =
   "inline-flex items-center gap-2.5 min-w-0 max-[720px]:gap-1 max-[720px]:shrink-0";
 export const VIEWER_CONTROLS_RIGHT_CLS =
   "inline-flex items-center gap-2.5 justify-self-end max-[720px]:justify-self-auto max-[720px]:gap-1 max-[720px]:shrink-0";
 
 export const VIEWER_VOL_CLS =
-  "[appearance:none] [-webkit-appearance:none] w-[110px] h-1 bg-[rgba(255,255,255,0.18)] rounded-full cursor-pointer max-[720px]:hidden [&::-webkit-slider-thumb]:[-webkit-appearance:none] [&::-webkit-slider-thumb]:w-[14px] [&::-webkit-slider-thumb]:h-[14px] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-brand-blue [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-solid [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:w-[14px] [&::-moz-range-thumb]:h-[14px] [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-brand-blue [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-solid [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:cursor-pointer";
+  "[appearance:none] [-webkit-appearance:none] w-[110px] h-1 bg-[rgba(255,255,255,0.18)] rounded-full cursor-pointer max-[720px]:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/90 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b0f1a] [&::-webkit-slider-thumb]:[-webkit-appearance:none] [&::-webkit-slider-thumb]:w-[14px] [&::-webkit-slider-thumb]:h-[14px] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-brand-blue [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-solid [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:w-[14px] [&::-moz-range-thumb]:h-[14px] [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-brand-blue [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-solid [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:cursor-pointer";
 
 export const VIEWER_REACTIONS_CLS =
-  "inline-flex gap-1.5 p-1 bg-[rgba(255,255,255,0.04)] rounded-full border border-solid border-[rgba(255,255,255,0.06)] shrink-0 max-[720px]:order-last max-[720px]:[flex-basis:100%] max-[720px]:justify-center max-[720px]:gap-2 max-[720px]:!bg-transparent max-[720px]:!border-0 max-[720px]:!p-0";
+  "inline-flex gap-1.5 p-1 bg-[rgba(255,255,255,0.04)] rounded-full border border-solid border-[rgba(255,255,255,0.06)] shrink-0 max-[1100px]:gap-1 max-[1100px]:!bg-transparent max-[1100px]:!border-0 max-[1100px]:!p-0 max-[1100px]:shrink-0";
 export const VIEWER_REACT_CLS =
-  "w-9 h-9 rounded-full border-0 bg-transparent text-lg cursor-pointer [transition:background_.15s_ease,transform_.15s_ease] hover:bg-[rgba(255,255,255,0.1)] hover:scale-[1.12] active:scale-90 max-[720px]:w-[30px] max-[720px]:h-[30px] max-[720px]:text-sm";
+  "w-9 h-9 rounded-full border-0 bg-transparent text-lg cursor-pointer [transition:background_.15s_ease,transform_.15s_ease] hover:bg-[rgba(255,255,255,0.1)] hover:scale-[1.12] active:scale-90 max-[720px]:w-[40px] max-[720px]:h-[40px] max-[720px]:text-base";
 
 export const VIEWER_QUALITY_CLS =
   "inline-flex items-center gap-2 text-xs text-[rgba(255,255,255,0.7)] max-[720px]:gap-1.5 [&_select]:[appearance:none] [&_select]:[-webkit-appearance:none] [&_select]:bg-[rgba(255,255,255,0.06)] [&_select]:border [&_select]:border-solid [&_select]:border-[rgba(255,255,255,0.1)] [&_select]:text-white [&_select]:font-[inherit] [&_select]:text-[12.5px] [&_select]:font-semibold [&_select]:pt-[7px] [&_select]:pr-[26px] [&_select]:pb-[7px] [&_select]:pl-3 [&_select]:rounded-[9px] [&_select]:cursor-pointer [&_select]:[background-repeat:no-repeat] [&_select]:[background-position:right_9px_center] [&_select]:[background-size:9px_5px] [&_select]:[background-image:url(\"data:image/svg+xml;utf8,<svg_xmlns='http://www.w3.org/2000/svg'_viewBox='0_0_10_6'><path_d='M1_1l4_4_4-4'_stroke='%23fff'_stroke-width='1.6'_fill='none'_stroke-linecap='round'_stroke-linejoin='round'/></svg>\")] max-[720px]:[&_select]:text-[11.5px] max-[720px]:[&_select]:pt-1.5 max-[720px]:[&_select]:pb-1.5 max-[720px]:[&_select]:pl-2";
@@ -350,7 +360,7 @@ export const VIEWER_MSG_NAME_CLS = "font-bold mr-1.5";
 export const VIEWER_CHAT_FORM_CLS =
   "flex-none flex gap-2 p-2.5 border-t border-solid border-[rgba(255,255,255,0.06)] [&_input]:flex-1 [&_input]:bg-[rgba(255,255,255,0.04)] [&_input]:border [&_input]:border-solid [&_input]:border-[rgba(255,255,255,0.1)] [&_input]:text-white [&_input]:font-[inherit] [&_input]:text-[13px] [&_input]:py-[9px] [&_input]:px-3 [&_input]:rounded-[10px] [&_input]:outline-none [&_input]:[transition:border-color_.15s_ease] [&_input]:placeholder:text-[rgba(255,255,255,0.4)] [&_input]:focus:border-brand-blue max-[720px]:[&_input]:py-3 max-[720px]:[&_input]:text-[14px]";
 export const VIEWER_CHAT_SEND_CLS =
-  "w-[38px] h-[38px] rounded-[10px] bg-brand-blue border-0 text-white cursor-pointer grid place-items-center shrink-0 [transition:background_.15s_ease,transform_.15s_ease] hover:bg-brand-blue-soft hover:-translate-y-px disabled:opacity-50 disabled:cursor-not-allowed [&_svg]:w-4 [&_svg]:h-4 max-[720px]:!w-[44px] max-[720px]:!h-[44px]";
+  "w-[38px] h-[38px] rounded-[10px] bg-brand-blue border-0 text-white cursor-pointer grid place-items-center shrink-0 [transition:background_.15s_ease,transform_.15s_ease] hover:bg-brand-blue-soft hover:-translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/90 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b0f1a] disabled:opacity-50 disabled:cursor-not-allowed [&_svg]:w-4 [&_svg]:h-4 max-[720px]:!w-[44px] max-[720px]:!h-[44px]";
 
 export const VIEWER_CAM_PICKER_BTN_CLS = "hidden";
 
