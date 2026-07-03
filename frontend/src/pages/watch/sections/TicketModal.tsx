@@ -6,7 +6,8 @@ import {
   type MouseEvent as ReactMouseEvent,
 } from "react";
 import { useTranslation } from "react-i18next";
-import type { TicketCreateResponse } from "@cs360/shared";
+import type { TicketCreateResponse, TicketTier } from "@cs360/shared";
+import { TICKET_TIERS, TICKET_TIER_ORDER } from "@cs360/shared";
 import type { Session } from "../../../auth";
 import { api } from "../../../lib/api";
 import type { OrderRecord } from "../../../data/store";
@@ -82,6 +83,12 @@ export function TicketModal({
     price: total,
     ctaLabel,
   } = useMemo(() => resolveTicketKind(event, t), [event, t]);
+
+  // Tier selection (live purchases only). Replay stays on its legacy flow.
+  const [tier, setTier] = useState<TicketTier>("standard");
+  const useTiers = kind === "live";
+  // Displayed/charged amount: fixed tier price for live, legacy price otherwise.
+  const payTotal = useTiers ? TICKET_TIERS[tier].price : total;
   const QR_TTL_MS = 10 * 60 * 1000;
 
   useEffect(() => {
@@ -103,7 +110,7 @@ export function TicketModal({
     if (kind === "expired") return false;
     const res = await api.createTicket({
       event_id: event.id,
-      ticket_type: kind,
+      ...(useTiers ? { tier } : { ticket_type: kind }),
     });
     if (!res.ok) {
       setAlert(`${t("ticket_error")} (${res.error})`);
@@ -112,7 +119,7 @@ export function TicketModal({
     setInvoice(res.data);
     setQrExpiresAt(Date.now() + QR_TTL_MS);
     return true;
-  }, [event.id, kind, t, QR_TTL_MS]);
+  }, [event.id, kind, useTiers, tier, t, QR_TTL_MS]);
 
   const checkout = async () => {
     setAlert("");
@@ -140,9 +147,9 @@ export function TicketModal({
         title: event.title,
         date: event.date,
         image: event.image,
-        tier: "standard",
-        tierName: "",
-        qty: 1,
+        tier: useTiers ? tier : "standard",
+        tierName: useTiers ? t(`ticket_tier_${tier}`) : "",
+        qty: useTiers ? TICKET_TIERS[tier].maxDevices : 1,
         unitPrice: invoice.price,
         total: invoice.price,
         payment: "qpay",
@@ -156,7 +163,7 @@ export function TicketModal({
       return true;
     }
     return false;
-  }, [invoice, event, session, onPurchased]);
+  }, [invoice, event, session, onPurchased, useTiers, tier, t]);
 
   useEffect(() => {
     if (step !== "qr" || !invoice) return;
@@ -288,6 +295,75 @@ export function TicketModal({
                     </div>
                   )}
 
+                  {useTiers && (
+                    <div
+                      className={TICKET_SECTION_CLS}
+                      role="radiogroup"
+                      aria-label={t("ticket_tier_choose")}
+                      style={{ display: "grid", gap: 8 }}
+                    >
+                      <span className={TICKET_SECTION_LABEL_CLS}>
+                        {t("ticket_tier_choose")}
+                      </span>
+                      {TICKET_TIER_ORDER.map((tid) => {
+                        const spec = TICKET_TIERS[tid];
+                        const selected = tier === tid;
+                        return (
+                          <button
+                            key={tid}
+                            type="button"
+                            role="radio"
+                            aria-checked={selected}
+                            onClick={() => setTier(tid)}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              gap: 12,
+                              padding: "12px 14px",
+                              borderRadius: 12,
+                              cursor: "pointer",
+                              textAlign: "left",
+                              background: selected
+                                ? "rgba(34,48,198,0.16)"
+                                : "rgba(255,255,255,0.04)",
+                              border: `1px solid ${
+                                selected
+                                  ? "rgba(34,48,198,0.65)"
+                                  : "rgba(255,255,255,0.10)"
+                              }`,
+                              color: "rgba(255,255,255,0.9)",
+                            }}
+                          >
+                            <span
+                              style={{ display: "grid", gap: 2, minWidth: 0 }}
+                            >
+                              <span style={{ fontWeight: 700, fontSize: 14 }}>
+                                {t(`ticket_tier_${tid}`)}
+                              </span>
+                              <span
+                                style={{
+                                  fontSize: 12,
+                                  color: "rgba(255,255,255,0.6)",
+                                }}
+                              >
+                                {t("ticket_tier_devices", {
+                                  count: spec.maxDevices,
+                                })}
+                                {spec.replay
+                                  ? ` · ${t("ticket_tier_replay_incl")}`
+                                  : ""}
+                              </span>
+                            </span>
+                            <span style={{ fontWeight: 800, fontSize: 14 }}>
+                              {money(spec.price)}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
                   <div className={`${TICKET_SECTION_CLS} ${TICKET_ROW_CLS}`}>
                     <div className={TICKET_TOTAL_WRAP_CLS}>
                       <span className={TICKET_SECTION_LABEL_CLS}>
@@ -295,7 +371,7 @@ export function TicketModal({
                           ? t("ticket_replay_price_label")
                           : t("ticket_total_pay")}
                       </span>
-                      <span className={TICKET_TOTAL_CLS}>{money(total)}</span>
+                      <span className={TICKET_TOTAL_CLS}>{money(payTotal)}</span>
                     </div>
                   </div>
 
@@ -333,7 +409,7 @@ export function TicketModal({
                     type="button"
                     className={`${WATCH_BTN_CLS} ${WATCH_BTN_PRIMARY_CLS} ${TICKET_CHECKOUT_CLS}`}
                     onClick={checkout}
-                    disabled={busy || total <= 0}
+                    disabled={busy || payTotal <= 0}
                   >
                     <span>
                       {checkoutLabel === t("ticket_purchase")

@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import type { DbTicket } from "@cs360/shared";
+import { TICKET_TIERS } from "@cs360/shared";
 import { getSupabaseAdmin } from "../lib/supabase";
 import { requireUser, type AuthEnv } from "../middleware/require-user";
 import {
@@ -17,6 +18,9 @@ tickets.use("*", requireUser);
 const createSchema = z.object({
   event_id: z.string().uuid(),
   ticket_type: z.enum(["live", "replay"]).optional(),
+  // New tier model. When provided, price comes from the fixed TICKET_TIERS
+  // catalog and the ticket grants live access on the tier's device cap.
+  tier: z.enum(["standard", "multi3", "multi5"]).optional(),
 });
 
 tickets.post("/create", async (c) => {
@@ -33,7 +37,10 @@ tickets.post("/create", async (c) => {
       400,
     );
   }
-  const { event_id, ticket_type = "live" } = parsed.data;
+  const { event_id, tier } = parsed.data;
+  // A tier purchase always grants live access (replay is bundled into multi5 and
+  // gated by tier, not ticket_type). Legacy callers may still send ticket_type.
+  const ticket_type = tier ? "live" : (parsed.data.ticket_type ?? "live");
 
   const admin = getSupabaseAdmin();
   if (!admin) {
@@ -72,15 +79,18 @@ tickets.post("/create", async (c) => {
   }
 
   const pending = await findRecentPendingTicket(user.id, event.id, ticket_type);
-  if (pending) {
+  // Only reuse a pending invoice if its amount still matches the selected tier —
+  // otherwise the user switched tiers and must get a fresh, correctly-priced QR.
+  if (pending && (!tier || pending.price === TICKET_TIERS[tier].price)) {
     const reuse = await reusePendingInvoice(pending, event.id);
     if (reuse.ok) {
       return c.json({ ok: true, data: reuse.data } as const);
     }
   }
 
-  const price =
-    ticket_type === "replay"
+  const price = tier
+    ? TICKET_TIERS[tier].price
+    : ticket_type === "replay"
       ? Number(event.replay_price ?? 0) || event.price
       : Number(event.live_price ?? 0) || event.price;
 
@@ -93,6 +103,9 @@ tickets.post("/create", async (c) => {
     },
     ticketType: ticket_type,
     price,
+    ...(tier
+      ? { tier, maxDevices: TICKET_TIERS[tier].maxDevices }
+      : {}),
   });
   if (!res.ok) {
     return c.json(

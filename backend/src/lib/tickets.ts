@@ -1,5 +1,9 @@
 import { randomUUID } from "node:crypto";
-import type { TicketCreateResponse, TicketType } from "@cs360/shared";
+import type {
+  TicketCreateResponse,
+  TicketType,
+  TicketTier,
+} from "@cs360/shared";
 import { getSupabaseAdmin } from "./supabase";
 import { createInvoice, getInvoice, isQPayConfigured } from "./qpay";
 import { buildCallbackUrl, getCallbackSecret } from "./qpay-signature";
@@ -145,6 +149,9 @@ export type CreateTicketInvoiceInput = {
   event: { id: string; title: string; live_end_at?: string | null };
   ticketType: TicketType;
   price: number;
+  /** Licensing tier + its device cap. Defaults keep pre-tier callers working. */
+  tier?: TicketTier;
+  maxDevices?: number;
 };
 
 function liveAccessExpiry(
@@ -165,7 +172,7 @@ export type CreateTicketInvoiceResult =
 export async function createTicketInvoice(
   input: CreateTicketInvoiceInput,
 ): Promise<CreateTicketInvoiceResult> {
-  const { userId, event, ticketType, price } = input;
+  const { userId, event, ticketType, price, tier, maxDevices } = input;
   const admin = getSupabaseAdmin();
   if (!admin) {
     return { ok: false, error: "supabase_not_configured", status: 503 };
@@ -194,6 +201,8 @@ export async function createTicketInvoice(
     event_id: event.id,
     status: "pending",
     ticket_type: ticketType,
+    ...(tier ? { tier } : {}),
+    ...(maxDevices ? { max_devices: maxDevices } : {}),
     price,
     access_expires_at: accessExpiresAt,
   });
