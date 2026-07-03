@@ -26,6 +26,17 @@ export async function requireUser(
   c: Context<AuthEnv>,
   next: Next,
 ): Promise<Response | void> {
+  // --- Local dev-only auth bypass (gated on DEV_AUTH=1; never set in prod) ---
+  if (process.env.DEV_AUTH === "1") {
+    c.set("user", {
+      id: process.env.DEV_USER_ID ?? "00000000-0000-0000-0000-000000000001",
+      phone: null,
+      role: "admin",
+    });
+    c.set("accessToken", "dev");
+    return next();
+  }
+
   const token = getBearer(c.req.header("authorization"));
   if (!token) {
     return c.json({ ok: false, error: "unauthorized" } as const, 401);
