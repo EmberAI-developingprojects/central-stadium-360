@@ -54,8 +54,8 @@ export function UpcomingSection({ events, myTickets }: UpcomingSectionProps) {
   const ownedIds = new Set(myTickets.map((tk) => tk.eventId));
 
   return (
-    <section className="w-full px-6 py-10 max-[920px]:px-5" id="upcoming">
-      <div className="max-w-screen-page mx-auto flex flex-col gap-10">
+    <section className="w-full" id="upcoming">
+      <div className="flex flex-col gap-10">
         {active.length > 0 && (
           <EventRow
             icon="upcoming"

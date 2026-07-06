@@ -6,7 +6,7 @@ import UserMenu from "./UserMenu";
 import LanguageSwitcher from "./LanguageSwitcher";
 
 const HEADER_BASE_CLS =
-  "w-full px-5 pb-0 sticky top-0 z-[100] [backdrop-filter:blur(20px)_saturate(170%)] [-webkit-backdrop-filter:blur(20px)_saturate(170%)] border-b border-solid [transition:background_0.25s_ease,box-shadow_0.25s_ease,border-color_0.25s_ease,padding_0.25s_ease] max-[920px]:px-4 after:content-[''] after:absolute after:left-0 after:right-0 after:bottom-[-1px] after:h-px after:bg-[linear-gradient(90deg,transparent_0%,rgba(212,175,55,0.4)_20%,rgba(212,175,55,0.55)_50%,rgba(212,175,55,0.4)_80%,transparent_100%)] after:opacity-0 [&.is-scrolled]:after:opacity-100 after:[transition:opacity_.25s_ease]";
+  "w-full px-5 pb-0 pt-[env(safe-area-inset-top)] sticky top-0 z-[100] [backdrop-filter:blur(20px)_saturate(170%)] [-webkit-backdrop-filter:blur(20px)_saturate(170%)] border-b border-solid [transition:background_0.25s_ease,box-shadow_0.25s_ease,border-color_0.25s_ease,padding_0.25s_ease] max-[920px]:px-4 after:content-[''] after:absolute after:left-0 after:right-0 after:bottom-[-1px] after:h-px after:bg-[linear-gradient(90deg,transparent_0%,rgba(212,175,55,0.4)_20%,rgba(212,175,55,0.55)_50%,rgba(212,175,55,0.4)_80%,transparent_100%)] after:opacity-0 [&.is-scrolled]:after:opacity-100 after:[transition:opacity_.25s_ease]";
 const HEADER_BG_CLS =
   "bg-[rgba(255,255,255,0.04)] border-[rgba(255,255,255,0.10)]";
 const HEADER_SCROLLED_CLS =
@@ -56,7 +56,7 @@ const DRAWER_BACKDROP_BASE_CLS =
   "fixed inset-0 bg-[rgba(15,23,42,0.55)] z-[200] [backdrop-filter:blur(2px)] [-webkit-backdrop-filter:blur(2px)] [transition:opacity_.25s_ease]";
 
 const DRAWER_BASE_CLS =
-  "fixed left-0 top-0 h-[100dvh] w-[300px] max-w-[85vw] bg-brand-blue-darker z-[210] flex flex-col p-5 gap-3 shadow-[0_0_40px_rgba(0,0,0,0.35)] overflow-y-auto [transition:transform_.3s_cubic-bezier(.4,0,.2,1)]";
+  "fixed left-0 top-0 h-[100dvh] w-[300px] max-w-[85vw] bg-brand-blue-darker z-[210] flex flex-col p-5 pt-[max(20px,env(safe-area-inset-top))] pb-[max(20px,env(safe-area-inset-bottom))] gap-3 shadow-[0_0_40px_rgba(0,0,0,0.35)] overflow-y-auto [transition:transform_.3s_cubic-bezier(.4,0,.2,1)]";
 
 const DRAWER_HEADER_CLS =
   "flex items-center justify-between pb-4 [border-bottom:1px_solid_rgba(255,255,255,0.1)]";

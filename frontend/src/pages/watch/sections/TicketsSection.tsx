@@ -24,7 +24,6 @@ import {
   WATCH_BTN_CLS,
   WATCH_BTN_GHOST_CLS,
   WATCH_BTN_PRIMARY_CLS,
-  WATCH_SECTION_CLS,
   WATCH_SECTION_HEAD_CLS,
   WATCH_TITLE_CLS,
 } from "../../_watchStyles";
@@ -324,7 +323,7 @@ export function TicketsSection({
   );
 
   return (
-    <section className={WATCH_SECTION_CLS} id="tickets">
+    <section className="w-full" id="tickets">
       <div className={WATCH_SECTION_HEAD_CLS}>
         <h2 className={WATCH_TITLE_CLS}>{tr("watch_my_tickets")}</h2>
       </div>
