@@ -41,6 +41,36 @@ export async function hasValidTicketForEvent(
   return Boolean(data);
 }
 
+/**
+ * Replay/VOD access — stricter than {@link hasValidTicketForEvent}. Only the
+ * `multi5` tier bundles replay; legacy `replay`-type tickets keep their access.
+ * A `standard` or `multi3` (live-only) ticket does NOT grant replay, even though
+ * it grants live viewing. Same expiry semantics as the live check.
+ */
+export async function hasReplayAccess(
+  userId: string,
+  eventId: string,
+): Promise<boolean> {
+  const admin = getSupabaseAdmin();
+  if (!admin) return false;
+  const nowIso = new Date().toISOString();
+  const { data, error } = await admin
+    .from("tickets")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("event_id", eventId)
+    .eq("status", "paid")
+    .gt("access_expires_at", nowIso)
+    // Replay-capable = legacy replay ticket OR the multi5 tier.
+    .or("ticket_type.eq.replay,tier.eq.multi5")
+    .limit(1)
+    .maybeSingle<{ id: string }>();
+  if (error) {
+    return false;
+  }
+  return Boolean(data);
+}
+
 export async function hasPaidTicket(
   userId: string,
   eventId: string,

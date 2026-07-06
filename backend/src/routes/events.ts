@@ -6,7 +6,7 @@ import {
   createTicketInvoice,
   findRecentPendingTicket,
   hasPaidTicket,
-  hasValidTicketForEvent,
+  hasReplayAccess,
   reusePendingInvoice,
 } from "../lib/tickets";
 import { requireUser, type AuthEnv } from "../middleware/require-user";
@@ -203,7 +203,7 @@ events.get("/:id/replay", async (c) => {
 
   const userId = await resolveUserIdFromAuth(c.req.header("authorization"));
   const hasAccess = userId
-    ? await hasValidTicketForEvent(userId, event.id)
+    ? await hasReplayAccess(userId, event.id)
     : false;
 
   let recordings: DbRecording[] = [];
