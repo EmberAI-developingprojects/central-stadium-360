@@ -319,6 +319,7 @@ export default function Dashboard() {
       <div
         style={{
           display: "flex",
+          flexWrap: "wrap",
           alignItems: "flex-start",
           justifyContent: "space-between",
           gap: 12,
@@ -375,13 +376,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gap: 14,
-        }}
-      >
+      <div className="grid gap-3.5 [grid-template-columns:repeat(3,minmax(0,1fr))] max-[720px]:[grid-template-columns:1fr]">
         <StatCard
           label="Нийт хэрэглэгч"
           value={derived.totalUsers.toLocaleString()}
@@ -403,14 +398,7 @@ export default function Dashboard() {
         />
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 340px",
-          gap: 14,
-          alignItems: "stretch",
-        }}
-      >
+      <div className="grid gap-3.5 items-stretch [grid-template-columns:1fr_340px] max-[900px]:[grid-template-columns:minmax(0,1fr)]">
         <div className={ADMIN_CARD_CLS} style={{ padding: "20px 24px" }}>
           <div
             style={{

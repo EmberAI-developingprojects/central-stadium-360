@@ -1,10 +1,19 @@
 
 
+// minmax(0,1fr) (not bare 1fr) is essential: a bare 1fr track has an implicit
+// min-width:auto, so a wide child (data tables, tab rows) stretches the whole
+// column past the viewport — which the global `overflow-x: clip` on <body> then
+// clips, cutting off text/buttons. minmax(0,1fr) lets children shrink and scroll
+// their own overflow instead.
 export const ADMIN_SHELL_CLS =
-  "admin-shell font-sans antialiased text-[13.5px] leading-[1.5] text-zinc-900 bg-[#fafafa] min-h-screen grid [grid-template-columns:248px_1fr] max-[980px]:[grid-template-columns:1fr]";
+  "admin-shell font-sans antialiased text-[13.5px] leading-[1.5] text-zinc-900 bg-[#fafafa] min-h-screen grid [grid-template-columns:248px_minmax(0,1fr)] max-[980px]:[grid-template-columns:minmax(0,1fr)]";
 
+// On mobile the sidebar becomes a fixed slide-in drawer (positioning/animation
+// classes are added in AdminLayout). It must NOT carry `relative`/`h-auto` here:
+// those override the drawer's `fixed`/`inset-y-0` (Tailwind orders `relative`
+// after `fixed`, so it would win) and drop the menu into flow at the top.
 export const ADMIN_SIDEBAR_CLS =
-  "bg-white border-r border-[#ececef] py-4 px-3 flex flex-col gap-1 sticky top-0 h-screen max-[980px]:relative max-[980px]:h-auto max-[980px]:border-r-0 max-[980px]:border-b";
+  "bg-white border-r border-[#ececef] py-4 px-3 flex flex-col gap-1 sticky top-0 h-screen";
 
 export const ADMIN_BRAND_CLS =
   "flex items-center gap-2.5 py-2.5 px-2 mb-3";
@@ -31,7 +40,7 @@ export const ADMIN_SIDEBAR_FOOTER_CLS =
 
 export const ADMIN_MAIN_CLS = "flex flex-col min-w-0";
 export const ADMIN_TOPBAR_CLS =
-  "bg-white/85 backdrop-blur-md border-b border-[#ececef] h-[60px] flex items-center px-8 sticky top-0 z-[5] " +
+  "bg-white/85 backdrop-blur-md border-b border-[#ececef] h-[60px] flex items-center px-8 max-[640px]:px-4 sticky top-0 z-[5] " +
   "[&_h1]:text-[15px] [&_h1]:font-semibold [&_h1]:m-0 [&_h1]:text-zinc-900 [&_h1]:tracking-[-0.01em]";
 export const ADMIN_TOPBAR_SPACER_CLS = "flex-1";
 export const ADMIN_TOPBAR_USER_CLS =
@@ -39,10 +48,14 @@ export const ADMIN_TOPBAR_USER_CLS =
 export const ADMIN_AVATAR_CLS =
   "w-[30px] h-[30px] rounded-full bg-zinc-900 text-white grid place-items-center font-semibold text-[11px] tracking-tight";
 
-export const ADMIN_CONTENT_CLS = "p-8 flex-1 max-w-[1280px] w-full";
+// min-w-0 lets this flex child shrink below its content's intrinsic width so
+// tables/tabs scroll internally instead of forcing page overflow. Tighter
+// padding on phones reclaims horizontal room.
+export const ADMIN_CONTENT_CLS =
+  "p-8 max-[640px]:p-4 flex-1 min-w-0 max-w-[1280px] w-full";
 
 export const ADMIN_PAGE_HEADER_CLS =
-  "flex items-start justify-between gap-4 mb-6 " +
+  "flex flex-wrap items-start justify-between gap-4 mb-6 " +
   "[&_h2]:text-[22px] [&_h2]:font-semibold [&_h2]:m-0 [&_h2]:mb-1 [&_h2]:text-zinc-900 [&_h2]:tracking-[-0.02em] [&_h2]:leading-tight " +
   "[&_p]:m-0 [&_p]:text-zinc-500 [&_p]:text-[13.5px]";
 
@@ -133,8 +146,8 @@ export const ADMIN_FILTERS_CLS =
   "[&_select]:font-[inherit] [&_select]:text-[13px] [&_select]:h-9 [&_select]:px-3 [&_select]:bg-white [&_select]:border [&_select]:border-[#e4e4e7] [&_select]:rounded-md [&_select]:outline-none";
 
 export const ADMIN_TABS_CLS =
-  "flex gap-1 border-b border-[#ececef] mb-6 " +
-  "[&_button]:bg-transparent [&_button]:border-0 [&_button]:font-[inherit] [&_button]:text-[13.5px] [&_button]:font-medium [&_button]:py-2.5 [&_button]:px-3.5 [&_button]:cursor-pointer [&_button]:text-zinc-500 [&_button]:border-b-2 [&_button]:border-transparent [&_button]:-mb-px [&_button]:transition-colors " +
+  "flex gap-1 border-b border-[#ececef] mb-6 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden " +
+  "[&_button]:bg-transparent [&_button]:border-0 [&_button]:font-[inherit] [&_button]:text-[13.5px] [&_button]:font-medium [&_button]:py-2.5 [&_button]:px-3.5 [&_button]:cursor-pointer [&_button]:text-zinc-500 [&_button]:border-b-2 [&_button]:border-transparent [&_button]:-mb-px [&_button]:transition-colors [&_button]:whitespace-nowrap [&_button]:shrink-0 " +
   "[&_button:hover]:text-zinc-900 " +
   "[&_button.is-active]:text-zinc-900 [&_button.is-active]:!border-b-zinc-900";
 
