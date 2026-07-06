@@ -89,15 +89,33 @@ export default function Dashboard() {
 
   useEffect(() => {
     let alive = true;
-    Promise.all([ordersStats(), listOrders(), listUsers(), listEvents()]).then(
-      ([s, o, u, ev]) => {
-        if (!alive) return;
-        setStats(s);
-        setOrders(o);
-        setUsers(u);
-        setEvents(ev);
-      },
-    );
+    // Load each dataset independently so one failing call (e.g. the backend is
+    // unreachable) can't stall the whole dashboard on the loading state. Any
+    // section that fails degrades to its empty default instead of hanging.
+    Promise.allSettled([
+      ordersStats(),
+      listOrders(),
+      listUsers(),
+      listEvents(),
+    ]).then(([s, o, u, ev]) => {
+      if (!alive) return;
+      setStats(
+        s.status === "fulfilled"
+          ? s.value
+          : {
+              revenue: 0,
+              count: 0,
+              paidCount: 0,
+              viewerCount: 0,
+              byTier: {},
+              byEvent: {},
+              last30d: [],
+            },
+      );
+      setOrders(o.status === "fulfilled" ? o.value : []);
+      setUsers(u.status === "fulfilled" ? u.value : []);
+      setEvents(ev.status === "fulfilled" ? ev.value : []);
+    });
     return () => {
       alive = false;
     };

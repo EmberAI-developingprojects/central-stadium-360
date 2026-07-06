@@ -153,6 +153,28 @@ export default function Watch() {
     return () => clearTimeout(t);
   }, [location.hash]);
 
+  // Scroll-spy: keep the active tab in sync with whichever section is centered
+  // in the viewport, so the header nav reflects what the user is actually looking
+  // at instead of only updating on click.
+  useEffect(() => {
+    const ids: TabId[] = ["live", "upcoming", "tickets"];
+    const els = ids
+      .map((id) => document.getElementById(id))
+      .filter((el): el is HTMLElement => el !== null);
+    if (els.length === 0) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        const top = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (top && isTabId(top.target.id)) setActiveTab(top.target.id);
+      },
+      { rootMargin: "-45% 0px -45% 0px", threshold: [0, 0.25, 0.5, 1] },
+    );
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, [events, myTickets.length]);
+
   if (!session) return null;
 
   return (
@@ -218,21 +240,23 @@ export default function Watch() {
       </header>
 
       <main className={WATCH_MAIN_CLS}>
-        <LiveSection
-          featuredEvent={featuredEvent}
-          ownsFeatured={ownsFeatured}
-          onWatch={() =>
-            ownsFeatured ? openViewer() : openTicketModal(featuredEvent)
-          }
-        />
+        <div className="flex flex-col gap-16 max-[540px]:gap-10">
+          <LiveSection
+            featuredEvent={featuredEvent}
+            ownsFeatured={ownsFeatured}
+            onWatch={() =>
+              ownsFeatured ? openViewer() : openTicketModal(featuredEvent)
+            }
+          />
 
-        <UpcomingSection events={events} myTickets={myTickets} />
+          <UpcomingSection events={events} myTickets={myTickets} />
 
-        <TicketsSection
-          tickets={myTickets}
-          events={events}
-          onWatch={openViewer}
-        />
+          <TicketsSection
+            tickets={myTickets}
+            events={events}
+            onWatch={openViewer}
+          />
+        </div>
       </main>
 
       {modalEvent && (

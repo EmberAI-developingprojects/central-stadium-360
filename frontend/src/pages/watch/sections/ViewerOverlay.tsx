@@ -1267,7 +1267,7 @@ export function ViewerOverlay({
               </button>
 
               {/* bottom-left: LIVE + elapsed running time */}
-              <div className="absolute bottom-3 left-3 flex items-center gap-2">
+              <div className="absolute bottom-[max(12px,env(safe-area-inset-bottom))] left-3 flex items-center gap-2">
                 <button
                   type="button"
                   onClick={jumpToLive}
@@ -1297,7 +1297,7 @@ export function ViewerOverlay({
                 type="button"
                 onClick={toggleStageFs}
                 aria-label="Бүтэн дэлгэц"
-                className="absolute bottom-3 right-3 w-11 h-11 grid place-items-center rounded-full bg-black/45 text-white active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white [&_svg]:w-[22px] [&_svg]:h-[22px]"
+                className="absolute bottom-[max(12px,env(safe-area-inset-bottom))] right-3 w-11 h-11 grid place-items-center rounded-full bg-black/45 text-white active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white [&_svg]:w-[22px] [&_svg]:h-[22px]"
               >
                 <svg
                   viewBox="0 0 24 24"

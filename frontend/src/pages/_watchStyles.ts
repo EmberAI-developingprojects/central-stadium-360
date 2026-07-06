@@ -7,7 +7,7 @@ export const WATCH_PAGE_CLS =
   "watch-page min-h-screen w-full max-w-[100vw] overflow-x-hidden text-[rgba(255,255,255,0.88)]";
 
 export const WATCH_HEADER_CLS =
-  "watch-header sticky top-0 z-50 grid items-center gap-8 py-[18px] px-8 bg-[rgba(11,15,26,0.7)] [backdrop-filter:blur(18px)_saturate(160%)] [-webkit-backdrop-filter:blur(18px)_saturate(160%)] border-b border-solid border-[rgba(255,255,255,0.06)] [grid-template-columns:auto_1fr_auto] max-[900px]:[grid-template-columns:minmax(0,auto)_minmax(0,1fr)] max-[900px]:gap-3 max-[900px]:py-[12px] max-[900px]:px-4 max-[420px]:px-3 max-[420px]:gap-2";
+  "watch-header sticky top-0 z-50 grid items-center gap-8 py-[18px] pt-[max(18px,env(safe-area-inset-top))] px-8 bg-[rgba(11,15,26,0.7)] [backdrop-filter:blur(18px)_saturate(160%)] [-webkit-backdrop-filter:blur(18px)_saturate(160%)] border-b border-solid border-[rgba(255,255,255,0.06)] [grid-template-columns:auto_1fr_auto] max-[900px]:[grid-template-columns:minmax(0,auto)_minmax(0,1fr)] max-[900px]:gap-3 max-[900px]:py-[12px] max-[900px]:pt-[max(12px,env(safe-area-inset-top))] max-[900px]:px-4 max-[420px]:px-3 max-[420px]:gap-2";
 
 export const WATCH_LOGO_CLS =
   "inline-flex items-center no-underline shrink-0 [&_img]:block [&_img]:w-auto [&_img]:h-11 max-[540px]:[&_img]:h-9 max-[420px]:[&_img]:h-8";
@@ -251,7 +251,7 @@ export const VIEWER_CLS =
   "fixed inset-0 z-[250] w-screen max-w-[100vw] flex flex-col text-white overflow-x-hidden [animation:tmFade_.25s_ease] [background:radial-gradient(70%_45%_at_50%_-5%,rgba(34,48,198,0.22)_0%,transparent_55%),radial-gradient(45%_35%_at_90%_115%,rgba(245,158,11,0.07)_0%,transparent_70%),#05080F]";
 
 export const VIEWER_HEADER_CLS =
-  "grid items-center gap-[18px] flex-none [grid-template-columns:auto_1fr_auto] py-[14px] px-[22px] bg-[rgba(11,15,26,0.92)] border-b border-solid border-[rgba(255,255,255,0.06)] max-[720px]:[grid-template-columns:auto_1fr] max-[720px]:py-2.5 max-[720px]:px-[14px]";
+  "grid items-center gap-[18px] flex-none [grid-template-columns:auto_1fr_auto] py-[14px] pt-[max(14px,env(safe-area-inset-top))] px-[22px] bg-[rgba(11,15,26,0.92)] border-b border-solid border-[rgba(255,255,255,0.06)] max-[720px]:[grid-template-columns:auto_1fr] max-[720px]:py-2.5 max-[720px]:pt-[max(10px,env(safe-area-inset-top))] max-[720px]:px-[14px]";
 
 export const VIEWER_CLOSE_CLS =
   "w-[38px] h-[38px] rounded-full text-white cursor-pointer grid place-items-center bg-[rgba(255,255,255,0.08)] border border-solid border-[rgba(255,255,255,0.1)] [transition:background_.15s_ease,transform_.15s_ease] hover:bg-[rgba(255,255,255,0.16)] hover:[transform:rotate(90deg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/90 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b0f1a] [&_svg]:w-[18px] [&_svg]:h-[18px]";
@@ -273,7 +273,7 @@ export const VIEWER_ICON_BTN_CLS =
 export const VIEWER_ICON_BTN_ON_CLS = "is-on !bg-brand-blue";
 
 export const VIEWER_BODY_CLS =
-  "flex-1 min-h-0 min-w-0 max-w-full w-full gap-[18px] p-[16px] overflow-x-hidden overflow-y-auto grid [grid-template-columns:132px_minmax(0,1fr)_300px] max-[1100px]:!flex max-[1100px]:!flex-col max-[1100px]:!pt-0 max-[720px]:px-2.5 max-[720px]:pb-2.5 max-[720px]:gap-2";
+  "flex-1 min-h-0 min-w-0 max-w-full w-full gap-[18px] p-[16px] overflow-x-hidden overflow-y-auto grid [grid-template-columns:132px_minmax(0,1fr)_300px] max-[1100px]:!flex max-[1100px]:!flex-col max-[1100px]:!pt-0 max-[720px]:px-2.5 max-[720px]:pb-[max(10px,env(safe-area-inset-bottom))] max-[720px]:gap-2";
 
 export const VIEWER_ANGLES_CLS =
   "flex flex-col gap-2.5 min-h-0 overflow-y-auto overflow-x-hidden pr-1 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-[rgba(255,255,255,0.1)] [&::-webkit-scrollbar-thumb]:rounded-full max-[1100px]:hidden";
@@ -368,7 +368,7 @@ export const VIEWER_CAM_SHEET_BACKDROP_CLS =
   "fixed inset-0 z-[260] bg-[rgba(5,8,15,0.7)] [backdrop-filter:blur(6px)] [-webkit-backdrop-filter:blur(6px)] [animation:tmFade_.2s_ease]";
 
 export const VIEWER_CAM_SHEET_CLS =
-  "fixed left-0 right-0 bottom-0 z-[270] bg-[#0b1220] border-t border-solid border-[rgba(255,255,255,0.1)] rounded-t-[20px] max-h-[80vh] flex flex-col [animation:tmSlideUp_.25s_ease]";
+  "fixed left-0 right-0 bottom-0 z-[270] bg-[#0b1220] border-t border-solid border-[rgba(255,255,255,0.1)] rounded-t-[20px] max-h-[80vh] pb-[env(safe-area-inset-bottom)] flex flex-col [animation:tmSlideUp_.25s_ease]";
 
 export const VIEWER_CAM_SHEET_HEAD_CLS =
   "flex-none flex items-center justify-between py-4 px-5 border-b border-solid border-[rgba(255,255,255,0.06)]";
