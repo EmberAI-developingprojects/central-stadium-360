@@ -74,6 +74,26 @@ type VideoFullscreenElement = HTMLVideoElement & {
   webkitExitFullscreen?: () => void;
 };
 
+// Best-effort landscape lock for native fullscreen (Android/Chrome). No-op where
+// unsupported (iOS, desktop) — wrapped so a rejection never surfaces.
+function lockLandscape(): void {
+  try {
+    const o = (
+      screen as unknown as {
+        orientation?: { lock?: (t: string) => Promise<void> };
+      }
+    ).orientation;
+    o?.lock?.("landscape")?.catch(() => {});
+  } catch {}
+}
+function unlockOrientation(): void {
+  try {
+    (
+      screen as unknown as { orientation?: { unlock?: () => void } }
+    ).orientation?.unlock?.();
+  } catch {}
+}
+
 type QualityLevel = { index: number; height: number; label: string };
 
 // Chat spam throttle: one send per 10s per viewer.
@@ -121,6 +141,15 @@ export function ViewerOverlay({
   const onVideoTapRef = useRef<() => void>(() => {});
   const [isFs, setIsFs] = useState(false);
   const [pseudoFs, setPseudoFs] = useState(false);
+  // Track viewport size so CSS-fullscreen (iOS, where element fullscreen +
+  // orientation lock are unavailable) can rotate the stage to landscape while the
+  // phone is held upright, then un-rotate once the user physically turns it.
+  // Exact px (not dvh/dvw, which mis-resolve inside a transformed fixed element).
+  const [vp, setVp] = useState<{ w: number; h: number }>(() => ({
+    w: typeof window !== "undefined" ? window.innerWidth : 0,
+    h: typeof window !== "undefined" ? window.innerHeight : 0,
+  }));
+  const portrait = vp.h >= vp.w;
   const [idle, setIdle] = useState(false);
   const overControlsRef = useRef(false); // pointer parked on the control bar
   const [isAtLive, setIsAtLive] = useState(true);
@@ -554,6 +583,7 @@ export function ViewerOverlay({
         } catch {}
       }
       if (pseudoFs) setPseudoFs(false);
+      unlockOrientation();
       try {
         video?.webkitExitFullscreen?.();
       } catch {}
@@ -567,12 +597,14 @@ export function ViewerOverlay({
       if (stage.requestFullscreen) {
         try {
           await stage.requestFullscreen();
+          lockLandscape();
           return;
         } catch {}
       }
       if (stage.webkitRequestFullscreen) {
         try {
           await stage.webkitRequestFullscreen();
+          lockLandscape();
           return;
         } catch {}
       }
@@ -623,6 +655,17 @@ export function ViewerOverlay({
     mq.addListener(onChange);
     return () => mq.removeListener(onChange);
   }, [pseudoFs, toggleStageFs]);
+
+  useEffect(() => {
+    const on = () => setVp({ w: window.innerWidth, h: window.innerHeight });
+    on();
+    window.addEventListener("resize", on);
+    window.addEventListener("orientationchange", on);
+    return () => {
+      window.removeEventListener("resize", on);
+      window.removeEventListener("orientationchange", on);
+    };
+  }, []);
 
   useEffect(() => {
     const onFs = () => {
@@ -1004,16 +1047,36 @@ export function ViewerOverlay({
           ref={stageRef}
           style={
             pseudoFs
-              ? {
-                  position: "fixed",
-                  inset: 0,
-                  width: "100dvw",
-                  height: "100dvh",
-                  padding: 0,
-                  gap: 0,
-                  zIndex: 2000,
-                  background: "#000",
-                }
+              ? portrait
+                ? {
+                    // Held portrait: rotate the whole stage 90° so the video
+                    // fills the screen in landscape. Swap w/h to the viewport's
+                    // pixel dimensions; translateX brings the rotated box on-screen.
+                    position: "fixed",
+                    top: 0,
+                    left: 0,
+                    width: `${vp.h}px`,
+                    height: `${vp.w}px`,
+                    maxWidth: "none",
+                    maxHeight: "none",
+                    transform: `translateX(${vp.w}px) rotate(90deg)`,
+                    transformOrigin: "top left",
+                    padding: 0,
+                    gap: 0,
+                    zIndex: 2000,
+                    background: "#000",
+                  }
+                : {
+                    // Phone turned to landscape: no rotation needed.
+                    position: "fixed",
+                    inset: 0,
+                    width: "100dvw",
+                    height: "100dvh",
+                    padding: 0,
+                    gap: 0,
+                    zIndex: 2000,
+                    background: "#000",
+                  }
               : undefined
           }
         >
