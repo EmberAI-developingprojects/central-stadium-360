@@ -153,6 +153,10 @@ export function ViewerOverlay({
   const [idle, setIdle] = useState(false);
   const overControlsRef = useRef(false); // pointer parked on the control bar
   const [isAtLive, setIsAtLive] = useState(true);
+  // Playhead position within the DVR window, 0–100 (100 = live edge). Drives the
+  // red timeline. dvrRef holds the current [start, live] bounds for seeking.
+  const [dvrPct, setDvrPct] = useState(100);
+  const dvrRef = useRef<{ start: number; live: number }>({ start: 0, live: 0 });
   const [chat, setChat] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [chatConnected, setChatConnected] = useState(false);
@@ -235,7 +239,11 @@ export function ViewerOverlay({
           maxMaxBufferLength: 60,
           maxBufferSize: 120 * 1000 * 1000,
           lowLatencyMode: true,
-          backBufferLength: 10,
+          // Keep more played-back content so the DVR timeline can rewind further.
+          // The true rewind depth is still capped by Wowza's server-side nDVR
+          // window — beyond what the live playlist contains, there's nothing to
+          // seek to no matter how large this is.
+          backBufferLength: 300,
           abrEwmaDefaultEstimate: 20_000_000,
           abrBandWidthFactor: 0.95,
           abrBandWidthUpFactor: 0.8,
@@ -866,10 +874,53 @@ export function ViewerOverlay({
         livePos = v.seekable.end(v.seekable.length - 1);
       }
       if (!Number.isFinite(livePos)) return;
+      const start = v.seekable.length > 0 ? v.seekable.start(0) : 0;
+      dvrRef.current = { start, live: livePos };
+      const span = livePos - start;
+      setDvrPct(
+        span > 0
+          ? Math.max(0, Math.min(100, ((v.currentTime - start) / span) * 100))
+          : 100,
+      );
       setIsAtLive(livePos - v.currentTime < 5);
     }, 1000);
     return () => clearInterval(id);
   }, []);
+
+  // Seek within the DVR window by tapping or dragging the timeline (shared by the
+  // desktop and mobile bars). Clamps to the available buffer; if the window is
+  // tiny (low-latency), it just snaps near live.
+  const seekFromPointer = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      e.stopPropagation();
+      const v = videoRef.current;
+      if (!v) return;
+      const el = e.currentTarget;
+      const rect = el.getBoundingClientRect();
+      const { start, live } = dvrRef.current;
+      if (!(live > start)) return;
+      const seekTo = (clientX: number) => {
+        const frac = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+        v.currentTime = start + frac * (live - start);
+        setDvrPct(frac * 100);
+      };
+      seekTo(e.clientX);
+      try {
+        el.setPointerCapture(e.pointerId);
+      } catch {}
+      const move = (ev: PointerEvent) => seekTo(ev.clientX);
+      const up = () => {
+        el.removeEventListener("pointermove", move);
+        el.removeEventListener("pointerup", up);
+        el.removeEventListener("pointercancel", up);
+        v.play().catch(() => {});
+      };
+      el.addEventListener("pointermove", move);
+      el.addEventListener("pointerup", up);
+      el.addEventListener("pointercancel", up);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!qualityOpen) return;
@@ -1329,6 +1380,31 @@ export function ViewerOverlay({
                 )}
               </button>
 
+              {/* red live-DVR progress timeline — tap/drag seeks within the
+                  buffer; sits above the bottom control row (mirrors desktop). */}
+              <div className="absolute left-3 right-3 bottom-[calc(max(12px,env(safe-area-inset-bottom))+60px)] z-[2]">
+                <div
+                  role="slider"
+                  aria-label="Дамжуулалтын шугам"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={Math.round(dvrPct)}
+                  onPointerDown={seekFromPointer}
+                  className="relative py-2.5 -my-2.5 cursor-pointer touch-none"
+                >
+                  <div className="relative h-[3px] rounded-full bg-white/25">
+                    <div
+                      className="absolute inset-y-0 left-0 rounded-full bg-[#ff0000]"
+                      style={{ width: `${dvrPct}%` }}
+                    />
+                    <span
+                      className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-[13px] h-[13px] rounded-full bg-[#ff0000] shadow-[0_0_0_1px_rgba(0,0,0,0.2)]"
+                      style={{ left: `${dvrPct}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* bottom-left: LIVE + elapsed running time */}
               <div className="absolute bottom-[max(12px,env(safe-area-inset-bottom))] left-3 flex items-center gap-2">
                 <button
@@ -1452,14 +1528,27 @@ export function ViewerOverlay({
               overControlsRef.current = false;
             }}
           >
-            {/* Red live progress line (full, since we're at the live edge) with
-                a knob at the live edge — YouTube live style. */}
+            {/* Red live-DVR progress timeline — tap/drag to seek within the
+                buffer (YouTube-live style). */}
             <div
-              className="absolute top-2 left-0 right-0 h-[3px] bg-[rgba(255,255,255,0.26)]"
-              aria-hidden="true"
+              role="slider"
+              aria-label="Дамжуулалтын шугам"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(dvrPct)}
+              onPointerDown={seekFromPointer}
+              className="group absolute top-0 left-0 right-0 py-2 cursor-pointer touch-none"
             >
-              <div className="absolute inset-y-0 left-0 right-0 bg-[#ff0000]" />
-              <span className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-[13px] h-[13px] rounded-full bg-[#ff0000] shadow-[0_0_0_1px_rgba(0,0,0,0.15)]" />
+              <div className="relative h-[3px] group-hover:h-[5px] [transition:height_.1s_ease] bg-[rgba(255,255,255,0.26)]">
+                <div
+                  className="absolute inset-y-0 left-0 bg-[#ff0000]"
+                  style={{ width: `${dvrPct}%` }}
+                />
+                <span
+                  className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-0 h-0 group-hover:w-[13px] group-hover:h-[13px] rounded-full bg-[#ff0000] shadow-[0_0_0_1px_rgba(0,0,0,0.15)] [transition:width_.1s_ease,height_.1s_ease]"
+                  style={{ left: `${dvrPct}%` }}
+                />
+              </div>
             </div>
             <div className={VIEWER_CONTROLS_LEFT_CLS}>
               <button
