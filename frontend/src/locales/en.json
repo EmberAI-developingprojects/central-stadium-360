@@ -144,6 +144,7 @@
   "watch_no_ticket": "No ticket found for this event. Please buy a ticket and try again.",
   "watch_device_limit": "Device limit reached — this ticket allows watching on {{limit}} device(s) at once. Close playback on another device and try again.",
   "watch_stream_error": "Could not connect to the stream. Please try again.",
+  "watch_no_stream": "No live stream at the moment. It will appear here when the event starts.",
   "ticket_total_pay": "Total to Pay",
   "ticket_payment": "Payment Method",
   "ticket_qpay_label": "QPay — via banking app",

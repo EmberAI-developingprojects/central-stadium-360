@@ -1299,7 +1299,9 @@ export function ViewerOverlay({
                       })
                     : watchError.code === "no_ticket"
                       ? t("watch_no_ticket")
-                      : t("watch_stream_error")}
+                      : watchError.code === "invalid_input"
+                        ? t("watch_no_stream")
+                        : t("watch_stream_error")}
                 </span>
               </div>
             ) : !activeCam?.hlsUrl ? (
