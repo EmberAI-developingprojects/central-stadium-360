@@ -1,6 +1,14 @@
-import { useEffect, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type DragEvent,
+  type FormEvent,
+} from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { createEvent } from "../../data/store";
+import { api } from "../../lib/api";
 import DatePicker from "../components/DatePicker";
 import { useToast } from "../components/Toast";
 import {
@@ -140,10 +148,49 @@ export default function EventCreate() {
   const [descEn, setDescEn] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (date && !endDate) setEndDate(date);
   }, [date, endDate]);
+
+  const handleFile = async (file: File | undefined) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Зөвхөн зургийн файл сонгоно уу.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Зурагны хэмжээ 5MB-аас бага байх ёстой.");
+      return;
+    }
+    setError("");
+    setUploading(true);
+    const res = await api.admin.uploadImage(file);
+    setUploading(false);
+    if (!res.ok) {
+      setError(`Зураг ачаалах боломжгүй: ${res.error}`);
+      return;
+    }
+    setThumbnailUrl(res.data.url);
+  };
+
+  const onPickFile = () => fileInputRef.current?.click();
+
+  const onFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    await handleFile(file);
+  };
+
+  const onDrop = async (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    await handleFile(file);
+  };
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -315,7 +362,101 @@ export default function EventCreate() {
             />
 
             <div className={ADMIN_FIELD_CLS}>
-              <label htmlFor="ev-thumb">Нүүр зургийн URL</label>
+              <label>Нүүр зураг</label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                onChange={onFileChange}
+                className="hidden"
+              />
+              {thumbnailUrl ? (
+                <div className="relative group">
+                  <div
+                    className="w-full aspect-[16/9] rounded-lg bg-zinc-100 bg-center bg-cover bg-no-repeat ring-1 ring-inset ring-[#ececef]"
+                    style={{ backgroundImage: `url('${thumbnailUrl}')` }}
+                    aria-hidden="true"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center gap-2 rounded-lg bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      type="button"
+                      className={ADMIN_BTN_CLS}
+                      onClick={onPickFile}
+                      disabled={uploading || busy}
+                    >
+                      {uploading ? "Ачаалж байна…" : "Солих"}
+                    </button>
+                    <button
+                      type="button"
+                      className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_GHOST_CLS}`}
+                      onClick={() => setThumbnailUrl("")}
+                      disabled={uploading || busy}
+                    >
+                      Арилгах
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  onClick={onPickFile}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setDragOver(true);
+                  }}
+                  onDragLeave={() => setDragOver(false)}
+                  onDrop={onDrop}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onPickFile();
+                    }
+                  }}
+                  className={`flex flex-col items-center justify-center gap-2 w-full aspect-[16/9] rounded-lg border-2 border-dashed cursor-pointer transition-colors ${
+                    dragOver
+                      ? "border-zinc-900 bg-zinc-50"
+                      : "border-[#e4e4e7] bg-[#fafafa] hover:border-zinc-300 hover:bg-zinc-50"
+                  }`}
+                >
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white border border-[#e4e4e7] text-zinc-500">
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="17 8 12 3 7 8" />
+                      <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                  </span>
+                  <div className="text-center px-3">
+                    <div className="text-[13px] font-semibold text-zinc-800">
+                      {uploading
+                        ? "Ачаалж байна…"
+                        : "Зураг чирж тавих эсвэл сонгох"}
+                    </div>
+                    <div className="text-[11.5px] text-zinc-500 mt-0.5">
+                      JPG · PNG · WEBP · GIF, ≤ 5 MB
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className={ADMIN_FIELD_CLS}>
+              <label
+                htmlFor="ev-thumb"
+                className="text-[11.5px] uppercase tracking-[0.06em] !text-zinc-500 !font-semibold"
+              >
+                эсвэл URL
+              </label>
               <input
                 id="ev-thumb"
                 type="url"
