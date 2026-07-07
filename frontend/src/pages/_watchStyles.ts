@@ -309,9 +309,14 @@ export const VIEWER_MOBILE_CAM_LABEL_CLS =
   "block mt-1.5 text-[11.5px] font-bold truncate text-white [.is-active_&]:text-brand-blue-soft";
 
 export const VIEWER_STAGE_CLS =
-  "relative min-h-0 min-w-0 max-w-full flex flex-col gap-3 max-[1100px]:w-full [&.is-fs]:w-screen [&.is-fs]:h-screen [&.is-fs]:p-0 [&.is-fs]:bg-black [&.is-fs]:gap-0 [&.is-fs.is-idle]:cursor-none";
+  "relative min-h-0 min-w-0 max-w-full flex flex-col gap-3 max-[1100px]:w-full max-[1100px]:flex-none [&.is-fs]:w-screen [&.is-fs]:h-screen [&.is-fs]:p-0 [&.is-fs]:bg-black [&.is-fs]:gap-0 [&.is-fs.is-idle]:cursor-none";
+// Stacked (≤1100px) sizing: the video wants 16:9 of the full width, but on
+// height-constrained screens (tablet landscape, 4:3, small laptop windows)
+// that starves the chat below it. Budget from the real viewport height —
+// header ≈66px + camera strip ≈110px + gaps ≈44px + chat ≥240px ≈ 460px —
+// and never let the video shrink below 240px. Tall phones keep exact 16:9.
 export const VIEWER_STAGE_SHELL_CLS =
-  "flex-1 min-h-0 relative rounded-2xl overflow-hidden bg-black shadow-[0_40px_80px_-40px_rgba(0,0,0,0.9),0_0_80px_-30px_rgba(34,48,198,0.45),inset_0_0_0_1px_rgba(255,255,255,0.04)] max-[1100px]:!flex-none max-[1100px]:!w-screen max-[1100px]:!mx-[calc(50%-50vw)] max-[1100px]:!h-[calc(100vw*9/16)] max-[1100px]:!max-h-[70vh] max-[1100px]:!rounded-none max-[1100px]:!shadow-none max-[720px]:!h-[calc(100vw*9/16)] max-[720px]:!max-h-none [@media_(max-height:500px)]:!max-h-[calc(100dvh-220px)] [.is-fs_&]:!flex-1 [.is-fs_&]:!w-full [.is-fs_&]:!mx-0 [.is-fs_&]:!h-auto [.is-fs_&]:!max-h-none [.is-fs_&]:rounded-none [.is-fs_&]:shadow-none [&_video]:w-full [&_video]:h-full [&_video]:object-cover [&_video]:block [&_video]:[transition:transform_.35s_ease,filter_.35s_ease]";
+  "flex-1 min-h-0 relative rounded-2xl overflow-hidden bg-black shadow-[0_40px_80px_-40px_rgba(0,0,0,0.9),0_0_80px_-30px_rgba(34,48,198,0.45),inset_0_0_0_1px_rgba(255,255,255,0.04)] max-[1100px]:!flex-none max-[1100px]:!w-screen max-[1100px]:!mx-[calc(50%-50vw)] max-[1100px]:!h-[max(240px,min(calc(100vw*9/16),calc(100dvh-460px)))] max-[720px]:!h-[calc(100vw*9/16)] max-[720px]:!max-h-none max-[1100px]:!rounded-none max-[1100px]:!shadow-none [@media_(max-height:500px)]:!max-h-[calc(100dvh-220px)] [.is-fs_&]:!flex-1 [.is-fs_&]:!w-full [.is-fs_&]:!mx-0 [.is-fs_&]:!h-auto [.is-fs_&]:!max-h-none [.is-fs_&]:rounded-none [.is-fs_&]:shadow-none [&_video]:w-full [&_video]:h-full [&_video]:object-cover [&_video]:block [&_video]:[transition:transform_.35s_ease,filter_.35s_ease]";
 // Shared visual for the active-camera badge, used by both the desktop top-left
 // chip and the mobile tap-to-reveal overlay so they look identical.
 export const VIEWER_MAIN_CAM_BASE_CLS =
@@ -345,7 +350,7 @@ export const VIEWER_QUALITY_CLS =
   "inline-flex items-center gap-2 text-xs text-[rgba(255,255,255,0.7)] max-[720px]:gap-1.5 [&_select]:[appearance:none] [&_select]:[-webkit-appearance:none] [&_select]:bg-[rgba(255,255,255,0.06)] [&_select]:border [&_select]:border-solid [&_select]:border-[rgba(255,255,255,0.1)] [&_select]:text-white [&_select]:font-[inherit] [&_select]:text-[12.5px] [&_select]:font-semibold [&_select]:pt-[7px] [&_select]:pr-[26px] [&_select]:pb-[7px] [&_select]:pl-3 [&_select]:rounded-[9px] [&_select]:cursor-pointer [&_select]:[background-repeat:no-repeat] [&_select]:[background-position:right_9px_center] [&_select]:[background-size:9px_5px] [&_select]:[background-image:url(\"data:image/svg+xml;utf8,<svg_xmlns='http://www.w3.org/2000/svg'_viewBox='0_0_10_6'><path_d='M1_1l4_4_4-4'_stroke='%23fff'_stroke-width='1.6'_fill='none'_stroke-linecap='round'_stroke-linejoin='round'/></svg>\")] max-[720px]:[&_select]:text-[11.5px] max-[720px]:[&_select]:pt-1.5 max-[720px]:[&_select]:pb-1.5 max-[720px]:[&_select]:pl-2";
 
 export const VIEWER_CHAT_CLS =
-  "flex flex-col min-h-0 min-w-0 max-w-full bg-[rgba(255,255,255,0.03)] border border-solid border-[rgba(255,255,255,0.08)] rounded-[14px] overflow-hidden max-[1100px]:w-full max-[1100px]:!flex-1 max-[1100px]:min-h-[260px]";
+  "flex flex-col min-h-0 min-w-0 max-w-full bg-[rgba(255,255,255,0.03)] border border-solid border-[rgba(255,255,255,0.08)] rounded-[14px] overflow-hidden max-[1100px]:w-full max-[1100px]:!flex-1 max-[1100px]:min-h-[240px]";
 export const VIEWER_CHAT_HEAD_CLS =
   "flex-none py-[14px] px-4 border-b border-solid border-[rgba(255,255,255,0.06)] text-[13px] font-bold tracking-[.04em] text-white inline-flex items-center gap-2 [&_svg]:w-4 [&_svg]:h-4 [&_svg]:text-brand-blue-soft";
 export const VIEWER_CHAT_COUNT_CLS =
