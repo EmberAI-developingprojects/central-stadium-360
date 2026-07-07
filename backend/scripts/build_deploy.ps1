@@ -44,6 +44,7 @@ try {
   Copy-Item "dist" $OutDir -Recurse
   Copy-Item "scripts" $OutDir -Recurse
   Copy-Item "package.json","package-lock.json",".env.example" $OutDir
+  if (Test-Path ".env.kiosk.example") { Copy-Item ".env.kiosk.example" $OutDir }
 
   Write-Host "==> Installing PRODUCTION node_modules into the deploy..." -ForegroundColor Cyan
   Push-Location $OutDir

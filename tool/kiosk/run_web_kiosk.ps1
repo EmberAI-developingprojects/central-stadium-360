@@ -26,10 +26,30 @@ param(
   [int]$Port = 8080,
   [string]$WebRoot = (Join-Path $PSScriptRoot '..\..\frontend\build\web'),
   [switch]$Edge,
-  [string]$BrowserPath
+  [string]$BrowserPath,
+  # Production kiosk resilience: if the browser window is closed/crashes while
+  # this launcher is still serving, relaunch it. On by default; pass
+  # -NoKeepBrowserAlive for the old fire-once behaviour (dev/demo).
+  [switch]$NoKeepBrowserAlive,
+  [int]$HealthEverySec = 5,
+  # Append lifecycle + relaunch events here (e.g. C:\Kiosk\logs\ui\kiosk.log).
+  [string]$LogFile
 )
 
 $ErrorActionPreference = 'Stop'
+
+function Write-KioskLog {
+  param([string]$Message, [string]$Color = 'Gray')
+  $line = "[{0}] {1}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $Message
+  Write-Host $line -ForegroundColor $Color
+  if ($LogFile) {
+    try {
+      $dir = Split-Path -Parent $LogFile
+      if ($dir -and -not (Test-Path $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
+      Add-Content -LiteralPath $LogFile -Value $line -Encoding UTF8
+    } catch { }
+  }
+}
 
 # --- Resolve and validate the web root --------------------------------------
 try { $WebRoot = (Resolve-Path -LiteralPath $WebRoot).Path } catch {
@@ -101,9 +121,37 @@ $browserArgs = @(
   '--disable-session-crashed-bubble', '--disable-infobars',
   '--check-for-update-interval=31536000', '--no-first-run', '--fast', '--fast-start'
 )
-$proc = Start-Process -FilePath $browser -ArgumentList $browserArgs -PassThru
-Write-Host "Launched kiosk browser (PID $($proc.Id))." -ForegroundColor Green
-Write-Host "Leave this window open. Press Ctrl+C (or close it) to stop the kiosk." -ForegroundColor Green
+
+# Count kiosk browser windows by matching our unique --user-data-dir on the
+# process command line. Chrome's initial launcher process exits right after
+# spawning the real browser, so tracking a single PID is unreliable - this
+# counts the actual live windows instead.
+function Get-KioskBrowserCount {
+  param([string]$ProfileDir)
+  $count = 0
+  foreach ($name in @('chrome.exe', 'msedge.exe')) {
+    try {
+      $procs = Get-CimInstance Win32_Process -Filter "Name='$name'" -ErrorAction SilentlyContinue
+      foreach ($p in $procs) {
+        if ($p.CommandLine -and $p.CommandLine.IndexOf($ProfileDir, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) { $count++ }
+      }
+    } catch { }
+  }
+  return $count
+}
+
+function Start-KioskBrowser {
+  $p = Start-Process -FilePath $browser -ArgumentList $browserArgs -PassThru
+  Write-KioskLog "Launched kiosk browser (PID $($p.Id)) -> $url" 'Green'
+}
+
+Start-KioskBrowser
+if ($NoKeepBrowserAlive) {
+  Write-KioskLog "Keep-alive OFF. Leave this window open; Ctrl+C to stop." 'Green'
+} else {
+  Write-KioskLog "Keep-alive ON (checks every ${HealthEverySec}s). Serving until stopped." 'Green'
+}
+$lastBrowserCheck = Get-Date
 
 # --- Serve until interrupted ------------------------------------------------
 # Do NOT tie the loop to the launched process: Chrome's initial process often
@@ -111,6 +159,14 @@ Write-Host "Leave this window open. Press Ctrl+C (or close it) to stop the kiosk
 # while the kiosk window is still open (-> ERR_CONNECTION_REFUSED).
 try {
   while ($true) {
+    # Keep the kiosk window alive: if it was closed/crashed, relaunch it.
+    if (-not $NoKeepBrowserAlive -and ((Get-Date) - $lastBrowserCheck).TotalSeconds -ge $HealthEverySec) {
+      $lastBrowserCheck = Get-Date
+      if ((Get-KioskBrowserCount -ProfileDir $profileDir) -eq 0) {
+        Write-KioskLog "Kiosk browser not running - relaunching." 'Yellow'
+        try { Start-KioskBrowser } catch { Write-KioskLog "Relaunch failed: $_" 'Red' }
+      }
+    }
     if (-not $listener.Pending()) { Start-Sleep -Milliseconds 40; continue }
     $client = $listener.AcceptTcpClient()
     try {
