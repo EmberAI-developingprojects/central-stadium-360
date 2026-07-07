@@ -93,17 +93,20 @@ const tokenQuerySchema = z.object({
  */
 watch.get("/token", requireUser, async (c) => {
   const user = c.get("user");
-  const parsed = tokenQuerySchema.safeParse({
-    event_id: c.req.query("event_id"),
-    device_id: c.req.query("device_id"),
-  });
-  if (!parsed.success) {
-    return c.json({ ok: false, error: "invalid_input" } as const, 400);
-  }
-  const { event_id, device_id } = parsed.data;
 
   let ticketId: string | null = null;
   if (user.role !== "admin") {
+    // Non-admins must name a real event and a device; admins can preview at
+    // any time — including from the watch page's placeholder event, whose id
+    // is not a UUID.
+    const parsed = tokenQuerySchema.safeParse({
+      event_id: c.req.query("event_id"),
+      device_id: c.req.query("device_id"),
+    });
+    if (!parsed.success) {
+      return c.json({ ok: false, error: "invalid_input" } as const, 400);
+    }
+    const { event_id, device_id } = parsed.data;
     const ticket = await findBestLiveTicket(user.id, event_id);
     if (!ticket) {
       return c.json({ ok: false, error: "no_ticket" } as const, 403);
