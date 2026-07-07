@@ -1,53 +1,115 @@
 import { config } from '../config.js';
 import type { PaymentTerminal, SaleResult, SettlementRow } from './types.js';
+import { encodeRequestData } from './golomt/crypto.js';
+import {
+  buildRequest, toSaleResult, parseInnerResponse, parseEnvelope, OP,
+  type GolomtRequest, type GolomtResponseMaker,
+} from './golomt/protocol.js';
 
 /**
- * GolomtTerminal — driver for Golomt Bank's Integrated POS (КИОСК).
+ * GolomtTerminal — driver for Golomt Bank's IPPOS (Integrated Payment POS) via
+ * the on-box GLMTPOS REST service (PobRestService.exe), which fronts the
+ * DualConnector COM library that speaks to the Verifone/iPOS terminal.
  *
- * NOT YET IMPLEMENTED. The public service page
- * (https://www.golomtbank.com/services/4511) confirms the Integrated POS is
- * built for self-service kiosks and connects to POS software, but gives no
- * technical spec. Before this can be filled in we need from Golomt's
- * integration team (see the inquiry we sent):
+ * The kiosk stays out of PCI scope: it only sends amount + operation and gets
+ * back an approved/declined result. Card handling lives entirely in the terminal
+ * and the local service.
  *
- *   1. Integration model — ECR over serial/USB/TCP, or a local HTTP API/SDK?
- *      That decides whether startSale() opens a serial port / TCP socket and
- *      speaks their ECR protocol, or POSTs to config.posServiceUrl.
- *   2. The terminal model approved for an UNATTENDED kiosk.
- *   3. Response fields — confirm we get authCode, RRN, masked PAN, TID.
- *   4. Settlement/batch API for lastSettlement() reconciliation.
- *   5. A test/sandbox terminal to certify against.
+ * Confirmed by decompiling + running the shipped GLMTPOS.msi assemblies:
+ *   - endpoint: GET {golomtPosUrl}/message?data={data}   (WCF webHttpBinding, JSON out)
+ *   - data:     Base64(UTF8(JSON of the Request))   (NOT encrypted; see golomt/crypto.ts)
+ *   - response: JSON ResponseMaker { data=Base64(JSON Response), responseCode, responseDesc }
  *
- * Implementation note: keep card handling entirely inside the terminal. The
- * kiosk only sends an amount and receives a result — never PAN/track/PIN data —
- * so the box stays out of PCI scope.
+ * Prerequisites on the kiosk box: install GLMTPOS.msi (registers the service on
+ * :8500), drop the SAClient.lic license, and point the service's DualConnector.xml
+ * at the terminal's COM port. Then set POS_DRIVER=golomt + GOLOMT_TERMINAL_ID.
+ *
+ * NOTE — one unverified value remains: the numeric operationCode mapping (OP.*
+ * in protocol.ts). Everything else (transport/crypto/field layout) is confirmed.
  */
 export class GolomtTerminal implements PaymentTerminal {
   readonly name = 'golomt';
+  private readonly base = config.golomtPosUrl.replace(/\/$/, '');
 
-  async startSale(_input: {
-    orderRef: string;
-    amount: number;
-    description?: string;
-  }): Promise<SaleResult> {
-    // --- TODO (ECR model) ---
-    //   open serial/TCP to the terminal, send the "sale" command for `amount`,
-    //   await the approval/decline frame, parse authCode/RRN/PAN/TID.
-    // --- TODO (HTTP/SDK model) ---
-    //   const r = await fetch(`${config.posServiceUrl}/sale`, {
-    //     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    //     body: JSON.stringify({ amount: _input.amount, orderRef: _input.orderRef }),
-    //   });
-    //   return mapGolomtResponse(await r.json());
-    void config.posServiceUrl;
-    throw new Error('golomt_driver_not_implemented: awaiting Golomt POS integration spec');
+  /** Common Request fields for every call. */
+  private baseRequest(orderRef: string): GolomtRequest {
+    // Pos() feeds portNo to SetChannelTerminalParam(Int64 nCOM, ...), so it must be
+    // the numeric port (9), not "COM9" — normalize either form to digits.
+    const portNum = (config.golomtPortNo || '').replace(/\D/g, '');
+    return {
+      requestID: orderRef,
+      terminalID: config.golomtTerminalId || undefined,
+      currencyCode: config.golomtCurrencyCode,
+      timeout: String(config.golomtTerminalTimeoutMs),
+      portNo: portNum || undefined,
+      bandwidth: portNum ? config.golomtBandwidth : undefined,
+      // Required non-null: Pos() dereferences cMode/cMode2/cardEntryMode (NullRef otherwise).
+      cMode: config.golomtCmode,
+      cMode2: config.golomtCmode2,
+      cardEntryMode: config.golomtCardEntryMode,
+    };
   }
 
-  async cancel(_orderRef: string): Promise<SaleResult> {
-    throw new Error('golomt_driver_not_implemented: awaiting Golomt POS integration spec');
+  /** Encrypt + GET /message, returning the parsed ResponseMaker envelope. */
+  private async exchange(req: GolomtRequest): Promise<GolomtResponseMaker> {
+    if (!config.golomtTerminalId) {
+      throw new Error('golomt_not_configured: set GOLOMT_TERMINAL_ID for the provisioned TID');
+    }
+    const data = encodeRequestData(buildRequest(req));
+    const url = `${this.base}/message?data=${encodeURIComponent(data)}`;
+
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), config.golomtHttpTimeoutMs);
+    try {
+      const res = await fetch(url, { method: 'GET', signal: ctrl.signal });
+      const text = await res.text();
+      if (!res.ok) {
+        throw new Error(`golomt_http_${res.status}: ${text.slice(0, 300)}`);
+      }
+      return parseEnvelope(text);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  async startSale(input: { orderRef: string; amount: number; description?: string }): Promise<SaleResult> {
+    const maker = await this.exchange({
+      ...this.baseRequest(input.orderRef),
+      amount: String(input.amount),
+      operationCode: OP.SALE,
+    });
+    return toSaleResult({ orderRef: input.orderRef, amount: input.amount }, maker);
+  }
+
+  async cancel(orderRef: string): Promise<SaleResult> {
+    const maker = await this.exchange({
+      ...this.baseRequest(orderRef),
+      operationCode: OP.VOID,
+    });
+    const result = toSaleResult({ orderRef, amount: 0 }, maker);
+    // A successful void surfaces as 'cancelled' rather than 'approved'.
+    if (result.status === 'approved') result.status = 'cancelled';
+    return result;
   }
 
   async lastSettlement(_date?: string): Promise<SettlementRow[]> {
-    throw new Error('golomt_driver_not_implemented: awaiting Golomt POS integration spec');
+    // Batch close / settlement. The service returns the batch summary in the
+    // response's receiptData/textResp (a printable roll, per the DualConnector
+    // logs) rather than structured rows, so we expose what we can parse and
+    // otherwise return an empty set. Reconcile against the printed batch report.
+    const maker = await this.exchange({
+      ...this.baseRequest(`settle-${_date ?? 'current'}`),
+      operationCode: OP.SETTLEMENT,
+    });
+    const inner = parseInnerResponse(maker);
+    if (inner?.referenceNo && inner.amount) {
+      return [{
+        rrn: inner.referenceNo,
+        amount: Number(inner.amount) || 0,
+        authCode: inner.authorizationCode ?? undefined,
+        settledAt: undefined,
+      }];
+    }
+    return [];
   }
 }

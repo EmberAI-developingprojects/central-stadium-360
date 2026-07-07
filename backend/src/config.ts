@@ -24,8 +24,36 @@ export const config = {
   posServiceUrl: process.env.POS_SERVICE_URL ?? 'http://localhost:7081',
   /** Which PaymentTerminal driver to use: 'mock' (default, no hardware),
    *  'verifone' (Verifone ECR terminal over serial/USB — see posSerial*), or
-   *  'golomt' (Golomt Integrated POS — once provisioned & spec'd). */
+   *  'golomt' (Golomt IPPOS via the on-box GLMTPOS REST service — see golomt*). */
   posDriver: process.env.POS_DRIVER ?? 'mock',
+
+  // --- Golomt IPPOS (GLMTPOS REST service, PobRestService.exe) ---
+  /** Base URL of the on-box GLMTPOS WCF/REST service. The single operation is
+   *  GET {golomtPosUrl}/message?data=<url-encoded, RSA-OAEP+base64 Request XML>.
+   *  Default matches PobRestService.exe.config's baseAddress. */
+  golomtPosUrl: process.env.GOLOMT_POS_URL ?? 'http://localhost:8500/requestToPos',
+  /** Golomt-assigned terminal id (TID) provisioned for this kiosk, e.g. 13133707. */
+  golomtTerminalId: process.env.GOLOMT_TERMINAL_ID ?? '',
+  /** ISO-4217 numeric currency; 496 = MNT. */
+  golomtCurrencyCode: process.env.GOLOMT_CURRENCY_CODE ?? '496',
+  /** COM port + line speed the DualConnector uses to reach the terminal. Usually
+   *  owned by the service's own DualConnector.xml; sent only if set here. */
+  golomtPortNo: process.env.GOLOMT_POS_PORT ?? '',
+  golomtBandwidth: process.env.GOLOMT_POS_BAUD ?? '115200',
+  /** Terminal-side transaction timeout in ms (cardholder tap/PIN), sent to the
+   *  service as Request.timeout. DualConnector default is 540000. */
+  golomtTerminalTimeoutMs: Number(process.env.GOLOMT_POS_TIMEOUT_MS ?? 540000),
+  /** HTTP client timeout for the REST call; must exceed golomtTerminalTimeoutMs. */
+  golomtHttpTimeoutMs: Number(process.env.GOLOMT_POS_HTTP_TIMEOUT_MS ?? 560000),
+  /** DualConnector command modes + card-entry mode. Pos() dereferences these
+   *  (request.cMode.Equals("") …), so they MUST be present/non-null — but EMPTY
+   *  string is the correct value: it makes the terminal apply its default mode and
+   *  wait for a card (verified live — "0" makes the terminal cancel immediately,
+   *  and empty cardEntryMode accepts all methods incl. contactless). Override only
+   *  per Golomt's ECR field spec. */
+  golomtCmode: process.env.GOLOMT_CMODE ?? '',
+  golomtCmode2: process.env.GOLOMT_CMODE2 ?? '',
+  golomtCardEntryMode: process.env.GOLOMT_CARD_ENTRY_MODE ?? '',
   /** Serial/USB port the Verifone ECR terminal is wired to (Windows: COMn). */
   posSerialPort: process.env.POS_SERIAL_PORT ?? 'COM3',
   /** Line speed. Nominal over USB-CDC; honoured on a true RS-232 link. */
