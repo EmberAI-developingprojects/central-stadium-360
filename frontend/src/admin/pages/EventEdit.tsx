@@ -42,6 +42,9 @@ const EMPTY: EventRecord = {
   status: "upcoming",
   live_price: 0,
   replay_price: 0,
+  price_standard: null,
+  price_multi3: null,
+  price_multi5: null,
   live_start_at: null,
   live_end_at: null,
   replay_available_until: null,
@@ -614,23 +617,72 @@ export default function EventEdit() {
               <div className={CARD_BODY_CLS}>
                 <div className={TWO_COL_CLS}>
                   <div className={ADMIN_FIELD_CLS}>
-                    <label htmlFor="evt-live-price">Шууд тасалбар (₮)</label>
+                    <label htmlFor="evt-price-standard">
+                      Энгийн тасалбар (₮) · 1 төхөөрөмж
+                    </label>
                     <input
-                      id="evt-live-price"
+                      id="evt-price-standard"
                       type="number"
                       inputMode="numeric"
                       min={0}
-                      value={form.live_price || ""}
+                      value={form.price_standard || ""}
                       onChange={(e) => {
                         const v = Number(e.target.value) || 0;
-                        update({ live_price: v, base: v });
+                        update({
+                          price_standard: v || null,
+                          live_price: v,
+                          base: v,
+                        });
                       }}
-                      placeholder="0"
+                      placeholder="9900"
                       className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0"
                     />
                   </div>
                   <div className={ADMIN_FIELD_CLS}>
-                    <label htmlFor="evt-replay-price">Нөхөж үзэх (₮)</label>
+                    <label htmlFor="evt-price-multi3">
+                      3 хэрэглэгчийн тасалбар (₮) · 3 төхөөрөмж
+                    </label>
+                    <input
+                      id="evt-price-multi3"
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      value={form.price_multi3 || ""}
+                      onChange={(e) =>
+                        update({
+                          price_multi3: Number(e.target.value) || null,
+                        })
+                      }
+                      placeholder="14900"
+                      className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0"
+                    />
+                  </div>
+                </div>
+                <div className={TWO_COL_CLS}>
+                  <div className={ADMIN_FIELD_CLS}>
+                    <label htmlFor="evt-price-multi5">
+                      5 хэрэглэгчийн тасалбар (₮) · 5 төхөөрөмж + нөхөж үзэх
+                    </label>
+                    <input
+                      id="evt-price-multi5"
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      value={form.price_multi5 || ""}
+                      onChange={(e) =>
+                        update({
+                          price_multi5: Number(e.target.value) || null,
+                        })
+                      }
+                      placeholder="19900"
+                      className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0"
+                    />
+                  </div>
+                  <div className={ADMIN_FIELD_CLS}>
+                    <label htmlFor="evt-replay-price">
+                      Нөхөж үзэх дангаар нь (₮) — тоглолтын дараах худалдан
+                      авалт
+                    </label>
                     <input
                       id="evt-replay-price"
                       type="number"
@@ -650,7 +702,7 @@ export default function EventEdit() {
 
                 <div className={ADMIN_FIELD_CLS}>
                   <label htmlFor="evt-replay-days">
-                    Хэд хоногийн турш вэб-с нөхөж үзэх боломжтой?
+                    Нөхөж үзэх хугацаа (5 хэрэглэгчийн тасалбарт) — хэд хоног?
                   </label>
                   <div className="relative">
                     <input

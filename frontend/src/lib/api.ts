@@ -234,7 +234,23 @@ export const api = {
 
   listHistoryFigures: () => request<DbHistoryFigure[]>("GET", "/api/history"),
 
-  getWatchToken: () => request<{ cams: WatchCam[] }>("GET", "/api/watch/token"),
+  getWatchToken: (eventId: string, deviceId: string) =>
+    request<{ cams: WatchCam[]; ticket_id: string | null }>(
+      "GET",
+      `/api/watch/token?event_id=${encodeURIComponent(eventId)}&device_id=${encodeURIComponent(deviceId)}`,
+    ),
+
+  watchHeartbeat: (ticketId: string, deviceId: string) =>
+    request<{ ok: boolean }>("POST", "/api/watch/heartbeat", {
+      ticket_id: ticketId,
+      device_id: deviceId,
+    }),
+
+  watchRelease: (ticketId: string, deviceId: string) =>
+    request<{ ok: boolean }>("POST", "/api/watch/release", {
+      ticket_id: ticketId,
+      device_id: deviceId,
+    }),
 
   getWatchStatus: () =>
     request<{

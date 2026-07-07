@@ -21,6 +21,9 @@ function toTicketEvent(ev: EventRecord): TicketModalEvent {
     desc: ev.desc,
     live_price: ev.live_price,
     replay_price: ev.replay_price,
+    price_standard: ev.price_standard,
+    price_multi3: ev.price_multi3,
+    price_multi5: ev.price_multi5,
     live_end_at: ev.live_end_at,
     replay_available_until: ev.replay_available_until,
   };

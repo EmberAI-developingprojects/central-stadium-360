@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import type { Session } from "../../../auth";
 import { api } from "../../../lib/api";
 import type { WatchCam } from "../../../lib/api";
+import { getDeviceId } from "../../../lib/deviceId";
 import { useStreamLive } from "../hooks/useStreamLive";
 import { CHAT_WS_URL } from "../constants";
 import { fmtElapsed } from "../utils";
@@ -112,7 +113,7 @@ export function ViewerOverlay({
   featuredEvent,
   onClose,
 }: ViewerOverlayProps) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const loc = pickEventLocale(featuredEvent, i18n.language);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -124,6 +125,11 @@ export function ViewerOverlay({
   const audioGainRef = useRef<GainNode | null>(null);
 
   const [cams, setCams] = useState<WatchCam[]>([]);
+  // Set when /watch/token refuses playback (no_ticket, device_limit_reached).
+  const [watchError, setWatchError] = useState<{
+    code: string;
+    limit?: number;
+  } | null>(null);
   const [camIdx, setCamIdx] = useState(0);
   const [paused, setPaused] = useState(false);
   const [buffering, setBuffering] = useState(false);
@@ -198,10 +204,67 @@ export function ViewerOverlay({
     setZoom(1);
   }, [activeCam?.id]);
 
+  // Ticket + device-cap gate: the token call admits this device against the
+  // ticket's tier cap (Standard=1, 3-User=3, 5-User=5). A 30s heartbeat keeps
+  // the slot; closing the player releases it so another device can start.
   useEffect(() => {
-    api.getWatchToken().then((res) => {
-      if (res.ok) setCams(res.data.cams);
+    const deviceId = getDeviceId();
+    let alive = true;
+    let heartbeat: ReturnType<typeof setInterval> | null = null;
+    let ticketId: string | null = null;
+
+    api.getWatchToken(featuredEvent.id, deviceId).then((res) => {
+      if (!alive) return;
+      if (res.ok) {
+        setWatchError(null);
+        setCams(res.data.cams);
+        ticketId = res.data.ticket_id;
+        if (ticketId) {
+          const tid = ticketId;
+          heartbeat = setInterval(() => {
+            api.watchHeartbeat(tid, deviceId).catch(() => {});
+          }, 30_000);
+        }
+      } else {
+        const details = res.details as { limit?: number } | undefined;
+        setWatchError({ code: res.error, limit: details?.limit });
+      }
     });
+
+    return () => {
+      alive = false;
+      if (heartbeat) clearInterval(heartbeat);
+      if (ticketId) {
+        api.watchRelease(ticketId, deviceId).catch(() => {});
+      }
+    };
+  }, [featuredEvent.id]);
+
+  // Stream URLs carry an expiring path token — when playback dies on a fatal
+  // network error (token expired, CDN 403), fetch fresh tokenized URLs and let
+  // the source-loading effect resume. Throttled so a hard outage can't spam
+  // the backend.
+  const lastTokenRefreshRef = useRef(0);
+  const refreshStreamRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    refreshStreamRef.current = () => {
+      const now = Date.now();
+      if (now - lastTokenRefreshRef.current < 15_000) return;
+      lastTokenRefreshRef.current = now;
+      api.getWatchToken(featuredEvent.id, getDeviceId()).then((res) => {
+        if (res.ok) setCams(res.data.cams);
+      });
+    };
+  }, [featuredEvent.id]);
+
+  // Native HLS (iOS Safari): the <video> element itself surfaces token/network
+  // failures — same recovery path.
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    const onError = () => refreshStreamRef.current();
+    v.addEventListener("error", onError);
+    return () => v.removeEventListener("error", onError);
   }, []);
 
   // Warm browser cache with all camera manifests so HLS switch skips the
@@ -251,6 +314,18 @@ export function ViewerOverlay({
           startFragPrefetch: true,
         });
         hlsRef.current = hls;
+        hls.on(Hls.Events.ERROR, (_evt, data) => {
+          if (!data.fatal) return;
+          const h = hlsRef.current;
+          if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+            h?.recoverMediaError();
+            return;
+          }
+          // Network-fatal (incl. 403 on an expired stream token): fetch fresh
+          // tokenized URLs — the source effect reloads, then resume loading.
+          refreshStreamRef.current();
+          h?.startLoad();
+        });
         hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
           const levels: QualityLevel[] = data.levels.map((l, i) => ({
             index: i,
@@ -1185,7 +1260,49 @@ export function ViewerOverlay({
               }}
               onDoubleClick={toggleStageFs}
             />
-            {!activeCam?.hlsUrl && (
+            {watchError ? (
+              <div
+                role="alert"
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  zIndex: 5,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 12,
+                  padding: 24,
+                  textAlign: "center",
+                  background: "rgba(5,9,18,0.92)",
+                  color: "rgba(255,255,255,0.85)",
+                }}
+              >
+                <svg
+                  width="44"
+                  height="44"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <rect x="3" y="11" width="18" height="10" rx="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                <span style={{ fontSize: 14, fontWeight: 700, maxWidth: 420 }}>
+                  {watchError.code === "device_limit_reached"
+                    ? t("watch_device_limit", {
+                        limit: watchError.limit ?? 1,
+                      })
+                    : watchError.code === "no_ticket"
+                      ? t("watch_no_ticket")
+                      : t("watch_stream_error")}
+                </span>
+              </div>
+            ) : !activeCam?.hlsUrl ? (
               <div
                 style={{
                   position: "absolute",
@@ -1216,7 +1333,7 @@ export function ViewerOverlay({
                   Урсгал тохируулагдаагүй байна
                 </span>
               </div>
-            )}
+            ) : null}
 
             {buffering && !paused && activeCam?.hlsUrl && (
               <div

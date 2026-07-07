@@ -7,7 +7,11 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import type { TicketCreateResponse, TicketTier } from "@cs360/shared";
-import { TICKET_TIERS, TICKET_TIER_ORDER } from "@cs360/shared";
+import {
+  TICKET_TIERS,
+  TICKET_TIER_ORDER,
+  tierPriceForEvent,
+} from "@cs360/shared";
 import type { Session } from "../../../auth";
 import { api } from "../../../lib/api";
 import type { OrderRecord } from "../../../data/store";
@@ -87,8 +91,39 @@ export function TicketModal({
   // Tier selection (live purchases only). Replay stays on its legacy flow.
   const [tier, setTier] = useState<TicketTier>("standard");
   const useTiers = kind === "live";
-  // Displayed/charged amount: fixed tier price for live, legacy price otherwise.
-  const payTotal = useTiers ? TICKET_TIERS[tier].price : total;
+  // Replay tiers grant access for the admin-set event window
+  // (replay_available_until); without one, until the event's month ends
+  // (Ulaanbaatar time): Naadam live Jul 11 → "7 сар дуустал" → until Aug 1.
+  const replayUntil = useMemo(() => {
+    const until = event.replay_available_until
+      ? new Date(event.replay_available_until)
+      : null;
+    if (until && !Number.isNaN(until.getTime())) {
+      return {
+        kind: "date" as const,
+        // YYYY-MM-DD in Ulaanbaatar time (sv-SE renders ISO-style dates).
+        date: until.toLocaleDateString("sv-SE", {
+          timeZone: "Asia/Ulaanbaatar",
+        }),
+      };
+    }
+    const iso = event.live_end_at ?? event.start_time;
+    const d = iso ? new Date(iso) : null;
+    if (!d || Number.isNaN(d.getTime())) return null;
+    const ub = new Date(d.getTime() + 8 * 3600_000);
+    return {
+      kind: "month" as const,
+      month: ub.getUTCMonth() + 1,
+      monthName: d.toLocaleString("en-US", {
+        month: "long",
+        timeZone: "Asia/Ulaanbaatar",
+      }),
+    };
+  }, [event.replay_available_until, event.live_end_at, event.start_time]);
+  // Displayed/charged amount: per-event tier price (admin-set, platform
+  // default fallback) for live, legacy price otherwise. The backend computes
+  // the same via tierPriceForEvent — keep them in sync.
+  const payTotal = useTiers ? tierPriceForEvent(tier, event) : total;
   const QR_TTL_MS = 10 * 60 * 1000;
 
   useEffect(() => {
@@ -350,13 +385,23 @@ export function TicketModal({
                                 {t("ticket_tier_devices", {
                                   count: spec.maxDevices,
                                 })}
+                                {" · "}
                                 {spec.replay
-                                  ? ` · ${t("ticket_tier_replay_incl")}`
-                                  : ""}
+                                  ? replayUntil?.kind === "date"
+                                    ? t("ticket_tier_replay_until", {
+                                        date: replayUntil.date,
+                                      })
+                                    : replayUntil?.kind === "month"
+                                      ? t("ticket_tier_replay_incl", {
+                                          month: replayUntil.month,
+                                          monthName: replayUntil.monthName,
+                                        })
+                                      : t("ticket_tier_replay_incl_generic")
+                                  : t("ticket_tier_no_replay")}
                               </span>
                             </span>
                             <span style={{ fontWeight: 800, fontSize: 14 }}>
-                              {money(spec.price)}
+                              {money(tierPriceForEvent(tid, event))}
                             </span>
                           </button>
                         );
