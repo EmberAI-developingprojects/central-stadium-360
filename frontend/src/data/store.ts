@@ -25,6 +25,10 @@ export type EventRecord = {
   status: import("@cs360/shared").EventStatus;
   live_price: number;
   replay_price: number;
+  // Per-event tier price overrides (MNT). null = inherit the TICKET_TIERS catalog.
+  tier_standard_price: number | null;
+  tier_multi3_price: number | null;
+  tier_multi5_price: number | null;
   live_start_at: string | null;
   live_end_at: string | null;
   replay_available_until: string | null;
@@ -202,6 +206,9 @@ function dbToEvent(row: DbEvent): EventRecord {
     status: row.status,
     live_price: Number(row.live_price ?? 0),
     replay_price: Number(row.replay_price ?? 0),
+    tier_standard_price: row.tier_standard_price ?? null,
+    tier_multi3_price: row.tier_multi3_price ?? null,
+    tier_multi5_price: row.tier_multi5_price ?? null,
     live_start_at: row.live_start_at,
     live_end_at: row.live_end_at,
     replay_available_until: row.replay_available_until,
@@ -243,6 +250,12 @@ export async function getEvent(id: string): Promise<EventRecord | null> {
   return found ? dbToEvent(found) : null;
 }
 
+// A tier price override: a positive number is a per-event price; anything else
+// (empty, 0, null) means "inherit the TICKET_TIERS catalog price".
+function normTierPrice(v: number | null | undefined): number | null {
+  return typeof v === "number" && v > 0 ? Math.round(v) : null;
+}
+
 function toEventInput(input: EventInput) {
   const body: Record<string, unknown> = {
     title: (input.title ?? "").trim(),
@@ -262,6 +275,9 @@ function toEventInput(input: EventInput) {
     body.live_price = Number(input.live_price) || 0;
   if (input.replay_price !== undefined)
     body.replay_price = Number(input.replay_price) || 0;
+  body.tier_standard_price = normTierPrice(input.tier_standard_price);
+  body.tier_multi3_price = normTierPrice(input.tier_multi3_price);
+  body.tier_multi5_price = normTierPrice(input.tier_multi5_price);
   if (input.live_start_at !== undefined)
     body.live_start_at = input.live_start_at;
   if (input.live_end_at !== undefined) body.live_end_at = input.live_end_at;
@@ -303,6 +319,12 @@ export async function updateEvent(
     body.live_price = Number(patch.live_price) || 0;
   if (patch.replay_price !== undefined)
     body.replay_price = Number(patch.replay_price) || 0;
+  if (patch.tier_standard_price !== undefined)
+    body.tier_standard_price = normTierPrice(patch.tier_standard_price);
+  if (patch.tier_multi3_price !== undefined)
+    body.tier_multi3_price = normTierPrice(patch.tier_multi3_price);
+  if (patch.tier_multi5_price !== undefined)
+    body.tier_multi5_price = normTierPrice(patch.tier_multi5_price);
   if (patch.live_start_at !== undefined)
     body.live_start_at = patch.live_start_at;
   if (patch.live_end_at !== undefined) body.live_end_at = patch.live_end_at;

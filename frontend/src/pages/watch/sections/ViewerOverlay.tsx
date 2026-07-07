@@ -10,7 +10,7 @@ import Hls from "hls.js";
 import * as THREE from "three";
 import { useTranslation } from "react-i18next";
 import type { Session } from "../../../auth";
-import { api } from "../../../lib/api";
+import { api, getDeviceId } from "../../../lib/api";
 import type { WatchCam } from "../../../lib/api";
 import { useStreamLive } from "../hooks/useStreamLive";
 import { CHAT_WS_URL } from "../constants";
@@ -112,11 +112,16 @@ export function ViewerOverlay({
   featuredEvent,
   onClose,
 }: ViewerOverlayProps) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const loc = pickEventLocale(featuredEvent, i18n.language);
+  const deviceIdRef = useRef<string>(getDeviceId());
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const hlsRef = useRef<Hls | null>(null);
+  // Query string of the current signed live URL (Policy/Signature/Key-Pair-Id),
+  // reused by the custom loader for segment/variant requests. Empty when the
+  // stream isn't signed (LIVE_SIGN_URLS off) — the loader then does nothing.
+  const signQsRef = useRef<string>("");
   const stageRef = useRef<HTMLElement>(null);
   const chatListRef = useRef<HTMLDivElement>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -124,6 +129,12 @@ export function ViewerOverlay({
   const audioGainRef = useRef<GainNode | null>(null);
 
   const [cams, setCams] = useState<WatchCam[]>([]);
+  // Tier device-cap gate. null = admitted / enforcement off. Set when the token
+  // or a heartbeat is refused: the user holds no valid ticket, or every device
+  // slot for their tier is in use.
+  const [watchGate, setWatchGate] = useState<
+    null | { reason: "no_ticket" | "device_limit_reached"; limit?: number }
+  >(null);
   const [camIdx, setCamIdx] = useState(0);
   const [paused, setPaused] = useState(false);
   const [buffering, setBuffering] = useState(false);
@@ -199,10 +210,57 @@ export function ViewerOverlay({
   }, [activeCam?.id]);
 
   useEffect(() => {
-    api.getWatchToken().then((res) => {
-      if (res.ok) setCams(res.data.cams);
+    let alive = true;
+    const eventId = featuredEvent.id;
+    const deviceId = deviceIdRef.current;
+    api.getWatchToken(eventId, deviceId).then((res) => {
+      if (!alive) return;
+      if (res.ok) {
+        setCams(res.data.cams);
+        setWatchGate(null);
+        return;
+      }
+      // With WATCH_ENFORCE off the token returns ok, so a gate error only
+      // appears once enforcement is on. Other errors leave the empty-stream
+      // placeholder in place rather than a misleading "buy a ticket" prompt.
+      if (res.error === "no_ticket") setWatchGate({ reason: "no_ticket" });
+      else if (res.error === "device_limit_reached") {
+        const limit = (res.details as { limit?: number } | undefined)?.limit;
+        setWatchGate({ reason: "device_limit_reached", limit });
+      }
     });
-  }, []);
+    return () => {
+      alive = false;
+    };
+  }, [featuredEvent.id]);
+
+  // Heartbeat this device's tier slot while watching, and release it on unmount.
+  // A heartbeat that's refused (slot lost / cap exceeded) flips the gate so the
+  // player stops and the message shows. Both are no-ops when enforcement is off.
+  useEffect(() => {
+    if (watchGate) return;
+    const eventId = featuredEvent.id;
+    const deviceId = deviceIdRef.current;
+    const id = window.setInterval(() => {
+      api.watchHeartbeat(eventId, deviceId).then((res) => {
+        if (res.ok) return;
+        if (res.error === "no_ticket") setWatchGate({ reason: "no_ticket" });
+        else if (res.error === "device_limit_reached") {
+          const limit = (res.details as { limit?: number } | undefined)?.limit;
+          setWatchGate({ reason: "device_limit_reached", limit });
+        }
+      });
+    }, 30_000);
+    return () => window.clearInterval(id);
+  }, [featuredEvent.id, watchGate]);
+
+  useEffect(() => {
+    const eventId = featuredEvent.id;
+    const deviceId = deviceIdRef.current;
+    return () => {
+      void api.watchRelease(eventId, deviceId);
+    };
+  }, [featuredEvent.id]);
 
   // Warm browser cache with all camera manifests so HLS switch skips the
   // m3u8 round-trip on first camera change.
@@ -226,13 +284,36 @@ export function ViewerOverlay({
     setQualityIdx(-1);
     if (!url) return;
 
+    // If the master URL is CloudFront-signed, capture its query string so the
+    // custom loader can append it to every variant-playlist and segment request
+    // (hls.js resolves child URLs relative to the manifest and drops its query).
+    const qIdx = url.indexOf("?");
+    signQsRef.current = qIdx >= 0 ? url.slice(qIdx + 1) : "";
+
     if (Hls.isSupported()) {
       let hls = hlsRef.current;
       if (!hls) {
         const isMobile =
           typeof navigator !== "undefined" &&
           /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        // Propagate the signed query string to child requests. No-op when the
+        // stream is unsigned (signQsRef empty) or the request is already signed.
+        const signRef = signQsRef;
+        class SignedLoader extends (Hls.DefaultConfig.loader as unknown as {
+          new (conf: unknown): {
+            load(ctx: { url: string }, c: unknown, cb: unknown): void;
+          };
+        }) {
+          load(ctx: { url: string }, conf: unknown, cb: unknown) {
+            const qs = signRef.current;
+            if (qs && !/[?&](Signature|Key-Pair-Id)=/.test(ctx.url)) {
+              ctx.url += (ctx.url.includes("?") ? "&" : "?") + qs;
+            }
+            super.load(ctx, conf, cb);
+          }
+        }
         hls = new Hls({
+          loader: SignedLoader as unknown as typeof Hls.DefaultConfig.loader,
           startLevel: -1,
           capLevelToPlayerSize: isMobile,
           maxBufferLength: 30,
@@ -1185,7 +1266,55 @@ export function ViewerOverlay({
               }}
               onDoubleClick={toggleStageFs}
             />
-            {!activeCam?.hlsUrl && (
+            {watchGate && (
+              <div
+                role="alert"
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 12,
+                  padding: 24,
+                  textAlign: "center",
+                  color: "rgba(255,255,255,0.72)",
+                  background: "rgba(5,8,15,0.72)",
+                  zIndex: 4,
+                }}
+              >
+                <svg
+                  width="46"
+                  height="46"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <rect x="3" y="11" width="18" height="11" rx="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                <span style={{ fontSize: 15, fontWeight: 700, color: "#fff" }}>
+                  {watchGate.reason === "device_limit_reached"
+                    ? t("watch_gate_device_limit_title")
+                    : t("watch_gate_no_ticket_title")}
+                </span>
+                <span
+                  style={{ fontSize: 13, lineHeight: 1.55, maxWidth: 340 }}
+                >
+                  {watchGate.reason === "device_limit_reached"
+                    ? t("watch_gate_device_limit_desc", {
+                        count: watchGate.limit ?? 0,
+                      })
+                    : t("watch_gate_no_ticket_desc")}
+                </span>
+              </div>
+            )}
+
+            {!activeCam?.hlsUrl && !watchGate && (
               <div
                 style={{
                   position: "absolute",

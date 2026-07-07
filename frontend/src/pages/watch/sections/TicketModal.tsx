@@ -7,7 +7,7 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import type { TicketCreateResponse, TicketTier } from "@cs360/shared";
-import { TICKET_TIERS, TICKET_TIER_ORDER } from "@cs360/shared";
+import { TICKET_TIERS, TICKET_TIER_ORDER, eventTierPrice } from "@cs360/shared";
 import type { Session } from "../../../auth";
 import { api } from "../../../lib/api";
 import type { OrderRecord } from "../../../data/store";
@@ -87,8 +87,9 @@ export function TicketModal({
   // Tier selection (live purchases only). Replay stays on its legacy flow.
   const [tier, setTier] = useState<TicketTier>("standard");
   const useTiers = kind === "live";
-  // Displayed/charged amount: fixed tier price for live, legacy price otherwise.
-  const payTotal = useTiers ? TICKET_TIERS[tier].price : total;
+  // Displayed/charged amount: per-event tier price (falls back to the catalog)
+  // for live, legacy price otherwise.
+  const payTotal = useTiers ? eventTierPrice(event, tier) : total;
   const QR_TTL_MS = 10 * 60 * 1000;
 
   useEffect(() => {
@@ -356,7 +357,7 @@ export function TicketModal({
                               </span>
                             </span>
                             <span style={{ fontWeight: 800, fontSize: 14 }}>
-                              {money(spec.price)}
+                              {money(eventTierPrice(event, tid))}
                             </span>
                           </button>
                         );

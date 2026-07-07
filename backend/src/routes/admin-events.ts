@@ -15,10 +15,11 @@ const adminEvents = new Hono<AuthEnv>();
 adminEvents.use("*", requireUser);
 adminEvents.use("*", async (c, next) => requireAdmin(c, next));
 
+const TIER_PRICE_COLS = "tier_standard_price,tier_multi3_price,tier_multi5_price";
 const SELECT_COLS_FULL =
-  "id,title,description,status,start_time,price,live_price,replay_price,live_start_at,live_end_at,replay_available_until,thumbnail_url,image,featured,created_at,title_en,description_en";
+  `id,title,description,status,start_time,price,live_price,replay_price,${TIER_PRICE_COLS},live_start_at,live_end_at,replay_available_until,thumbnail_url,image,featured,created_at,title_en,description_en`;
 const SELECT_COLS_NO_EN =
-  "id,title,description,status,start_time,price,live_price,replay_price,live_start_at,live_end_at,replay_available_until,thumbnail_url,image,featured,created_at";
+  `id,title,description,status,start_time,price,live_price,replay_price,${TIER_PRICE_COLS},live_start_at,live_end_at,replay_available_until,thumbnail_url,image,featured,created_at`;
 
 let eventEnColumnsAvailable: boolean | null = null;
 
@@ -68,6 +69,9 @@ const createSchema = z.object({
   price: z.number().int().min(0),
   live_price: z.number().min(0).optional(),
   replay_price: z.number().min(0).optional(),
+  tier_standard_price: z.number().int().min(0).nullable().optional(),
+  tier_multi3_price: z.number().int().min(0).nullable().optional(),
+  tier_multi5_price: z.number().int().min(0).nullable().optional(),
   live_start_at: z.string().nullable().optional(),
   live_end_at: z.string().nullable().optional(),
   replay_available_until: z.string().nullable().optional(),

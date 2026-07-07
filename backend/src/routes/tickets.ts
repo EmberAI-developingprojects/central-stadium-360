@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import type { DbTicket } from "@cs360/shared";
-import { TICKET_TIERS } from "@cs360/shared";
+import { TICKET_TIERS, eventTierPrice } from "@cs360/shared";
 import { getSupabaseAdmin } from "../lib/supabase";
 import { requireUser, type AuthEnv } from "../middleware/require-user";
 import {
@@ -52,7 +52,9 @@ tickets.post("/create", async (c) => {
 
   const { data: event, error: evErr } = await admin
     .from("events")
-    .select("id, title, status, price, live_price, replay_price, live_end_at")
+    .select(
+      "id, title, status, price, live_price, replay_price, tier_standard_price, tier_multi3_price, tier_multi5_price, live_end_at",
+    )
     .eq("id", event_id)
     .maybeSingle<{
       id: string;
@@ -61,6 +63,9 @@ tickets.post("/create", async (c) => {
       price: number;
       live_price: number;
       replay_price: number;
+      tier_standard_price: number | null;
+      tier_multi3_price: number | null;
+      tier_multi5_price: number | null;
       live_end_at: string | null;
     }>();
   if (evErr) {
@@ -79,9 +84,10 @@ tickets.post("/create", async (c) => {
   }
 
   const pending = await findRecentPendingTicket(user.id, event.id, ticket_type);
-  // Only reuse a pending invoice if its amount still matches the selected tier —
-  // otherwise the user switched tiers and must get a fresh, correctly-priced QR.
-  if (pending && (!tier || pending.price === TICKET_TIERS[tier].price)) {
+  // Only reuse a pending invoice if its amount still matches the selected tier's
+  // (possibly per-event) price — otherwise the user switched tiers or the admin
+  // repriced, and they must get a fresh, correctly-priced QR.
+  if (pending && (!tier || pending.price === eventTierPrice(event, tier))) {
     const reuse = await reusePendingInvoice(pending, event.id);
     if (reuse.ok) {
       return c.json({ ok: true, data: reuse.data } as const);
@@ -89,7 +95,7 @@ tickets.post("/create", async (c) => {
   }
 
   const price = tier
-    ? TICKET_TIERS[tier].price
+    ? eventTierPrice(event, tier)
     : ticket_type === "replay"
       ? Number(event.replay_price ?? 0) || event.price
       : Number(event.live_price ?? 0) || event.price;
