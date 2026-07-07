@@ -4,6 +4,7 @@ import type {
   TicketType,
   TicketTier,
 } from "@cs360/shared";
+import { TICKET_TIERS } from "@cs360/shared";
 import { getSupabaseAdmin } from "./supabase";
 import { createInvoice, getInvoice, isQPayConfigured } from "./qpay";
 import { buildCallbackUrl, getCallbackSecret } from "./qpay-signature";
@@ -69,6 +70,49 @@ export async function hasReplayAccess(
     return false;
   }
   return Boolean(data);
+}
+
+export type ValidLiveTicket = {
+  id: string;
+  tier: TicketTier;
+  max_devices: number;
+};
+
+/**
+ * Fetch the user's currently-valid paid ticket that grants LIVE access to an
+ * event, including its tier and concurrent-device cap. Used to gate
+ * `GET /api/watch/token` and admit the device against the tier limit. Mirrors
+ * the paid/expiry semantics of {@link hasValidTicketForEvent} but returns the
+ * row so the caller can enforce `max_devices`. Returns null when no such ticket
+ * exists. `max_devices` falls back to the tier catalog then 1 for legacy rows.
+ */
+export async function getValidLiveTicket(
+  userId: string,
+  eventId: string,
+): Promise<ValidLiveTicket | null> {
+  const admin = getSupabaseAdmin();
+  if (!admin) return null;
+  const nowIso = new Date().toISOString();
+  const { data, error } = await admin
+    .from("tickets")
+    .select("id, tier, max_devices")
+    .eq("user_id", userId)
+    .eq("event_id", eventId)
+    .eq("status", "paid")
+    .in("ticket_type", ["live", "replay"])
+    .gt("access_expires_at", nowIso)
+    .order("max_devices", { ascending: false })
+    .limit(1)
+    .maybeSingle<{
+      id: string;
+      tier: TicketTier | null;
+      max_devices: number | null;
+    }>();
+  if (error || !data) return null;
+  const tier: TicketTier = data.tier ?? "standard";
+  const maxDevices =
+    data.max_devices ?? TICKET_TIERS[tier]?.maxDevices ?? 1;
+  return { id: data.id, tier, max_devices: maxDevices };
 }
 
 export async function hasPaidTicket(
@@ -210,6 +254,52 @@ export async function createTicketInvoice(
   if (price <= 0) {
     return { ok: false, error: "event_not_for_sale", status: 409 };
   }
+
+  // Local dev-only bypass (gated on DEV_FAKE_PAY=1; never set in prod). Skips
+  // QPay entirely: issues an immediately-PAID ticket with a synthetic invoice id
+  // so the buy → watch flow can be exercised without a QPay merchant. The
+  // payment-status poll returns paid because the row is already status='paid'.
+  if (process.env.DEV_FAKE_PAY === "1") {
+    const ticketId = randomUUID();
+    const nowIso = new Date().toISOString();
+    // Guarantee a future access window even if the event has no live_end_at,
+    // so the ticket passes the watch-token access_expires_at > now() check.
+    const fallbackExpiry = new Date(
+      Date.now() + LIVE_ACCESS_WINDOW_DAYS * 24 * 60 * 60 * 1000,
+    ).toISOString();
+    const accessExpiresAt =
+      (ticketType === "live" ? liveAccessExpiry(event.live_end_at) : null) ??
+      fallbackExpiry;
+    const fakeInvoiceId = `dev-${ticketId}`;
+    const { error: insErr } = await admin.from("tickets").insert({
+      id: ticketId,
+      user_id: userId,
+      event_id: event.id,
+      status: "paid",
+      ticket_type: ticketType,
+      ...(tier ? { tier } : {}),
+      ...(maxDevices ? { max_devices: maxDevices } : {}),
+      price,
+      paid_at: nowIso,
+      qpay_invoice_id: fakeInvoiceId,
+      access_expires_at: accessExpiresAt,
+    });
+    if (insErr) {
+      return { ok: false, error: "ticket_insert_failed", status: 500 };
+    }
+    const data: TicketCreateResponse = {
+      ticket_id: ticketId,
+      event_id: event.id,
+      price,
+      invoice_id: fakeInvoiceId,
+      qr_text: "DEV-FAKE-PAYMENT",
+      qr_image: "",
+      urls: [],
+      access_expires_at: accessExpiresAt,
+    };
+    return { ok: true, data };
+  }
+
   if (!isQPayConfigured()) {
     return { ok: false, error: "qpay_not_configured", status: 503 };
   }

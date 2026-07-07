@@ -87,6 +87,9 @@ export default function Watch() {
       desc: ev.desc,
       live_price: ev.live_price,
       replay_price: ev.replay_price,
+      tier_standard_price: ev.tier_standard_price,
+      tier_multi3_price: ev.tier_multi3_price,
+      tier_multi5_price: ev.tier_multi5_price,
       live_end_at: ev.live_end_at,
       replay_available_until: ev.replay_available_until,
     };

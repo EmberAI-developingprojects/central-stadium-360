@@ -12,6 +12,9 @@ export type TicketModalEvent = {
   desc?: string;
   live_price?: number;
   replay_price?: number;
+  tier_standard_price?: number | null;
+  tier_multi3_price?: number | null;
+  tier_multi5_price?: number | null;
   live_end_at?: string | null;
   replay_available_until?: string | null;
 };

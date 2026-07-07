@@ -38,6 +38,45 @@ export const TICKET_TIERS: Record<TicketTier, TierSpec> = {
 };
 
 export const TICKET_TIER_ORDER: TicketTier[] = ["standard", "multi3", "multi5"];
+
+/**
+ * Per-event tier price overrides (MNT). An event may set its own price for any
+ * of the three tiers; a null/absent/0 value means "inherit the platform
+ * {@link TICKET_TIERS} catalog price". Only the PRICE is per-event — the device
+ * cap and replay entitlement remain the tier's fixed definition.
+ */
+export interface EventTierPrices {
+  tier_standard_price?: number | null;
+  tier_multi3_price?: number | null;
+  tier_multi5_price?: number | null;
+}
+
+const TIER_PRICE_COLUMN: Record<TicketTier, keyof EventTierPrices> = {
+  standard: "tier_standard_price",
+  multi3: "tier_multi3_price",
+  multi5: "tier_multi5_price",
+};
+
+/** Effective price for `tier` on an event: the event override if set (>0), else the catalog price. */
+export function eventTierPrice(
+  event: EventTierPrices | null | undefined,
+  tier: TicketTier,
+): number {
+  const override = event?.[TIER_PRICE_COLUMN[tier]];
+  return typeof override === "number" && override > 0
+    ? override
+    : TICKET_TIERS[tier].price;
+}
+
+/** Full tier specs for an event, with per-event prices merged over the catalog, in display order. */
+export function resolveEventTiers(
+  event: EventTierPrices | null | undefined,
+): TierSpec[] {
+  return TICKET_TIER_ORDER.map((id) => ({
+    ...TICKET_TIERS[id],
+    price: eventTierPrice(event, id),
+  }));
+}
 export type RecordingStatus = "recording" | "processing" | "ready" | "expired";
 
 export interface DbUser {
@@ -63,6 +102,9 @@ export interface DbEvent {
   price: number;
   live_price: number;
   replay_price: number;
+  tier_standard_price?: number | null;
+  tier_multi3_price?: number | null;
+  tier_multi5_price?: number | null;
   live_start_at: string | null;
   live_end_at: string | null;
   replay_available_until: string | null;
@@ -82,6 +124,9 @@ export type EventInput = {
   price: number;
   live_price?: number;
   replay_price?: number;
+  tier_standard_price?: number | null;
+  tier_multi3_price?: number | null;
+  tier_multi5_price?: number | null;
   live_start_at?: string | null;
   live_end_at?: string | null;
   replay_available_until?: string | null;

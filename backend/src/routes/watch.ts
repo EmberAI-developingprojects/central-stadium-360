@@ -1,10 +1,48 @@
 import { Hono } from "hono";
 import type { AuthEnv } from "../middleware/require-user";
 import { requireUser } from "../middleware/require-user";
-import { markUserViewed } from "../lib/tickets";
+import { getValidLiveTicket, markUserViewed } from "../lib/tickets";
+import { admitDevice, releaseDevice } from "../lib/sessions";
+import { isLiveSigningConfigured, signLiveUrl } from "../lib/cloudfront";
 import { getSupabaseAdmin } from "../lib/supabase";
 
+// Sign a live camera URL with CloudFront when LIVE_SIGN_URLS is on; otherwise
+// (and on any signing error) serve the raw URL so playback never breaks.
+function signCamUrl(url: string | null): string | null {
+  if (!url || !isLiveSigningConfigured()) return url;
+  try {
+    return signLiveUrl(url);
+  } catch (err) {
+    console.warn(
+      "[watch] live URL signing failed, serving unsigned:",
+      (err as Error).message,
+    );
+    return url;
+  }
+}
+
 const watch = new Hono<AuthEnv>();
+
+// Concurrent-device enforcement (tier caps) is dormant until WATCH_ENFORCE=1.
+// While off, /token stays open to any authed user so the live preview keeps
+// working; once tickets are seeded in prod, flip the flag to enforce tier caps.
+function enforceWatch(): boolean {
+  return process.env.WATCH_ENFORCE === "1";
+}
+
+// Read event_id/device_id from JSON body first, falling back to the query string
+// (so a keepalive/beacon release with an empty body can still pass them as ?params).
+async function readWatchParams(
+  c: import("hono").Context,
+): Promise<{ eventId: string | null; deviceId: string | null }> {
+  const body = (await c.req.json().catch(() => ({}))) as Record<string, unknown>;
+  const fromBody = (k: string) =>
+    typeof body[k] === "string" ? (body[k] as string) : null;
+  return {
+    eventId: fromBody("event_id") ?? c.req.query("event_id") ?? null,
+    deviceId: fromBody("device_id") ?? c.req.query("device_id") ?? null,
+  };
+}
 
 type CamType = "normal" | "360";
 
@@ -84,15 +122,97 @@ export async function getViewedUserCount(): Promise<number> {
   return count ?? 0;
 }
 
-watch.get("/token", requireUser, (c) => {
+watch.get("/token", requireUser, async (c) => {
   const user = c.get("user");
   if (user?.id) markUserViewed(user.id).catch(() => {});
+
+  if (enforceWatch()) {
+    const eventId = c.req.query("event_id");
+    const deviceId = c.req.query("device_id");
+    if (!eventId || !deviceId) {
+      return c.json(
+        { ok: false, error: "event_and_device_required" } as const,
+        400,
+      );
+    }
+    const ticket = await getValidLiveTicket(user.id, eventId);
+    if (!ticket) {
+      return c.json({ ok: false, error: "no_ticket" } as const, 403);
+    }
+    const admit = await admitDevice(ticket.id, deviceId, ticket.max_devices);
+    if (!admit.ok) {
+      if (admit.error === "device_limit_reached") {
+        return c.json(
+          {
+            ok: false,
+            error: "device_limit_reached",
+            active: admit.active,
+            limit: admit.limit,
+          } as const,
+          403,
+        );
+      }
+      return c.json({ ok: false, error: "internal_error" } as const, 500);
+    }
+  }
+
   const urls = buildCamUrls();
   const cams: WatchCam[] = CAM_DEFS.map((cam, i) => ({
     ...cam,
-    hlsUrl: urls[i]!.url,
+    hlsUrl: signCamUrl(urls[i]!.url),
   }));
   return c.json({ ok: true, data: { cams } } as const);
+});
+
+// Keep an admitted device's tier slot alive. The player calls this on an
+// interval; a device that stops heartbeating goes stale (~90s) and frees its
+// slot. Re-runs admitDevice so a device that lost its slot (e.g. flag flipped
+// on mid-session, or evicted) learns it's now blocked. No-op while enforcement
+// is off so the preview path stays cheap.
+watch.post("/heartbeat", requireUser, async (c) => {
+  if (!enforceWatch()) {
+    return c.json({ ok: true, data: { active: 0 } } as const);
+  }
+  const user = c.get("user");
+  const { eventId, deviceId } = await readWatchParams(c);
+  if (!eventId || !deviceId) {
+    return c.json(
+      { ok: false, error: "event_and_device_required" } as const,
+      400,
+    );
+  }
+  const ticket = await getValidLiveTicket(user.id, eventId);
+  if (!ticket) {
+    return c.json({ ok: false, error: "no_ticket" } as const, 403);
+  }
+  const admit = await admitDevice(ticket.id, deviceId, ticket.max_devices);
+  if (!admit.ok) {
+    if (admit.error === "device_limit_reached") {
+      return c.json(
+        {
+          ok: false,
+          error: "device_limit_reached",
+          active: admit.active,
+          limit: admit.limit,
+        } as const,
+        403,
+      );
+    }
+    return c.json({ ok: false, error: "internal_error" } as const, 500);
+  }
+  return c.json({ ok: true, data: { active: admit.active } } as const);
+});
+
+// Free a device's tier slot immediately on stream stop / unmount (best-effort;
+// staleness would free it anyway). Safe to call regardless of the flag.
+watch.post("/release", requireUser, async (c) => {
+  const user = c.get("user");
+  const { eventId, deviceId } = await readWatchParams(c);
+  if (eventId && deviceId) {
+    const ticket = await getValidLiveTicket(user.id, eventId);
+    if (ticket) await releaseDevice(ticket.id, deviceId);
+  }
+  return c.json({ ok: true, data: {} } as const);
 });
 
 type CamProbe = {
@@ -156,7 +276,10 @@ watch.get("/status", requireUser, async (c) => {
   }
 
   const cams = buildCamUrls();
-  const probes = await Promise.all(cams.map((c) => probeHls(c.id, c.url)));
+  // Sign before probing too — a signing-required origin 403s an unsigned probe.
+  const probes = await Promise.all(
+    cams.map((c) => probeHls(c.id, signCamUrl(c.url))),
+  );
   const live = probes.some((p) => p.ok);
   const prevLive = statusCache?.live ?? false;
   const prevStart = statusCache?.startedAt ?? null;

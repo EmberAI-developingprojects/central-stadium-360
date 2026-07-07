@@ -43,6 +43,26 @@ import { supabase } from "./supabase";
 const BASE_URL =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "";
 
+const DEVICE_ID_KEY = "cs360_device_id";
+
+/**
+ * A stable per-browser device id, persisted in localStorage. Sent with the
+ * watch token + heartbeat so the backend can enforce a ticket tier's
+ * concurrent-device cap (a new device beyond the cap is refused).
+ */
+export function getDeviceId(): string {
+  if (typeof localStorage === "undefined") return "server";
+  let id = localStorage.getItem(DEVICE_ID_KEY);
+  if (!id) {
+    id =
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
+    localStorage.setItem(DEVICE_ID_KEY, id);
+  }
+  return id;
+}
+
 export type ApiResult<T> =
   | { ok: true; data: T }
   | { ok: false; error: string; status: number; details?: unknown };
@@ -234,7 +254,28 @@ export const api = {
 
   listHistoryFigures: () => request<DbHistoryFigure[]>("GET", "/api/history"),
 
-  getWatchToken: () => request<{ cams: WatchCam[] }>("GET", "/api/watch/token"),
+  getWatchToken: (eventId?: string, deviceId?: string) => {
+    const qs = new URLSearchParams();
+    if (eventId) qs.set("event_id", eventId);
+    if (deviceId) qs.set("device_id", deviceId);
+    const suffix = qs.toString() ? `?${qs.toString()}` : "";
+    return request<{ cams: WatchCam[] }>("GET", `/api/watch/token${suffix}`);
+  },
+
+  // Keep this device's tier slot alive while watching. Returns device_limit_reached
+  // (with active/limit in `details`) if the slot was lost / the cap is exceeded.
+  watchHeartbeat: (eventId: string, deviceId: string) =>
+    request<{ active: number }>("POST", "/api/watch/heartbeat", {
+      event_id: eventId,
+      device_id: deviceId,
+    }),
+
+  // Free this device's tier slot on stream stop / unmount (best-effort).
+  watchRelease: (eventId: string, deviceId: string) =>
+    request<Record<string, never>>("POST", "/api/watch/release", {
+      event_id: eventId,
+      device_id: deviceId,
+    }),
 
   getWatchStatus: () =>
     request<{
