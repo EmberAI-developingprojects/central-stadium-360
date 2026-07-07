@@ -92,7 +92,7 @@ export type ChannelArnRow = {
 adminRecordings.get("/channel-arns", (c) => {
   const rows: ChannelArnRow[] = [1, 2, 3, 4].map((n) => ({
     camera_number: n,
-    arn: process.env[`AWS_IVS_CAM${n}_ARN`] ?? null,
+    arn: process.env[`WOWZA_CAM${n}_STREAM_ID`] ?? null,
   }));
   return c.json({ ok: true, data: rows } as const);
 });

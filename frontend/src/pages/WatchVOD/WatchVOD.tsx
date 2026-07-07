@@ -428,6 +428,26 @@ function VODViewer({ event }: { event: VODEventDetail }) {
       video.play().catch(() => {});
     };
 
+    const urlPath = (() => {
+      try {
+        return new URL(url).pathname.toLowerCase();
+      } catch {
+        return url.toLowerCase();
+      }
+    })();
+    const isMp4 = urlPath.endsWith(".mp4");
+
+    if (isMp4) {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+      video.src = url;
+      const onLoaded = () => applyPendingSeek();
+      video.addEventListener("loadedmetadata", onLoaded, { once: true });
+      return () => video.removeEventListener("loadedmetadata", onLoaded);
+    }
+
     if (Hls.isSupported()) {
       let hls = hlsRef.current;
       if (!hls) {

@@ -140,7 +140,7 @@ export default function SiteFooter() {
             <ul className={ulCls}>
               <li className={liCls}>+976 7700 1212</li>
               <li className={liCls}>info@stadium.mn</li>
-              <li className={liCls}>Улаанбаатар хот, Монгол улс</li>
+              <li className={liCls}>{t("footer_address")}</li>
             </ul>
           </div>
 

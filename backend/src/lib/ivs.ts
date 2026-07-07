@@ -1,25 +1,12 @@
-import { IvsClient, StopStreamCommand } from "@aws-sdk/client-ivs";
+/**
+ * Live stream stop helper. Historically wired to AWS IVS; now backed by the
+ * Wowza Video REST API. The exported `stopAllCameraStreams` name is preserved
+ * so admin-events.ts and any external callers keep working.
+ */
 
-const CAMERA_NUMBERS = [1, 2, 3, 4] as const;
+import { readCameraStreamIds } from "./wowza";
 
-let ivsClient: IvsClient | null = null;
-
-function getIvsClient(): IvsClient | null {
-  if (ivsClient) return ivsClient;
-  const region = process.env.AWS_REGION;
-  if (!region) return null;
-  ivsClient = new IvsClient({ region });
-  return ivsClient;
-}
-
-function readCameraArns(): string[] {
-  const arns: string[] = [];
-  for (const cam of CAMERA_NUMBERS) {
-    const arn = process.env[`AWS_IVS_CAM${cam}_ARN`];
-    if (arn && arn.trim().length > 0) arns.push(arn.trim());
-  }
-  return arns;
-}
+const DEFAULT_BASE = "https://api.video.wowza.com/api/v2.0";
 
 export type StopStreamsResult = {
   total: number;
@@ -28,39 +15,56 @@ export type StopStreamsResult = {
   failed: Array<{ arn: string; error: string }>;
 };
 
+function baseUrl(): string {
+  return process.env.WSC_API_BASE?.trim() || DEFAULT_BASE;
+}
+
+async function stopOne(
+  streamId: string,
+  jwt: string,
+): Promise<"stopped" | "already_offline" | { error: string }> {
+  const res = await fetch(`${baseUrl()}/live_streams/${streamId}/stop`, {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${jwt}` },
+  });
+  if (res.ok) return "stopped";
+  const text = await res.text().catch(() => "");
+  // Wowza returns a 4xx with an error code when the stream is already stopped.
+  // Treat any signal of "not running" as already-offline.
+  if (/not.?running|already.?stopped|invalid.?state/i.test(text)) {
+    return "already_offline";
+  }
+  return { error: `${res.status} ${text.slice(0, 200)}` };
+}
+
 export async function stopAllCameraStreams(): Promise<StopStreamsResult> {
-  const arns = readCameraArns();
+  const cams = readCameraStreamIds();
+  const streamIds = [...cams.values()];
   const result: StopStreamsResult = {
-    total: arns.length,
+    total: streamIds.length,
     stopped: [],
     alreadyOffline: [],
     failed: [],
   };
-  const client = getIvsClient();
-  if (!client) {
-    for (const arn of arns) {
-      result.failed.push({ arn, error: "aws_region_not_configured" });
+  const jwt = process.env.WOWZA_JWT?.trim();
+  if (!jwt) {
+    for (const id of streamIds) {
+      result.failed.push({ arn: id, error: "wowza_jwt_not_configured" });
     }
     return result;
   }
   await Promise.all(
-    arns.map(async (arn) => {
+    streamIds.map(async (id) => {
       try {
-        await client.send(new StopStreamCommand({ channelArn: arn }));
-        result.stopped.push(arn);
+        const outcome = await stopOne(id, jwt);
+        if (outcome === "stopped") result.stopped.push(id);
+        else if (outcome === "already_offline") result.alreadyOffline.push(id);
+        else result.failed.push({ arn: id, error: outcome.error });
       } catch (err) {
-        const name = (err as Error & { name?: string }).name ?? "";
-        const msg = (err as Error).message ?? "";
-        if (
-          name === "ChannelNotBroadcasting" ||
-          /not broadcasting/i.test(msg)
-        ) {
-          result.alreadyOffline.push(arn);
-        } else if (name === "ResourceNotFoundException") {
-          result.failed.push({ arn, error: "channel_not_found" });
-        } else {
-          result.failed.push({ arn, error: msg || name || "unknown_error" });
-        }
+        result.failed.push({
+          arn: id,
+          error: (err as Error).message || "unknown_error",
+        });
       }
     }),
   );

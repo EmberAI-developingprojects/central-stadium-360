@@ -391,8 +391,10 @@ adminEvents.post("/:id/end-live", async (c) => {
     `[end-live] event=${id} stopped=${stopResult.stopped.length} alreadyOffline=${stopResult.alreadyOffline.length} failed=${stopResult.failed.length}`,
   );
 
-  // Wait for IVS to flush recording-ended.json (reconnect window grace).
-  await new Promise((r) => setTimeout(r, 5000));
+  // Wait for Wowza to finalize the recorded video asset (encoding + upload).
+  // This is a coarse first pass — discoverRecordingsForEvent will still return
+  // an empty list if the asset isn't FINISHED yet, and can be retried later.
+  await new Promise((r) => setTimeout(r, 10000));
 
   let discovered: DbRecording[] = [];
   if (event.live_start_at && event.live_end_at) {
