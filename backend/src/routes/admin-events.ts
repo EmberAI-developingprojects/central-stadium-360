@@ -4,6 +4,7 @@ import type { DbEvent, DbRecording, DbZone } from "@cs360/shared";
 import { getSupabaseAdmin } from "../lib/supabase";
 import { discoverRecordingsForEvent } from "../lib/recordings";
 import { stopAllCameraStreams } from "../lib/ivs";
+import { stampAccessExpiryForEvent } from "../lib/tickets";
 import {
   requireUser,
   requireAdmin,
@@ -16,9 +17,9 @@ adminEvents.use("*", requireUser);
 adminEvents.use("*", async (c, next) => requireAdmin(c, next));
 
 const SELECT_COLS_FULL =
-  "id,title,description,status,start_time,price,live_price,replay_price,live_start_at,live_end_at,replay_available_until,thumbnail_url,image,featured,created_at,title_en,description_en";
+  "id,title,description,status,start_time,price,live_price,replay_price,price_standard,price_multi3,price_multi5,live_start_at,live_end_at,replay_available_until,thumbnail_url,image,featured,created_at,title_en,description_en";
 const SELECT_COLS_NO_EN =
-  "id,title,description,status,start_time,price,live_price,replay_price,live_start_at,live_end_at,replay_available_until,thumbnail_url,image,featured,created_at";
+  "id,title,description,status,start_time,price,live_price,replay_price,price_standard,price_multi3,price_multi5,live_start_at,live_end_at,replay_available_until,thumbnail_url,image,featured,created_at";
 
 let eventEnColumnsAvailable: boolean | null = null;
 
@@ -68,6 +69,9 @@ const createSchema = z.object({
   price: z.number().int().min(0),
   live_price: z.number().min(0).optional(),
   replay_price: z.number().min(0).optional(),
+  price_standard: z.number().int().min(0).nullable().optional(),
+  price_multi3: z.number().int().min(0).nullable().optional(),
+  price_multi5: z.number().int().min(0).nullable().optional(),
   live_start_at: z.string().nullable().optional(),
   live_end_at: z.string().nullable().optional(),
   replay_available_until: z.string().nullable().optional(),
@@ -261,6 +265,14 @@ adminEvents.on(["PATCH", "PUT"], "/:id", async (c) => {
   }
   if (!data) {
     return c.json({ ok: false, error: "not_found" } as const, 404);
+  }
+  // Ticket access windows anchor on the event's live end and its admin-set
+  // replay window — re-stamp them whenever either changes.
+  if (
+    parsed.data.live_end_at !== undefined ||
+    parsed.data.replay_available_until !== undefined
+  ) {
+    await stampAccessExpiryForEvent(id);
   }
   return c.json({ ok: true, data } as const);
 });

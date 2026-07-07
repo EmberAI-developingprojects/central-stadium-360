@@ -28,6 +28,10 @@ export interface TierSpec {
   id: TicketTier;
   price: number;
   maxDevices: number;
+  /**
+   * Replay stays watchable until the END of the calendar month the event's
+   * live ends in (Ulaanbaatar time) — e.g. Naadam on Jul 11 → until Aug 1.
+   */
   replay: boolean;
 }
 
@@ -36,6 +40,34 @@ export const TICKET_TIERS: Record<TicketTier, TierSpec> = {
   multi3: { id: "multi3", price: 14900, maxDevices: 3, replay: false },
   multi5: { id: "multi5", price: 19900, maxDevices: 5, replay: true },
 };
+
+/** Per-event tier price overrides, entered by the admin. NULL/0 = default. */
+export type EventTierPricing = {
+  price_standard?: number | null;
+  price_multi3?: number | null;
+  price_multi5?: number | null;
+};
+
+const TIER_PRICE_FIELD: Record<TicketTier, keyof EventTierPricing> = {
+  standard: "price_standard",
+  multi3: "price_multi3",
+  multi5: "price_multi5",
+};
+
+/**
+ * The price actually charged for a tier on a given event: the admin-entered
+ * per-event price when set (> 0), otherwise the platform default. Used by the
+ * backend to bill and by the ticket modal to display — keep them identical.
+ */
+export function tierPriceForEvent(
+  tier: TicketTier,
+  event: EventTierPricing | null | undefined,
+): number {
+  const override = event?.[TIER_PRICE_FIELD[tier]];
+  return typeof override === "number" && override > 0
+    ? override
+    : TICKET_TIERS[tier].price;
+}
 
 export const TICKET_TIER_ORDER: TicketTier[] = ["standard", "multi3", "multi5"];
 export type RecordingStatus = "recording" | "processing" | "ready" | "expired";
@@ -63,6 +95,10 @@ export interface DbEvent {
   price: number;
   live_price: number;
   replay_price: number;
+  /** Admin-set per-event tier prices; null/0 falls back to TICKET_TIERS. */
+  price_standard?: number | null;
+  price_multi3?: number | null;
+  price_multi5?: number | null;
   live_start_at: string | null;
   live_end_at: string | null;
   replay_available_until: string | null;
@@ -82,6 +118,9 @@ export type EventInput = {
   price: number;
   live_price?: number;
   replay_price?: number;
+  price_standard?: number | null;
+  price_multi3?: number | null;
+  price_multi5?: number | null;
   live_start_at?: string | null;
   live_end_at?: string | null;
   replay_available_until?: string | null;

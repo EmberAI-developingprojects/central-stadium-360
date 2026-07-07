@@ -1,8 +1,15 @@
 import { Hono } from "hono";
+import type { Context } from "hono";
+import { z } from "zod";
 import type { AuthEnv } from "../middleware/require-user";
 import { requireUser } from "../middleware/require-user";
-import { markUserViewed } from "../lib/tickets";
+import { findBestLiveTicket, markUserViewed } from "../lib/tickets";
+import { admitDevice, releaseDevice, touchSession } from "../lib/sessions";
 import { getSupabaseAdmin } from "../lib/supabase";
+import {
+  isStreamTokenConfigured,
+  tokenizeStreamUrl,
+} from "../lib/stream-token";
 
 const watch = new Hono<AuthEnv>();
 
@@ -23,27 +30,9 @@ const CAM_DEFS: Omit<WatchCam, "hlsUrl">[] = [
   { id: "cam4", label: "cam4", sub: "CAM 04 · 360°", type: "360" },
 ];
 
-// Resolve a camera's HLS playback URL from env, in priority order:
-//   1. WOWZA_CAM{n}_URL   — canonical per-camera override
-//   2. AWS_IVS_CAM{n}_URL — legacy key, kept so older .env files keep working
-//   3. WOWZA_HLS_URL      — a single feed fanned out to every camera (1-feed setup)
-// Blank / whitespace-only values are treated as unset.
-// A blank/whitespace-only env var must be treated as UNSET so the `??` chain can
-// fall through to the next candidate (an empty string is not null/undefined and
-// would otherwise short-circuit the fallback).
-function envUrl(name: string): string | undefined {
-  const v = process.env[name]?.trim();
-  return v ? v : undefined;
-}
-
 function resolveCamUrl(camId: string): string | null {
-  const key = camId.toUpperCase();
-  return (
-    envUrl(`WOWZA_${key}_URL`) ??
-    envUrl(`AWS_IVS_${key}_URL`) ??
-    envUrl("WOWZA_HLS_URL") ??
-    null
-  );
+  const v = process.env[`WOWZA_${camId.toUpperCase()}_URL`]?.trim();
+  return v ? v : null;
 }
 
 function buildCamUrls(): { id: string; url: string | null }[] {
@@ -60,8 +49,8 @@ export function logStreamConfig(): void {
   );
   if (configured.length === 0) {
     console.warn(
-      "[watch] No live camera URLs configured. Set WOWZA_HLS_URL (single feed) " +
-        "or WOWZA_CAM1_URL..WOWZA_CAM4_URL — /api/watch/token will return no playable streams.",
+      "[watch] No live camera URLs configured. Set WOWZA_CAM1_URL..WOWZA_CAM4_URL " +
+        "— /api/watch/token will return no playable streams.",
     );
     return;
   }
@@ -72,6 +61,13 @@ export function logStreamConfig(): void {
         ? " WARNING: an http:// URL is blocked as mixed content on an https:// site — front the origin with HTTPS/CDN for production."
         : ""),
   );
+  if (!isStreamTokenConfigured()) {
+    console.warn(
+      "[watch] STREAM_TOKEN_SECRET is not set — playback URLs are handed out " +
+        "UNSIGNED. Anyone who copies a stream URL can watch without a ticket. " +
+        "Set the secret and deploy infra/cloudfront-live-token before production.",
+    );
+  }
 }
 
 export async function getViewedUserCount(): Promise<number> {
@@ -84,15 +80,101 @@ export async function getViewedUserCount(): Promise<number> {
   return count ?? 0;
 }
 
-watch.get("/token", requireUser, (c) => {
+const tokenQuerySchema = z.object({
+  event_id: z.string().uuid(),
+  device_id: z.string().min(8).max(128),
+});
+
+/**
+ * Live playback URLs are only handed out to a paid ticket holder, and each
+ * ticket admits at most its tier's device cap concurrently (Standard=1,
+ * 3-User=3, 5-User=5) via the sessions table. Admins bypass both checks so
+ * they can monitor streams without a ticket.
+ */
+watch.get("/token", requireUser, async (c) => {
   const user = c.get("user");
-  if (user?.id) markUserViewed(user.id).catch(() => {});
+  const parsed = tokenQuerySchema.safeParse({
+    event_id: c.req.query("event_id"),
+    device_id: c.req.query("device_id"),
+  });
+  if (!parsed.success) {
+    return c.json({ ok: false, error: "invalid_input" } as const, 400);
+  }
+  const { event_id, device_id } = parsed.data;
+
+  let ticketId: string | null = null;
+  if (user.role !== "admin") {
+    const ticket = await findBestLiveTicket(user.id, event_id);
+    if (!ticket) {
+      return c.json({ ok: false, error: "no_ticket" } as const, 403);
+    }
+    const admit = await admitDevice(ticket.id, device_id, ticket.max_devices ?? 1);
+    if (!admit.ok) {
+      if (admit.error === "device_limit_reached") {
+        return c.json(
+          {
+            ok: false,
+            error: "device_limit_reached",
+            active: admit.active,
+            limit: admit.limit,
+          } as const,
+          409,
+        );
+      }
+      return c.json({ ok: false, error: "internal_error" } as const, 500);
+    }
+    ticketId = ticket.id;
+  }
+
+  markUserViewed(user.id).catch(() => {});
   const urls = buildCamUrls();
+  // Every viewer gets freshly-signed URLs — a copied link stops working when
+  // the token expires instead of streaming forever.
   const cams: WatchCam[] = CAM_DEFS.map((cam, i) => ({
     ...cam,
-    hlsUrl: urls[i]!.url,
+    hlsUrl: urls[i]!.url ? tokenizeStreamUrl(urls[i]!.url!) : null,
   }));
-  return c.json({ ok: true, data: { cams } } as const);
+  return c.json({ ok: true, data: { cams, ticket_id: ticketId } } as const);
+});
+
+const sessionBodySchema = z.object({
+  ticket_id: z.string().uuid(),
+  device_id: z.string().min(8).max(128),
+});
+
+async function parseOwnedSession(
+  c: Context<AuthEnv>,
+): Promise<{ ticketId: string; deviceId: string } | null> {
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = sessionBodySchema.safeParse(body);
+  if (!parsed.success) return null;
+  const admin = getSupabaseAdmin();
+  if (!admin) return null;
+  const user = c.get("user");
+  const { data } = await admin
+    .from("tickets")
+    .select("id")
+    .eq("id", parsed.data.ticket_id)
+    .eq("user_id", user.id)
+    .maybeSingle<{ id: string }>();
+  if (!data) return null;
+  return { ticketId: parsed.data.ticket_id, deviceId: parsed.data.device_id };
+}
+
+/** Heartbeat keeps this device's slot alive (player calls it every ~30s). */
+watch.post("/heartbeat", requireUser, async (c) => {
+  const s = await parseOwnedSession(c);
+  if (!s) return c.json({ ok: false, error: "invalid_input" } as const, 400);
+  await touchSession(s.ticketId, s.deviceId);
+  return c.json({ ok: true, data: { ok: true } } as const);
+});
+
+/** Frees the device slot immediately when the viewer closes the player. */
+watch.post("/release", requireUser, async (c) => {
+  const s = await parseOwnedSession(c);
+  if (!s) return c.json({ ok: false, error: "invalid_input" } as const, 400);
+  await releaseDevice(s.ticketId, s.deviceId);
+  return c.json({ ok: true, data: { ok: true } } as const);
 });
 
 type CamProbe = {
@@ -113,9 +195,12 @@ const STATUS_TTL_MS = 25_000;
 
 async function probeHls(
   id: string,
-  url: string | null,
+  rawUrl: string | null,
 ): Promise<CamProbe> {
-  if (!url) return { id, hasUrl: false, status: null, ok: false };
+  if (!rawUrl) return { id, hasUrl: false, status: null, ok: false };
+  // The CDN rejects untokenized paths once the token function is live, so the
+  // liveness probe must sign its request exactly like a real viewer.
+  const url = tokenizeStreamUrl(rawUrl);
   try {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 5000);

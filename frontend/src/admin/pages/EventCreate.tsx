@@ -141,7 +141,9 @@ export default function EventCreate() {
   const [endDate, setEndDate] = useState("");
   const [endTime, setEndTime] = useState("");
   const [replayDays, setReplayDays] = useState("");
-  const [livePrice, setLivePrice] = useState("");
+  const [priceStandard, setPriceStandard] = useState("");
+  const [priceMulti3, setPriceMulti3] = useState("");
+  const [priceMulti5, setPriceMulti5] = useState("");
   const [replayPrice, setReplayPrice] = useState("");
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [nameEn, setNameEn] = useState("");
@@ -229,15 +231,21 @@ export default function EventCreate() {
     try {
       const cover = thumbnailUrl.trim();
       const trimmedDesc = desc.trim();
+      // Standard tier is the "base" price shown on event cards; live_price
+      // stays mirrored for the legacy (pre-tier) display paths.
+      const standard = Number(priceStandard) || 0;
       const created = await createEvent({
         title: name.trim(),
         desc: trimmedDesc || undefined,
         titleEn: nameEn.trim() || undefined,
         descEn: descEn.trim() || undefined,
         start_time: startTimeIso,
-        base: Number(livePrice) || 0,
-        live_price: Number(livePrice) || 0,
+        base: standard,
+        live_price: standard,
         replay_price: Number(replayPrice) || 0,
+        price_standard: standard || null,
+        price_multi3: Number(priceMulti3) || null,
+        price_multi5: Number(priceMulti5) || null,
         live_start_at: liveStartIso,
         live_end_at: liveEndIso,
         replay_available_until: replayUntilIso,
@@ -470,62 +478,94 @@ export default function EventCreate() {
 
         <section className={CARD_CLS}>
           <header className={CARD_HEAD_CLS}>
-            <h3 className={CARD_HEAD_TITLE_CLS}>
-              Шууд үзэх үнэ болон Нөхөж үзэх төлбөрийн үнэ
-            </h3>
+            <h3 className={CARD_HEAD_TITLE_CLS}>Тасалбарын үнэ</h3>
             <p className={CARD_HEAD_DESC_CLS}>
-              Хадгалах хугацаагаа дуусахад нөхөж үзэх боломжтой арга хэмжээ
-              автоматаар хаагдана.
+              Тасалбар 3 төрөлтэй: Энгийн (1 төхөөрөмж), 3 хэрэглэгчийн (3
+              төхөөрөмж), 5 хэрэглэгчийн (5 төхөөрөмж + нөхөж үзэх). Хоосон
+              орхивол үндсэн үнэ (9,900 / 14,900 / 19,900₮) ашиглагдана.
             </p>
           </header>
           <div className={CARD_BODY_CLS}>
             <div className={TWO_COL_CLS}>
               <div className={ADMIN_FIELD_CLS}>
-                <label htmlFor="ev-live-price">Шууд тасалбар (₮)</label>
+                <label htmlFor="ev-price-standard">
+                  Энгийн тасалбар (₮) · 1 төхөөрөмж
+                </label>
                 <input
-                  id="ev-live-price"
+                  id="ev-price-standard"
                   type="number"
                   min={0}
-                  value={livePrice}
-                  onChange={(e) => setLivePrice(e.target.value)}
-                  placeholder="0"
+                  value={priceStandard}
+                  onChange={(e) => setPriceStandard(e.target.value)}
+                  placeholder="9900"
                 />
               </div>
               <div className={ADMIN_FIELD_CLS}>
-                <label htmlFor="ev-replay-price">Нөхөж үзэх (₮)</label>
+                <label htmlFor="ev-price-multi3">
+                  3 хэрэглэгчийн тасалбар (₮) · 3 төхөөрөмж
+                </label>
                 <input
-                  id="ev-replay-price"
+                  id="ev-price-multi3"
                   type="number"
                   min={0}
-                  value={replayPrice}
-                  onChange={(e) => setReplayPrice(e.target.value)}
-                  placeholder="0"
+                  value={priceMulti3}
+                  onChange={(e) => setPriceMulti3(e.target.value)}
+                  placeholder="14900"
                 />
+              </div>
+            </div>
+            <div className={TWO_COL_CLS}>
+              <div className={ADMIN_FIELD_CLS}>
+                <label htmlFor="ev-price-multi5">
+                  5 хэрэглэгчийн тасалбар (₮) · 5 төхөөрөмж + нөхөж үзэх
+                </label>
+                <input
+                  id="ev-price-multi5"
+                  type="number"
+                  min={0}
+                  value={priceMulti5}
+                  onChange={(e) => setPriceMulti5(e.target.value)}
+                  placeholder="19900"
+                />
+              </div>
+              <div className={ADMIN_FIELD_CLS}>
+                <label htmlFor="ev-replay-days">
+                  Нөхөж үзэх хугацаа (5 хэрэглэгчийн тасалбарт)
+                </label>
+                <div className="relative">
+                  <input
+                    id="ev-replay-days"
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    step={1}
+                    value={replayDays}
+                    onChange={(e) =>
+                      setReplayDays(e.target.value.replace(/[^0-9]/g, ""))
+                    }
+                    placeholder="Хоногийн тоо"
+                    className="!pr-16 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0"
+                  />
+                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[12.5px] text-zinc-500">
+                    хоног
+                  </span>
+                </div>
               </div>
             </div>
 
             <div className={ADMIN_FIELD_CLS}>
-              <label htmlFor="ev-replay-days">
-                Хэд хоногийн турш вэб-с нөхөж үзэх өдрийг оруулна уу?
+              <label htmlFor="ev-replay-price">
+                Нөхөж үзэх дангаар нь худалдах үнэ (₮) — тоглолт дууссаны дараах
+                худалдан авалтад
               </label>
-              <div className="relative">
-                <input
-                  id="ev-replay-days"
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
-                  step={1}
-                  value={replayDays}
-                  onChange={(e) =>
-                    setReplayDays(e.target.value.replace(/[^0-9]/g, ""))
-                  }
-                  placeholder="Хоногийн тоо"
-                  className="!pr-16 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0"
-                />
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[12.5px] text-zinc-500">
-                  хоног
-                </span>
-              </div>
+              <input
+                id="ev-replay-price"
+                type="number"
+                min={0}
+                value={replayPrice}
+                onChange={(e) => setReplayPrice(e.target.value)}
+                placeholder="0"
+              />
             </div>
           </div>
         </section>
