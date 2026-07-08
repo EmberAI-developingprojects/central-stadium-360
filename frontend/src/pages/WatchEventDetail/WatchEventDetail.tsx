@@ -100,6 +100,22 @@ export default function WatchEventDetail() {
     [event, i18n.language],
   );
 
+  // This page is full-dark; the default white <body> otherwise flashes through
+  // on overscroll bounce (top/bottom). Paint the document dark while mounted,
+  // restore on leave so lighter pages are unaffected.
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const prevHtml = html.style.backgroundColor;
+    const prevBody = body.style.backgroundColor;
+    html.style.backgroundColor = "#071526";
+    body.style.backgroundColor = "#071526";
+    return () => {
+      html.style.backgroundColor = prevHtml;
+      body.style.backgroundColor = prevBody;
+    };
+  }, []);
+
   useEffect(() => {
     if (!id) return;
     setLoading(true);
