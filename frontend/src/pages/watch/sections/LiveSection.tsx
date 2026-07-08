@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useCountdown } from "../hooks/useCountdown";
 import { useStreamLive } from "../hooks/useStreamLive";
-import { MONTHS_ABBR_EN } from "../constants";
+import { MONTHS_ABBR_EN, MONTHS_ABBR_MN } from "../constants";
 import { pad2 } from "../utils";
 import type { TicketModalEvent } from "../types";
 import { pickEventLocale } from "../../../lib/eventLocale";
@@ -42,8 +42,11 @@ export function LiveSection({
     ? new Date(featuredEvent.start_time)
     : null;
   const valid = d && !Number.isNaN(d.getTime());
+  const isMn = i18n.language?.startsWith("mn");
   const dateStr = valid
-    ? `${MONTHS_ABBR_EN[d!.getMonth()]} ${d!.getDate()} / ${d!.getFullYear()}`
+    ? isMn
+      ? `${d!.getFullYear()} оны ${MONTHS_ABBR_MN[d!.getMonth()]} сарын ${d!.getDate()}`
+      : `${MONTHS_ABBR_EN[d!.getMonth()]} ${d!.getDate()} / ${d!.getFullYear()}`
     : featuredEvent.date;
   const titleText = isPlaceholder ? t("watch_no_event_title") : loc.title;
 
