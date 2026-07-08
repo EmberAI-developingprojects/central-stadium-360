@@ -141,7 +141,7 @@ export function LiveSection({
               <button
                 type="button"
                 onClick={onWatch}
-                className="flex-1 basis-[160px] inline-flex items-center justify-center gap-2 h-11 px-5 rounded-sm bg-white text-[#071526] text-[12px] font-bold uppercase tracking-[0.1em] cursor-pointer font-[inherit] [transition:background_.15s_ease,transform_.15s_ease,box-shadow_.2s_ease] shadow-[0_8px_24px_-12px_rgba(255,255,255,0.4)] hover:bg-[rgba(255,255,255,0.88)] hover:-translate-y-px hover:shadow-[0_12px_28px_-10px_rgba(255,255,255,0.5)] whitespace-nowrap max-[420px]:px-3 max-[420px]:text-[11px] max-[420px]:tracking-[0.08em]"
+                className="flex-1 basis-[160px] inline-flex items-center justify-center gap-2 h-11 px-5 rounded-sm bg-white text-[#071526] text-[12px] font-bold uppercase tracking-[0.1em] cursor-pointer font-[inherit] [transition:background_.15s_ease,transform_.15s_ease,box-shadow_.2s_ease] shadow-[0_8px_24px_-12px_rgba(255,255,255,0.4)] hover:bg-[rgba(255,255,255,0.88)] hover:-translate-y-px hover:shadow-[0_12px_28px_-10px_rgba(255,255,255,0.5)] whitespace-nowrap max-[420px]:flex-none max-[420px]:w-full max-[420px]:px-3 max-[420px]:text-[11px] max-[420px]:tracking-[0.08em]"
               >
                 <svg
                   className="w-3.5 h-3.5 shrink-0"
@@ -164,7 +164,7 @@ export function LiveSection({
 
             <Link
               to={`/watch/events/${featuredEvent.id}`}
-              className="flex-1 basis-[160px] inline-flex items-center justify-center h-11 px-5 rounded-sm bg-transparent border border-solid border-[rgba(255,255,255,0.30)] text-white text-[12px] font-bold uppercase tracking-[0.1em] no-underline [transition:background_.15s_ease,border-color_.15s_ease,transform_.15s_ease] hover:bg-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.5)] hover:-translate-y-px whitespace-nowrap max-[420px]:px-3 max-[420px]:text-[11px] max-[420px]:tracking-[0.08em]"
+              className="flex-1 basis-[160px] inline-flex items-center justify-center h-11 px-5 rounded-sm bg-transparent border border-solid border-[rgba(255,255,255,0.30)] text-white text-[12px] font-bold uppercase tracking-[0.1em] no-underline [transition:background_.15s_ease,border-color_.15s_ease,transform_.15s_ease] hover:bg-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.5)] hover:-translate-y-px whitespace-nowrap max-[420px]:flex-none max-[420px]:w-full max-[420px]:px-3 max-[420px]:text-[11px] max-[420px]:tracking-[0.08em]"
             >
               {t("watch_details")}
             </Link>
@@ -224,7 +224,7 @@ export function LiveSection({
               <button
                 type="button"
                 onClick={onWatch}
-                className="flex-1 basis-[160px] inline-flex items-center justify-center gap-2 h-11 px-5 rounded-sm bg-transparent border-2 border-solid border-white text-white text-[12px] font-bold uppercase tracking-[0.1em] cursor-pointer font-[inherit] [transition:background_.15s_ease,transform_.15s_ease] hover:bg-[rgba(255,255,255,0.1)] hover:-translate-y-px whitespace-nowrap max-[420px]:px-3 max-[420px]:text-[11px] max-[420px]:tracking-[0.06em] max-[420px]:gap-1.5"
+                className="flex-1 basis-[160px] inline-flex items-center justify-center gap-2 h-11 px-5 rounded-sm bg-transparent border-2 border-solid border-white text-white text-[12px] font-bold uppercase tracking-[0.1em] cursor-pointer font-[inherit] [transition:background_.15s_ease,transform_.15s_ease] hover:bg-[rgba(255,255,255,0.1)] hover:-translate-y-px whitespace-nowrap max-[420px]:flex-none max-[420px]:w-full max-[420px]:px-3 max-[420px]:text-[11px] max-[420px]:tracking-[0.06em] max-[420px]:gap-1.5"
               >
                 <span
                   className="w-2 h-2 rounded-full bg-[#e53935] animate-live-blink shrink-0"
