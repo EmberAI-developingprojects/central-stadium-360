@@ -85,20 +85,36 @@ const tokenQuerySchema = z.object({
   device_id: z.string().min(8).max(128),
 });
 
-/**
- * Live playback URLs are only handed out to a paid ticket holder, and each
- * ticket admits at most its tier's device cap concurrently (Standard=1,
- * 3-User=3, 5-User=5) via the sessions table. Admins bypass both checks so
- * they can monitor streams without a ticket.
- */
+const LIVE_END_GRACE_MS = 10 * 60 * 1000;
+
+async function isEventLiveNow(eventId: string): Promise<boolean> {
+  const admin = getSupabaseAdmin();
+  if (!admin) return false;
+  const { data } = await admin
+    .from("events")
+    .select("start_time,live_start_at,live_end_at")
+    .eq("id", eventId)
+    .maybeSingle<{
+      start_time: string | null;
+      live_start_at: string | null;
+      live_end_at: string | null;
+    }>();
+  if (!data) return false;
+  const now = Date.now();
+  const startIso = data.live_start_at ?? data.start_time;
+  const start = startIso ? new Date(startIso).getTime() : NaN;
+  if (Number.isNaN(start) || now < start) return false; // not started / upcoming
+  const end = data.live_end_at ? new Date(data.live_end_at).getTime() : NaN;
+  if (!Number.isNaN(end) && now > end + LIVE_END_GRACE_MS) return false; // ended
+  return true;
+}
+
 watch.get("/token", requireUser, async (c) => {
   const user = c.get("user");
 
   let ticketId: string | null = null;
+  let eventId: string | null = null;
   if (user.role !== "admin") {
-    // Non-admins must name a real event and a device; admins can preview at
-    // any time — including from the watch page's placeholder event, whose id
-    // is not a UUID.
     const parsed = tokenQuerySchema.safeParse({
       event_id: c.req.query("event_id"),
       device_id: c.req.query("device_id"),
@@ -107,11 +123,16 @@ watch.get("/token", requireUser, async (c) => {
       return c.json({ ok: false, error: "invalid_input" } as const, 400);
     }
     const { event_id, device_id } = parsed.data;
+    eventId = event_id;
     const ticket = await findBestLiveTicket(user.id, event_id);
     if (!ticket) {
       return c.json({ ok: false, error: "no_ticket" } as const, 403);
     }
-    const admit = await admitDevice(ticket.id, device_id, ticket.max_devices ?? 1);
+    const admit = await admitDevice(
+      ticket.id,
+      device_id,
+      ticket.max_devices ?? 1,
+    );
     if (!admit.ok) {
       if (admit.error === "device_limit_reached") {
         return c.json(
@@ -129,10 +150,11 @@ watch.get("/token", requireUser, async (c) => {
     ticketId = ticket.id;
   }
 
-  markUserViewed(user.id).catch(() => {});
+  if (user.role !== "admin" && eventId && (await isEventLiveNow(eventId))) {
+    markUserViewed(user.id).catch(() => {});
+  }
   const urls = buildCamUrls();
-  // Every viewer gets freshly-signed URLs — a copied link stops working when
-  // the token expires instead of streaming forever.
+
   const cams: WatchCam[] = CAM_DEFS.map((cam, i) => ({
     ...cam,
     hlsUrl: urls[i]!.url ? tokenizeStreamUrl(urls[i]!.url!) : null,
@@ -164,7 +186,6 @@ async function parseOwnedSession(
   return { ticketId: parsed.data.ticket_id, deviceId: parsed.data.device_id };
 }
 
-/** Heartbeat keeps this device's slot alive (player calls it every ~30s). */
 watch.post("/heartbeat", requireUser, async (c) => {
   const s = await parseOwnedSession(c);
   if (!s) return c.json({ ok: false, error: "invalid_input" } as const, 400);
@@ -172,7 +193,6 @@ watch.post("/heartbeat", requireUser, async (c) => {
   return c.json({ ok: true, data: { ok: true } } as const);
 });
 
-/** Frees the device slot immediately when the viewer closes the player. */
 watch.post("/release", requireUser, async (c) => {
   const s = await parseOwnedSession(c);
   if (!s) return c.json({ ok: false, error: "invalid_input" } as const, 400);
@@ -196,13 +216,9 @@ type StatusCache = {
 let statusCache: StatusCache | null = null;
 const STATUS_TTL_MS = 25_000;
 
-async function probeHls(
-  id: string,
-  rawUrl: string | null,
-): Promise<CamProbe> {
+async function probeHls(id: string, rawUrl: string | null): Promise<CamProbe> {
   if (!rawUrl) return { id, hasUrl: false, status: null, ok: false };
-  // The CDN rejects untokenized paths once the token function is live, so the
-  // liveness probe must sign its request exactly like a real viewer.
+
   const url = tokenizeStreamUrl(rawUrl);
   try {
     const ctrl = new AbortController();
@@ -212,8 +228,7 @@ async function probeHls(
       signal: ctrl.signal,
       redirect: "follow",
     });
-    // A 200 alone isn't proof of a live stream — an error page or a stopped
-    // publisher can still return 200. Confirm the body is an actual HLS manifest.
+
     const body = res.ok ? await res.text().catch(() => "") : "";
     clearTimeout(timer);
     const ok = res.ok && body.includes("#EXTM3U");
