@@ -1,11 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import {
+  TICKET_TIERS,
+  TICKET_TIER_ORDER,
+  tierPriceForEvent,
+} from "@cs360/shared";
 import SiteHeader from "../../components/SiteHeader";
 import SiteFooter from "../../components/SiteFooter";
 import { getEvent } from "../../data/store";
 import type { EventRecord } from "../../data/store";
 import { pickEventLocale } from "../../lib/eventLocale";
+import { useAuth } from "../../auth";
 
 const MONTHS_EN = [
   "JAN",
@@ -49,6 +55,8 @@ const money = (n: number) => n.toLocaleString("en-US") + "₮";
 export default function EventDetail() {
   const { id } = useParams<{ id: string }>();
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
+  const { session } = useAuth();
   const [event, setEvent] = useState<EventRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const loc = useMemo(
@@ -90,6 +98,48 @@ export default function EventDetail() {
     : false;
   const replayAvailable =
     (event?.replay_price ?? 0) > 0 && !replayExpired;
+
+  // Replay tiers grant access for the admin-set window
+  // (replay_available_until); without one, until the event's month ends (UB).
+  const replayUntil = useMemo(() => {
+    const until = event?.replay_available_until
+      ? new Date(event.replay_available_until)
+      : null;
+    if (until && !Number.isNaN(until.getTime())) {
+      return {
+        kind: "date" as const,
+        date: until.toLocaleDateString("sv-SE", {
+          timeZone: "Asia/Ulaanbaatar",
+        }),
+      };
+    }
+    const iso = event?.live_end_at ?? event?.start_time;
+    const d = iso ? new Date(iso) : null;
+    if (!d || Number.isNaN(d.getTime())) return null;
+    return {
+      kind: "month" as const,
+      month: d.toLocaleString("en-US", {
+        month: "numeric",
+        timeZone: "Asia/Ulaanbaatar",
+      }),
+      monthName: d.toLocaleString("en-US", {
+        month: "long",
+        timeZone: "Asia/Ulaanbaatar",
+      }),
+    };
+  }, [event?.replay_available_until, event?.live_end_at, event?.start_time]);
+
+  // Buying happens on the event's watch-detail page (which hosts the ticket
+  // modal). Guests are sent to log in first, then routed straight there.
+  const openBuy = () => {
+    if (!event) return;
+    const dest = `/watch/events/${event.id}`;
+    if (!session?.identifier) {
+      navigate(`/login?next=${encodeURIComponent(dest)}`);
+      return;
+    }
+    navigate(dest);
+  };
 
   return (
     <div className="min-h-screen bg-surface-1">
@@ -316,9 +366,135 @@ export default function EventDetail() {
               <div className="px-6 pb-2">
                 {!liveOver && (
                   <>
-                    <Link
-                      to="/login"
-                      className="flex items-center justify-center gap-2 w-full rounded-xl bg-[linear-gradient(135deg,#2230C6_0%,#3A48D8_100%)] text-white font-bold text-[13px] tracking-[0.08em] uppercase no-underline py-3.5 px-5 shadow-[0_10px_24px_-10px_rgba(34,48,198,0.6),inset_0_1px_0_rgba(255,255,255,0.2)] [transition:transform_.18s_ease,box-shadow_.22s_ease,filter_.18s_ease] hover:-translate-y-px hover:shadow-[0_14px_28px_-10px_rgba(34,48,198,0.7),inset_0_1px_0_rgba(255,255,255,0.25)] hover:[filter:brightness(1.04)]"
+                    <div className="mb-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-ink-soft">
+                          {t("event_detail_tiers_title")}
+                        </span>
+                        <span className="text-[11px] font-bold text-ink-soft/70 tabular-nums">
+                          {TICKET_TIER_ORDER.length}{" "}
+                          {t("event_detail_tiers_count")}
+                        </span>
+                      </div>
+                      <div className="flex flex-col gap-2.5">
+                        {TICKET_TIER_ORDER.map((tid) => {
+                          const spec = TICKET_TIERS[tid];
+                          const price = tierPriceForEvent(tid, event);
+                          const replayLine =
+                            spec.replay && replayUntil?.kind === "date"
+                              ? t("tier_replay_until_short", {
+                                  date: replayUntil.date,
+                                })
+                              : null;
+                          return (
+                            <div
+                              key={tid}
+                              className={`relative rounded-2xl border p-3.5 ${
+                                spec.replay
+                                  ? "border-brand-blue bg-brand-blue/[0.04] shadow-[0_4px_14px_-6px_rgba(34,48,198,0.35)]"
+                                  : "border-[rgba(31,41,55,0.1)] bg-white"
+                              }`}
+                            >
+                              {spec.replay && (
+                                <span className="absolute -top-2 left-3.5 inline-flex items-center rounded-full bg-brand-blue text-white text-[9px] font-extrabold uppercase tracking-[0.08em] px-2 py-[3px] leading-none shadow-[0_2px_6px_-1px_rgba(34,48,198,0.5)]">
+                                  {t("tier_ribbon_recommended")}
+                                </span>
+                              )}
+
+                              {/* name + price */}
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-ink font-extrabold text-[15px] leading-none">
+                                  {t(`ticket_tier_${tid}_short`)}
+                                </span>
+                                <div className="flex items-baseline gap-0.5 tabular-nums shrink-0">
+                                  <span className="text-ink text-[20px] font-extrabold tracking-tight leading-none">
+                                    {price.toLocaleString("en-US")}
+                                  </span>
+                                  <span className="text-ink-soft text-[12px] font-semibold">
+                                    ₮
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* attributes: device count + replay status */}
+                              <div className="mt-2.5 flex items-center gap-3 flex-wrap">
+                                <span className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold text-ink-soft">
+                                  <svg
+                                    width="13"
+                                    height="13"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    aria-hidden="true"
+                                  >
+                                    <rect
+                                      x="5"
+                                      y="2"
+                                      width="14"
+                                      height="20"
+                                      rx="2"
+                                    />
+                                    <line x1="12" y1="18" x2="12" y2="18" />
+                                  </svg>
+                                  {t("tier_attr_devices", {
+                                    count: spec.maxDevices,
+                                  })}
+                                </span>
+                                {spec.replay ? (
+                                  <span className="inline-flex items-center gap-1.5 text-[11.5px] font-bold text-emerald-600">
+                                    <svg
+                                      width="13"
+                                      height="13"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2.6"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      aria-hidden="true"
+                                    >
+                                      <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                    {t("tier_attr_replay_yes")}
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1.5 text-[11.5px] font-medium text-ink-soft/50">
+                                    <svg
+                                      width="12"
+                                      height="12"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2.4"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      aria-hidden="true"
+                                    >
+                                      <line x1="18" y1="6" x2="6" y2="18" />
+                                      <line x1="6" y1="6" x2="18" y2="18" />
+                                    </svg>
+                                    {t("tier_attr_replay_no")}
+                                  </span>
+                                )}
+                              </div>
+
+                              {replayLine && (
+                                <div className="mt-1.5 text-[11px] font-medium text-brand-blue/80">
+                                  {replayLine}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={openBuy}
+                      className="flex items-center justify-center gap-2 w-full rounded-xl bg-[linear-gradient(135deg,#2230C6_0%,#3A48D8_100%)] text-white font-bold text-[13px] tracking-[0.08em] uppercase border-0 cursor-pointer font-[inherit] py-3.5 px-5 shadow-[0_10px_24px_-10px_rgba(34,48,198,0.6),inset_0_1px_0_rgba(255,255,255,0.2)] [transition:transform_.18s_ease,box-shadow_.22s_ease,filter_.18s_ease] hover:-translate-y-px hover:shadow-[0_14px_28px_-10px_rgba(34,48,198,0.7),inset_0_1px_0_rgba(255,255,255,0.25)] hover:[filter:brightness(1.04)]"
                     >
                       <svg
                         width="15"
@@ -333,17 +509,7 @@ export default function EventDetail() {
                         <path d="M2 9a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z" />
                       </svg>
                       {t("event_detail_buy")}
-                    </Link>
-                    {event.base > 0 && (
-                      <div className="mt-3 flex items-center justify-between rounded-xl bg-surface-1 px-4 py-2.5">
-                        <span className="text-[11.5px] font-semibold uppercase tracking-[0.1em] text-ink-soft">
-                          {t("event_detail_price_label")}
-                        </span>
-                        <span className="text-[16px] font-extrabold text-ink tabular-nums tracking-tight">
-                          {money(event.base)}
-                        </span>
-                      </div>
-                    )}
+                    </button>
                   </>
                 )}
 

@@ -206,7 +206,6 @@ export default function OrderDetail() {
                 </span>
                 <h1 className={TITLE_CLS}>{order.title}</h1>
                 <span className={EVENT_DATE_CLS}>{order.date}</span>
-                <span className={VENUE_CLS}>📡 {t("order_online_stream")}</span>
               </div>
             </header>
 

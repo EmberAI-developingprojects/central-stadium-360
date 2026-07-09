@@ -277,9 +277,6 @@ export function TicketModal({
                 <h2 id="ticketModalTitle" className={TICKET_MODAL_TITLE_CLS}>
                   {loc.title}
                 </h2>
-                <span className={TICKET_MODAL_VENUE_CLS}>
-                  📡 {t("watch_online_stream")}
-                </span>
               </div>
             </div>
 
@@ -416,7 +413,9 @@ export function TicketModal({
                           ? t("ticket_replay_price_label")
                           : t("ticket_total_pay")}
                       </span>
-                      <span className={TICKET_TOTAL_CLS}>{money(payTotal)}</span>
+                      <span className={TICKET_TOTAL_CLS}>
+                        {money(payTotal)}
+                      </span>
                     </div>
                   </div>
 
