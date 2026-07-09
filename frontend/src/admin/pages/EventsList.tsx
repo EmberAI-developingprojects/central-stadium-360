@@ -1,10 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  deleteEvent,
-  listAdminEvents,
-  listOrders,
-} from "../../data/store";
+import { deleteEvent, listAdminEvents, listOrders } from "../../data/store";
 import type { AdminEventRecord } from "../../data/store";
 import type { EventStatus } from "@cs360/shared";
 import { useConfirm } from "../components/ConfirmDialog";
@@ -67,13 +63,17 @@ function deriveStatus(event: AdminEventRecord): StatusKind {
   return "ended";
 }
 
-function formatDate(startIso: string | undefined, fallback: string): {
+function formatDate(
+  startIso: string | undefined,
+  fallback: string,
+): {
   primary: string;
   secondary: string;
 } {
   if (!startIso) return { primary: fallback || "—", secondary: "" };
   const d = new Date(startIso);
-  if (Number.isNaN(d.getTime())) return { primary: fallback || "—", secondary: "" };
+  if (Number.isNaN(d.getTime()))
+    return { primary: fallback || "—", secondary: "" };
   const primary = d.toLocaleDateString("mn-MN", {
     year: "numeric",
     month: "short",
@@ -87,8 +87,17 @@ function formatDate(startIso: string | undefined, fallback: string): {
   return { primary, secondary: `${weekday} · ${time}` };
 }
 
-function relativeFrom(startIso: string | undefined, status: StatusKind): string {
-  if (!startIso || status === "ended" || status === "archived" || status === "expired") return "";
+function relativeFrom(
+  startIso: string | undefined,
+  status: StatusKind,
+): string {
+  if (
+    !startIso ||
+    status === "ended" ||
+    status === "archived" ||
+    status === "expired"
+  )
+    return "";
   const start = new Date(startIso).getTime();
   if (Number.isNaN(start)) return "";
   const diff = start - Date.now();
@@ -110,6 +119,9 @@ export default function EventsList() {
   const toast = useToast();
   const [events, setEvents] = useState<AdminEventRecord[] | null>(null);
   const [salesByEvent, setSalesByEvent] = useState<Record<string, number>>({});
+  const [revenueByEvent, setRevenueByEvent] = useState<Record<string, number>>(
+    {},
+  );
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const searchRef = useRef<HTMLInputElement | null>(null);
@@ -118,11 +130,16 @@ export default function EventsList() {
     Promise.all([listAdminEvents(), listOrders({ status: "paid" })]).then(
       ([evts, orders]) => {
         setEvents(evts);
-        const map: Record<string, number> = {};
+        const countMap: Record<string, number> = {};
+        const revMap: Record<string, number> = {};
         orders.forEach((o) => {
-          map[o.eventId] = (map[o.eventId] || 0) + (Number(o.qty) || 0);
+          countMap[o.eventId] =
+            (countMap[o.eventId] || 0) + (Number(o.qty) || 0);
+
+          revMap[o.eventId] = (revMap[o.eventId] || 0) + (Number(o.total) || 0);
         });
-        setSalesByEvent(map);
+        setSalesByEvent(countMap);
+        setRevenueByEvent(revMap);
       },
     );
   };
@@ -136,9 +153,8 @@ export default function EventsList() {
       title: "Арга хэмжээг устгах уу?",
       message: (
         <>
-          <strong className="font-semibold text-zinc-900">«{title}»</strong>{" "}
-          бүх захиалга, тасалбарын хамт устгагдана. Энэ үйлдлийг буцаах
-          боломжгүй.
+          <strong className="font-semibold text-zinc-900">«{title}»</strong> бүх
+          захиалга, тасалбарын хамт устгагдана. Энэ үйлдлийг буцаах боломжгүй.
         </>
       ),
       confirmLabel: "Устгах",
@@ -160,18 +176,16 @@ export default function EventsList() {
       event: e,
       status: deriveStatus(e),
       sales: salesByEvent[e.id] || 0,
+      revenue: revenueByEvent[e.id] || 0,
     }));
-  }, [events, salesByEvent]);
+  }, [events, salesByEvent, revenueByEvent]);
 
   const stats = useMemo(() => {
     const total = enriched.length;
     const live = enriched.filter((r) => r.status === "live").length;
     const upcoming = enriched.filter((r) => r.status === "upcoming").length;
     const totalSales = enriched.reduce((s, r) => s + r.sales, 0);
-    const revenue = enriched.reduce(
-      (s, r) => s + (r.event.base || 0) * r.sales,
-      0,
-    );
+    const revenue = enriched.reduce((s, r) => s + r.revenue, 0);
     return { total, live, upcoming, totalSales, revenue };
   }, [enriched]);
 
@@ -211,7 +225,17 @@ export default function EventsList() {
           to="/admin/events/new"
           className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_PRIMARY_CLS}`}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
@@ -225,9 +249,7 @@ export default function EventsList() {
             label="Нийт"
             value={stats.total.toString()}
             sub={
-              stats.upcoming > 0
-                ? `${stats.upcoming} удахгүй`
-                : "удахгүй алга"
+              stats.upcoming > 0 ? `${stats.upcoming} удахгүй` : "удахгүй алга"
             }
           />
           <StatCard
@@ -395,8 +417,24 @@ export default function EventsList() {
                         >
                           {!e.image && (
                             <span className="w-full h-full grid place-items-center text-zinc-400">
-                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                <rect x="3" y="3" width="18" height="18" rx="2" />
+                              <svg
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.8"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                aria-hidden="true"
+                              >
+                                <rect
+                                  x="3"
+                                  y="3"
+                                  width="18"
+                                  height="18"
+                                  rx="2"
+                                />
                                 <circle cx="8.5" cy="8.5" r="1.5" />
                                 <polyline points="21 15 16 10 5 21" />
                               </svg>
@@ -433,13 +471,19 @@ export default function EventsList() {
                     <td>
                       <StatusBadge status={status} hint={relative} />
                     </td>
-                    <td style={{ textAlign: "right" }} className="tabular-nums text-zinc-900 font-medium">
+                    <td
+                      style={{ textAlign: "right" }}
+                      className="tabular-nums text-zinc-900 font-medium"
+                    >
                       <div>{money(e.live_price || e.base)}</div>
                       <div className="text-[11.5px] text-zinc-500 mt-0.5">
                         {e.replay_price > 0 ? money(e.replay_price) : "—"}
                       </div>
                     </td>
-                    <td style={{ textAlign: "center" }} className="tabular-nums">
+                    <td
+                      style={{ textAlign: "center" }}
+                      className="tabular-nums"
+                    >
                       <span
                         className={
                           e.recording_count >= 4
@@ -452,9 +496,14 @@ export default function EventsList() {
                         {e.recording_count}/4
                       </span>
                     </td>
-                    <td style={{ textAlign: "center" }} className="tabular-nums">
+                    <td
+                      style={{ textAlign: "center" }}
+                      className="tabular-nums"
+                    >
                       {sales > 0 ? (
-                        <span className="text-zinc-900 font-medium">{sales}</span>
+                        <span className="text-zinc-900 font-medium">
+                          {sales}
+                        </span>
                       ) : (
                         <span className="text-zinc-400">0</span>
                       )}
@@ -467,7 +516,17 @@ export default function EventsList() {
                           aria-label={`«${e.title}»-г засах`}
                           className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#e4e4e7] bg-white text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 hover:border-zinc-300 transition-colors"
                         >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                          >
                             <path d="M12 20h9" />
                             <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z" />
                           </svg>
@@ -479,7 +538,17 @@ export default function EventsList() {
                           aria-label={`«${e.title}»-г устгах`}
                           className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#e4e4e7] bg-white text-zinc-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
                         >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                          >
                             <polyline points="3 6 5 6 21 6" />
                             <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
                             <path d="M10 11v6M14 11v6" />
@@ -524,7 +593,9 @@ function StatCard({
           {label}
         </span>
       </div>
-      <div className={`text-[22px] font-semibold tracking-[-0.02em] leading-none mt-2 ${valueColor}`}>
+      <div
+        className={`text-[22px] font-semibold tracking-[-0.02em] leading-none mt-2 ${valueColor}`}
+      >
         {value}
       </div>
       <div className="text-[11.5px] text-zinc-500 mt-2">{sub}</div>
