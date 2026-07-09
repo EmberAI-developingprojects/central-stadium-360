@@ -13,11 +13,6 @@ import {
   updateEvent,
 } from "../../data/store";
 import type { EventRecord } from "../../data/store";
-import {
-  TICKET_TIERS,
-  TICKET_TIER_ORDER,
-  type TicketTier,
-} from "@cs360/shared";
 import { api } from "../../lib/api";
 import { useConfirm } from "../components/ConfirmDialog";
 import DatePicker from "../components/DatePicker";
@@ -47,9 +42,9 @@ const EMPTY: EventRecord = {
   status: "upcoming",
   live_price: 0,
   replay_price: 0,
-  tier_standard_price: null,
-  tier_multi3_price: null,
-  tier_multi5_price: null,
+  price_standard: null,
+  price_multi3: null,
+  price_multi5: null,
   live_start_at: null,
   live_end_at: null,
   replay_available_until: null,
@@ -107,20 +102,6 @@ function addDaysIso(iso: string | null, days: number): string | null {
 }
 
 const money = (n: number): string => n.toLocaleString("en-US") + "₮";
-
-const TIER_LABELS: Record<TicketTier, string> = {
-  standard: "Стандарт",
-  multi3: "3 хэрэглэгч",
-  multi5: "5 хэрэглэгч",
-};
-const TIER_PRICE_KEY: Record<
-  TicketTier,
-  "tier_standard_price" | "tier_multi3_price" | "tier_multi5_price"
-> = {
-  standard: "tier_standard_price",
-  multi3: "tier_multi3_price",
-  multi5: "tier_multi5_price",
-};
 
 const CARD_CLS =
   "bg-white border border-[#ececef] rounded-2xl overflow-hidden shadow-[0_1px_2px_rgba(24,24,27,0.04)]";
@@ -636,23 +617,72 @@ export default function EventEdit() {
               <div className={CARD_BODY_CLS}>
                 <div className={TWO_COL_CLS}>
                   <div className={ADMIN_FIELD_CLS}>
-                    <label htmlFor="evt-live-price">Шууд тасалбар (₮)</label>
+                    <label htmlFor="evt-price-standard">
+                      Энгийн тасалбар (₮) · 1 төхөөрөмж
+                    </label>
                     <input
-                      id="evt-live-price"
+                      id="evt-price-standard"
                       type="number"
                       inputMode="numeric"
                       min={0}
-                      value={form.live_price || ""}
+                      value={form.price_standard || ""}
                       onChange={(e) => {
                         const v = Number(e.target.value) || 0;
-                        update({ live_price: v, base: v });
+                        update({
+                          price_standard: v || null,
+                          live_price: v,
+                          base: v,
+                        });
                       }}
-                      placeholder="0"
+                      placeholder="9900"
                       className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0"
                     />
                   </div>
                   <div className={ADMIN_FIELD_CLS}>
-                    <label htmlFor="evt-replay-price">Нөхөж үзэх (₮)</label>
+                    <label htmlFor="evt-price-multi3">
+                      3 хэрэглэгчийн тасалбар (₮) · 3 төхөөрөмж
+                    </label>
+                    <input
+                      id="evt-price-multi3"
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      value={form.price_multi3 || ""}
+                      onChange={(e) =>
+                        update({
+                          price_multi3: Number(e.target.value) || null,
+                        })
+                      }
+                      placeholder="14900"
+                      className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0"
+                    />
+                  </div>
+                </div>
+                <div className={TWO_COL_CLS}>
+                  <div className={ADMIN_FIELD_CLS}>
+                    <label htmlFor="evt-price-multi5">
+                      5 хэрэглэгчийн тасалбар (₮) · 5 төхөөрөмж + нөхөж үзэх
+                    </label>
+                    <input
+                      id="evt-price-multi5"
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      value={form.price_multi5 || ""}
+                      onChange={(e) =>
+                        update({
+                          price_multi5: Number(e.target.value) || null,
+                        })
+                      }
+                      placeholder="19900"
+                      className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0"
+                    />
+                  </div>
+                  <div className={ADMIN_FIELD_CLS}>
+                    <label htmlFor="evt-replay-price">
+                      Нөхөж үзэх дангаар нь (₮) — тоглолтын дараах худалдан
+                      авалт
+                    </label>
                     <input
                       id="evt-replay-price"
                       type="number"
@@ -671,57 +701,8 @@ export default function EventEdit() {
                 </div>
 
                 <div className={ADMIN_FIELD_CLS}>
-                  <label>Тарифын багцын үнэ (3 багц)</label>
-                  <div className="grid gap-2.5">
-                    {TICKET_TIER_ORDER.map((tid) => {
-                      const spec = TICKET_TIERS[tid];
-                      const key = TIER_PRICE_KEY[tid];
-                      const val = form[key];
-                      return (
-                        <div key={tid} className="flex items-center gap-3">
-                          <div className="min-w-0 flex-1">
-                            <div className="text-[13px] font-semibold text-zinc-700">
-                              {TIER_LABELS[tid]}
-                            </div>
-                            <div className="text-[11.5px] text-zinc-500">
-                              {spec.maxDevices} төхөөрөмж
-                              {spec.replay ? " · нөхөж үзэх багтсан" : ""}
-                            </div>
-                          </div>
-                          <div className="relative w-40 shrink-0">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px] font-semibold text-zinc-400 pointer-events-none">
-                              ₮
-                            </span>
-                            <input
-                              type="number"
-                              inputMode="numeric"
-                              min={0}
-                              value={val ?? ""}
-                              onChange={(e) => {
-                                const raw = e.target.value;
-                                update({
-                                  [key]:
-                                    raw === "" ? null : Number(raw) || null,
-                                } as Partial<EventRecord>);
-                              }}
-                              placeholder={spec.price.toLocaleString("en-US")}
-                              className="!pl-8 tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0"
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <small className="text-[11.5px] text-zinc-500">
-                    Хоосон бол системийн үндсэн үнэ (placeholder) хэрэглэгдэнэ.
-                    Төхөөрөмжийн тоо ба нөхөж үзэх эрх нь багцын тогтмол
-                    тодорхойлолт — өөрчлөгдөхгүй.
-                  </small>
-                </div>
-
-                <div className={ADMIN_FIELD_CLS}>
                   <label htmlFor="evt-replay-days">
-                    Хэд хоногийн турш вэб-с нөхөж үзэх боломжтой?
+                    Нөхөж үзэх хугацаа (5 хэрэглэгчийн тасалбарт) — хэд хоног?
                   </label>
                   <div className="relative">
                     <input

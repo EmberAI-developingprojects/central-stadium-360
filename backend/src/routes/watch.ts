@@ -1,48 +1,17 @@
 import { Hono } from "hono";
+import type { Context } from "hono";
+import { z } from "zod";
 import type { AuthEnv } from "../middleware/require-user";
 import { requireUser } from "../middleware/require-user";
-import { getValidLiveTicket, markUserViewed } from "../lib/tickets";
-import { admitDevice, releaseDevice } from "../lib/sessions";
-import { isLiveSigningConfigured, signLiveUrl } from "../lib/cloudfront";
+import { findBestLiveTicket, markUserViewed } from "../lib/tickets";
+import { admitDevice, releaseDevice, touchSession } from "../lib/sessions";
 import { getSupabaseAdmin } from "../lib/supabase";
-
-// Sign a live camera URL with CloudFront when LIVE_SIGN_URLS is on; otherwise
-// (and on any signing error) serve the raw URL so playback never breaks.
-function signCamUrl(url: string | null): string | null {
-  if (!url || !isLiveSigningConfigured()) return url;
-  try {
-    return signLiveUrl(url);
-  } catch (err) {
-    console.warn(
-      "[watch] live URL signing failed, serving unsigned:",
-      (err as Error).message,
-    );
-    return url;
-  }
-}
+import {
+  isStreamTokenConfigured,
+  tokenizeStreamUrl,
+} from "../lib/stream-token";
 
 const watch = new Hono<AuthEnv>();
-
-// Concurrent-device enforcement (tier caps) is dormant until WATCH_ENFORCE=1.
-// While off, /token stays open to any authed user so the live preview keeps
-// working; once tickets are seeded in prod, flip the flag to enforce tier caps.
-function enforceWatch(): boolean {
-  return process.env.WATCH_ENFORCE === "1";
-}
-
-// Read event_id/device_id from JSON body first, falling back to the query string
-// (so a keepalive/beacon release with an empty body can still pass them as ?params).
-async function readWatchParams(
-  c: import("hono").Context,
-): Promise<{ eventId: string | null; deviceId: string | null }> {
-  const body = (await c.req.json().catch(() => ({}))) as Record<string, unknown>;
-  const fromBody = (k: string) =>
-    typeof body[k] === "string" ? (body[k] as string) : null;
-  return {
-    eventId: fromBody("event_id") ?? c.req.query("event_id") ?? null,
-    deviceId: fromBody("device_id") ?? c.req.query("device_id") ?? null,
-  };
-}
 
 type CamType = "normal" | "360";
 
@@ -61,27 +30,9 @@ const CAM_DEFS: Omit<WatchCam, "hlsUrl">[] = [
   { id: "cam4", label: "cam4", sub: "CAM 04 · 360°", type: "360" },
 ];
 
-// Resolve a camera's HLS playback URL from env, in priority order:
-//   1. WOWZA_CAM{n}_URL   — canonical per-camera override
-//   2. AWS_IVS_CAM{n}_URL — legacy key, kept so older .env files keep working
-//   3. WOWZA_HLS_URL      — a single feed fanned out to every camera (1-feed setup)
-// Blank / whitespace-only values are treated as unset.
-// A blank/whitespace-only env var must be treated as UNSET so the `??` chain can
-// fall through to the next candidate (an empty string is not null/undefined and
-// would otherwise short-circuit the fallback).
-function envUrl(name: string): string | undefined {
-  const v = process.env[name]?.trim();
-  return v ? v : undefined;
-}
-
 function resolveCamUrl(camId: string): string | null {
-  const key = camId.toUpperCase();
-  return (
-    envUrl(`WOWZA_${key}_URL`) ??
-    envUrl(`AWS_IVS_${key}_URL`) ??
-    envUrl("WOWZA_HLS_URL") ??
-    null
-  );
+  const v = process.env[`WOWZA_${camId.toUpperCase()}_URL`]?.trim();
+  return v ? v : null;
 }
 
 function buildCamUrls(): { id: string; url: string | null }[] {
@@ -98,8 +49,8 @@ export function logStreamConfig(): void {
   );
   if (configured.length === 0) {
     console.warn(
-      "[watch] No live camera URLs configured. Set WOWZA_HLS_URL (single feed) " +
-        "or WOWZA_CAM1_URL..WOWZA_CAM4_URL — /api/watch/token will return no playable streams.",
+      "[watch] No live camera URLs configured. Set WOWZA_CAM1_URL..WOWZA_CAM4_URL " +
+        "— /api/watch/token will return no playable streams.",
     );
     return;
   }
@@ -110,6 +61,13 @@ export function logStreamConfig(): void {
         ? " WARNING: an http:// URL is blocked as mixed content on an https:// site — front the origin with HTTPS/CDN for production."
         : ""),
   );
+  if (!isStreamTokenConfigured()) {
+    console.warn(
+      "[watch] STREAM_TOKEN_SECRET is not set — playback URLs are handed out " +
+        "UNSIGNED. Anyone who copies a stream URL can watch without a ticket. " +
+        "Set the secret and deploy infra/cloudfront-live-token before production.",
+    );
+  }
 }
 
 export async function getViewedUserCount(): Promise<number> {
@@ -122,24 +80,59 @@ export async function getViewedUserCount(): Promise<number> {
   return count ?? 0;
 }
 
+const tokenQuerySchema = z.object({
+  event_id: z.string().uuid(),
+  device_id: z.string().min(8).max(128),
+});
+
+const LIVE_END_GRACE_MS = 10 * 60 * 1000;
+
+async function isEventLiveNow(eventId: string): Promise<boolean> {
+  const admin = getSupabaseAdmin();
+  if (!admin) return false;
+  const { data } = await admin
+    .from("events")
+    .select("start_time,live_start_at,live_end_at")
+    .eq("id", eventId)
+    .maybeSingle<{
+      start_time: string | null;
+      live_start_at: string | null;
+      live_end_at: string | null;
+    }>();
+  if (!data) return false;
+  const now = Date.now();
+  const startIso = data.live_start_at ?? data.start_time;
+  const start = startIso ? new Date(startIso).getTime() : NaN;
+  if (Number.isNaN(start) || now < start) return false; // not started / upcoming
+  const end = data.live_end_at ? new Date(data.live_end_at).getTime() : NaN;
+  if (!Number.isNaN(end) && now > end + LIVE_END_GRACE_MS) return false; // ended
+  return true;
+}
+
 watch.get("/token", requireUser, async (c) => {
   const user = c.get("user");
-  if (user?.id) markUserViewed(user.id).catch(() => {});
 
-  if (enforceWatch()) {
-    const eventId = c.req.query("event_id");
-    const deviceId = c.req.query("device_id");
-    if (!eventId || !deviceId) {
-      return c.json(
-        { ok: false, error: "event_and_device_required" } as const,
-        400,
-      );
+  let ticketId: string | null = null;
+  let eventId: string | null = null;
+  if (user.role !== "admin") {
+    const parsed = tokenQuerySchema.safeParse({
+      event_id: c.req.query("event_id"),
+      device_id: c.req.query("device_id"),
+    });
+    if (!parsed.success) {
+      return c.json({ ok: false, error: "invalid_input" } as const, 400);
     }
-    const ticket = await getValidLiveTicket(user.id, eventId);
+    const { event_id, device_id } = parsed.data;
+    eventId = event_id;
+    const ticket = await findBestLiveTicket(user.id, event_id);
     if (!ticket) {
       return c.json({ ok: false, error: "no_ticket" } as const, 403);
     }
-    const admit = await admitDevice(ticket.id, deviceId, ticket.max_devices);
+    const admit = await admitDevice(
+      ticket.id,
+      device_id,
+      ticket.max_devices ?? 1,
+    );
     if (!admit.ok) {
       if (admit.error === "device_limit_reached") {
         return c.json(
@@ -149,70 +142,62 @@ watch.get("/token", requireUser, async (c) => {
             active: admit.active,
             limit: admit.limit,
           } as const,
-          403,
+          409,
         );
       }
       return c.json({ ok: false, error: "internal_error" } as const, 500);
     }
+    ticketId = ticket.id;
   }
 
+  if (user.role !== "admin" && eventId && (await isEventLiveNow(eventId))) {
+    markUserViewed(user.id).catch(() => {});
+  }
   const urls = buildCamUrls();
+
   const cams: WatchCam[] = CAM_DEFS.map((cam, i) => ({
     ...cam,
-    hlsUrl: signCamUrl(urls[i]!.url),
+    hlsUrl: urls[i]!.url ? tokenizeStreamUrl(urls[i]!.url!) : null,
   }));
-  return c.json({ ok: true, data: { cams } } as const);
+  return c.json({ ok: true, data: { cams, ticket_id: ticketId } } as const);
 });
 
-// Keep an admitted device's tier slot alive. The player calls this on an
-// interval; a device that stops heartbeating goes stale (~90s) and frees its
-// slot. Re-runs admitDevice so a device that lost its slot (e.g. flag flipped
-// on mid-session, or evicted) learns it's now blocked. No-op while enforcement
-// is off so the preview path stays cheap.
+const sessionBodySchema = z.object({
+  ticket_id: z.string().uuid(),
+  device_id: z.string().min(8).max(128),
+});
+
+async function parseOwnedSession(
+  c: Context<AuthEnv>,
+): Promise<{ ticketId: string; deviceId: string } | null> {
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = sessionBodySchema.safeParse(body);
+  if (!parsed.success) return null;
+  const admin = getSupabaseAdmin();
+  if (!admin) return null;
+  const user = c.get("user");
+  const { data } = await admin
+    .from("tickets")
+    .select("id")
+    .eq("id", parsed.data.ticket_id)
+    .eq("user_id", user.id)
+    .maybeSingle<{ id: string }>();
+  if (!data) return null;
+  return { ticketId: parsed.data.ticket_id, deviceId: parsed.data.device_id };
+}
+
 watch.post("/heartbeat", requireUser, async (c) => {
-  if (!enforceWatch()) {
-    return c.json({ ok: true, data: { active: 0 } } as const);
-  }
-  const user = c.get("user");
-  const { eventId, deviceId } = await readWatchParams(c);
-  if (!eventId || !deviceId) {
-    return c.json(
-      { ok: false, error: "event_and_device_required" } as const,
-      400,
-    );
-  }
-  const ticket = await getValidLiveTicket(user.id, eventId);
-  if (!ticket) {
-    return c.json({ ok: false, error: "no_ticket" } as const, 403);
-  }
-  const admit = await admitDevice(ticket.id, deviceId, ticket.max_devices);
-  if (!admit.ok) {
-    if (admit.error === "device_limit_reached") {
-      return c.json(
-        {
-          ok: false,
-          error: "device_limit_reached",
-          active: admit.active,
-          limit: admit.limit,
-        } as const,
-        403,
-      );
-    }
-    return c.json({ ok: false, error: "internal_error" } as const, 500);
-  }
-  return c.json({ ok: true, data: { active: admit.active } } as const);
+  const s = await parseOwnedSession(c);
+  if (!s) return c.json({ ok: false, error: "invalid_input" } as const, 400);
+  await touchSession(s.ticketId, s.deviceId);
+  return c.json({ ok: true, data: { ok: true } } as const);
 });
 
-// Free a device's tier slot immediately on stream stop / unmount (best-effort;
-// staleness would free it anyway). Safe to call regardless of the flag.
 watch.post("/release", requireUser, async (c) => {
-  const user = c.get("user");
-  const { eventId, deviceId } = await readWatchParams(c);
-  if (eventId && deviceId) {
-    const ticket = await getValidLiveTicket(user.id, eventId);
-    if (ticket) await releaseDevice(ticket.id, deviceId);
-  }
-  return c.json({ ok: true, data: {} } as const);
+  const s = await parseOwnedSession(c);
+  if (!s) return c.json({ ok: false, error: "invalid_input" } as const, 400);
+  await releaseDevice(s.ticketId, s.deviceId);
+  return c.json({ ok: true, data: { ok: true } } as const);
 });
 
 type CamProbe = {
@@ -231,11 +216,10 @@ type StatusCache = {
 let statusCache: StatusCache | null = null;
 const STATUS_TTL_MS = 25_000;
 
-async function probeHls(
-  id: string,
-  url: string | null,
-): Promise<CamProbe> {
-  if (!url) return { id, hasUrl: false, status: null, ok: false };
+async function probeHls(id: string, rawUrl: string | null): Promise<CamProbe> {
+  if (!rawUrl) return { id, hasUrl: false, status: null, ok: false };
+
+  const url = tokenizeStreamUrl(rawUrl);
   try {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 5000);
@@ -244,8 +228,7 @@ async function probeHls(
       signal: ctrl.signal,
       redirect: "follow",
     });
-    // A 200 alone isn't proof of a live stream — an error page or a stopped
-    // publisher can still return 200. Confirm the body is an actual HLS manifest.
+
     const body = res.ok ? await res.text().catch(() => "") : "";
     clearTimeout(timer);
     const ok = res.ok && body.includes("#EXTM3U");
@@ -276,10 +259,7 @@ watch.get("/status", requireUser, async (c) => {
   }
 
   const cams = buildCamUrls();
-  // Sign before probing too — a signing-required origin 403s an unsigned probe.
-  const probes = await Promise.all(
-    cams.map((c) => probeHls(c.id, signCamUrl(c.url))),
-  );
+  const probes = await Promise.all(cams.map((c) => probeHls(c.id, c.url)));
   const live = probes.some((p) => p.ok);
   const prevLive = statusCache?.live ?? false;
   const prevStart = statusCache?.startedAt ?? null;

@@ -9,7 +9,7 @@ import {
   isQPayConfigured,
   paidPaymentId,
 } from "../lib/qpay";
-import { issueEbarimtForTicket } from "../lib/tickets";
+import { issueEbarimtForTicket, resolvePaidAccessExpiry } from "../lib/tickets";
 import {
   getCallbackSecret,
   verifyTicketSignature,
@@ -56,7 +56,7 @@ payments.post("/qpay-callback", async (c) => {
   const { data: ticket, error: tErr } = await admin
     .from("tickets")
     .select(
-      "id, event_id, status, qpay_invoice_id, price, ticket_type, access_expires_at, ebarimt_customer_tin",
+      "id, event_id, status, qpay_invoice_id, price, ticket_type, tier, access_expires_at, ebarimt_customer_tin",
     )
     .eq("id", ticketId)
     .maybeSingle<
@@ -68,6 +68,7 @@ payments.post("/qpay-callback", async (c) => {
         | "qpay_invoice_id"
         | "price"
         | "ticket_type"
+        | "tier"
         | "access_expires_at"
         | "ebarimt_customer_tin"
       >
@@ -106,10 +107,9 @@ payments.post("/qpay-callback", async (c) => {
     paid_at: string;
     access_expires_at?: string;
   } = { status: "paid", paid_at: nowIso };
-  if (ticket.ticket_type === "replay" && !ticket.access_expires_at) {
-    updatePatch.access_expires_at = new Date(
-      nowDate.getTime() + 30 * 24 * 60 * 60 * 1000,
-    ).toISOString();
+  const stampedExpiry = await resolvePaidAccessExpiry(ticket, nowDate);
+  if (stampedExpiry) {
+    updatePatch.access_expires_at = stampedExpiry;
   }
   const { data: updated, error: upErr } = await admin
     .from("tickets")
@@ -160,7 +160,7 @@ statusRoute.get("/:invoiceId", async (c) => {
   const { data: ticket } = await admin
     .from("tickets")
     .select(
-      "id, user_id, event_id, status, price, qpay_invoice_id, paid_at, ticket_type, access_expires_at, ebarimt_customer_tin",
+      "id, user_id, event_id, status, price, qpay_invoice_id, paid_at, ticket_type, tier, access_expires_at, ebarimt_customer_tin",
     )
     .eq("qpay_invoice_id", invoiceId)
     .maybeSingle<
@@ -174,6 +174,7 @@ statusRoute.get("/:invoiceId", async (c) => {
         | "qpay_invoice_id"
         | "paid_at"
         | "ticket_type"
+        | "tier"
         | "access_expires_at"
         | "ebarimt_customer_tin"
       >
@@ -213,10 +214,9 @@ statusRoute.get("/:invoiceId", async (c) => {
       paid_at: string;
       access_expires_at?: string;
     } = { status: "paid", paid_at: nowIso };
-    if (ticket.ticket_type === "replay" && !ticket.access_expires_at) {
-      updatePatch.access_expires_at = new Date(
-        nowDate.getTime() + 30 * 24 * 60 * 60 * 1000,
-      ).toISOString();
+    const stampedExpiry = await resolvePaidAccessExpiry(ticket, nowDate);
+    if (stampedExpiry) {
+      updatePatch.access_expires_at = stampedExpiry;
     }
     const { data: updated } = await admin
       .from("tickets")
