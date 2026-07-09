@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import {
+  TICKET_TIERS,
+  TICKET_TIER_ORDER,
+  tierPriceForEvent,
+} from "@cs360/shared";
 import LanguageSwitcher from "../../components/LanguageSwitcher";
 import { getEvent, listMyOrders } from "../../data/store";
 import type { EventRecord } from "../../data/store";
@@ -144,6 +149,36 @@ export default function WatchEventDetail() {
   const hasStarted = !Number.isNaN(startMs) && startMs <= Date.now();
   const isLive = hasStarted && access === "live";
 
+  // Replay tiers grant access for the admin-set window
+  // (replay_available_until); without one, until the event's month ends (UB).
+  const replayUntil = useMemo(() => {
+    const until = event?.replay_available_until
+      ? new Date(event.replay_available_until)
+      : null;
+    if (until && !Number.isNaN(until.getTime())) {
+      return {
+        kind: "date" as const,
+        date: until.toLocaleDateString("sv-SE", {
+          timeZone: "Asia/Ulaanbaatar",
+        }),
+      };
+    }
+    const iso = event?.live_end_at ?? event?.start_time;
+    const d = iso ? new Date(iso) : null;
+    if (!d || Number.isNaN(d.getTime())) return null;
+    return {
+      kind: "month" as const,
+      month: d.toLocaleString("en-US", {
+        month: "numeric",
+        timeZone: "Asia/Ulaanbaatar",
+      }),
+      monthName: d.toLocaleString("en-US", {
+        month: "long",
+        timeZone: "Asia/Ulaanbaatar",
+      }),
+    };
+  }, [event?.replay_available_until, event?.live_end_at, event?.start_time]);
+
   return (
     <div className="min-h-screen bg-[#071526] text-white">
       <header className="sticky top-0 z-50 flex items-center gap-2 sm:gap-4 h-14 sm:h-[60px] px-4 sm:px-6 md:px-7 bg-[rgba(7,21,38,0.92)] backdrop-blur-xl border-b border-white/[0.07]">
@@ -279,20 +314,90 @@ export default function WatchEventDetail() {
                 </div>
               )}
 
+              {/* Live sale: show all three ticket tiers as separate cards so
+                  it's clear there are three options. Replay sale (past event):
+                  a single replay price. */}
+              {!ownsTicket && access === "live" && (
+                <div className="mb-5 sm:mb-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[11px] sm:text-[11.5px] font-semibold uppercase tracking-[0.18em] text-white/45">
+                      {t("event_detail_tiers_title")}
+                    </span>
+                    <span className="text-[11px] sm:text-[11.5px] font-bold text-white/35 tabular-nums">
+                      {TICKET_TIER_ORDER.length} {t("event_detail_tiers_count")}
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-2.5 sm:gap-3">
+                    {TICKET_TIER_ORDER.map((tid, i) => {
+                      const spec = TICKET_TIERS[tid];
+                      const price = tierPriceForEvent(tid, event);
+                      const replayText = spec.replay
+                        ? replayUntil?.kind === "date"
+                          ? t("ticket_tier_replay_until", {
+                              date: replayUntil.date,
+                            })
+                          : replayUntil?.kind === "month"
+                            ? t("ticket_tier_replay_incl", {
+                                month: replayUntil.month,
+                                monthName: replayUntil.monthName,
+                              })
+                            : t("ticket_tier_replay_incl_generic")
+                        : t("ticket_tier_no_replay");
+                      return (
+                        <div
+                          key={tid}
+                          className={`rounded-xl sm:rounded-2xl border p-4 sm:p-[18px] flex items-center justify-between gap-4 ${
+                            spec.replay
+                              ? "border-blue-500/40 bg-blue-500/[0.08]"
+                              : "border-white/[0.1] bg-white/[0.03]"
+                          }`}
+                        >
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white/[0.08] text-white/60 text-[11px] font-bold shrink-0 tabular-nums">
+                                {i + 1}
+                              </span>
+                              <span className="text-white font-bold text-[14px] sm:text-[15px]">
+                                {t(`ticket_tier_${tid}`)}
+                              </span>
+                              {spec.replay && (
+                                <span className="inline-block text-[9.5px] font-extrabold uppercase tracking-[0.08em] text-blue-300 bg-blue-500/15 rounded px-1.5 py-0.5">
+                                  {t("event_detail_tier_recommended")}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-white/50 text-[11.5px] sm:text-[12.5px] mt-1.5 leading-snug pl-7">
+                              {t("ticket_tier_devices", {
+                                count: spec.maxDevices,
+                              })}
+                              {" · "}
+                              {replayText}
+                            </div>
+                          </div>
+                          <div className="flex items-baseline gap-0.5 tabular-nums shrink-0">
+                            <span className="text-white text-[22px] sm:text-[26px] font-extrabold tracking-[-0.01em] leading-none">
+                              {price.toLocaleString("en-US")}
+                            </span>
+                            <span className="text-white/55 text-[13px] sm:text-[15px] font-semibold">
+                              ₮
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {!ownsTicket &&
-                access !== "expired" &&
+                access === "replay" &&
                 (() => {
-                  const priceForKind =
-                    access === "replay"
-                      ? Number(event.replay_price ?? 0) || 0
-                      : Number(event.live_price ?? 0) || event.base || 0;
+                  const priceForKind = Number(event.replay_price ?? 0) || 0;
                   if (priceForKind <= 0) return null;
                   return (
                     <div className="mb-5 sm:mb-6 py-5 sm:py-6 border-t border-b border-white/[0.08] flex items-center justify-between gap-4">
                       <span className="text-[11px] sm:text-[11.5px] font-semibold uppercase tracking-[0.18em] text-white/45">
-                        {access === "replay"
-                          ? t("event_detail_price_replay")
-                          : t("event_detail_price_live")}
+                        {t("event_detail_price_replay")}
                       </span>
                       <div className="flex items-baseline gap-1 tabular-nums shrink-0">
                         <span className="text-white text-[34px] sm:text-[40px] md:text-[44px] font-extrabold tracking-[-0.02em] leading-none">
