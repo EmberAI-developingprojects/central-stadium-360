@@ -162,6 +162,16 @@ export async function markUserViewed(userId: string): Promise<void> {
     .is("first_viewed_at", null);
 }
 
+/**
+ * PostgREST `or` filter: a ticket is usable while its access window is open.
+ * A NULL expiry means "not stamped yet" (the event's live_end_at wasn't known
+ * at purchase/payment time) — treat it as open, not expired; the window gets
+ * stamped when the admin sets live_end_at or by resolvePaidAccessExpiry.
+ */
+function notExpiredFilter(nowIso: string): string {
+  return `access_expires_at.is.null,access_expires_at.gt.${nowIso}`;
+}
+
 export async function hasValidTicketForEvent(
   userId: string,
   eventId: string,
@@ -176,13 +186,41 @@ export async function hasValidTicketForEvent(
     .eq("event_id", eventId)
     .eq("status", "paid")
     .in("ticket_type", ["live", "replay"])
-    .gt("access_expires_at", nowIso)
+    .or(notExpiredFilter(nowIso))
     .limit(1)
     .maybeSingle<{ id: string }>();
   if (error) {
     return false;
   }
   return Boolean(data);
+}
+
+export type LiveTicketRow = {
+  id: string;
+  tier: TicketTier | null;
+  max_devices: number | null;
+};
+
+export async function findBestLiveTicket(
+  userId: string,
+  eventId: string,
+): Promise<LiveTicketRow | null> {
+  const admin = getSupabaseAdmin();
+  if (!admin) return null;
+  const nowIso = new Date().toISOString();
+  const { data, error } = await admin
+    .from("tickets")
+    .select("id,tier,max_devices")
+    .eq("user_id", userId)
+    .eq("event_id", eventId)
+    .eq("status", "paid")
+    .in("ticket_type", ["live", "replay"])
+    .or(notExpiredFilter(nowIso))
+    .order("max_devices", { ascending: false, nullsFirst: false })
+    .limit(1)
+    .maybeSingle<LiveTicketRow>();
+  if (error) return null;
+  return data;
 }
 
 /**
@@ -204,8 +242,7 @@ export async function hasReplayAccess(
     .eq("user_id", userId)
     .eq("event_id", eventId)
     .eq("status", "paid")
-    .gt("access_expires_at", nowIso)
-    // Replay-capable = legacy replay ticket OR the multi5 tier.
+    .or(notExpiredFilter(nowIso))
     .or("ticket_type.eq.replay,tier.eq.multi5")
     .limit(1)
     .maybeSingle<{ id: string }>();
@@ -213,49 +250,6 @@ export async function hasReplayAccess(
     return false;
   }
   return Boolean(data);
-}
-
-export type ValidLiveTicket = {
-  id: string;
-  tier: TicketTier;
-  max_devices: number;
-};
-
-/**
- * Fetch the user's currently-valid paid ticket that grants LIVE access to an
- * event, including its tier and concurrent-device cap. Used to gate
- * `GET /api/watch/token` and admit the device against the tier limit. Mirrors
- * the paid/expiry semantics of {@link hasValidTicketForEvent} but returns the
- * row so the caller can enforce `max_devices`. Returns null when no such ticket
- * exists. `max_devices` falls back to the tier catalog then 1 for legacy rows.
- */
-export async function getValidLiveTicket(
-  userId: string,
-  eventId: string,
-): Promise<ValidLiveTicket | null> {
-  const admin = getSupabaseAdmin();
-  if (!admin) return null;
-  const nowIso = new Date().toISOString();
-  const { data, error } = await admin
-    .from("tickets")
-    .select("id, tier, max_devices")
-    .eq("user_id", userId)
-    .eq("event_id", eventId)
-    .eq("status", "paid")
-    .in("ticket_type", ["live", "replay"])
-    .gt("access_expires_at", nowIso)
-    .order("max_devices", { ascending: false })
-    .limit(1)
-    .maybeSingle<{
-      id: string;
-      tier: TicketTier | null;
-      max_devices: number | null;
-    }>();
-  if (error || !data) return null;
-  const tier: TicketTier = data.tier ?? "standard";
-  const maxDevices =
-    data.max_devices ?? TICKET_TIERS[tier]?.maxDevices ?? 1;
-  return { id: data.id, tier, max_devices: maxDevices };
 }
 
 export async function hasPaidTicket(
@@ -273,7 +267,7 @@ export async function hasPaidTicket(
     .eq("event_id", eventId)
     .eq("status", "paid")
     .eq("ticket_type", ticketType)
-    .gt("access_expires_at", nowIso)
+    .or(notExpiredFilter(nowIso))
     .limit(1)
     .maybeSingle<{ id: string }>();
   if (error) {
@@ -360,28 +354,135 @@ export async function reusePendingInvoice(
 }
 
 const LIVE_ACCESS_WINDOW_DAYS = 30;
+const LEGACY_REPLAY_WINDOW_DAYS = 30;
 
 export type CreateTicketInvoiceInput = {
   userId: string;
-  event: { id: string; title: string; live_end_at?: string | null };
+  event: {
+    id: string;
+    title: string;
+    live_end_at?: string | null;
+    replay_available_until?: string | null;
+  };
   ticketType: TicketType;
   price: number;
-  /** Licensing tier + its device cap. Defaults keep pre-tier callers working. */
   tier?: TicketTier;
   maxDevices?: number;
   /** Buyer company TIN for a B2B e-barimt (optional). */
   ebarimtTin?: string | null;
 };
 
-function liveAccessExpiry(
-  liveEndAtIso: string | null | undefined,
+// Asia/Ulaanbaatar is a fixed UTC+8 (no DST since 2017).
+const UB_OFFSET_MS = 8 * 60 * 60 * 1000;
+
+/**
+ * First instant of the next calendar month in Ulaanbaatar time. Replay tiers
+ * stay watchable "until the event's month ends" — Naadam live on Jul 11 →
+ * replay available through Jul 31, expiring Aug 1 00:00 UB.
+ */
+function endOfMonthUlaanbaatar(iso: string): string | null {
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return null;
+  const local = new Date(t + UB_OFFSET_MS);
+  const nextMonthUtcMs = Date.UTC(
+    local.getUTCFullYear(),
+    local.getUTCMonth() + 1,
+    1,
+  );
+  return new Date(nextMonthUtcMs - UB_OFFSET_MS).toISOString();
+}
+
+export type EventAccessWindow = {
+  live_end_at?: string | null;
+  /** Admin-set replay window ("нөхөж үзэх хоног" on the event form). */
+  replay_available_until?: string | null;
+};
+
+/**
+ * When a ticket's access ends. Live-only tiers get 30 days past live end.
+ * Replay tiers follow the admin-set event replay window; if the admin didn't
+ * set one, fall back to the end of the event's month (UB time).
+ */
+export function tierAccessExpiry(
+  tier: TicketTier | null | undefined,
+  event: EventAccessWindow,
 ): string | null {
+  const liveEndAtIso = event.live_end_at;
   if (!liveEndAtIso) return null;
   const end = new Date(liveEndAtIso).getTime();
   if (Number.isNaN(end)) return null;
+  if (tier && TICKET_TIERS[tier].replay) {
+    const until = event.replay_available_until
+      ? new Date(event.replay_available_until).getTime()
+      : NaN;
+    if (Number.isFinite(until) && until > end) {
+      return new Date(until).toISOString();
+    }
+    return endOfMonthUlaanbaatar(liveEndAtIso);
+  }
   return new Date(
     end + LIVE_ACCESS_WINDOW_DAYS * 24 * 60 * 60 * 1000,
   ).toISOString();
+}
+
+/**
+ * Re-anchor every live-type ticket of an event after the admin changes its
+ * live end or replay window — reads the event's current window itself so all
+ * callers stay in sync with the stored values.
+ */
+export async function stampAccessExpiryForEvent(eventId: string): Promise<void> {
+  const admin = getSupabaseAdmin();
+  if (!admin) return;
+  const { data: event } = await admin
+    .from("events")
+    .select("live_end_at,replay_available_until")
+    .eq("id", eventId)
+    .maybeSingle<EventAccessWindow>();
+  if (!event?.live_end_at) return;
+  for (const tier of Object.keys(TICKET_TIERS) as TicketTier[]) {
+    const expiry = tierAccessExpiry(tier, event);
+    if (!expiry) continue;
+    await admin
+      .from("tickets")
+      .update({ access_expires_at: expiry })
+      .eq("event_id", eventId)
+      .eq("ticket_type", "live")
+      .eq("tier", tier)
+      .in("status", ["pending", "paid"]);
+  }
+}
+
+/**
+ * Expiry to stamp when a pending ticket flips to paid and none was stored at
+ * purchase time (event live_end_at unknown then). Legacy replay tickets run
+ * 30 days from payment; live tickets anchor on the event's live end per tier.
+ * Returns undefined when nothing should be stamped (yet).
+ */
+export async function resolvePaidAccessExpiry(
+  ticket: {
+    ticket_type: TicketType;
+    access_expires_at: string | null;
+    tier?: TicketTier | null;
+    event_id?: string | null;
+  },
+  nowDate: Date,
+): Promise<string | undefined> {
+  if (ticket.access_expires_at) return undefined;
+  if (ticket.ticket_type === "replay") {
+    return new Date(
+      nowDate.getTime() + LEGACY_REPLAY_WINDOW_DAYS * 24 * 60 * 60 * 1000,
+    ).toISOString();
+  }
+  if (!ticket.event_id) return undefined;
+  const admin = getSupabaseAdmin();
+  if (!admin) return undefined;
+  const { data } = await admin
+    .from("events")
+    .select("live_end_at,replay_available_until")
+    .eq("id", ticket.event_id)
+    .maybeSingle<EventAccessWindow>();
+  if (!data) return undefined;
+  return tierAccessExpiry(ticket.tier ?? null, data) ?? undefined;
 }
 
 export type CreateTicketInvoiceResult =
@@ -414,7 +515,7 @@ export async function createTicketInvoice(
       Date.now() + LIVE_ACCESS_WINDOW_DAYS * 24 * 60 * 60 * 1000,
     ).toISOString();
     const accessExpiresAt =
-      (ticketType === "live" ? liveAccessExpiry(event.live_end_at) : null) ??
+      (ticketType === "live" ? tierAccessExpiry(tier, event) : null) ??
       fallbackExpiry;
     const fakeInvoiceId = `dev-${ticketId}`;
     const { error: insErr } = await admin.from("tickets").insert({
@@ -468,7 +569,7 @@ export async function createTicketInvoice(
 
   const ticketId = randomUUID();
   const accessExpiresAt =
-    ticketType === "live" ? liveAccessExpiry(event.live_end_at) : null;
+    ticketType === "live" ? tierAccessExpiry(tier, event) : null;
   const { error: insertErr } = await admin.from("tickets").insert({
     id: ticketId,
     user_id: userId,

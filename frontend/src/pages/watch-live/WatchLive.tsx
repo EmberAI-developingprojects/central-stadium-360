@@ -21,9 +21,9 @@ function toTicketEvent(ev: EventRecord): TicketModalEvent {
     desc: ev.desc,
     live_price: ev.live_price,
     replay_price: ev.replay_price,
-    tier_standard_price: ev.tier_standard_price,
-    tier_multi3_price: ev.tier_multi3_price,
-    tier_multi5_price: ev.tier_multi5_price,
+    price_standard: ev.price_standard,
+    price_multi3: ev.price_multi3,
+    price_multi5: ev.price_multi5,
     live_end_at: ev.live_end_at,
     replay_available_until: ev.replay_available_until,
   };
@@ -63,11 +63,6 @@ export default function WatchLive() {
       const found = events.find((e) => e.id === eventId);
       if (found) return toTicketEvent(found);
     }
-    // Single-event (Naadam) fallback: when the :eventId can't be matched — e.g.
-    // a stale "featured-placeholder" link, or a click that raced ahead of the
-    // events load — use the first real event rather than the unwatchable
-    // placeholder, so the ticket + device-cap check keys off a real event id.
-    if (events.length > 0) return toTicketEvent(events[0]);
     return FEATURED_FALLBACK;
   }, [events, eventId]);
 

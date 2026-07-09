@@ -24,9 +24,9 @@ events.get("/", async (c) => {
   }
 
   const FULL =
-    "id,title,description,status,start_time,price,live_price,replay_price,tier_standard_price,tier_multi3_price,tier_multi5_price,live_start_at,live_end_at,replay_available_until,thumbnail_url,image,featured,created_at,title_en,description_en";
+    "id,title,description,status,start_time,price,live_price,replay_price,price_standard,price_multi3,price_multi5,live_start_at,live_end_at,replay_available_until,thumbnail_url,image,featured,created_at,title_en,description_en";
   const NO_EN =
-    "id,title,description,status,start_time,price,live_price,replay_price,tier_standard_price,tier_multi3_price,tier_multi5_price,live_start_at,live_end_at,replay_available_until,thumbnail_url,image,featured,created_at";
+    "id,title,description,status,start_time,price,live_price,replay_price,price_standard,price_multi3,price_multi5,live_start_at,live_end_at,replay_available_until,thumbnail_url,image,featured,created_at";
 
   let { data, error } = await supabase
     .from("events")

@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import type { DbTicket } from "@cs360/shared";
-import { TICKET_TIERS, eventTierPrice } from "@cs360/shared";
+import { TICKET_TIERS, tierPriceForEvent } from "@cs360/shared";
 import { getSupabaseAdmin } from "../lib/supabase";
 import { requireUser, type AuthEnv } from "../middleware/require-user";
 import {
@@ -60,7 +60,7 @@ tickets.post("/create", async (c) => {
   const { data: event, error: evErr } = await admin
     .from("events")
     .select(
-      "id, title, status, price, live_price, replay_price, tier_standard_price, tier_multi3_price, tier_multi5_price, live_end_at",
+      "id, title, status, price, live_price, replay_price, price_standard, price_multi3, price_multi5, live_end_at, replay_available_until",
     )
     .eq("id", event_id)
     .maybeSingle<{
@@ -70,10 +70,11 @@ tickets.post("/create", async (c) => {
       price: number;
       live_price: number;
       replay_price: number;
-      tier_standard_price: number | null;
-      tier_multi3_price: number | null;
-      tier_multi5_price: number | null;
+      price_standard: number | null;
+      price_multi3: number | null;
+      price_multi5: number | null;
       live_end_at: string | null;
+      replay_available_until: string | null;
     }>();
   if (evErr) {
     return c.json({ ok: false, error: "internal_error" } as const, 500);
@@ -90,22 +91,24 @@ tickets.post("/create", async (c) => {
     return c.json({ ok: false, error: "ticket_already_owned" } as const, 409);
   }
 
+  // Tier prices are per-event (admin-set) with platform defaults as fallback.
+  const tierPrice = tier ? tierPriceForEvent(tier, event) : null;
+
   const pending = await findRecentPendingTicket(user.id, event.id, ticket_type);
-  // Only reuse a pending invoice if its amount still matches the selected tier's
-  // (possibly per-event) price — otherwise the user switched tiers or the admin
-  // repriced, and they must get a fresh, correctly-priced QR.
-  if (pending && (!tier || pending.price === eventTierPrice(event, tier))) {
+  // Only reuse a pending invoice if its amount still matches the selected tier —
+  // otherwise the user switched tiers and must get a fresh, correctly-priced QR.
+  if (pending && (tierPrice === null || pending.price === tierPrice)) {
     const reuse = await reusePendingInvoice(pending, event.id);
     if (reuse.ok) {
       return c.json({ ok: true, data: reuse.data } as const);
     }
   }
 
-  const price = tier
-    ? eventTierPrice(event, tier)
-    : ticket_type === "replay"
+  const price =
+    tierPrice ??
+    (ticket_type === "replay"
       ? Number(event.replay_price ?? 0) || event.price
-      : Number(event.live_price ?? 0) || event.price;
+      : Number(event.live_price ?? 0) || event.price);
 
   const res = await createTicketInvoice({
     userId: user.id,
@@ -113,6 +116,7 @@ tickets.post("/create", async (c) => {
       id: event.id,
       title: event.title,
       live_end_at: event.live_end_at,
+      replay_available_until: event.replay_available_until,
     },
     ticketType: ticket_type,
     price,
