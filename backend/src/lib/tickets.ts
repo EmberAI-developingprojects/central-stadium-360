@@ -6,8 +6,151 @@ import type {
 } from "@cs360/shared";
 import { TICKET_TIERS } from "@cs360/shared";
 import { getSupabaseAdmin } from "./supabase";
-import { createInvoice, getInvoice, isQPayConfigured } from "./qpay";
+import {
+  cancelEbarimt,
+  createEbarimt,
+  createInvoice,
+  getInvoice,
+  isQPayConfigured,
+} from "./qpay";
 import { buildCallbackUrl, getCallbackSecret } from "./qpay-signature";
+import {
+  isEbarimtConfigured,
+  issueReceipt,
+  sendData,
+  voidReceipt,
+} from "./ebarimt";
+
+/** Dev-only: route online-ticket e-barimt through the local PosAPI test rig. */
+function posapiForOnline(): boolean {
+  return process.env.EBARIMT_POSAPI_FOR_ONLINE === "1";
+}
+
+/**
+ * Issue + persist an eBarimt fiscal receipt for a PAID online 360 ticket.
+ *
+ * Real QPay online payments get their receipt from QPay's cloud
+ * (`createEbarimt(payment_id)`) — the correct rail for card-not-present online
+ * sales. The local PosAPI 3.0 test rig is used only when `qpayPaymentId` is
+ * absent (e.g. DEV_FAKE_PAY) or the `EBARIMT_POSAPI_FOR_ONLINE` dev flag is set.
+ *
+ * Best-effort: a failure is logged but never blocks the payment. The
+ * `is('ebarimt_lottery', null)` guard keeps it idempotent — a second call on an
+ * already-issued ticket won't overwrite or double-issue.
+ */
+export async function issueEbarimtForTicket(
+  ticketId: string,
+  opts: {
+    eventTitle: string;
+    ticketType: TicketType;
+    price: number;
+    /** QPay payment id for a real online payment; enables the cloud rail. */
+    qpayPaymentId?: string | null;
+    /** Buyer company TIN — issues a B2B receipt (no lottery) when present. */
+    customerTin?: string | null;
+  },
+): Promise<void> {
+  const admin = getSupabaseAdmin();
+  if (!admin) return;
+
+  const useQpayCloud = Boolean(opts.qpayPaymentId) && !posapiForOnline();
+  try {
+    let receipt: { id: string; qrData: string; lottery: string };
+    if (useQpayCloud) {
+      const r = await createEbarimt(
+        opts.qpayPaymentId!,
+        opts.customerTin ? "COMPANY" : "CITIZEN",
+      );
+      receipt = {
+        id: r.id,
+        qrData: r.ebarimt_qr_data,
+        lottery: r.ebarimt_lottery,
+      };
+    } else {
+      if (!isEbarimtConfigured()) return;
+      const r = await issueReceipt({
+        lines: [
+          {
+            name: `${opts.eventTitle} (${opts.ticketType})`,
+            qty: 1,
+            unitPrice: opts.price,
+          },
+        ],
+        paymentCode: "PAYMENT_CARD",
+        customerTin: opts.customerTin,
+      });
+      receipt = { id: r.id, qrData: r.qrData, lottery: r.lottery };
+    }
+    // qrData/lottery are DISPLAY-ONLY — persisted here solely to re-render the
+    // buyer's receipt QR, and MUST NEVER be logged (see `redactReceiptSecrets`
+    // policy in lib/ebarimt.ts). Do not console.log `receipt` / `r`.
+    await admin
+      .from("tickets")
+      .update({
+        ebarimt_id: receipt.id,
+        ebarimt_qr_data: receipt.qrData,
+        ebarimt_lottery: receipt.lottery,
+      })
+      .eq("id", ticketId)
+      .is("ebarimt_lottery", null);
+    // PosAPI issuance only enters the on-box local queue — flush it to the
+    // national eBarimt system so a freshly-issued receipt isn't left pending
+    // until the POS's own schedule fires. Mirrors the void path. Best-effort;
+    // the QPay cloud rail registers server-side and needs no local send.
+    if (!useQpayCloud) {
+      await sendData().catch((err) =>
+        console.error("ebarimt_senddata_after_issue_failed", err),
+      );
+    }
+  } catch (err) {
+    console.error("ticket_ebarimt_failed", ticketId, err);
+  }
+}
+
+export type VoidEbarimtResult =
+  | { voided: true; alreadyVoided: boolean; rail: "posapi" | "qpay" }
+  | { voided: false; reason: "no_receipt" | "not_configured" | "error" };
+
+/**
+ * Void ("буцаалт") the eBarimt receipt attached to a ticket that is being
+ * refunded. Mirrors the dual-rail logic of {@link issueEbarimtForTicket}:
+ * PosAPI-issued receipts are voided on the local POS (and the return is
+ * transmitted via {@link sendData}); QPay-cloud receipts are cancelled through
+ * QPay's API.
+ *
+ * The rail is inferred from the receipt id shape — PosAPI ids are long all-digit
+ * strings (e.g. `0379008467880010967900000…`), QPay cloud ids are not. The
+ * caller passes the persisted `ebarimt_id`.
+ *
+ * Best-effort: never throws. The ebarimt_* columns are left in place as an audit
+ * trail of the (now-voided) receipt.
+ */
+export async function voidEbarimtForTicket(ticket: {
+  ebarimt_id: string | null;
+}): Promise<VoidEbarimtResult> {
+  const ebarimtId = ticket.ebarimt_id;
+  if (!ebarimtId) return { voided: false, reason: "no_receipt" };
+
+  const isPosApiId = /^\d{20,}$/.test(ebarimtId);
+  try {
+    if (isPosApiId) {
+      if (!isEbarimtConfigured()) {
+        return { voided: false, reason: "not_configured" };
+      }
+      const r = await voidReceipt({ id: ebarimtId });
+      // Transmit the return to the national eBarimt system (best-effort).
+      await sendData().catch((err) =>
+        console.error("ebarimt_senddata_after_void_failed", err),
+      );
+      return { voided: true, alreadyVoided: r.alreadyVoided, rail: "posapi" };
+    }
+    await cancelEbarimt(ebarimtId);
+    return { voided: true, alreadyVoided: false, rail: "qpay" };
+  } catch (err) {
+    console.error("ticket_ebarimt_void_failed", ebarimtId, err);
+    return { voided: false, reason: "error" };
+  }
+}
 
 export async function markUserViewed(userId: string): Promise<void> {
   const admin = getSupabaseAdmin();
@@ -225,6 +368,8 @@ export type CreateTicketInvoiceInput = {
   price: number;
   tier?: TicketTier;
   maxDevices?: number;
+  /** Buyer company TIN for a B2B e-barimt (optional). */
+  ebarimtTin?: string | null;
 };
 
 // Asia/Ulaanbaatar is a fixed UTC+8 (no DST since 2017).
@@ -347,7 +492,8 @@ export type CreateTicketInvoiceResult =
 export async function createTicketInvoice(
   input: CreateTicketInvoiceInput,
 ): Promise<CreateTicketInvoiceResult> {
-  const { userId, event, ticketType, price, tier, maxDevices } = input;
+  const { userId, event, ticketType, price, tier, maxDevices, ebarimtTin } =
+    input;
   const admin = getSupabaseAdmin();
   if (!admin) {
     return { ok: false, error: "supabase_not_configured", status: 503 };
@@ -355,6 +501,60 @@ export async function createTicketInvoice(
   if (price <= 0) {
     return { ok: false, error: "event_not_for_sale", status: 409 };
   }
+
+  // Local dev-only bypass (gated on DEV_FAKE_PAY=1; never set in prod). Skips
+  // QPay entirely: issues an immediately-PAID ticket with a synthetic invoice id
+  // so the buy → watch flow can be exercised without a QPay merchant. The
+  // payment-status poll returns paid because the row is already status='paid'.
+  if (process.env.DEV_FAKE_PAY === "1") {
+    const ticketId = randomUUID();
+    const nowIso = new Date().toISOString();
+    // Guarantee a future access window even if the event has no live_end_at,
+    // so the ticket passes the watch-token access_expires_at > now() check.
+    const fallbackExpiry = new Date(
+      Date.now() + LIVE_ACCESS_WINDOW_DAYS * 24 * 60 * 60 * 1000,
+    ).toISOString();
+    const accessExpiresAt =
+      (ticketType === "live" ? tierAccessExpiry(tier, event) : null) ??
+      fallbackExpiry;
+    const fakeInvoiceId = `dev-${ticketId}`;
+    const { error: insErr } = await admin.from("tickets").insert({
+      id: ticketId,
+      user_id: userId,
+      event_id: event.id,
+      status: "paid",
+      ticket_type: ticketType,
+      ...(tier ? { tier } : {}),
+      ...(maxDevices ? { max_devices: maxDevices } : {}),
+      ...(ebarimtTin ? { ebarimt_customer_tin: ebarimtTin } : {}),
+      price,
+      paid_at: nowIso,
+      qpay_invoice_id: fakeInvoiceId,
+      access_expires_at: accessExpiresAt,
+    });
+    if (insErr) {
+      return { ok: false, error: "ticket_insert_failed", status: 500 };
+    }
+    // The dev ticket is already PAID → issue its eBarimt now (best-effort).
+    await issueEbarimtForTicket(ticketId, {
+      eventTitle: event.title,
+      ticketType,
+      price,
+      customerTin: ebarimtTin,
+    });
+    const data: TicketCreateResponse = {
+      ticket_id: ticketId,
+      event_id: event.id,
+      price,
+      invoice_id: fakeInvoiceId,
+      qr_text: "DEV-FAKE-PAYMENT",
+      qr_image: "",
+      urls: [],
+      access_expires_at: accessExpiresAt,
+    };
+    return { ok: true, data };
+  }
+
   if (!isQPayConfigured()) {
     return { ok: false, error: "qpay_not_configured", status: 503 };
   }
@@ -378,6 +578,7 @@ export async function createTicketInvoice(
     ticket_type: ticketType,
     ...(tier ? { tier } : {}),
     ...(maxDevices ? { max_devices: maxDevices } : {}),
+    ...(ebarimtTin ? { ebarimt_customer_tin: ebarimtTin } : {}),
     price,
     access_expires_at: accessExpiresAt,
   });

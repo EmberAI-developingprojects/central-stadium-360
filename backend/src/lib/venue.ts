@@ -3,7 +3,6 @@ import type {
   DbVenueOrder,
   KioskCreateOrderInput,
   KioskCreateOrderResponse,
-  KioskEbarimt,
   KioskOrderItemInput,
   KioskOrderStatus,
   KioskScanResult,
@@ -15,11 +14,9 @@ import type {
 import { getSupabaseAdmin } from "./supabase";
 import {
   checkInvoicePayment,
-  createEbarimt,
   createInvoice,
   isPaid,
   isQPayConfigured,
-  paidPaymentId,
 } from "./qpay";
 import { buildKioskCallbackUrl, getCallbackSecret } from "./qpay-signature";
 
@@ -168,7 +165,7 @@ export async function createKioskOrder(
   }
 }
 
-/** Poll an order: settles it (mint tickets + e-barimt) the first time QPay reports paid. */
+/** Poll an order: settles it (mint tickets) the first time QPay reports paid. */
 export async function getKioskOrderStatus(
   orderId: string,
 ): Promise<VenueResult<KioskOrderStatus>> {
@@ -198,21 +195,18 @@ export async function getKioskOrderStatus(
       return { ok: false, error: "qpay_check_failed", status: 502 };
     }
     if (isPaid(check) && check.paid_amount >= order.total) {
-      const settled = await settleOrder(order, {
-        paymentId: paidPaymentId(check),
-      });
+      const settled = await settleOrder(order);
       return { ok: true, data: settled };
     }
   }
 
-  return { ok: true, data: toView(order, [], null) };
+  return { ok: true, data: toView(order, []) };
 }
 
-/** Card rail: the kiosk reports the terminal charge + POSAPI e-barimt result. */
+/** Card rail: the kiosk reports the terminal charge outcome. */
 export async function applyCardResult(
   orderId: string,
   approved: boolean,
-  ebarimt: KioskEbarimt | undefined,
 ): Promise<VenueResult<KioskOrderStatus>> {
   const admin = getSupabaseAdmin();
   if (!admin)
@@ -231,14 +225,11 @@ export async function applyCardResult(
     await failOrderRow(order);
     return { ok: false, error: "card_declined", status: 402 };
   }
-  const settled = await settleOrder(order, { ebarimt });
+  const settled = await settleOrder(order);
   return { ok: true, data: settled };
 }
 
-async function settleOrder(
-  order: DbVenueOrder,
-  opts: { paymentId?: string | null; ebarimt?: KioskEbarimt },
-): Promise<KioskOrderStatus> {
+async function settleOrder(order: DbVenueOrder): Promise<KioskOrderStatus> {
   const admin = getSupabaseAdmin()!;
   const nowIso = new Date().toISOString();
 
@@ -272,26 +263,6 @@ async function settleOrder(
     await admin.from("venue_tickets").insert(rows);
   }
 
-  let ebarimt: KioskEbarimt | null = opts.ebarimt ?? null;
-  let ebarimtId: string | null = null;
-  if (!ebarimt && order.payment_method === "qpay" && opts.paymentId) {
-    try {
-      const r = await createEbarimt(opts.paymentId);
-      ebarimt = { qrData: r.ebarimt_qr_data, lottery: r.ebarimt_lottery };
-      ebarimtId = r.id;
-    } catch (err) {
-      console.error("ebarimt_create_failed", order.id, err);
-    }
-  }
-  await admin
-    .from("venue_orders")
-    .update({
-      ebarimt_id: ebarimtId,
-      ebarimt_qr_data: ebarimt?.qrData ?? null,
-      ebarimt_lottery: ebarimt?.lottery ?? null,
-    })
-    .eq("id", order.id);
-
   return {
     order_id: order.id,
     reference: order.reference,
@@ -299,7 +270,6 @@ async function settleOrder(
     total: order.total,
     paid_at: nowIso,
     tickets: out,
-    ebarimt,
   };
 }
 
@@ -331,16 +301,12 @@ async function loadOrderView(order: DbVenueOrder): Promise<KioskOrderStatus> {
       zone_name_en: it?.zone_name_en ?? "",
     };
   });
-  const ebarimt: KioskEbarimt | null = order.ebarimt_qr_data
-    ? { qrData: order.ebarimt_qr_data, lottery: order.ebarimt_lottery ?? "" }
-    : null;
-  return toView(order, out, ebarimt);
+  return toView(order, out);
 }
 
 function toView(
   order: DbVenueOrder,
   tickets: KioskTicketOut[],
-  ebarimt: KioskEbarimt | null,
 ): KioskOrderStatus {
   return {
     order_id: order.id,
@@ -349,7 +315,6 @@ function toView(
     total: order.total,
     paid_at: order.paid_at,
     tickets,
-    ebarimt,
   };
 }
 

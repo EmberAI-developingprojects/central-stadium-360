@@ -248,6 +248,12 @@ export interface DbTicket {
   paid_at: string | null;
   refunded_at: string | null;
   access_expires_at: string | null;
+  /** eBarimt fiscal receipt (PosAPI 3.0), set once the ticket is paid. */
+  ebarimt_id?: string | null;
+  ebarimt_qr_data?: string | null;
+  ebarimt_lottery?: string | null;
+  /** Buyer company TIN → B2B receipt (no lottery). Null/absent = B2C. */
+  ebarimt_customer_tin?: string | null;
 }
 
 export interface DbRecording {
@@ -447,13 +453,11 @@ export interface KioskOrderStatus {
   total: number;
   paid_at: string | null;
   tickets: KioskTicketOut[];
-  ebarimt: KioskEbarimt | null;
 }
 
 export interface KioskCardResultInput {
   approved: boolean;
   payment_ref?: string;
-  ebarimt?: KioskEbarimt;
 }
 
 export interface AdminVenueOrderRow extends DbVenueOrder {

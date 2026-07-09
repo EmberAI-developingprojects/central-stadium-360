@@ -3,12 +3,31 @@ import { z } from "zod";
 import type { DbTicket, PaymentStatus } from "@cs360/shared";
 import { getSupabaseAdmin } from "../lib/supabase";
 import { requireUser, type AuthEnv } from "../middleware/require-user";
-import { checkInvoicePayment, isPaid, isQPayConfigured } from "../lib/qpay";
-import { resolvePaidAccessExpiry } from "../lib/tickets";
+import {
+  checkInvoicePayment,
+  isPaid,
+  isQPayConfigured,
+  paidPaymentId,
+} from "../lib/qpay";
+import { issueEbarimtForTicket, resolvePaidAccessExpiry } from "../lib/tickets";
 import {
   getCallbackSecret,
   verifyTicketSignature,
 } from "../lib/qpay-signature";
+
+/** Fetch an event's title for the eBarimt line item; falls back to a generic. */
+async function eventTitleFor(
+  admin: ReturnType<typeof getSupabaseAdmin>,
+  eventId: string,
+): Promise<string> {
+  if (!admin) return "Ticket";
+  const { data } = await admin
+    .from("events")
+    .select("title")
+    .eq("id", eventId)
+    .maybeSingle<{ title: string }>();
+  return data?.title ?? "Ticket";
+}
 
 const payments = new Hono<AuthEnv>();
 
@@ -37,7 +56,7 @@ payments.post("/qpay-callback", async (c) => {
   const { data: ticket, error: tErr } = await admin
     .from("tickets")
     .select(
-      "id, event_id, status, qpay_invoice_id, price, ticket_type, tier, access_expires_at",
+      "id, event_id, status, qpay_invoice_id, price, ticket_type, tier, access_expires_at, ebarimt_customer_tin",
     )
     .eq("id", ticketId)
     .maybeSingle<
@@ -51,6 +70,7 @@ payments.post("/qpay-callback", async (c) => {
         | "ticket_type"
         | "tier"
         | "access_expires_at"
+        | "ebarimt_customer_tin"
       >
     >();
   if (tErr) {
@@ -105,6 +125,14 @@ payments.post("/qpay-callback", async (c) => {
     return c.json({ ok: true, data: { idempotent: true } } as const);
   }
 
+  await issueEbarimtForTicket(ticket.id, {
+    eventTitle: await eventTitleFor(admin, ticket.event_id),
+    ticketType: ticket.ticket_type,
+    price: ticket.price,
+    qpayPaymentId: paidPaymentId(check),
+    customerTin: ticket.ebarimt_customer_tin,
+  });
+
   return c.json({ ok: true, data: { idempotent: false } } as const);
 });
 
@@ -132,7 +160,7 @@ statusRoute.get("/:invoiceId", async (c) => {
   const { data: ticket } = await admin
     .from("tickets")
     .select(
-      "id, user_id, event_id, status, price, qpay_invoice_id, paid_at, ticket_type, tier, access_expires_at",
+      "id, user_id, event_id, status, price, qpay_invoice_id, paid_at, ticket_type, tier, access_expires_at, ebarimt_customer_tin",
     )
     .eq("qpay_invoice_id", invoiceId)
     .maybeSingle<
@@ -148,6 +176,7 @@ statusRoute.get("/:invoiceId", async (c) => {
         | "ticket_type"
         | "tier"
         | "access_expires_at"
+        | "ebarimt_customer_tin"
       >
     >();
 
@@ -196,6 +225,16 @@ statusRoute.get("/:invoiceId", async (c) => {
       .eq("status", "pending")
       .select("paid_at")
       .maybeSingle<{ paid_at: string | null }>();
+
+    if (updated) {
+      await issueEbarimtForTicket(ticket.id, {
+        eventTitle: await eventTitleFor(admin, ticket.event_id),
+        ticketType: ticket.ticket_type,
+        price: ticket.price,
+        qpayPaymentId: paidPaymentId(check),
+        customerTin: ticket.ebarimt_customer_tin,
+      });
+    }
 
     const resp: PaymentStatus = {
       invoice_id: ticket.qpay_invoice_id,

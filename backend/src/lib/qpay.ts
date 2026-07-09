@@ -1,4 +1,5 @@
 import type { QPayInvoiceLink } from "@cs360/shared";
+import { redactReceiptSecrets } from "./ebarimt";
 
 interface TokenResponse {
   token_type: "bearer";
@@ -147,10 +148,27 @@ async function qpayPost<T>(path: string, body: unknown): Promise<T> {
     body: JSON.stringify(body),
   });
   if (!res.ok) {
-    const text = await res.text();
+    const text = redactReceiptSecrets(await res.text());
     throw new Error(`qpay_${path}_failed:${res.status}:${text}`);
   }
   return (await res.json()) as T;
+}
+
+async function qpayDelete<T>(path: string): Promise<T> {
+  const { baseUrl } = env();
+  const token = await getAccessToken();
+  const res = await fetch(`${baseUrl}${path}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!res.ok) {
+    const text = redactReceiptSecrets(await res.text());
+    throw new Error(`qpay_${path}_failed:${res.status}:${text}`);
+  }
+  // Cancel responses are typically empty; tolerate a non-JSON body.
+  return (await res.json().catch(() => ({}))) as T;
 }
 
 async function qpayGet<T>(path: string): Promise<T> {
@@ -163,7 +181,7 @@ async function qpayGet<T>(path: string): Promise<T> {
     },
   });
   if (!res.ok) {
-    const text = await res.text();
+    const text = redactReceiptSecrets(await res.text());
     throw new Error(`qpay_${path}_failed:${res.status}:${text}`);
   }
   return (await res.json()) as T;
@@ -268,4 +286,15 @@ export async function createEbarimt(
     payment_id: paymentId,
     ebarimt_receiver_type: receiverType,
   });
+}
+
+/**
+ * Cancel ("буцаалт") an E-Barimt previously issued via {@link createEbarimt} on
+ * the QPay cloud rail. `ebarimtId` is the `id` returned by createEbarimt (and
+ * persisted on `tickets.ebarimt_id`). QPay de-registers it with the tax
+ * authority. The on-box POSAPI rail voids its own receipts via
+ * `ebarimt.voidReceipt` instead — this is only for cloud-issued receipts.
+ */
+export async function cancelEbarimt(ebarimtId: string): Promise<void> {
+  await qpayDelete(`/v2/ebarimt/${encodeURIComponent(ebarimtId)}`);
 }
