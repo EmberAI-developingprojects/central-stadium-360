@@ -267,7 +267,7 @@
   "auth_verify_eyebrow": "Баталгаажуулалт",
   "auth_verify_phone_title": "Баталгаажуулах код оруулна уу",
   "auth_verify_phone_subtitle": "{{identifier}} дугаар руу 6 оронтой код илгээлээ. Хүлээж аваад доор оруулна уу.",
-  "auth_verify_email_title": "Гмэйлээ шалгана уу",
+  "auth_verify_email_title": "Е-мэйлээ шалгана уу",
   "auth_verify_email_subtitle": "Бид {{identifier}} хаяг руу баталгаажуулах линк илгээлээ. Линк дээр дарж бүртгэлээ идэвхжүүлээрэй.",
   "auth_verify_code_label": "Баталгаажуулах код",
   "auth_verify_hint": "Кодын хүчинтэй хугацаа: 5 минут",
