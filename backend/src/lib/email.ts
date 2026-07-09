@@ -1,4 +1,4 @@
-export type EmailProvider = "dev" | "postmark" | "ses";
+import { Resend } from "resend";
 
 export type EmailActionType =
   | "signup"
@@ -30,28 +30,25 @@ export interface SupabaseEmailHookPayload {
 export interface SendEmailInput {
   to: string;
   subject: string;
-  htmlBody: string;
-  textBody: string;
+  html: string;
+  /** Optional plain-text alternative. */
+  text?: string;
+  /** Optional display name for the To header ("Name <email>"). */
   fullName?: string | null;
+  /** Override the default From address. */
+  from?: string;
+  replyTo?: string;
+  /** Short label attached as a Resend tag (analytics). */
   tag?: string;
+  /** Dedup key — a retried webhook with the same key won't send twice. */
+  idempotencyKey?: string;
 }
 
 export interface EmailSendResult {
   ok: boolean;
-  provider: EmailProvider;
+  provider: "resend" | "dev";
   messageId?: string;
   note?: string;
-}
-
-function resolveProvider(): EmailProvider {
-  const raw = (process.env.EMAIL_PROVIDER ?? "").trim().toLowerCase();
-  if (raw === "postmark") return "postmark";
-  if (raw === "ses") return "ses";
-  return "dev";
-}
-
-export function currentEmailProvider(): EmailProvider {
-  return resolveProvider();
 }
 
 function escapeHtml(s: string): string {
@@ -304,137 +301,105 @@ export function renderEmail(payload: SupabaseEmailHookPayload): RenderedEmail {
   }
 }
 
-async function sendViaDev(input: SendEmailInput): Promise<EmailSendResult> {
-  console.log("[email:dev]", {
-    to: input.to,
-    subject: input.subject,
-    tag: input.tag,
-  });
-  return {
-    ok: true,
-    provider: "dev",
-    note: "logged to console; no email sent",
-  };
+// --- Resend transactional email ------------------------------------------
+
+// Default sender. Resend requires the domain (stadium.mn) to be verified.
+// Override per-deploy with RESEND_FROM.
+const DEFAULT_FROM =
+  process.env.RESEND_FROM?.trim() || `${BRAND_NAME} <no-reply@stadium.mn>`;
+
+const MAX_RETRIES = 2;
+const RETRY_BASE_MS = 300;
+
+// Resend error names worth retrying (transient / server-side). Validation and
+// auth errors are permanent, so we fail fast on those.
+const TRANSIENT_ERROR_NAMES = new Set([
+  "rate_limit_exceeded",
+  "internal_server_error",
+  "application_error",
+]);
+
+let resendClient: Resend | null = null;
+
+function getResend(): Resend | null {
+  const key = process.env.RESEND_API_KEY?.trim();
+  if (!key) return null;
+  if (!resendClient) resendClient = new Resend(key);
+  return resendClient;
 }
 
-async function sendViaPostmark(
-  input: SendEmailInput,
-): Promise<EmailSendResult> {
-  const token = process.env.POSTMARK_SERVER_TOKEN;
-  const from = process.env.POSTMARK_FROM;
-  if (!token || !from) {
-    throw new Error(
-      "EMAIL_PROVIDER=postmark but POSTMARK_SERVER_TOKEN / POSTMARK_FROM are not set.",
-    );
-  }
-  const stream = process.env.POSTMARK_MESSAGE_STREAM ?? "outbound";
-
-  const body = {
-    From: from,
-    To: input.fullName ? `${input.fullName} <${input.to}>` : input.to,
-    Subject: input.subject,
-    HtmlBody: input.htmlBody,
-    TextBody: input.textBody,
-    MessageStream: stream,
-    Tag: input.tag,
-    TrackOpens: false,
-  };
-
-  let res: Response;
-  try {
-    res = await fetch("https://api.postmarkapp.com/email", {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        "X-Postmark-Server-Token": token,
-      },
-      body: JSON.stringify(body),
-    });
-  } catch (err) {
-    throw new Error(`postmark_network_error: ${(err as Error).message}`);
-  }
-
-  const json = (await res.json().catch(() => ({}))) as {
-    MessageID?: string;
-    ErrorCode?: number;
-    Message?: string;
-  };
-
-  if (!res.ok || (json.ErrorCode ?? 0) !== 0) {
-    const reason = json.Message ?? res.statusText;
-    throw new Error(
-      `postmark_send_failed: ${reason}${json.ErrorCode ? ` (code ${json.ErrorCode})` : ""}`,
-    );
-  }
-
-  return {
-    ok: true,
-    provider: "postmark",
-    messageId: json.MessageID,
-  };
+function sleep(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
 }
 
-let sesClient: import("@aws-sdk/client-sesv2").SESv2Client | null = null;
-
-async function sendViaSes(input: SendEmailInput): Promise<EmailSendResult> {
-  const from = process.env.SES_FROM;
-  if (!from) {
-    throw new Error("EMAIL_PROVIDER=ses but SES_FROM is not set.");
-  }
-  const region =
-    process.env.SES_REGION ?? process.env.AWS_REGION ?? "ap-northeast-2";
-
-  const { SESv2Client, SendEmailCommand } = await import(
-    "@aws-sdk/client-sesv2"
-  );
-  if (!sesClient) {
-    sesClient = new SESv2Client({ region });
-  }
-
-  const toAddress = input.fullName
-    ? `${input.fullName} <${input.to}>`
-    : input.to;
-
-  const command = new SendEmailCommand({
-    FromEmailAddress: from,
-    Destination: { ToAddresses: [toAddress] },
-    Content: {
-      Simple: {
-        Subject: { Data: input.subject, Charset: "UTF-8" },
-        Body: {
-          Html: { Data: input.htmlBody, Charset: "UTF-8" },
-          Text: { Data: input.textBody, Charset: "UTF-8" },
-        },
-      },
-    },
-    EmailTags: input.tag
-      ? [{ Name: "tag", Value: input.tag.replace(/[^A-Za-z0-9_-]/g, "_") }]
-      : undefined,
-  });
-
-  try {
-    const res = await sesClient.send(command);
-    return {
-      ok: true,
-      provider: "ses",
-      messageId: res.MessageId,
-    };
-  } catch (err) {
-    throw new Error(`ses_send_failed: ${(err as Error).message}`);
-  }
-}
-
+/**
+ * Send one transactional email via Resend. Retries transient failures up to
+ * twice with exponential backoff; pass `idempotencyKey` so a retried Supabase
+ * webhook can't send the same mail twice. When RESEND_API_KEY is unset it logs
+ * and returns without sending, so local dev works without credentials.
+ */
 export async function sendEmail(
   input: SendEmailInput,
 ): Promise<EmailSendResult> {
-  switch (resolveProvider()) {
-    case "postmark":
-      return sendViaPostmark(input);
-    case "ses":
-      return sendViaSes(input);
-    case "dev":
-    default:
-      return sendViaDev(input);
+  const resend = getResend();
+  if (!resend) {
+    console.log("[email:dev] RESEND_API_KEY not set — not sending", {
+      to: input.to,
+      subject: input.subject,
+      tag: input.tag,
+    });
+    return {
+      ok: true,
+      provider: "dev",
+      note: "logged to console; RESEND_API_KEY not set",
+    };
   }
+
+  const to = input.fullName ? `${input.fullName} <${input.to}>` : input.to;
+  const payload = {
+    from: input.from?.trim() || DEFAULT_FROM,
+    to: [to],
+    subject: input.subject,
+    html: input.html,
+    ...(input.text ? { text: input.text } : {}),
+    ...(input.replyTo ? { replyTo: input.replyTo } : {}),
+    ...(input.tag
+      ? {
+          tags: [
+            { name: "tag", value: input.tag.replace(/[^A-Za-z0-9_-]/g, "_") },
+          ],
+        }
+      : {}),
+  };
+  const options = input.idempotencyKey
+    ? { idempotencyKey: input.idempotencyKey }
+    : undefined;
+
+  let lastError = "unknown_error";
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const { data, error } = await resend.emails.send(payload, options);
+      if (!error) {
+        return { ok: true, provider: "resend", messageId: data?.id };
+      }
+      lastError = `${error.name}: ${error.message}`;
+      // Permanent error (validation, bad from, etc.) — don't retry.
+      if (!TRANSIENT_ERROR_NAMES.has(error.name) || attempt === MAX_RETRIES) {
+        break;
+      }
+    } catch (err) {
+      // Network / unexpected throw — always transient.
+      lastError = (err as Error).message ?? "network_error";
+      if (attempt === MAX_RETRIES) break;
+    }
+    await sleep(RETRY_BASE_MS * 2 ** attempt);
+  }
+
+  console.error("[email:resend] send failed", {
+    to: input.to,
+    subject: input.subject,
+    tag: input.tag,
+    error: lastError,
+  });
+  throw new Error(`resend_send_failed: ${lastError}`);
 }
