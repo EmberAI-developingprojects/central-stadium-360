@@ -4,6 +4,7 @@ import { getOrder } from "../../data/store";
 import type { OrderRecord } from "../../data/store";
 import { LoadingState } from "../components/Skeleton";
 import { EmptyState } from "../components/EmptyState";
+import { EbarimtQR } from "../../components/EbarimtQR";
 import {
   ADMIN_BTN_CLS,
   ADMIN_BTN_GHOST_CLS,
@@ -154,6 +155,29 @@ export default function OrderView() {
                   <StatusBadge status={order.status} />
                 </td>
               </tr>
+              {order.ebarimtQrData ? (
+                <tr>
+                  <th>И-баримт</th>
+                  <td>
+                    <div className="flex justify-start">
+                      <EbarimtQR
+                        value={order.ebarimtQrData}
+                        lottery={order.ebarimtLottery}
+                        onLight
+                      />
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                order.ebarimtLottery && (
+                  <tr>
+                    <th>И-баримт сугалаа</th>
+                    <td className="font-mono font-semibold tracking-tight text-zinc-900">
+                      {order.ebarimtLottery}
+                    </td>
+                  </tr>
+                )
+              )}
               {order.refundedAt && (
                 <tr>
                   <th>Буцаагдсан</th>

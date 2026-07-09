@@ -4,7 +4,8 @@ import { useTranslation } from "react-i18next";
 import { useRequireAuth } from "../../auth";
 import UserMenu from "../../components/UserMenu";
 import LanguageSwitcher from "../../components/LanguageSwitcher";
-import { getMyOrder, type OrderRecord } from "../../data/store";
+import { getMyOrder, refundMyOrder, type OrderRecord } from "../../data/store";
+import { EbarimtQR } from "../../components/EbarimtQR";
 import {
   WATCH_BTN_CLS,
   WATCH_BTN_GHOST_CLS,
@@ -89,12 +90,34 @@ const PAY_METHOD_CLS =
 const PAY_METHOD_STRONG_CLS = "text-white text-sm print:text-black";
 const ACTIONS_CLS =
   "flex flex-wrap gap-3 items-center justify-end py-[22px] px-7 bg-[rgba(255,255,255,0.02)] border-t border-solid border-[rgba(255,255,255,0.06)] max-[720px]:justify-stretch [&>a]:no-underline [&>button]:no-underline max-[720px]:[&>a]:flex-1 max-[720px]:[&>a]:justify-center max-[720px]:[&>button]:flex-1 max-[720px]:[&>button]:justify-center print:hidden";
+// Destructive "refund" action — a red-tinted variant of the ghost button.
+const REFUND_BTN_CLS =
+  "!text-[#FCA5A5] !bg-[rgba(239,68,68,0.10)] !border-[rgba(239,68,68,0.35)] hover:!bg-[rgba(239,68,68,0.18)] hover:!text-[#FECACA] disabled:opacity-60 disabled:cursor-not-allowed";
+// Refunded status badge — amber, replacing the green "active" pill.
+const STATUS_REFUNDED_CLS =
+  "inline-flex items-center gap-2 rounded-full text-[11px] font-bold uppercase py-1 px-3 w-fit bg-[rgba(245,158,11,0.15)] border border-solid border-[rgba(245,158,11,0.35)] text-[#FCD34D] tracking-[0.05em]";
+const STATUS_DOT_REFUNDED_CLS =
+  "rounded-full w-[7px] h-[7px] bg-[#F59E0B] shadow-[0_0_0_4px_rgba(245,158,11,0.20)]";
+// Confirm-dialog styles.
+const MODAL_OVERLAY_CLS =
+  "fixed inset-0 z-50 flex items-center justify-center p-4 bg-[rgba(0,0,0,0.65)] backdrop-blur-sm print:hidden";
+const MODAL_CARD_CLS =
+  "w-full max-w-[420px] rounded-[18px] p-6 bg-[#0B0F1A] border border-solid border-[rgba(255,255,255,0.12)] shadow-[0_20px_60px_rgba(0,0,0,0.5)]";
+const MODAL_TITLE_CLS = "m-0 mb-2 text-lg font-bold text-white";
+const MODAL_DESC_CLS =
+  "m-0 mb-5 text-sm leading-[1.5] text-[rgba(255,255,255,0.65)]";
+const MODAL_ERROR_CLS =
+  "m-0 mb-4 text-[13px] font-semibold text-[#FCA5A5] bg-[rgba(239,68,68,0.10)] border border-solid border-[rgba(239,68,68,0.30)] rounded-[10px] py-2 px-3";
+const MODAL_ACTIONS_CLS = "flex gap-3 justify-end";
 
 export default function OrderDetail() {
   const { t } = useTranslation();
   const session = useRequireAuth();
   const { code } = useParams<{ code: string }>();
   const [order, setOrder] = useState<OrderRecord | null | undefined>(undefined);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [refunding, setRefunding] = useState(false);
+  const [refundError, setRefundError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!code) return;
@@ -106,6 +129,31 @@ export default function OrderDetail() {
   if (!session) return null;
 
   const onPrint = () => window.print();
+
+  const isRefunded = order?.status === "refunded";
+
+  const onConfirmRefund = async () => {
+    if (!code || refunding) return;
+    setRefunding(true);
+    setRefundError(null);
+    try {
+      const { refundedAt } = await refundMyOrder(code);
+      setOrder((prev) =>
+        prev
+          ? {
+              ...prev,
+              status: "refunded",
+              refundedAt: refundedAt ?? new Date().toISOString(),
+            }
+          : prev,
+      );
+      setConfirmOpen(false);
+    } catch {
+      setRefundError(t("order_refund_error"));
+    } finally {
+      setRefunding(false);
+    }
+  };
 
   return (
     <div
@@ -200,9 +248,16 @@ export default function OrderDetail() {
                 className={HERO_IMG_CLS}
               />
               <div className={HERO_META_CLS}>
-                <span className={STATUS_CLS}>
-                  <span className={STATUS_DOT_CLS} aria-hidden="true"></span>
-                  {t("order_active")}
+                <span
+                  className={isRefunded ? STATUS_REFUNDED_CLS : STATUS_CLS}
+                >
+                  <span
+                    className={
+                      isRefunded ? STATUS_DOT_REFUNDED_CLS : STATUS_DOT_CLS
+                    }
+                    aria-hidden="true"
+                  ></span>
+                  {isRefunded ? t("order_refunded") : t("order_active")}
                 </span>
                 <h1 className={TITLE_CLS}>{order.title}</h1>
                 <span className={EVENT_DATE_CLS}>{order.date}</span>
@@ -232,8 +287,18 @@ export default function OrderDetail() {
                   </div>
                   <div>
                     <dt className={META_DT_CLS}>{t("order_status")}</dt>
-                    <dd className={META_DD_CLS}>{t("order_paid")}</dd>
+                    <dd className={META_DD_CLS}>
+                      {isRefunded ? t("order_refunded") : t("order_paid")}
+                    </dd>
                   </div>
+                  {isRefunded && order.refundedAt && (
+                    <div>
+                      <dt className={META_DT_CLS}>{t("order_refunded_at")}</dt>
+                      <dd className={META_DD_CLS}>
+                        {fmtDateTime(order.refundedAt)}
+                      </dd>
+                    </div>
+                  )}
                 </dl>
               </section>
 
@@ -305,19 +370,84 @@ export default function OrderDetail() {
                       order.payment}
                   </strong>
                 </p>
+                {(order.ebarimtId ||
+                  order.ebarimtLottery ||
+                  order.ebarimtQrData) && (
+                  <div className="mt-[14px] pt-[14px] border-t border-dashed border-[rgba(255,255,255,0.10)]">
+                    {order.ebarimtId && (
+                      <p className={PAY_METHOD_CLS} style={{ marginTop: 0, paddingTop: 0, borderTop: "none" }}>
+                        <span>{t("order_ebarimt_ddtd")}</span>
+                        <strong
+                          className={`${PAY_METHOD_STRONG_CLS} [font-family:'SFMono-Regular',Menlo,Consolas,monospace] tracking-[0.02em] break-all text-right`}
+                        >
+                          {order.ebarimtId}
+                        </strong>
+                      </p>
+                    )}
+                    {order.ebarimtQrData ? (
+                      <div className="mt-[14px] flex justify-center">
+                        <EbarimtQR
+                          value={order.ebarimtQrData}
+                          lottery={order.ebarimtLottery}
+                        />
+                      </div>
+                    ) : (
+                      order.ebarimtLottery && (
+                        <p className={PAY_METHOD_CLS}>
+                          <span>{t("order_ebarimt_lottery")}</span>
+                          <strong
+                            className={`${PAY_METHOD_STRONG_CLS} [font-family:'SFMono-Regular',Menlo,Consolas,monospace] tracking-[0.04em]`}
+                          >
+                            {order.ebarimtLottery}
+                          </strong>
+                        </p>
+                      )
+                    )}
+                  </div>
+                )}
               </section>
             </div>
 
             <footer className={ACTIONS_CLS}>
-              <Link
-                to="/watch"
-                className={`${WATCH_BTN_CLS} ${WATCH_BTN_PRIMARY_CLS}`}
-              >
-                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-                {t("order_watch_live")}
-              </Link>
+              {!isRefunded && (
+                <Link
+                  to="/watch"
+                  className={`${WATCH_BTN_CLS} ${WATCH_BTN_PRIMARY_CLS}`}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                  {t("order_watch_live")}
+                </Link>
+              )}
+              {!isRefunded && (
+                <button
+                  type="button"
+                  className={`${WATCH_BTN_CLS} ${WATCH_BTN_GHOST_CLS} ${REFUND_BTN_CLS}`}
+                  onClick={() => {
+                    setRefundError(null);
+                    setConfirmOpen(true);
+                  }}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <polyline points="9 14 4 9 9 4" />
+                    <path d="M20 20v-7a4 4 0 0 0-4-4H4" />
+                  </svg>
+                  {t("order_refund")}
+                </button>
+              )}
               <button
                 type="button"
                 className={`${WATCH_BTN_CLS} ${WATCH_BTN_GHOST_CLS}`}
@@ -340,6 +470,44 @@ export default function OrderDetail() {
               </button>
             </footer>
           </article>
+        )}
+
+        {confirmOpen && (
+          <div
+            className={MODAL_OVERLAY_CLS}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="refund-confirm-title"
+            onClick={() => !refunding && setConfirmOpen(false)}
+          >
+            <div className={MODAL_CARD_CLS} onClick={(e) => e.stopPropagation()}>
+              <h2 id="refund-confirm-title" className={MODAL_TITLE_CLS}>
+                {t("order_refund_confirm_title")}
+              </h2>
+              <p className={MODAL_DESC_CLS}>{t("order_refund_confirm_desc")}</p>
+              {refundError && <p className={MODAL_ERROR_CLS}>{refundError}</p>}
+              <div className={MODAL_ACTIONS_CLS}>
+                <button
+                  type="button"
+                  className={`${WATCH_BTN_CLS} ${WATCH_BTN_GHOST_CLS}`}
+                  onClick={() => setConfirmOpen(false)}
+                  disabled={refunding}
+                >
+                  {t("order_refund_cancel")}
+                </button>
+                <button
+                  type="button"
+                  className={`${WATCH_BTN_CLS} ${WATCH_BTN_GHOST_CLS} ${REFUND_BTN_CLS}`}
+                  onClick={onConfirmRefund}
+                  disabled={refunding}
+                >
+                  {refunding
+                    ? t("order_refunding")
+                    : t("order_refund_confirm_yes")}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </main>
     </div>

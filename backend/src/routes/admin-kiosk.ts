@@ -574,7 +574,6 @@ adminKiosk.get("/orders/:id/status", async (c) => {
 
 const cardResultSchema = z.object({
   approved: z.boolean(),
-  ebarimt: z.object({ qrData: z.string(), lottery: z.string() }).optional(),
 });
 
 adminKiosk.post("/orders/:id/card-result", async (c) => {
@@ -590,11 +589,7 @@ adminKiosk.post("/orders/:id/card-result", async (c) => {
       400,
     );
   }
-  const res = await applyCardResult(
-    c.req.param("id"),
-    parsed.data.approved,
-    parsed.data.ebarimt,
-  );
+  const res = await applyCardResult(c.req.param("id"), parsed.data.approved);
   if (!res.ok) {
     return c.json({ ok: false, error: res.error } as const, res.status as 402);
   }
