@@ -24,7 +24,6 @@ import type {
   EventPatch,
   EventStatus,
   KioskCreateOrderResponse,
-  KioskEbarimt,
   KioskEvent,
   KioskOrderItemInput,
   KioskOrderStatus,
@@ -263,6 +262,8 @@ export const api = {
     event_id: string;
     ticket_type?: "live" | "replay";
     tier?: "standard" | "multi3" | "multi5";
+    /** Buyer company TIN → B2B e-barimt (7-10 digits). */
+    ebarimt_tin?: string;
   }) => request<TicketCreateResponse>("POST", "/api/tickets/create", input),
 
   getPaymentStatus: (invoiceId: string) =>
@@ -272,6 +273,11 @@ export const api = {
     ),
 
   listMyTickets: () => request<DbTicket[]>("GET", "/api/tickets/my"),
+
+  // Buyer self-refund of their own paid ticket: voids the eBarimt receipt and
+  // flips the ticket to `refunded`. Idempotent server-side.
+  refundMyTicket: (id: string) =>
+    request<DbTicket>("POST", `/api/tickets/${encodeURIComponent(id)}/refund`),
 
   admin: {
     listEvents: () =>
@@ -468,10 +474,7 @@ export const api = {
           "GET",
           `/api/admin/kiosk/orders/${encodeURIComponent(id)}/status`,
         ),
-      cardResult: (
-        id: string,
-        input: { approved: boolean; ebarimt?: KioskEbarimt },
-      ) =>
+      cardResult: (id: string, input: { approved: boolean }) =>
         request<KioskOrderStatus>(
           "POST",
           `/api/admin/kiosk/orders/${encodeURIComponent(id)}/card-result`,

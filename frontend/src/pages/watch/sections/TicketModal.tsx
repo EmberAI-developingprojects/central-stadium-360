@@ -14,7 +14,8 @@ import {
 } from "@cs360/shared";
 import type { Session } from "../../../auth";
 import { api } from "../../../lib/api";
-import type { OrderRecord } from "../../../data/store";
+import { getMyOrder, type OrderRecord } from "../../../data/store";
+import { EbarimtQR } from "../../../components/EbarimtQR";
 import { formatRemaining, money } from "../utils";
 import type { TicketModalEvent } from "../types";
 import { pickEventLocale } from "../../../lib/eventLocale";
@@ -90,6 +91,8 @@ export function TicketModal({
 
   // Tier selection (live purchases only). Replay stays on its legacy flow.
   const [tier, setTier] = useState<TicketTier>("standard");
+  // Optional buyer company TIN → B2B e-barimt (empty = personal / B2C).
+  const [companyTin, setCompanyTin] = useState("");
   const useTiers = kind === "live";
   // Replay tiers grant access for the admin-set event window
   // (replay_available_until); without one, until the event's month ends
@@ -146,6 +149,7 @@ export function TicketModal({
     const res = await api.createTicket({
       event_id: event.id,
       ...(useTiers ? { tier } : { ticket_type: kind }),
+      ...(companyTin.trim() ? { ebarimt_tin: companyTin.trim() } : {}),
     });
     if (!res.ok) {
       setAlert(`${t("ticket_error")} (${res.error})`);
@@ -154,7 +158,7 @@ export function TicketModal({
     setInvoice(res.data);
     setQrExpiresAt(Date.now() + QR_TTL_MS);
     return true;
-  }, [event.id, kind, useTiers, tier, t, QR_TTL_MS]);
+  }, [event.id, kind, useTiers, tier, companyTin, t, QR_TTL_MS]);
 
   const checkout = async () => {
     setAlert("");
@@ -195,6 +199,29 @@ export function TicketModal({
       onPurchased();
       setSuccess(order);
       setStep("success");
+      // The e-barimt is issued best-effort during the paid transition, so it may
+      // not be ready the instant the ticket flips to paid. Poll the paid ticket a
+      // few times until the receipt (DDTD / lottery / QR) lands, then surface it.
+      void (async () => {
+        const ticketId = invoice.ticket_id;
+        for (let i = 0; i < 8; i++) {
+          const full = await getMyOrder(ticketId);
+          if (full?.ebarimtId || full?.ebarimtLottery || full?.ebarimtQrData) {
+            setSuccess((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    ebarimtId: full.ebarimtId,
+                    ebarimtLottery: full.ebarimtLottery,
+                    ebarimtQrData: full.ebarimtQrData,
+                  }
+                : prev,
+            );
+            return;
+          }
+          await new Promise((r) => setTimeout(r, 1500));
+        }
+      })();
       return true;
     }
     return false;
@@ -421,6 +448,35 @@ export function TicketModal({
 
                   <div
                     className={TICKET_SECTION_CLS}
+                    style={{ display: "grid", gap: 6 }}
+                  >
+                    <span className={TICKET_SECTION_LABEL_CLS}>
+                      {t("ticket_company_tin_label")}
+                    </span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={companyTin}
+                      onChange={(e) =>
+                        setCompanyTin(e.target.value.replace(/\D/g, ""))
+                      }
+                      maxLength={14}
+                      placeholder={t("ticket_company_tin_placeholder")}
+                      aria-label={t("ticket_company_tin_label")}
+                      style={{
+                        padding: "10px 12px",
+                        borderRadius: 10,
+                        background: "rgba(255,255,255,0.05)",
+                        border: "1px solid rgba(255,255,255,0.12)",
+                        color: "rgba(255,255,255,0.92)",
+                        fontSize: 14,
+                        outline: "none",
+                      }}
+                    />
+                  </div>
+
+                  <div
+                    className={TICKET_SECTION_CLS}
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -589,6 +645,51 @@ export function TicketModal({
               <br />
               <strong>{success.code}</strong>
             </div>
+            <div className="mx-auto mt-3 w-full max-w-[320px] rounded-xl bg-[rgba(255,255,255,0.04)] border border-solid border-[rgba(255,255,255,0.10)] p-4 text-left">
+              <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-[rgba(255,255,255,0.55)]">
+                {t("order_payment_title")}
+              </div>
+              <dl className="flex flex-col gap-1.5 m-0 text-[13px] [&>div]:flex [&>div]:justify-between [&>div]:gap-3">
+                <div>
+                  <dt className="text-[rgba(255,255,255,0.6)]">
+                    {t("order_vat")}
+                  </dt>
+                  <dd className="m-0 font-semibold text-[rgba(255,255,255,0.9)] tabular-nums">
+                    {money(Math.round(success.total / 11))}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-white font-bold">
+                    {t("order_total_paid")}
+                  </dt>
+                  <dd className="m-0 font-bold text-white tabular-nums">
+                    {money(success.total)}
+                  </dd>
+                </div>
+                {success.ebarimtId && (
+                  <div className="mt-1 pt-2 border-t border-dashed border-[rgba(255,255,255,0.10)]">
+                    <dt className="text-[rgba(255,255,255,0.6)] shrink-0">
+                      {t("order_ebarimt_ddtd")}
+                    </dt>
+                    <dd className="m-0 font-mono text-[11px] font-semibold text-[rgba(255,255,255,0.85)] break-all text-right">
+                      {success.ebarimtId}
+                    </dd>
+                  </div>
+                )}
+              </dl>
+            </div>
+            {success.ebarimtQrData ? (
+              <div className="mt-3 flex justify-center">
+                <EbarimtQR
+                  value={success.ebarimtQrData}
+                  lottery={success.ebarimtLottery}
+                />
+              </div>
+            ) : (
+              <p className={TICKET_SUCCESS_DESC_CLS} style={{ marginTop: 10 }}>
+                <small>⏳ {t("ticket_ebarimt_issuing")}</small>
+              </p>
+            )}
             <div className={TICKET_SUCCESS_ACTIONS_CLS}>
               <button
                 type="button"
