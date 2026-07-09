@@ -11,6 +11,7 @@ import {
   requireAdmin,
   type AuthEnv,
 } from "../middleware/require-user";
+import { voidEbarimtForTicket } from "../lib/tickets";
 import { getViewedUserCount } from "./watch";
 
 const adminTickets = new Hono<AuthEnv>();
@@ -30,6 +31,9 @@ type RawTicketRow = {
   paid_at: string | null;
   refunded_at: string | null;
   access_expires_at: string | null;
+  ebarimt_id: string | null;
+  ebarimt_qr_data: string | null;
+  ebarimt_lottery: string | null;
   users: {
     email: string | null;
     phone: string | null;
@@ -40,6 +44,7 @@ type RawTicketRow = {
 
 const SELECT_COLS = `
   id,user_id,event_id,status,ticket_type,price,qpay_invoice_id,created_at,paid_at,refunded_at,access_expires_at,
+  ebarimt_id,ebarimt_qr_data,ebarimt_lottery,
   users:users(email,phone,full_name),
   events:events(title)
 `.replace(/\s+/g, "");
@@ -57,6 +62,9 @@ function toRow(r: RawTicketRow): AdminTicketRow {
     paid_at: r.paid_at,
     refunded_at: r.refunded_at,
     access_expires_at: r.access_expires_at,
+    ebarimt_id: r.ebarimt_id,
+    ebarimt_qr_data: r.ebarimt_qr_data,
+    ebarimt_lottery: r.ebarimt_lottery,
     user_email: r.users?.email ?? null,
     user_phone: r.users?.phone ?? null,
     user_full_name: r.users?.full_name ?? null,
@@ -184,9 +192,13 @@ adminTickets.post("/:id/refund", async (c) => {
   const id = c.req.param("id");
   const { data: existing, error: selErr } = await admin
     .from("tickets")
-    .select("id,status")
+    .select("id,status,ebarimt_id")
     .eq("id", id)
-    .maybeSingle<{ id: string; status: TicketStatus }>();
+    .maybeSingle<{
+      id: string;
+      status: TicketStatus;
+      ebarimt_id: string | null;
+    }>();
   if (selErr) {
     return c.json({ ok: false, error: selErr.message } as const, 500);
   }
@@ -194,6 +206,13 @@ adminTickets.post("/:id/refund", async (c) => {
   if (existing.status !== "paid") {
     return c.json({ ok: false, error: "not_paid" } as const, 409);
   }
+
+  // Void ("буцаалт") the fiscal eBarimt receipt first. Best-effort: it never
+  // throws, so a POS/QPay hiccup can't strand the ticket in a paid state — the
+  // outcome is surfaced in the response for the admin to act on.
+  const ebarimt = await voidEbarimtForTicket({
+    ebarimt_id: existing.ebarimt_id,
+  });
 
   const { error: updErr } = await admin
     .from("tickets")
@@ -215,6 +234,7 @@ adminTickets.post("/:id/refund", async (c) => {
   return c.json({
     ok: true,
     data: toRow(row as unknown as RawTicketRow),
+    ebarimt,
   } as const);
 });
 

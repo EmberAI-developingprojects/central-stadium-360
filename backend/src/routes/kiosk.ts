@@ -131,7 +131,6 @@ kiosk.get("/orders/:id/status", async (c) => {
 const cardResultSchema = z.object({
   approved: z.boolean(),
   payment_ref: z.string().optional(),
-  ebarimt: z.object({ qrData: z.string(), lottery: z.string() }).optional(),
 });
 
 kiosk.post("/orders/:id/card-result", async (c) => {
@@ -147,11 +146,7 @@ kiosk.post("/orders/:id/card-result", async (c) => {
       400,
     );
   }
-  const res = await applyCardResult(
-    c.req.param("id"),
-    parsed.data.approved,
-    parsed.data.ebarimt,
-  );
+  const res = await applyCardResult(c.req.param("id"), parsed.data.approved);
   if (!res.ok) {
     return c.json({ ok: false, error: res.error } as const, res.status as 402);
   }

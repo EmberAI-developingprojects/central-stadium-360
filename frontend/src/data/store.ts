@@ -57,6 +57,10 @@ export type OrderRecord = {
   date?: string;
   payment?: string;
   paymentName?: string;
+  /** eBarimt receipt id — the DDTD-style fiscal number. */
+  ebarimtId?: string | null;
+  ebarimtLottery?: string | null;
+  ebarimtQrData?: string | null;
 };
 
 export type UserRole = "admin" | "user";
@@ -169,6 +173,9 @@ function ticketToOrder(t: AdminTicketRow): OrderRecord {
     accessExpiresAt: t.access_expires_at,
     payment: "qpay",
     paymentName: "QPay",
+    ebarimtId: t.ebarimt_id ?? null,
+    ebarimtLottery: t.ebarimt_lottery ?? null,
+    ebarimtQrData: t.ebarimt_qr_data ?? null,
   };
 }
 
@@ -585,6 +592,9 @@ export async function listMyOrders(): Promise<OrderRecord[]> {
         paymentName: "QPay",
         image: ev?.image || undefined,
         date: ev?.start_time || undefined,
+        ebarimtId: t.ebarimt_id ?? null,
+        ebarimtLottery: t.ebarimt_lottery ?? null,
+        ebarimtQrData: t.ebarimt_qr_data ?? null,
       } satisfies OrderRecord;
     })
     .sort((a, b) =>
@@ -595,6 +605,19 @@ export async function listMyOrders(): Promise<OrderRecord[]> {
 export async function getMyOrder(code: string): Promise<OrderRecord | null> {
   const orders = await listMyOrders();
   return orders.find((o) => o.code === code) || null;
+}
+
+/**
+ * Buyer self-refund of their own paid ticket. Voids the eBarimt receipt and
+ * flips the ticket to `refunded` server-side; returns the refund timestamp so
+ * the caller can reflect the new state without a refetch.
+ */
+export async function refundMyOrder(
+  code: string,
+): Promise<{ refundedAt: string | null }> {
+  const res = await api.refundMyTicket(code);
+  if (!res.ok) throw new Error(res.error || "Буцаах боломжгүй.");
+  return { refundedAt: res.data.refunded_at ?? null };
 }
 
 export async function ordersStats(): Promise<OrdersStats> {

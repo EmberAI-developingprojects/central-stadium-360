@@ -9,6 +9,7 @@ import {
   findRecentPendingTicket,
   hasPaidTicket,
   reusePendingInvoice,
+  voidEbarimtForTicket,
 } from "../lib/tickets";
 
 const tickets = new Hono<AuthEnv>();
@@ -21,6 +22,12 @@ const createSchema = z.object({
   // New tier model. When provided, price comes from the fixed TICKET_TIERS
   // catalog and the ticket grants live access on the tier's device cap.
   tier: z.enum(["standard", "multi3", "multi5"]).optional(),
+  // Optional buyer company TIN (7-14 digits) → issues a B2B e-barimt.
+  ebarimt_tin: z
+    .string()
+    .trim()
+    .regex(/^\d{7,14}$/)
+    .optional(),
 });
 
 tickets.post("/create", async (c) => {
@@ -112,6 +119,9 @@ tickets.post("/create", async (c) => {
     ...(tier
       ? { tier, maxDevices: TICKET_TIERS[tier].maxDevices }
       : {}),
+    ...(parsed.data.ebarimt_tin
+      ? { ebarimtTin: parsed.data.ebarimt_tin }
+      : {}),
   });
   if (!res.ok) {
     return c.json(
@@ -135,7 +145,7 @@ tickets.get("/my", async (c) => {
   const { data, error } = await admin
     .from("tickets")
     .select(
-      "id,user_id,event_id,status,ticket_type,price,qpay_invoice_id,created_at,paid_at,refunded_at",
+      "id,user_id,event_id,status,ticket_type,price,qpay_invoice_id,created_at,paid_at,refunded_at,ebarimt_id,ebarimt_qr_data,ebarimt_lottery",
     )
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
@@ -145,6 +155,91 @@ tickets.get("/my", async (c) => {
   }
 
   return c.json({ ok: true, data: (data ?? []) as DbTicket[] } as const);
+});
+
+const MY_SELECT_COLS =
+  "id,user_id,event_id,status,ticket_type,price,qpay_invoice_id,created_at,paid_at,refunded_at,ebarimt_id,ebarimt_qr_data,ebarimt_lottery";
+
+/**
+ * User self-service refund ("тасалбар буцаах"). The buyer refunds their OWN paid
+ * ticket: it voids ("буцаалт") the attached eBarimt fiscal receipt on the same
+ * dual rail as the admin refund ({@link voidEbarimtForTicket}) and flips the
+ * ticket to `refunded`. Ownership is enforced (a user can only refund their own
+ * ticket) and only a `paid` ticket is refundable. Idempotent: re-refunding an
+ * already-`refunded` ticket returns the current row without erroring.
+ */
+tickets.post("/:id/refund", async (c) => {
+  const user = c.get("user");
+  const id = c.req.param("id");
+  const admin = getSupabaseAdmin();
+  if (!admin) {
+    return c.json(
+      { ok: false, error: "supabase_not_configured" } as const,
+      503,
+    );
+  }
+
+  const { data: existing, error: selErr } = await admin
+    .from("tickets")
+    .select("id,user_id,status,ebarimt_id")
+    .eq("id", id)
+    .maybeSingle<{
+      id: string;
+      user_id: string;
+      status: DbTicket["status"];
+      ebarimt_id: string | null;
+    }>();
+  if (selErr) {
+    return c.json({ ok: false, error: "internal_error" } as const, 500);
+  }
+  if (!existing) return c.json({ ok: false, error: "not_found" } as const, 404);
+  if (existing.user_id !== user.id) {
+    return c.json({ ok: false, error: "forbidden" } as const, 403);
+  }
+
+  // Idempotent: an already-refunded ticket just returns its current state.
+  if (existing.status === "refunded") {
+    const { data: row } = await admin
+      .from("tickets")
+      .select(MY_SELECT_COLS)
+      .eq("id", id)
+      .maybeSingle();
+    return c.json({
+      ok: true,
+      data: row as DbTicket,
+      ebarimt: { voided: false, reason: "no_receipt" } as const,
+    } as const);
+  }
+  if (existing.status !== "paid") {
+    return c.json({ ok: false, error: "not_paid" } as const, 409);
+  }
+
+  // Void the fiscal eBarimt receipt first. Best-effort: it never throws, so a
+  // POS/QPay hiccup can't strand the ticket in a paid state — the outcome is
+  // surfaced in the response.
+  const ebarimt = await voidEbarimtForTicket({
+    ebarimt_id: existing.ebarimt_id,
+  });
+
+  const { error: updErr } = await admin
+    .from("tickets")
+    .update({
+      status: "refunded",
+      refunded_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .eq("status", "paid");
+  if (updErr) {
+    return c.json({ ok: false, error: "internal_error" } as const, 500);
+  }
+
+  const { data: row } = await admin
+    .from("tickets")
+    .select(MY_SELECT_COLS)
+    .eq("id", id)
+    .maybeSingle();
+  if (!row) return c.json({ ok: false, error: "not_found" } as const, 404);
+  return c.json({ ok: true, data: row as DbTicket, ebarimt } as const);
 });
 
 export default tickets;

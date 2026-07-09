@@ -194,7 +194,7 @@ function TicketCard({
         <div className={TICKET_STUB_BARCODE_CLS} aria-hidden="true"></div>
         <div className={TICKET_STUB_ACTIONS_CLS}>
           <Link
-            to={`/watch/events/${tk.eventId}`}
+            to={`/orders/${tk.code}`}
             className={`${WATCH_BTN_CLS} ${WATCH_BTN_GHOST_CLS} ${TICKET_STUB_BTN_CLS}`}
           >
             {t("watch_details")}
