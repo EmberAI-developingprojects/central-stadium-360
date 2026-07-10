@@ -60,15 +60,35 @@ function escapeHtml(s: string): string {
     .replace(/'/g, "&#39;");
 }
 
+/** Escape then convert newlines to <br/> — safe for interpolating into HTML. */
+function escapeMultiline(s: string): string {
+  return escapeHtml(s).replace(/\n/g, "<br/>");
+}
+
+/**
+ * The verify endpoint lives on the SUPABASE project domain
+ * (…supabase.co/auth/v1/verify). The hook's `site_url` points at the public
+ * site (stadium.mn) where that path doesn't exist — links built on it landed
+ * on the SPA and appeared dead. Always build on the project URL.
+ */
 export function buildConfirmationUrl(
   payload: SupabaseEmailHookPayload,
 ): string {
   const { token_hash, redirect_to, email_action_type, site_url } =
     payload.email_data;
-  const base = (site_url || process.env.SUPABASE_URL || "").replace(/\/+$/, "");
+  const base = (process.env.SUPABASE_URL || site_url || "").replace(
+    /\/+$/,
+    "",
+  );
+  // GoTrue's verify endpoint knows a single "email_change" type.
+  const verifyType =
+    email_action_type === "email_change_current" ||
+    email_action_type === "email_change_new"
+      ? "email_change"
+      : email_action_type;
   const params = new URLSearchParams({
     token: token_hash,
-    type: email_action_type,
+    type: verifyType,
     redirect_to,
   });
   return `${base}/auth/v1/verify?${params.toString()}`;
@@ -90,71 +110,228 @@ type RenderedEmail = {
   tag: string;
 };
 
+// --- Brand & config ---------------------------------------------------------
+
 const BRAND_NAME = "Төв Цэнгэлдэх Хүрээлэн";
+/** Short label shown in the footer context line. */
+const BRAND_TAGLINE = "Монголын спорт, соёлын төв";
+
+/** Optional logo image shown in the header. Set EMAIL_LOGO_URL to a hosted
+ *  PNG/SVG (recommended: white/light logo on transparent bg, ~150px wide).
+ *  When unset the header shows a gold monogram chip + brand name. */
+const LOGO_URL = process.env.EMAIL_LOGO_URL?.trim() || "";
+/** Public site link used in the footer. */
+const SITE_LINK = process.env.EMAIL_SITE_LINK?.trim() || "https://stadium.mn";
+/** Support address shown for security-sensitive notes. */
+const SUPPORT_EMAIL = process.env.EMAIL_SUPPORT?.trim() || "help@stadium.mn";
+
+// Palette — pre-blended tones (no CSS opacity, which many clients drop).
+const C = {
+  page: "#eef0f6",
+  card: "#ffffff",
+  cardBorder: "#e4e7f0",
+  headerBase: "#131c7a",
+  headerFrom: "#0b1130",
+  chip: "#1b2350",
+  divider: "#2e3564",
+  ink: "#0b1130",
+  text: "#31374a",
+  muted: "#6b7280",
+  faint: "#8a93b2",
+  accent: "#2230c6",
+  accentDark: "#1a249e",
+  accentText: "#ffffff",
+  gold: "#e8dec4",
+  soft: "#f7f8fc",
+  softBorder: "#e4e7f0",
+  warnBg: "#fff8f0",
+  warnBorder: "#f59e0b",
+  warnText: "#9a3412",
+};
+
+// --- Shell ------------------------------------------------------------------
+
+type NoteKind = "info" | "warn";
+
+/** Dark-mode overrides. Honored by clients that support prefers-color-scheme
+ *  (Apple Mail, iOS Mail, some others); Gmail keeps the light inline styles. */
+const DARK_STYLE = `
+  @media (prefers-color-scheme: dark) {
+    .em-body { background:#0b0e1c !important; }
+    .em-card { background:#141a33 !important; border-color:#232a45 !important; }
+    .em-h1 { color:#f5f6fb !important; }
+    .em-text { color:#c9cdde !important; }
+    .em-muted { color:#9aa1b8 !important; }
+    .em-eyebrow { color:#9aa1b8 !important; }
+    .em-callout { background:#1b2137 !important; }
+    .em-fallback { background:#1b2137 !important; border-color:#2a3050 !important; }
+    .em-mono { color:#c9cdde !important; }
+    .em-divider { border-color:#232a45 !important; }
+    .em-footbrand { color:#e8dec4 !important; }
+  }
+  @media (max-width: 600px) {
+    .em-card { width:100% !important; }
+    .em-cta { width:100% !important; box-sizing:border-box; }
+    .em-pad { padding-left:22px !important; padding-right:22px !important; }
+  }
+`;
 
 function renderShell(opts: {
   preheader: string;
+  eyebrow: string;
   greeting: string;
   intro: string;
   ctaLabel: string;
   ctaUrl: string;
   closing: string;
-  note?: string;
+  note?: { kind: NoteKind; text: string };
 }): { html: string; text: string } {
   const safeCta = escapeHtml(opts.ctaUrl);
   const safeLabel = escapeHtml(opts.ctaLabel);
+  const year = new Date().getFullYear();
+
+  const brandMark = LOGO_URL
+    ? `<img src="${escapeHtml(LOGO_URL)}" alt="${escapeHtml(
+        BRAND_NAME,
+      )}" width="150" style="display:block;border:0;outline:none;text-decoration:none;height:auto;max-width:150px;" />`
+    : `<table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr>
+        <td width="44" style="width:44px;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="44" style="width:44px;height:44px;background:${C.chip};border-radius:12px;">
+            <tr><td align="center" valign="middle" style="height:44px;font-size:15px;font-weight:800;letter-spacing:0.5px;color:${C.gold};">ТЦХ</td></tr>
+          </table>
+        </td>
+        <td style="padding-left:14px;font-size:16px;font-weight:800;letter-spacing:-0.01em;color:${C.gold};">${escapeHtml(
+          BRAND_NAME,
+        )}</td>
+      </tr></table>`;
+
+  const noteBlock = opts.note
+    ? (() => {
+        const warn = opts.note.kind === "warn";
+        const leftBar = warn ? C.warnBorder : C.gold;
+        const fg = warn ? C.warnText : C.muted;
+        return `<tr>
+              <td class="em-pad" style="padding:4px 32px 8px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="em-callout" style="background:${C.soft};border-radius:10px;">
+                  <tr>
+                    <td width="4" style="width:4px;background:${leftBar};border-radius:10px 0 0 10px;">&nbsp;</td>
+                    <td class="em-text" style="padding:13px 16px;font-size:13px;line-height:1.55;color:${fg};">${escapeMultiline(
+                      opts.note.text,
+                    )}</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>`;
+      })()
+    : "";
+
+  const vmlButton = `<!--[if mso]>
+                <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${safeCta}" style="height:48px;v-text-anchor:middle;width:280px;" arcsize="19%" strokecolor="${C.accent}" fillcolor="${C.accent}">
+                  <w:anchorlock/>
+                  <center style="color:${C.accentText};font-family:sans-serif;font-size:16px;font-weight:bold;">${safeLabel}</center>
+                </v:roundrect>
+                <![endif]-->`;
+
   const html = `<!doctype html>
-<html lang="mn">
+<html lang="mn" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="supported-color-schemes" content="light dark" />
     <title>${escapeHtml(BRAND_NAME)}</title>
+    <style>${DARK_STYLE}</style>
+    <!--[if mso]><style>a,td,div,h1{font-family:'Segoe UI',Arial,sans-serif !important;}</style><![endif]-->
   </head>
-  <body style="margin:0;padding:0;background:#f6f7f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Inter,sans-serif;color:#111;">
-    <div style="display:none;opacity:0;visibility:hidden;height:0;overflow:hidden;">
+  <body class="em-body" style="margin:0;padding:0;background:${C.page};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Inter,Arial,sans-serif;color:${C.text};-webkit-font-smoothing:antialiased;">
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;visibility:hidden;mso-hide:all;">
       ${escapeHtml(opts.preheader)}
+      &#847;&zwnj;&#847;&zwnj;&#847;&zwnj;&#847;&zwnj;&#847;&zwnj;&#847;&zwnj;&#847;&zwnj;&#847;&zwnj;
     </div>
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f6f7f9;padding:32px 16px;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="em-body" style="background:${C.page};">
       <tr>
-        <td align="center">
-          <table role="presentation" width="560" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 8px 24px -16px rgba(15,23,42,0.18);">
+        <td align="center" style="padding:24px 16px;">
+          <table role="presentation" width="560" cellspacing="0" cellpadding="0" border="0" class="em-card" style="max-width:560px;width:100%;background:${C.card};border:1px solid ${C.cardBorder};border-radius:16px;overflow:hidden;">
             <tr>
-              <td style="background:linear-gradient(180deg,#0b1130 0%,#131c7a 100%);padding:28px 32px;color:#fff;">
-                <div style="font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:rgba(255,255,255,0.7);">${escapeHtml(BRAND_NAME)}</div>
-                <div style="margin-top:6px;font-size:20px;font-weight:800;letter-spacing:-0.01em;color:#E8DEC4;">${escapeHtml(opts.greeting)}</div>
+              <td bgcolor="${C.headerBase}" style="background-color:${C.headerBase};background:linear-gradient(135deg,${C.headerFrom} 0%,${C.headerBase} 100%);padding:28px 32px;">
+                ${brandMark}
+                <div style="border-top:1px solid ${C.divider};margin-top:20px;font-size:1px;line-height:1px;">&nbsp;</div>
               </td>
             </tr>
             <tr>
-              <td style="padding:28px 32px 8px;font-size:15px;line-height:1.65;color:#1f2937;">
-                ${escapeHtml(opts.intro).replace(/\n/g, "<br/>")}
+              <td class="em-pad" style="padding:30px 32px 0;">
+                <div class="em-eyebrow" style="font-size:12px;line-height:16px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:${C.faint};">${escapeHtml(
+                  opts.eyebrow,
+                )}</div>
+                <div class="em-h1" style="margin-top:8px;font-size:22px;line-height:1.3;font-weight:800;letter-spacing:-0.01em;color:${C.ink};">${escapeHtml(
+                  opts.greeting,
+                )}</div>
               </td>
             </tr>
             <tr>
-              <td style="padding:20px 32px 8px;" align="left">
-                <a href="${safeCta}" style="display:inline-block;background:#2230C6;color:#fff;text-decoration:none;font-weight:700;font-size:14px;padding:12px 22px;border-radius:10px;letter-spacing:0.01em;">${safeLabel}</a>
+              <td class="em-pad em-text" style="padding:14px 32px 0;font-size:15px;line-height:1.65;color:${C.text};">
+                ${escapeMultiline(opts.intro)}
               </td>
             </tr>
             <tr>
-              <td style="padding:8px 32px 4px;font-size:12.5px;line-height:1.6;color:#52525b;">
-                Товч ажиллахгүй бол энэ линкийг хуулж браузэртаа нааж нээгээрэй:<br/>
-                <a href="${safeCta}" style="color:#2230C6;word-break:break-all;text-decoration:underline;">${safeCta}</a>
+              <td class="em-pad" style="padding:28px 32px;" align="center">
+                ${vmlButton}
+                <!--[if !mso]><!-- -->
+                <a href="${safeCta}" class="em-cta" style="display:inline-block;background:${C.accent};color:${C.accentText};text-decoration:none;font-weight:700;font-size:16px;line-height:1;padding:16px 32px;border-radius:10px;border-bottom:2px solid ${C.accentDark};letter-spacing:0.01em;">${safeLabel}</a>
+                <!--<![endif]-->
               </td>
             </tr>
-            ${
-              opts.note
-                ? `<tr><td style="padding:14px 32px 4px;font-size:12px;line-height:1.55;color:#71717a;">${escapeHtml(opts.note)}</td></tr>`
-                : ""
-            }
             <tr>
-              <td style="padding:20px 32px 28px;font-size:13px;line-height:1.6;color:#52525b;border-top:1px solid #f1f1f4;margin-top:12px;">
-                ${escapeHtml(opts.closing)}<br/>
-                <strong style="color:#0f172a;">${escapeHtml(BRAND_NAME)}</strong>
+              <td class="em-pad em-muted" style="padding:0 32px 8px;font-size:12.5px;line-height:1.55;color:${C.muted};">
+                ${escapeHtml(
+                  // fallback helper text is action-agnostic
+                  "Хэрэв товч ажиллахгүй бол доорх холбоосыг хөтчийнхөө хаягийн мөрөнд хуулж тавина уу:",
+                )}
+              </td>
+            </tr>
+            <tr>
+              <td class="em-pad" style="padding:0 32px 6px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" class="em-fallback" style="background:${C.soft};border:1px solid ${C.softBorder};border-radius:8px;">
+                  <tr><td class="em-mono" style="padding:12px 16px;font-family:'SF Mono',SFMono-Regular,ui-monospace,Consolas,Menlo,monospace;font-size:12.5px;line-height:1.5;word-break:break-all;color:${C.accent};">
+                    <a href="${safeCta}" style="color:${C.accent};text-decoration:none;word-break:break-all;">${safeCta}</a>
+                  </td></tr>
+                </table>
+              </td>
+            </tr>
+            ${noteBlock}
+            <tr>
+              <td class="em-pad" style="padding:18px 32px 26px;">
+                <div class="em-divider" style="border-top:1px solid ${C.cardBorder};padding-top:20px;">
+                  <div class="em-text" style="font-size:13px;line-height:1.6;color:${C.muted};">${escapeHtml(
+                    opts.closing,
+                  )}</div>
+                  <div class="em-footbrand" style="font-size:14px;font-weight:800;color:${C.ink};margin-top:2px;">${escapeHtml(
+                    BRAND_NAME,
+                  )}</div>
+                </div>
               </td>
             </tr>
           </table>
-          <div style="max-width:560px;margin:14px auto 0;text-align:center;font-size:11px;color:#a1a1aa;">
-            © ${new Date().getFullYear()} ${escapeHtml(BRAND_NAME)}. Бүх эрх хуулиар хамгаалагдсан.
-          </div>
+          <table role="presentation" width="560" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;width:100%;">
+            <tr>
+              <td align="center" style="padding:18px 24px 0;">
+                <div class="em-muted" style="font-size:12px;line-height:1.6;color:${C.faint};">${escapeHtml(
+                  BRAND_TAGLINE,
+                )}</div>
+                <div style="margin-top:6px;">
+                  <a href="${escapeHtml(
+                    SITE_LINK,
+                  )}" style="font-size:12px;color:${C.accent};text-decoration:underline;">${escapeHtml(
+                    SITE_LINK.replace(/^https?:\/\//, ""),
+                  )}</a>
+                </div>
+                <div class="em-muted" style="margin-top:16px;font-size:12px;line-height:1.6;color:${C.faint};">© ${year} ${escapeHtml(
+                  BRAND_NAME,
+                )}. Бүх эрх хуулиар хамгаалагдсан.</div>
+              </td>
+            </tr>
+          </table>
         </td>
       </tr>
     </table>
@@ -162,143 +339,159 @@ function renderShell(opts: {
 </html>`;
 
   const text = [
+    opts.eyebrow,
+    "",
     opts.greeting,
     "",
     opts.intro,
     "",
     `${opts.ctaLabel}: ${opts.ctaUrl}`,
     "",
-    opts.note ?? "",
+    opts.note?.text ?? "",
+    "",
     opts.closing,
     BRAND_NAME,
+    SITE_LINK,
   ]
-    .filter(Boolean)
+    .filter((line, i, a) => !(line === "" && a[i - 1] === ""))
     .join("\n");
 
   return { html, text };
+}
+
+// --- Per-action content -----------------------------------------------------
+
+type ActionContent = {
+  subject: string;
+  preheader: string;
+  eyebrow: string;
+  intro: string;
+  ctaLabel: string;
+  closing: string;
+  tag: string;
+  note?: { kind: NoteKind; text: string };
+};
+
+const CLOSING = "Хүндэтгэсэн,";
+
+function contentFor(action: EmailActionType): ActionContent {
+  switch (action) {
+    case "signup":
+      return {
+        subject: "Бүртгэлээ баталгаажуулна уу — Төв Цэнгэлдэх Хүрээлэн",
+        preheader: "Бүртгэлээ баталгаажуулна уу — Төв Цэнгэлдэх Хүрээлэн",
+        eyebrow: "Бүртгэл баталгаажуулах",
+        intro:
+          "Та манай сайтад имэйл хаягаараа шинээр бүртгүүллээ. Бүртгэлээ баталгаажуулахын тулд доорх товч дээр дарна уу.\nЭнэ холбоос 24 цагийн дараа хүчингүй болно.",
+        ctaLabel: "Бүртгэлээ баталгаажуулах",
+        closing: CLOSING,
+        tag: "signup-verify",
+        note: {
+          kind: "info",
+          text: "Хэрэв та бүртгэл үүсгээгүй бол энэ имэйлийг тоохгүй орхино уу.",
+        },
+      };
+
+    case "recovery":
+      return {
+        subject: "Нууц үг сэргээх — Төв Цэнгэлдэх Хүрээлэн",
+        preheader: "Нууц үгээ сэргээх холбоос — Төв Цэнгэлдэх Хүрээлэн",
+        eyebrow: "Нууц үг сэргээх",
+        intro:
+          "Та нууц үгээ сэргээх хүсэлт илгээсэн байна. Доорх товч дээр дараад шинэ нууц үгээ тохируулна уу.\nЭнэ холбоос 1 цагийн дараа хүчингүй болно.",
+        ctaLabel: "Нууц үг сэргээх",
+        closing: CLOSING,
+        tag: "password-recovery",
+        note: {
+          kind: "warn",
+          text: "Хэрэв та энэ хүсэлтийг өөрөө илгээгээгүй бол энэ имэйлийг тоохгүй орхино уу — таны бүртгэл аюулгүй хэвээр байна.",
+        },
+      };
+
+    case "magiclink":
+      return {
+        subject: "Холбоосоор нэвтрэх — Төв Цэнгэлдэх Хүрээлэн",
+        preheader: "Нэг товшилтоор нэвтрэх холбоос — Төв Цэнгэлдэх Хүрээлэн",
+        eyebrow: "Нэвтрэх холбоос",
+        intro:
+          "Доорх товч дээр дарж бүртгэлдээ шууд нэвтэрнэ үү.\nЭнэ холбоос 1 цагийн дараа хүчингүй болно.",
+        ctaLabel: "Нэвтрэх",
+        closing: CLOSING,
+        tag: "magiclink",
+        note: {
+          kind: "warn",
+          text: "Хэрэв та нэвтрэх хүсэлтийг өөрөө илгээгээгүй бол энэ имэйлийг тоохгүй орхино уу.",
+        },
+      };
+
+    case "email_change_current":
+    case "email_change_new":
+      return {
+        subject: "Имэйл хаяг өөрчлөх — Төв Цэнгэлдэх Хүрээлэн",
+        preheader: "Имэйл хаягийн өөрчлөлтийг баталгаажуулна уу",
+        eyebrow: "Имэйл хаяг өөрчлөх",
+        intro:
+          "Та бүртгэлийнхээ имэйл хаягаа өөрчлөх хүсэлт илгээсэн байна. Доорх товч дээр дараад өөрчлөлтийг баталгаажуулна уу.",
+        ctaLabel: "Имэйл өөрчлөлтийг баталгаажуулах",
+        closing: CLOSING,
+        tag: "email-change",
+        note: {
+          kind: "warn",
+          text: `Хэрэв та энэ хүсэлтийг өөрөө илгээгээгүй бол нэн даруй ${SUPPORT_EMAIL} хаягаар бидэнтэй холбогдоно уу.`,
+        },
+      };
+
+    case "invite":
+      return {
+        subject: "Урилга — Төв Цэнгэлдэх Хүрээлэн",
+        preheader: "Танд урилга ирлээ — Төв Цэнгэлдэх Хүрээлэн",
+        eyebrow: "Урилга",
+        intro:
+          "Танд манай платформд нэгдэх урилга ирлээ. Доорх товч дээр дарж бүртгэлээ үүсгэнэ үү.",
+        ctaLabel: "Урилгыг хүлээн авах",
+        closing: CLOSING,
+        tag: "invite",
+      };
+
+    case "reauthentication":
+    default:
+      return {
+        subject: "Баталгаажуулах хүсэлт — Төв Цэнгэлдэх Хүрээлэн",
+        preheader: "Үйлдлээ баталгаажуулна уу — Төв Цэнгэлдэх Хүрээлэн",
+        eyebrow: "Баталгаажуулалт",
+        intro:
+          "Та бүртгэлдээ хийж буй үйлдлээ баталгаажуулах шаардлагатай байна. Доорх товч дээр дарна уу.",
+        ctaLabel: "Баталгаажуулах",
+        closing: CLOSING,
+        tag: `auth-${action}`,
+      };
+  }
 }
 
 export function renderEmail(payload: SupabaseEmailHookPayload): RenderedEmail {
   const fullName = pickFullName(payload);
   const ctaUrl = buildConfirmationUrl(payload);
   const action = payload.email_data.email_action_type;
-  const greetingName = fullName ? fullName : "Сайн байна уу";
+  const greeting = fullName ? `Сайн байна уу, ${fullName}!` : "Сайн байна уу!";
 
-  switch (action) {
-    case "signup": {
-      const r = renderShell({
-        preheader: "Бүртгэлээ баталгаажуулна уу — Төв Цэнгэлдэх",
-        greeting: `${greetingName}!`,
-        intro:
-          "Та манай вэбсайт дээр имэйл хаягаараа шинээр бүртгүүлсэн байна. Бүртгэлээ баталгаажуулахын тулд доорх товчин дээр дарна уу. Линкийн хүчинтэй хугацаа: 24 цаг.",
-        ctaLabel: "Бүртгэлээ баталгаажуулах",
-        ctaUrl,
-        note: "Хэрэв та энэ үйлдлийг хийгээгүй бол энэ имэйлийг үл тоомсорлоорой.",
-        closing: "Хүндэтгэсэн,",
-      });
-      return {
-        subject: "Бүртгэлээ баталгаажуулна уу — Төв Цэнгэлдэх",
-        htmlBody: r.html,
-        textBody: r.text,
-        tag: "signup-verify",
-      };
-    }
+  const c = contentFor(action);
+  const r = renderShell({
+    preheader: c.preheader,
+    eyebrow: c.eyebrow,
+    greeting,
+    intro: c.intro,
+    ctaLabel: c.ctaLabel,
+    ctaUrl,
+    closing: c.closing,
+    note: c.note,
+  });
 
-    case "recovery": {
-      const r = renderShell({
-        preheader: "Нууц үг сэргээх — Төв Цэнгэлдэх",
-        greeting: `${greetingName}!`,
-        intro:
-          "Та нууц үгээ сэргээх хүсэлт илгээсэн байна. Доорх товчин дээр дараад шинэ нууц үгээ тохируулна уу. Линкийн хүчинтэй хугацаа: 1 цаг.",
-        ctaLabel: "Нууц үг сэргээх",
-        ctaUrl,
-        note: "Хэрэв та энэ хүсэлтийг өөрөө илгээгээгүй бол энэ имэйлийг үл тоомсорлоорой — таны бүртгэл аюулгүй хэвээр байгаа.",
-        closing: "Хүндэтгэсэн,",
-      });
-      return {
-        subject: "Нууц үг сэргээх — Төв Цэнгэлдэх",
-        htmlBody: r.html,
-        textBody: r.text,
-        tag: "password-recovery",
-      };
-    }
-
-    case "magiclink": {
-      const r = renderShell({
-        preheader: "Холбоосоор нэвтрэх — Төв Цэнгэлдэх",
-        greeting: `${greetingName}!`,
-        intro:
-          "Доорх товчин дээр дарж бүртгэлдээ нэвтэрнэ үү. Линкийн хүчинтэй хугацаа: 1 цаг.",
-        ctaLabel: "Нэвтрэх",
-        ctaUrl,
-        note: "Хэрэв та нэвтрэх хүсэлт өөрөө илгээгээгүй бол энэ имэйлийг үл тоомсорлоорой.",
-        closing: "Хүндэтгэсэн,",
-      });
-      return {
-        subject: "Холбоосоор нэвтрэх — Төв Цэнгэлдэх",
-        htmlBody: r.html,
-        textBody: r.text,
-        tag: "magiclink",
-      };
-    }
-
-    case "email_change_current":
-    case "email_change_new": {
-      const r = renderShell({
-        preheader: "Имэйл хаяг өөрчлөх — Төв Цэнгэлдэх",
-        greeting: `${greetingName}!`,
-        intro:
-          "Та бүртгэлийнхээ имэйл хаягийг өөрчлөх хүсэлт илгээсэн байна. Доорх товчин дээр дараад баталгаажуулна уу.",
-        ctaLabel: "Имэйл өөрчлөлтийг баталгаажуулах",
-        ctaUrl,
-        note: "Хэрэв та энэ хүсэлтийг өөрөө илгээгээгүй бол нэн даруй бидэнтэй холбогдоно уу.",
-        closing: "Хүндэтгэсэн,",
-      });
-      return {
-        subject: "Имэйл хаяг өөрчлөх — Төв Цэнгэлдэх",
-        htmlBody: r.html,
-        textBody: r.text,
-        tag: "email-change",
-      };
-    }
-
-    case "invite": {
-      const r = renderShell({
-        preheader: "Урилга — Төв Цэнгэлдэх",
-        greeting: `${greetingName}!`,
-        intro:
-          "Танд манай платформын урилга илгээгдлээ. Доорх товчин дээр дарж бүртгэлээ үүсгэнэ үү.",
-        ctaLabel: "Урилгыг хүлээн авах",
-        ctaUrl,
-        closing: "Хүндэтгэсэн,",
-      });
-      return {
-        subject: "Урилга — Төв Цэнгэлдэх",
-        htmlBody: r.html,
-        textBody: r.text,
-        tag: "invite",
-      };
-    }
-
-    case "reauthentication":
-    default: {
-      const r = renderShell({
-        preheader: "Баталгаажуулах хүсэлт — Төв Цэнгэлдэх",
-        greeting: `${greetingName}!`,
-        intro:
-          "Та бүртгэлийнхээ үйлдлийг баталгаажуулах шаардлагатай байна. Доорх товчин дээр дарна уу.",
-        ctaLabel: "Баталгаажуулах",
-        ctaUrl,
-        closing: "Хүндэтгэсэн,",
-      });
-      return {
-        subject: "Баталгаажуулах хүсэлт — Төв Цэнгэлдэх",
-        htmlBody: r.html,
-        textBody: r.text,
-        tag: `auth-${action}`,
-      };
-    }
-  }
+  return {
+    subject: c.subject,
+    htmlBody: r.html,
+    textBody: r.text,
+    tag: c.tag,
+  };
 }
 
 // --- Resend transactional email ------------------------------------------
