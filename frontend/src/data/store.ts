@@ -52,6 +52,10 @@ export type OrderRecord = {
   status: OrderStatus;
   refundedAt?: string;
   accessExpiresAt?: string | null;
+  /** Ticket kind — self-refund is only offered for `live` tickets. */
+  ticketType?: "live" | "replay";
+  /** Live start (live_start_at ?? start_time) — refund closes 30 min after. */
+  liveStartAt?: string;
   image?: string;
   date?: string;
   payment?: string;
@@ -580,6 +584,8 @@ export async function listMyOrders(): Promise<OrderRecord[]> {
         status: t.status === "refunded" ? "refunded" : ("paid" as OrderStatus),
         refundedAt: t.refunded_at || undefined,
         accessExpiresAt: t.access_expires_at,
+        ticketType: t.ticket_type ?? undefined,
+        liveStartAt: ev?.live_start_at || ev?.start_time || undefined,
         payment: "qpay",
         paymentName: "QPay",
         image: ev?.image || undefined,
