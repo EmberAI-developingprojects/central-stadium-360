@@ -29,6 +29,19 @@ export default defineConfig({
     host: true,
     port: 5173,
     open: false,
+    // Dev-only: proxy API + chat WebSocket to the backend so the app talks to a
+    // single origin (the Vite dev server). This makes it work unchanged from a
+    // phone over LAN — the device hits http://<lan-ip>:5173/api/... and Vite
+    // forwards to the backend on the dev machine — with no CORS and no
+    // "localhost = the phone" problem. Requires the frontend to use a relative
+    // API base (VITE_API_BASE_URL empty; see .env.local). No effect on builds.
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        ws: true,
+      },
+    },
   },
   build: {
     chunkSizeWarningLimit: 1024,
