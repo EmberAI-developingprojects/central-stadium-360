@@ -1211,8 +1211,19 @@ export function ViewerOverlay({
             style={
               isFs || pseudoFs
                 ? {
+                    // Fill the stage via absolute positioning rather than
+                    // flex-grow. In the iOS pseudo-fullscreen path the stage is
+                    // `position:fixed` + `rotate(90deg)`, and Safari fails to
+                    // resolve a flex child's height inside a transformed
+                    // container — collapsing the video to its small inline size.
+                    // top/right/bottom/left:0 give a definite fill immune to
+                    // that bug and identical in the real Fullscreen-API path.
                     background: "#000",
-                    flex: "1 1 0%",
+                    position: "absolute",
+                    top: 0,
+                    right: 0,
+                    bottom: 0,
+                    left: 0,
                     width: "100%",
                     height: "100%",
                     maxHeight: "none",
