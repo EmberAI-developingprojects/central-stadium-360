@@ -119,6 +119,7 @@ export function ViewerOverlay({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const stageRef = useRef<HTMLElement>(null);
+  const shellRef = useRef<HTMLDivElement>(null);
   const chatListRef = useRef<HTMLDivElement>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const audioSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
@@ -768,6 +769,45 @@ export function ViewerOverlay({
     };
   }, []);
 
+  // Make the stage shell fill the fullscreen area. This MUST use inline
+  // `!important`. The shell carries mobile utilities that pin/offset it —
+  // `max-[720px]:!h-[calc(100vw*9/16)]` (56.25vw !important height) and
+  // `max-[1100px]:!mx-[calc(50%-50vw)]` (a negative margin) — that are meant to
+  // be neutralised in fullscreen by the `[.is-fs_&]:!h-auto` / `!mx-0` overrides.
+  // But those overrides use a descendant-combinator arbitrary variant
+  // (`.is-fs .shell`) which the production (minified) CSS drops/mis-escapes, so
+  // they silently lose to the mobile !important utilities — the shell keeps its
+  // small 16:9 height and a ~half-viewport left margin (works in the unminified
+  // dev build, breaks in prod). Applying the fill imperatively with `important`
+  // priority beats any class rule in every build.
+  useEffect(() => {
+    const el = shellRef.current;
+    if (!el) return;
+    const fillProps: Array<[string, string]> = [
+      ["position", "absolute"],
+      ["top", "0"],
+      ["right", "0"],
+      ["bottom", "0"],
+      ["left", "0"],
+      ["margin", "0"],
+      ["width", "100%"],
+      ["height", "100%"],
+      ["max-height", "none"],
+      ["border-radius", "0"],
+      ["box-shadow", "none"],
+    ];
+    if (isFs || pseudoFs) {
+      for (const [prop, val] of fillProps) {
+        el.style.setProperty(prop, val, "important");
+      }
+    } else {
+      for (const [prop] of fillProps) el.style.removeProperty(prop);
+    }
+    return () => {
+      for (const [prop] of fillProps) el.style.removeProperty(prop);
+    };
+  }, [isFs, pseudoFs]);
+
   // Auto-hide controls when the pointer is idle over the video (YouTube-style),
   // on both desktop overlay and fullscreen.
   useEffect(() => {
@@ -1207,31 +1247,9 @@ export function ViewerOverlay({
           }
         >
           <div
+            ref={shellRef}
             className={VIEWER_STAGE_SHELL_CLS}
-            style={
-              isFs || pseudoFs
-                ? {
-                    // Fill the stage via absolute positioning rather than
-                    // flex-grow. In the iOS pseudo-fullscreen path the stage is
-                    // `position:fixed` + `rotate(90deg)`, and Safari fails to
-                    // resolve a flex child's height inside a transformed
-                    // container — collapsing the video to its small inline size.
-                    // top/right/bottom/left:0 give a definite fill immune to
-                    // that bug and identical in the real Fullscreen-API path.
-                    background: "#000",
-                    position: "absolute",
-                    top: 0,
-                    right: 0,
-                    bottom: 0,
-                    left: 0,
-                    width: "100%",
-                    height: "100%",
-                    maxHeight: "none",
-                    borderRadius: 0,
-                    boxShadow: "none",
-                  }
-                : { background: "#000" }
-            }
+            style={{ background: "#000" }}
           >
             <video
               ref={videoRef}
@@ -1596,6 +1614,11 @@ export function ViewerOverlay({
             className={VIEWER_MOBILE_CAMS_CLS}
             role="group"
             aria-label="Камерын өнцөг"
+            // Hidden in fullscreen. The `[.is-fs_&]:!hidden` class is dropped by
+            // the prod CSS minifier (see the shell-fill note above), so hide it
+            // inline — a normal inline style still beats the non-important
+            // `max-[1100px]:flex` utility in every build.
+            style={{ display: isFs || pseudoFs ? "none" : undefined }}
           >
             {cams.map((cam, i) => (
               <button
