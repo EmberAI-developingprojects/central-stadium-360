@@ -132,6 +132,16 @@ export default function OrderDetail() {
 
   const isRefunded = order?.status === "refunded";
 
+  const REFUND_WINDOW_MS = 30 * 60 * 1000;
+  const liveStartMs = order?.liveStartAt
+    ? new Date(order.liveStartAt).getTime()
+    : NaN;
+  const refundWindowOpen =
+    !Number.isFinite(liveStartMs) ||
+    Date.now() < liveStartMs + REFUND_WINDOW_MS;
+  const canRefund =
+    !isRefunded && (order?.ticketType ?? "live") === "live" && refundWindowOpen;
+
   const onConfirmRefund = async () => {
     if (!code || refunding) return;
     setRefunding(true);
@@ -148,8 +158,15 @@ export default function OrderDetail() {
           : prev,
       );
       setConfirmOpen(false);
-    } catch {
-      setRefundError(t("order_refund_error"));
+    } catch (err) {
+      const codeMsg = err instanceof Error ? err.message : "";
+      setRefundError(
+        codeMsg === "refund_window_closed"
+          ? t("order_refund_window_closed")
+          : codeMsg === "not_refundable"
+            ? t("order_refund_not_refundable")
+            : t("order_refund_error"),
+      );
     } finally {
       setRefunding(false);
     }
@@ -248,9 +265,7 @@ export default function OrderDetail() {
                 className={HERO_IMG_CLS}
               />
               <div className={HERO_META_CLS}>
-                <span
-                  className={isRefunded ? STATUS_REFUNDED_CLS : STATUS_CLS}
-                >
+                <span className={isRefunded ? STATUS_REFUNDED_CLS : STATUS_CLS}>
                   <span
                     className={
                       isRefunded ? STATUS_DOT_REFUNDED_CLS : STATUS_DOT_CLS
@@ -374,7 +389,14 @@ export default function OrderDetail() {
                   order.ebarimtQrData) && (
                   <div className="mt-[14px] pt-[14px] border-t border-dashed border-[rgba(255,255,255,0.10)]">
                     {order.ebarimtId && (
-                      <p className={PAY_METHOD_CLS} style={{ marginTop: 0, paddingTop: 0, borderTop: "none" }}>
+                      <p
+                        className={PAY_METHOD_CLS}
+                        style={{
+                          marginTop: 0,
+                          paddingTop: 0,
+                          borderTop: "none",
+                        }}
+                      >
                         <span>{t("order_ebarimt_ddtd")}</span>
                         <strong
                           className={`${PAY_METHOD_STRONG_CLS} [font-family:'SFMono-Regular',Menlo,Consolas,monospace] tracking-[0.02em] break-all text-right`}
@@ -423,7 +445,7 @@ export default function OrderDetail() {
                   {t("order_watch_live")}
                 </Link>
               )}
-              {!isRefunded && (
+              {canRefund && (
                 <button
                   type="button"
                   className={`${WATCH_BTN_CLS} ${WATCH_BTN_GHOST_CLS} ${REFUND_BTN_CLS}`}
@@ -479,7 +501,10 @@ export default function OrderDetail() {
             aria-labelledby="refund-confirm-title"
             onClick={() => !refunding && setConfirmOpen(false)}
           >
-            <div className={MODAL_CARD_CLS} onClick={(e) => e.stopPropagation()}>
+            <div
+              className={MODAL_CARD_CLS}
+              onClick={(e) => e.stopPropagation()}
+            >
               <h2 id="refund-confirm-title" className={MODAL_TITLE_CLS}>
                 {t("order_refund_confirm_title")}
               </h2>

@@ -171,7 +171,13 @@ const MY_SELECT_COLS =
  * ticket to `refunded`. Ownership is enforced (a user can only refund their own
  * ticket) and only a `paid` ticket is refundable. Idempotent: re-refunding an
  * already-`refunded` ticket returns the current row without erroring.
+ *
+ * Business rule: only `live` tickets are self-refundable, and only until
+ * 30 minutes after the event's live start (live_start_at ?? start_time).
+ * Admin refunds (admin-tickets route) stay unrestricted for support cases.
  */
+const REFUND_WINDOW_AFTER_START_MS = 30 * 60 * 1000;
+
 tickets.post("/:id/refund", async (c) => {
   const user = c.get("user");
   const id = c.req.param("id");
@@ -185,13 +191,15 @@ tickets.post("/:id/refund", async (c) => {
 
   const { data: existing, error: selErr } = await admin
     .from("tickets")
-    .select("id,user_id,status,ebarimt_id")
+    .select("id,user_id,status,ebarimt_id,ticket_type,event_id")
     .eq("id", id)
     .maybeSingle<{
       id: string;
       user_id: string;
       status: DbTicket["status"];
       ebarimt_id: string | null;
+      ticket_type: DbTicket["ticket_type"];
+      event_id: string;
     }>();
   if (selErr) {
     return c.json({ ok: false, error: "internal_error" } as const, 500);
@@ -216,6 +224,29 @@ tickets.post("/:id/refund", async (c) => {
   }
   if (existing.status !== "paid") {
     return c.json({ ok: false, error: "not_paid" } as const, 409);
+  }
+
+  // Only live tickets are self-refundable.
+  if (existing.ticket_type !== "live") {
+    return c.json({ ok: false, error: "not_refundable" } as const, 409);
+  }
+
+  // Refund window: until 30 minutes after the live start. An event without a
+  // start timestamp (unscheduled) stays refundable.
+  const { data: ev } = await admin
+    .from("events")
+    .select("start_time,live_start_at")
+    .eq("id", existing.event_id)
+    .maybeSingle<{ start_time: string | null; live_start_at: string | null }>();
+  const startIso = ev?.live_start_at ?? ev?.start_time ?? null;
+  if (startIso) {
+    const startMs = new Date(startIso).getTime();
+    if (
+      Number.isFinite(startMs) &&
+      Date.now() > startMs + REFUND_WINDOW_AFTER_START_MS
+    ) {
+      return c.json({ ok: false, error: "refund_window_closed" } as const, 409);
+    }
   }
 
   // Void the fiscal eBarimt receipt first. Best-effort: it never throws, so a

@@ -215,6 +215,8 @@
   "order_refunded_at": "Refunded at",
   "order_refunding": "Refunding…",
   "order_refund_error": "Refund failed. Please try again.",
+  "order_refund_window_closed": "The refund window has closed — tickets can only be refunded within 30 minutes after the live stream starts.",
+  "order_refund_not_refundable": "This ticket type is not refundable.",
   "order_refund_confirm_title": "Refund this ticket?",
   "order_refund_confirm_desc": "Your ticket will be cancelled and the e-receipt voided in the tax system. This cannot be undone.",
   "order_refund_confirm_yes": "Yes, refund",
