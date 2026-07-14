@@ -72,7 +72,16 @@ const dateFmt = (iso: string) => {
 };
 
 const camLabel = (rec: DbRecording) => `Камер ${rec.camera_number}`;
-const camSub = (_rec: DbRecording) => "360°";
+// With multi-session events a camera can have several recordings; the session
+// start time is what tells them apart ("7/11 11:04" vs "7/12 09:40").
+const camSub = (rec: DbRecording) => {
+  if (!rec.recording_started_at) return "360°";
+  const d = new Date(rec.recording_started_at);
+  if (Number.isNaN(d.getTime())) return "360°";
+  const ub = new Date(d.getTime() + 8 * 60 * 60 * 1000); // Asia/Ulaanbaatar
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${ub.getUTCMonth() + 1}/${ub.getUTCDate()} ${pad(ub.getUTCHours())}:${pad(ub.getUTCMinutes())}`;
+};
 
 export default function WatchVOD() {
   const { eventId } = useParams<{ eventId: string }>();
@@ -299,7 +308,13 @@ function VODViewer({ event }: { event: VODEventDetail }) {
 
   const recordings = useMemo(
     () =>
-      [...event.recordings].sort((a, b) => a.camera_number - b.camera_number),
+      [...event.recordings].sort(
+        (a, b) =>
+          a.camera_number - b.camera_number ||
+          (a.recording_started_at ?? "").localeCompare(
+            b.recording_started_at ?? "",
+          ),
+      ),
     [event.recordings],
   );
 
