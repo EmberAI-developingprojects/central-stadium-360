@@ -328,7 +328,7 @@ adminEvents.delete("/:id", async (c) => {
 });
 
 const RECORDING_COLS =
-  "id,event_id,camera_number,channel_arn,s3_bucket,s3_key_prefix,master_playlist_path,duration_seconds,recording_started_at,recording_ended_at,status,created_at";
+  "id,event_id,camera_number,channel_arn,s3_bucket,s3_key_prefix,master_playlist_path,duration_seconds,recording_started_at,recording_ended_at,status,created_at,chapters";
 
 adminEvents.get("/:id/recordings", async (c) => {
   const admin = getSupabaseAdmin();
