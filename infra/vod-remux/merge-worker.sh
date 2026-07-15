@@ -1,22 +1,30 @@
 #!/bin/bash
-# EC2 user-data worker: concat each camera's session MP4s (already in S3) into
-# one merged.mp4 per camera — stream-copy only, fully streaming via presigned
-# URLs (no local video storage) — then upsert a single recordings row per cam
-# with YouTube-style chapter offsets and delete the per-session rows.
+# EC2 user-data worker (v2): concat each camera's session MP4s into one
+# merged.mp4 per camera with YouTube-style chapters.
 #
-# Log ships to s3://360record/wowza/_merge/log.txt; DONE marker on success;
-# instance poweroff (launched with terminate-on-shutdown).
+# v1 failed: ffmpeg's concat demuxer is unreliable on fragmented MP4 inputs,
+# and a bare `ffmpeg | aws s3 cp` pipeline hid the failure (pipeline status =
+# last command). v2 changes:
+#   * classic MPEG-TS intermediate: each session is stream-copied to TS with
+#     -output_ts_offset so timestamps are continuous, byte-concatenated, then
+#     remuxed once into a fragmented MP4 — all streaming, no local storage
+#   * set -o pipefail + explicit stage-failure marker files
+#   * post-upload size verification against the sum of the source objects
+#     BEFORE the recordings row is touched; session rows are only deleted
+#     after a verified merge
+#   * http reconnect + read timeouts so a flaky read fails fast instead of
+#     hanging or corrupting the stream
 #
 # Required env (injected by launch-merge.sh):
 #   AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY
 #   SUPABASE_URL / SUPABASE_SERVICE_KEY
 #   EVENT_ID
-set -u
+set -u -o pipefail
 export AWS_DEFAULT_REGION=ap-northeast-2
 BUCKET=360record
 LOG=/var/log/merge.log
 exec >>"$LOG" 2>&1
-echo "=== merge worker start $(date -u) ==="
+echo "=== merge worker v2 start $(date -u) ==="
 
 dnf install -y tar xz >/dev/null 2>&1 || true
 if ! command -v ffmpeg >/dev/null; then
@@ -25,6 +33,8 @@ if ! command -v ffmpeg >/dev/null; then
   cp /tmp/ffmpeg-*-static/ffmpeg /usr/local/bin/ffmpeg
 fi
 ( while true; do aws s3 cp "$LOG" "s3://$BUCKET/wowza/_merge/log.txt" >/dev/null 2>&1; sleep 60; done ) &
+
+HTTP_OPTS=(-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 15 -rw_timeout 30000000)
 
 # cam|total_dur_s|started_at|ended_at|vid1:dur1:label1|vid2:dur2:label2|...
 CAMS='
@@ -38,31 +48,58 @@ FAILED=0
 while IFS='|' read -r cam total started ended s1 s2 s3x; do
   [ -z "$cam" ] && continue
   key="wowza/$EVENT_ID/$cam/merged.mp4"
-  est=$(( total * 1830000 ))
+  camnum=${cam#cam}
 
-  existing=$(aws s3api head-object --bucket "$BUCKET" --key "$key" --query ContentLength --output text 2>/dev/null || echo 0)
-  if [ "$existing" -gt $(( est * 7 / 10 )) ]; then
-    echo "[$cam] merged.mp4 already present ($existing bytes) — skip concat"
-  else
-    listfile="/tmp/$cam.ffconcat"
-    echo "ffconcat version 1.0" > "$listfile"
+  # sum of source object sizes = verification baseline
+  src_sum=0
+  for seg in "$s1" "$s2" "$s3x"; do
+    [ -z "$seg" ] && continue
+    vid="${seg%%:*}"
+    sz=$(aws s3api head-object --bucket "$BUCKET" --key "wowza/$EVENT_ID/$cam/$vid.mp4" --query ContentLength --output text 2>/dev/null || echo 0)
+    if [ "$sz" -lt 1000000000 ]; then
+      echo "[$cam] SOURCE MISSING/TOO SMALL: $vid ($sz bytes) — abort cam"; src_sum=0; break
+    fi
+    src_sum=$(( src_sum + sz ))
+  done
+  if [ "$src_sum" -eq 0 ]; then FAILED=1; continue; fi
+
+  echo "[$cam] merge start (sources $((src_sum/1000000000)) GB) $(date -u)"
+  rm -f "/tmp/$cam.stage1fail"
+
+  # stage 1 (subshell): each session → MPEG-TS with a cumulative timestamp
+  # offset, byte-concatenated on stdout; stage 2: single remux to fragmented MP4
+  (
+    off=0
     for seg in "$s1" "$s2" "$s3x"; do
       [ -z "$seg" ] && continue
-      vid="${seg%%:*}"
+      vid="${seg%%:*}"; rest="${seg#*:}"; dur="${rest%%:*}"
       url=$(aws s3 presign "s3://$BUCKET/wowza/$EVENT_ID/$cam/$vid.mp4" --expires-in 43200)
-      printf "file '%s'\n" "$url" >> "$listfile"
+      if ! ffmpeg -nostdin -loglevel error "${HTTP_OPTS[@]}" -i "$url" \
+          -map 0:v:0 -map 0:a:0 -c copy -f mpegts -output_ts_offset "$off" - ; then
+        touch "/tmp/$cam.stage1fail"; exit 1
+      fi
+      off=$(( off + ${dur%%.*} ))
     done
-    echo "[$cam] concat start ($total s, est $((est/1000000000)) GB) $(date -u)"
-    if ! ffmpeg -nostdin -loglevel error -protocol_whitelist file,http,https,tcp,tls \
-        -f concat -safe 0 -i "$listfile" -map 0:v:0 -map 0:a:0 -c copy \
-        -f mp4 -movflags frag_keyframe+empty_moov+default_base_moof - \
-      | aws s3 cp - "s3://$BUCKET/$key" --expected-size "$est"; then
-      echo "[$cam] CONCAT FAILED"; FAILED=1; continue
-    fi
-    echo "[$cam] upload done $(date -u)"
+  ) \
+  | ffmpeg -nostdin -loglevel error -f mpegts -i - \
+      -map 0:v:0 -map 0:a:0 -c copy -bsf:a aac_adtstoasc \
+      -f mp4 -movflags frag_keyframe+empty_moov+default_base_moof - \
+  | aws s3 cp - "s3://$BUCKET/$key" --expected-size $(( src_sum + src_sum / 10 ))
+  rc=$?
+
+  if [ "$rc" -ne 0 ] || [ -e "/tmp/$cam.stage1fail" ]; then
+    echo "[$cam] MERGE PIPELINE FAILED rc=$rc stage1fail=$([ -e /tmp/$cam.stage1fail ] && echo yes || echo no)"
+    FAILED=1; continue
   fi
 
-  # chapters json from cumulative offsets
+  out_sz=$(aws s3api head-object --bucket "$BUCKET" --key "$key" --query ContentLength --output text 2>/dev/null || echo 0)
+  low=$(( src_sum * 97 / 100 )); high=$(( src_sum * 105 / 100 ))
+  if [ "$out_sz" -lt "$low" ] || [ "$out_sz" -gt "$high" ]; then
+    echo "[$cam] SIZE VERIFY FAILED out=$out_sz expected≈$src_sum — merged NOT registered"
+    FAILED=1; continue
+  fi
+  echo "[$cam] upload verified ($((out_sz/1000000000)) GB) $(date -u)"
+
   chapters="["; acc=0; first=1
   for seg in "$s1" "$s2" "$s3x"; do
     [ -z "$seg" ] && continue
@@ -72,7 +109,6 @@ while IFS='|' read -r cam total started ended s1 s2 s3x; do
     acc=$(( acc + dur )); first=0
   done
   chapters="$chapters]"
-  camnum=${cam#cam}
 
   code=$(curl -s -o /tmp/up_out -w "%{http_code}" -X POST \
     "$SUPABASE_URL/rest/v1/recordings?on_conflict=event_id,channel_arn" \
@@ -96,14 +132,13 @@ while IFS='|' read -r cam total started ended s1 s2 s3x; do
   fi
   echo "[$cam] merged row upserted"
 
-  # retire the per-session rows (keep only the merged one)
-  del=$(curl -s -o /tmp/del_out -w "%{http_code}" -X DELETE \
+  del=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE \
     "$SUPABASE_URL/rest/v1/recordings?event_id=eq.$EVENT_ID&camera_number=eq.$camnum&channel_arn=like.wowza:$cam:*" \
     -H "apikey: $SUPABASE_SERVICE_KEY" -H "Authorization: Bearer $SUPABASE_SERVICE_KEY")
-  echo "[$cam] session rows deleted (http=$del)"
+  echo "[$cam] session rows retired (http=$del)"
 done <<< "$CAMS"
 
-echo "=== merge worker end FAILED=$FAILED $(date -u) ==="
+echo "=== merge worker v2 end FAILED=$FAILED $(date -u) ==="
 aws s3 cp "$LOG" "s3://$BUCKET/wowza/_merge/log.txt"
 if [ "$FAILED" -eq 0 ]; then
   echo DONE > /tmp/done && aws s3 cp /tmp/done "s3://$BUCKET/wowza/_merge/DONE"
