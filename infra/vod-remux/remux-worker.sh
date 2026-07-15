@@ -12,7 +12,7 @@
 #   AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY  – S3 writer
 #   SUPABASE_URL / SUPABASE_SERVICE_KEY        – recordings row upsert
 #   EVENT_ID                                   – target event uuid
-set -u
+set -u -o pipefail
 export AWS_DEFAULT_REGION=ap-northeast-2
 BUCKET=360record
 LOG=/var/log/remux.log
@@ -55,20 +55,36 @@ process_job() {
   # ~12.2 Mbps A/V + 20% headroom for the multipart size hint
   local est_bytes=$(( dur_s * 1830000 ))
 
+  # Complete = at least ~10.4 Mbps × duration (actual streams average ~12.1
+  # Mbps); smaller objects are truncated leftovers from a failed attempt and
+  # must be re-remuxed, not skipped. (est_bytes stays high — it is only the
+  # multipart size hint.)
+  local min_ok=$(( dur_s * 1300000 ))
   local existing
   existing=$(aws s3api head-object --bucket "$BUCKET" --key "$key" --query ContentLength --output text 2>/dev/null || echo 0)
-  if [ "$existing" -gt 1000000000 ]; then
+  if [ "$existing" -gt "$min_ok" ]; then
     echo "[$cam/$vid] already in S3 ($existing bytes) — skip upload"
   else
+    [ "$existing" -gt 0 ] && echo "[$cam/$vid] existing object truncated ($existing < $min_ok) — re-remuxing"
     echo "[$cam/$vid] remux start ($dur_s s, est $((est_bytes/1000000000)) GB) $(date -u)"
-    if ! ffmpeg -nostdin -loglevel error -i "$url" \
+    # -rw_timeout: fail a stalled HTTP read after 30s instead of hanging the
+    # pipe forever; reconnect flags let ffmpeg resume transient origin drops.
+    if ! ffmpeg -nostdin -loglevel error \
+        -rw_timeout 30000000 -reconnect 1 -reconnect_on_network_error 1 \
+        -reconnect_delay_max 30 -i "$url" \
         -map 0:v:0 -map 0:a:0 -c copy \
         -f mp4 -movflags frag_keyframe+empty_moov+default_base_moof - \
       | aws s3 cp - "s3://$BUCKET/$key" --expected-size "$est_bytes"; then
       echo "[$cam/$vid] FAILED"
       return 1
     fi
-    echo "[$cam/$vid] upload done $(date -u)"
+    local out_sz
+    out_sz=$(aws s3api head-object --bucket "$BUCKET" --key "$key" --query ContentLength --output text 2>/dev/null || echo 0)
+    if [ "$out_sz" -lt "$min_ok" ]; then
+      echo "[$cam/$vid] SIZE VERIFY FAILED ($out_sz < $min_ok)"
+      return 1
+    fi
+    echo "[$cam/$vid] upload done + verified ($out_sz bytes) $(date -u)"
   fi
 
   # recording_started_at = created_at - duration

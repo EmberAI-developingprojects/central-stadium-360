@@ -63,8 +63,19 @@ while IFS='|' read -r cam total started ended s1 s2 s3x; do
   done
   if [ "$src_sum" -eq 0 ]; then FAILED=1; continue; fi
 
+  # Already-verified merged object (a previous run) → skip straight to the row
+  # upsert so re-runs only redo the failed cameras.
+  merged_sz=$(aws s3api head-object --bucket "$BUCKET" --key "$key" --query ContentLength --output text 2>/dev/null || echo 0)
+  if [ "$merged_sz" -ge $(( src_sum * 97 / 100 )) ] && [ "$merged_sz" -le $(( src_sum * 105 / 100 )) ]; then
+    echo "[$cam] merged.mp4 already verified ($((merged_sz/1000000000)) GB) — skip concat"
+    skip_concat=1
+  else
+    skip_concat=0
+  fi
+
   echo "[$cam] merge start (sources $((src_sum/1000000000)) GB) $(date -u)"
   rm -f "/tmp/$cam.stage1fail"
+  if [ "$skip_concat" -eq 0 ]; then
 
   # stage 1 (subshell): each session → MPEG-TS with a cumulative timestamp
   # offset, byte-concatenated on stdout; stage 2: single remux to fragmented MP4
@@ -91,6 +102,7 @@ while IFS='|' read -r cam total started ended s1 s2 s3x; do
     echo "[$cam] MERGE PIPELINE FAILED rc=$rc stage1fail=$([ -e /tmp/$cam.stage1fail ] && echo yes || echo no)"
     FAILED=1; continue
   fi
+  fi # skip_concat
 
   out_sz=$(aws s3api head-object --bucket "$BUCKET" --key "$key" --query ContentLength --output text 2>/dev/null || echo 0)
   low=$(( src_sum * 97 / 100 )); high=$(( src_sum * 105 / 100 ))
