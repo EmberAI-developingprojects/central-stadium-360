@@ -343,6 +343,23 @@ function VODViewer({ event }: { event: VODEventDetail }) {
   const activeRecording = recordings[camIdx] ?? null;
   const is360 = activeRecording != null;
 
+  // YouTube-style chapters (merged multi-session recordings). Sorted by offset;
+  // the current chapter is the last one at or before the playhead.
+  const chapters = useMemo(() => {
+    const raw = activeRecording?.chapters;
+    if (!raw || raw.length === 0) return null;
+    return [...raw].sort((a, b) => a.t - b.t);
+  }, [activeRecording?.chapters]);
+  const currentChapter = useMemo(() => {
+    if (!chapters) return null;
+    let cur = chapters[0];
+    for (const ch of chapters) {
+      if (ch.t <= currentTime) cur = ch;
+      else break;
+    }
+    return cur;
+  }, [chapters, currentTime]);
+
   const pendingSeekRef = useRef<number | null>(null);
 
   const loadSignedUrl = useCallback(
@@ -1241,6 +1258,12 @@ function VODViewer({ event }: { event: VODEventDetail }) {
             />
             <span className="text-[12px] font-semibold text-[rgba(255,255,255,0.65)] tabular-nums whitespace-nowrap max-[540px]:hidden">
               {fmtTime(currentTime)} / {fmtTime(duration)}
+              {currentChapter ? (
+                <span className="text-white/85 [font-variant-numeric:normal]">
+                  {" "}
+                  · {currentChapter.label}
+                </span>
+              ) : null}
             </span>
           </div>
 
@@ -1262,11 +1285,26 @@ function VODViewer({ event }: { event: VODEventDetail }) {
                     className="block w-[148px] aspect-video object-cover bg-black"
                   />
                 </div>
-                <div className="text-center mt-1 text-[11px] font-bold tracking-[.04em] text-white bg-[rgba(11,15,26,0.8)] py-0.5 px-2 rounded-full inline-block left-1/2 -translate-x-1/2 relative tabular-nums">
+                <div className="text-center mt-1 text-[11px] font-bold tracking-[.04em] text-white bg-[rgba(11,15,26,0.8)] py-0.5 px-2 rounded-full inline-block left-1/2 -translate-x-1/2 relative tabular-nums whitespace-nowrap">
                   {fmtTime(currentTime)}
+                  {currentChapter ? ` · ${currentChapter.label}` : ""}
                 </div>
               </div>
             )}
+            {chapters && duration > 0
+              ? chapters
+                  .filter((ch) => ch.t > 0 && ch.t < duration)
+                  .map((ch) => (
+                    <div
+                      key={ch.t}
+                      title={ch.label}
+                      className="absolute top-1/2 -translate-y-1/2 w-[3px] h-[11px] rounded-full bg-white/90 shadow-[0_0_4px_rgba(0,0,0,0.6)] z-[2] pointer-events-none max-[720px]:h-[9px]"
+                      style={{
+                        left: `calc(8px + (100% - 16px) * ${ch.t / duration})`,
+                      }}
+                    />
+                  ))
+              : null}
             <input
               type="range"
               min={0}

@@ -14,7 +14,7 @@ const DISCOVERY_LOOKBACK_MS = 60 * 60 * 1000;
 const DISCOVERY_LOOKAHEAD_MS = 2 * 60 * 60 * 1000;
 
 const RECORDING_COLS =
-  "id,event_id,camera_number,channel_arn,s3_bucket,s3_key_prefix,master_playlist_path,duration_seconds,recording_started_at,recording_ended_at,status,created_at";
+  "id,event_id,camera_number,channel_arn,s3_bucket,s3_key_prefix,master_playlist_path,duration_seconds,recording_started_at,recording_ended_at,status,created_at,chapters";
 
 let s3Client: S3Client | null = null;
 

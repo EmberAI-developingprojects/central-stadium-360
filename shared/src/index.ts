@@ -256,6 +256,12 @@ export interface DbTicket {
   ebarimt_customer_tin?: string | null;
 }
 
+/** One YouTube-style chapter marker: `t` seconds into the recording. */
+export interface RecordingChapter {
+  t: number;
+  label: string;
+}
+
 export interface DbRecording {
   id: string;
   event_id: string;
@@ -269,6 +275,8 @@ export interface DbRecording {
   recording_ended_at: string | null;
   status: RecordingStatus;
   created_at: string;
+  /** Chapter markers for merged multi-session recordings (nullable/absent on old rows). */
+  chapters?: RecordingChapter[] | null;
 }
 
 export type Recording = DbRecording;
