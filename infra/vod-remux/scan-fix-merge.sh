@@ -44,8 +44,11 @@ ff91a19d-6d12-40d4-9b81-3bf957eb02bd|cam2|28799|https://wv-cdn-00-00.wowza.com/2
 '
 
 scan() { # $1=presigned url → rc 0 if clean
-  ffmpeg -nostdin -loglevel error "${HTTP_OPTS[@]}" -i "$1" \
-    -map 0:v:0 -map 0:a:0 -c copy -f null - 2>/tmp/scan_err
+  # -f mpegts (not null): forces the h264_mp4toannexb bitstream filter — the
+  # exact code path the merge uses — so NAL-level corruption actually surfaces.
+  # timeout: a stalled network read fails the scan instead of hanging the box.
+  timeout 5400 ffmpeg -nostdin -loglevel error "${HTTP_OPTS[@]}" -i "$1" \
+    -map 0:v:0 -map 0:a:0 -c copy -f mpegts - >/dev/null 2>/tmp/scan_err
 }
 
 FAILED=0
@@ -61,7 +64,7 @@ while IFS='|' read -r vid cam dur wurl; do
   fi
   echo "[$cam/$vid] scan CORRUPT ($(head -c 200 /tmp/scan_err | tr '\n' ' ')) — re-remux from Wowza"
   est=$(( dur * 1830000 ))
-  if ! ffmpeg -nostdin -loglevel error "${HTTP_OPTS[@]}" -i "$wurl" \
+  if ! timeout 14400 ffmpeg -nostdin -loglevel error "${HTTP_OPTS[@]}" -i "$wurl" \
       -map 0:v:0 -map 0:a:0 -c copy \
       -f mp4 -movflags frag_keyframe+empty_moov+default_base_moof - \
     | aws s3 cp - "s3://$BUCKET/$key" --expected-size "$est"; then
@@ -115,14 +118,14 @@ while IFS='|' read -r cam total started ended s1 s2 s3x; do
       [ -z "$seg" ] && continue
       vid="${seg%%:*}"; rest="${seg#*:}"; dur="${rest%%:*}"
       url=$(aws s3 presign "s3://$BUCKET/wowza/$EVENT_ID/$cam/$vid.mp4" --expires-in 43200)
-      if ! ffmpeg -nostdin -loglevel error "${HTTP_OPTS[@]}" -i "$url" \
+      if ! timeout 14400 ffmpeg -nostdin -loglevel error "${HTTP_OPTS[@]}" -i "$url" \
           -map 0:v:0 -map 0:a:0 -c copy -f mpegts -output_ts_offset "$off" - ; then
         touch "/tmp/$cam.stage1fail"; exit 1
       fi
       off=$(( off + dur ))
     done
   ) \
-  | ffmpeg -nostdin -loglevel error -f mpegts -i - \
+  | timeout 28800 ffmpeg -nostdin -loglevel error -f mpegts -i - \
       -map 0:v:0 -map 0:a:0 -c copy -bsf:a aac_adtstoasc \
       -f mp4 -movflags frag_keyframe+empty_moov+default_base_moof - \
   | aws s3 cp - "s3://$BUCKET/$key" --expected-size $(( src_sum + src_sum / 10 ))
