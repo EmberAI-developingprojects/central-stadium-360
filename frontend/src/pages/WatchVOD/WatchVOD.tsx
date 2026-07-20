@@ -934,7 +934,11 @@ function VODViewer({ event }: { event: VODEventDetail }) {
   }
 
   return (
-    <div className={VIEWER_BODY_CLS}>
+    // VOD has no chat panel — drop the live layout's 300px chat column so the
+    // player stretches across the remaining width.
+    <div
+      className={`${VIEWER_BODY_CLS} ![grid-template-columns:132px_minmax(0,1fr)]`}
+    >
       <aside className={VIEWER_ANGLES_CLS} aria-label="Камерын өнцөг">
         {recordings.map((rec, i) => (
           <button
