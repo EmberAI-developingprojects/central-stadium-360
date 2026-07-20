@@ -388,33 +388,26 @@ function VODViewer({ event }: { event: VODEventDetail }) {
     [],
   );
 
+  // Pre-warm only the SIGNED URLS (a cheap API call per recording) so camera
+  // switches don't wait on sign-url. Never prefetch the media itself: a full
+  // unranged fetch of a 40-90 GB recording both burns the CDN allowance and is
+  // rejected by CloudFront (responses are capped around 30 GB → 400).
   useEffect(() => {
     if (recordings.length === 0) return;
     let alive = true;
-    const ctrl = new AbortController();
     void Promise.all(
       recordings.map(async (rec) => {
-        let entry = signedCacheRef.current.get(rec.id);
-        if (!entry) {
-          const res = await api.signRecordingUrl(rec.id);
-          if (!alive || !res.ok) return;
-          entry = {
-            url: res.data.url,
-            expiresAt: new Date(res.data.expires_at).getTime(),
-          };
-          signedCacheRef.current.set(rec.id, entry);
-        }
-        try {
-          await fetch(entry.url, {
-            signal: ctrl.signal,
-            cache: "force-cache",
-          });
-        } catch {}
+        if (signedCacheRef.current.get(rec.id)) return;
+        const res = await api.signRecordingUrl(rec.id);
+        if (!alive || !res.ok) return;
+        signedCacheRef.current.set(rec.id, {
+          url: res.data.url,
+          expiresAt: new Date(res.data.expires_at).getTime(),
+        });
       }),
     );
     return () => {
       alive = false;
-      ctrl.abort();
     };
   }, [recordings]);
 
