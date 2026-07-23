@@ -98,6 +98,15 @@ type NavGroup = {
   children?: { label: string; href: string }[];
 };
 
+// Төрийн цахим үйлчилгээний гадаад холбоосууд (шинэ табд нээгдэнэ).
+const EGOV_LINKS: { label: string; href: string }[] = [
+  { label: "e-Mongolia", href: "https://e-mongolia.mn" },
+  { label: "e-Zasag", href: "https://ezasag.mn" },
+  { label: "e-Business", href: "https://ebusiness.mn" },
+  { label: "e-Tax", href: "https://itax.mta.mn" },
+  { label: "e-Barimt", href: "https://ebarimt.mn" },
+];
+
 const buildNavGroups = (t: (k: string) => string): NavGroup[] => [
   {
     label: t("nav_about"),
@@ -152,6 +161,7 @@ const buildNavGroups = (t: (k: string) => string): NavGroup[] => [
   },
   { label: t("nav_legal"), href: "/legal" },
   { label: t("nav_news"), href: "/news" },
+  { label: t("nav_egov"), href: "#egov", children: EGOV_LINKS },
 ];
 
 export default function SiteHeader() {
@@ -347,6 +357,41 @@ export default function SiteHeader() {
                   {t("nav_news")}
                 </Link>
               </li>
+              <li className={HAS_DROPDOWN_LI_CLS}>
+                <button
+                  type="button"
+                  className={`${NAV_LINK_DROPDOWN_TRIGGER_CLS} bg-transparent border-0 cursor-pointer font-[inherit] p-0`}
+                  aria-haspopup="menu"
+                >
+                  {t("nav_egov")}
+                  <svg
+                    className={CARET_CLS}
+                    viewBox="0 0 10 6"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M1 1l4 4 4-4" />
+                  </svg>
+                </button>
+                <div className={DROPDOWN_CLS} role="menu">
+                  {EGOV_LINKS.map((link) => (
+                    <a
+                      key={link.label}
+                      className={DROPDOWN_A_CLS}
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      role="menuitem"
+                    >
+                      {link.label}
+                    </a>
+                  ))}
+                </div>
+              </li>
             </ul>
 
             <div className={HEADER_AUTH_CLS}>
@@ -510,6 +555,8 @@ export default function SiteHeader() {
                           key={child.label}
                           href={child.href}
                           className={DRAWER_SUBLINK_CLS}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           onClick={closeDrawer}
                         >
                           {child.label}
