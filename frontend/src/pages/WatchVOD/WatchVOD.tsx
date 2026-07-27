@@ -71,6 +71,11 @@ const dateFmt = (iso: string) => {
   });
 };
 
+const MIN_ZOOM = 1;
+const MAX_ZOOM = 4;
+const ZOOM_STEP = 0.25;
+const BASE_FOV = 75;
+
 const camLabel = (rec: DbRecording) => `Камер ${rec.camera_number}`;
 // With multi-session events a camera can have several recordings; the session
 // start time is what tells them apart ("7/11 11:04" vs "7/12 09:40").
@@ -339,6 +344,15 @@ function VODViewer({ event }: { event: VODEventDetail }) {
   const [isFs, setIsFs] = useState(false);
   const [pseudoFs, setPseudoFs] = useState(false);
   const [idle, setIdle] = useState(false);
+
+  const [zoom, setZoom] = useState(1);
+  const zoomRef = useRef(1);
+  useEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
+  useEffect(() => {
+    setZoom(1);
+  }, [camIdx]);
 
   const activeRecording = recordings[camIdx] ?? null;
   const is360 = activeRecording != null;
@@ -682,6 +696,8 @@ function VODViewer({ event }: { event: VODEventDetail }) {
     let prevY = 0;
     let rotX = 0;
     let rotY = 0;
+    let pinchInitialDist = 0;
+    let pinchInitialZoom = 1;
 
     const applyRot = () => {
       cam3.rotation.order = "YXZ";
@@ -696,8 +712,9 @@ function VODViewer({ event }: { event: VODEventDetail }) {
     };
     const onMove = (x: number, y: number) => {
       if (!isDragging) return;
-      rotY += (x - prevX) * 0.25;
-      rotX = Math.max(-85, Math.min(85, rotX + (y - prevY) * 0.25));
+      const sens = 0.25 / Math.max(1, zoomRef.current);
+      rotY += (x - prevX) * sens;
+      rotX = Math.max(-85, Math.min(85, rotX + (y - prevY) * sens));
       prevX = x;
       prevY = y;
       applyRot();
@@ -710,11 +727,44 @@ function VODViewer({ event }: { event: VODEventDetail }) {
     const onMouseMove = (e: MouseEvent) => onMove(e.clientX, e.clientY);
     const onTouchStart = (e: TouchEvent) => {
       e.preventDefault();
-      onDown(e.touches[0].clientX, e.touches[0].clientY);
+      if (e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        pinchInitialDist = Math.sqrt(dx * dx + dy * dy);
+        pinchInitialZoom = zoomRef.current;
+        isDragging = false;
+      } else if (e.touches.length === 1) {
+        onDown(e.touches[0].clientX, e.touches[0].clientY);
+      }
     };
     const onTouchMove = (e: TouchEvent) => {
       e.preventDefault();
-      onMove(e.touches[0].clientX, e.touches[0].clientY);
+      if (e.touches.length === 2 && pinchInitialDist > 0) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const ratio = dist / pinchInitialDist;
+        const next = Math.max(
+          MIN_ZOOM,
+          Math.min(MAX_ZOOM, pinchInitialZoom * ratio),
+        );
+        setZoom(next);
+      } else if (e.touches.length === 1) {
+        onMove(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    };
+    const onTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) pinchInitialDist = 0;
+      if (e.touches.length === 1) {
+        onDown(e.touches[0].clientX, e.touches[0].clientY);
+      } else if (e.touches.length === 0) {
+        onUp();
+      }
+    };
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const delta = -e.deltaY * 0.002;
+      setZoom((z) => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z + delta)));
     };
 
     canvas.addEventListener("mousedown", onMouseDown);
@@ -722,7 +772,9 @@ function VODViewer({ event }: { event: VODEventDetail }) {
     window.addEventListener("mouseup", onUp);
     canvas.addEventListener("touchstart", onTouchStart, { passive: false });
     canvas.addEventListener("touchmove", onTouchMove, { passive: false });
-    canvas.addEventListener("touchend", onUp);
+    canvas.addEventListener("touchend", onTouchEnd);
+    canvas.addEventListener("touchcancel", onTouchEnd);
+    canvas.addEventListener("wheel", onWheel, { passive: false });
 
     const ro = new ResizeObserver(() => {
       renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
@@ -734,6 +786,11 @@ function VODViewer({ event }: { event: VODEventDetail }) {
     let animId: number;
     const animate = () => {
       animId = requestAnimationFrame(animate);
+      const targetFov = BASE_FOV / Math.max(1, zoomRef.current);
+      if (Math.abs(cam3.fov - targetFov) > 0.01) {
+        cam3.fov = targetFov;
+        cam3.updateProjectionMatrix();
+      }
       texture.needsUpdate = true;
       renderer.render(scene, cam3);
     };
@@ -748,7 +805,9 @@ function VODViewer({ event }: { event: VODEventDetail }) {
       window.removeEventListener("mouseup", onUp);
       canvas.removeEventListener("touchstart", onTouchStart);
       canvas.removeEventListener("touchmove", onTouchMove);
-      canvas.removeEventListener("touchend", onUp);
+      canvas.removeEventListener("touchend", onTouchEnd);
+      canvas.removeEventListener("touchcancel", onTouchEnd);
+      canvas.removeEventListener("wheel", onWheel);
     };
   }, [is360]);
 
@@ -990,7 +1049,7 @@ function VODViewer({ event }: { event: VODEventDetail }) {
       </aside>
 
       <section
-        className={`${VIEWER_STAGE_CLS}${isFs || pseudoFs ? " is-fs" : ""}${idle ? " is-idle" : ""}`}
+        className={`${VIEWER_STAGE_CLS}${isFs || pseudoFs ? " is-fs" : ""}${idle ? " is-idle" : ""}${!isFs && !pseudoFs ? " min-[1101px]:!self-start" : ""}`}
         ref={stageRef}
         style={
           pseudoFs
@@ -1008,7 +1067,7 @@ function VODViewer({ event }: { event: VODEventDetail }) {
         }
       >
         <div
-          className={VIEWER_STAGE_SHELL_CLS}
+          className={`${VIEWER_STAGE_SHELL_CLS} ${!isFs && !pseudoFs ? "min-[1101px]:!flex-none min-[1101px]:!w-full" : ""}`}
           style={
             isFs || pseudoFs
               ? {
@@ -1020,7 +1079,12 @@ function VODViewer({ event }: { event: VODEventDetail }) {
                   borderRadius: 0,
                   boxShadow: "none",
                 }
-              : { background: "#000" }
+              : {
+                  background: "#000",
+                  aspectRatio: "16 / 9",
+                  width: "min(100%, calc((100dvh - 140px) * 16 / 9))",
+                  margin: "0 auto",
+                }
           }
         >
           <video
@@ -1211,9 +1275,11 @@ function VODViewer({ event }: { event: VODEventDetail }) {
             </button>
             <button
               type="button"
-              className={`${VIEWER_ICON_BTN_CLS}${muted || volume === 0 ? " is-muted" : ""}`}
+              className={`${VIEWER_ICON_BTN_CLS}${muted || volume === 0 ? " is-muted !bg-[rgba(239,68,68,0.85)] !border-[rgba(239,68,68,0.9)] text-white hover:!bg-[rgba(239,68,68,0.95)]" : ""}`}
               onClick={toggleMute}
-              aria-label="Дуу/Дуугүй"
+              aria-label={muted || volume === 0 ? "Дуу нээх" : "Дуу хаах"}
+              aria-pressed={muted || volume === 0}
+              title={muted || volume === 0 ? "Дуу нээх" : "Дуу хаах"}
             >
               <svg
                 className="block [.is-muted_&]:hidden"
@@ -1234,7 +1300,7 @@ function VODViewer({ event }: { event: VODEventDetail }) {
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                strokeWidth="1.8"
+                strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 aria-hidden="true"
@@ -1334,6 +1400,78 @@ function VODViewer({ event }: { event: VODEventDetail }) {
           </div>
 
           <div className={VIEWER_CONTROLS_RIGHT_CLS}>
+            {is360 && (
+              <div
+                className="inline-flex items-center gap-1 mr-1 max-[720px]:gap-0.5"
+                role="group"
+                aria-label="Зураг томруулах"
+              >
+                <button
+                  type="button"
+                  className={VIEWER_ICON_BTN_CLS}
+                  onClick={() =>
+                    setZoom((z) =>
+                      Math.max(MIN_ZOOM, +(z - ZOOM_STEP).toFixed(2)),
+                    )
+                  }
+                  aria-label="Бага"
+                  title="Бага"
+                  disabled={zoom <= MIN_ZOOM}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <circle cx="11" cy="11" r="7" />
+                    <line x1="21" y1="21" x2="16" y2="16" />
+                    <line x1="8" y1="11" x2="14" y2="11" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  className={VIEWER_ICON_BTN_CLS}
+                  onClick={() =>
+                    setZoom((z) =>
+                      Math.min(MAX_ZOOM, +(z + ZOOM_STEP).toFixed(2)),
+                    )
+                  }
+                  aria-label="Том"
+                  title="Том"
+                  disabled={zoom >= MAX_ZOOM}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <circle cx="11" cy="11" r="7" />
+                    <line x1="21" y1="21" x2="16" y2="16" />
+                    <line x1="8" y1="11" x2="14" y2="11" />
+                    <line x1="11" y1="8" x2="11" y2="14" />
+                  </svg>
+                </button>
+                {zoom > MIN_ZOOM && (
+                  <button
+                    type="button"
+                    onClick={() => setZoom(1)}
+                    aria-label="Анхны хэмжээ"
+                    title="Reset"
+                    className="inline-flex items-center justify-center h-[34px] min-w-[44px] px-2 rounded-full text-[11px] font-extrabold tracking-[.08em] text-[rgba(255,255,255,0.9)] bg-[rgba(255,255,255,0.06)] border border-solid border-[rgba(255,255,255,0.18)] cursor-pointer [transition:background_.15s_ease,border-color_.15s_ease] hover:bg-[rgba(255,255,255,0.12)] hover:border-[rgba(255,255,255,0.32)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/90 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b0f1a] max-[720px]:!hidden"
+                  >
+                    {zoom.toFixed(1)}×
+                  </button>
+                )}
+              </div>
+            )}
             {(() => {
               const visible = qualityLevels.filter(
                 (l) =>
