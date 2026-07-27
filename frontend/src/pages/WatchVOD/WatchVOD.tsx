@@ -377,9 +377,14 @@ function VODViewer({ event }: { event: VODEventDetail }) {
   const pendingSeekRef = useRef<number | null>(null);
 
   const loadSignedUrl = useCallback(
-    async (recordingId: string, seekTo: number | null) => {
+    async (
+      recordingId: string,
+      seekTo: number | null,
+      forceRefresh = false,
+    ) => {
       setSwitching(true);
       setSignError(null);
+      if (forceRefresh) signedCacheRef.current.delete(recordingId);
       const cached = signedCacheRef.current.get(recordingId);
       const isFresh = cached && cached.expiresAt - Date.now() > 5 * 60 * 1000;
       let url = cached?.url;
@@ -401,6 +406,23 @@ function VODViewer({ event }: { event: VODEventDetail }) {
     },
     [],
   );
+
+  // Fatal error recovery: signed CloudFront URLs eventually expire (403), and
+  // networks drop. Both leave the player stuck on the "switching" spinner unless
+  // we invalidate the cached URL and reload at the current playhead.
+  const lastRecoverAtRef = useRef(0);
+  const recoverFromErrorRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    recoverFromErrorRef.current = () => {
+      const rec = recordings[camIdx];
+      if (!rec) return;
+      const now = Date.now();
+      if (now - lastRecoverAtRef.current < 10_000) return;
+      lastRecoverAtRef.current = now;
+      const t = videoRef.current?.currentTime ?? 0;
+      void loadSignedUrl(rec.id, t, true);
+    };
+  }, [recordings, camIdx, loadSignedUrl]);
 
   // Pre-warm only the SIGNED URLS (a cheap API call per recording) so camera
   // switches don't wait on sign-url. Never prefetch the media itself: a full
@@ -525,9 +547,14 @@ function VODViewer({ event }: { event: VODEventDetail }) {
         });
         hlsRef.current = hls;
         hls.on(Hls.Events.ERROR, (_, data) => {
-          if (data.fatal) {
-            console.error("[hls] fatal", data.type, data.details, data);
+          if (!data.fatal) return;
+          console.error("[hls] fatal", data.type, data.details, data);
+          const h = hlsRef.current;
+          if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+            h?.recoverMediaError();
+            return;
           }
+          recoverFromErrorRef.current();
         });
         hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
           const levels: QualityLevel[] = data.levels.map((l, i) => ({
@@ -637,17 +664,20 @@ function VODViewer({ event }: { event: VODEventDetail }) {
     const onTime = () => {
       if (!seeking) setCurrentTime(v.currentTime || 0);
     };
+    const onError = () => recoverFromErrorRef.current();
     v.addEventListener("play", syncPlay);
     v.addEventListener("pause", syncPlay);
     v.addEventListener("durationchange", onDur);
     v.addEventListener("loadedmetadata", onDur);
     v.addEventListener("timeupdate", onTime);
+    v.addEventListener("error", onError);
     return () => {
       v.removeEventListener("play", syncPlay);
       v.removeEventListener("pause", syncPlay);
       v.removeEventListener("durationchange", onDur);
       v.removeEventListener("loadedmetadata", onDur);
       v.removeEventListener("timeupdate", onTime);
+      v.removeEventListener("error", onError);
     };
   }, [seeking]);
 
@@ -712,7 +742,7 @@ function VODViewer({ event }: { event: VODEventDetail }) {
     };
     const onMove = (x: number, y: number) => {
       if (!isDragging) return;
-      const sens = 0.25 / Math.max(1, zoomRef.current);
+      const sens = 0.25 / zoomRef.current;
       rotY += (x - prevX) * sens;
       rotX = Math.max(-85, Math.min(85, rotX + (y - prevY) * sens));
       prevX = x;
@@ -786,7 +816,7 @@ function VODViewer({ event }: { event: VODEventDetail }) {
     let animId: number;
     const animate = () => {
       animId = requestAnimationFrame(animate);
-      const targetFov = BASE_FOV / Math.max(1, zoomRef.current);
+      const targetFov = BASE_FOV / zoomRef.current;
       if (Math.abs(cam3.fov - targetFov) > 0.01) {
         cam3.fov = targetFov;
         cam3.updateProjectionMatrix();
@@ -1275,11 +1305,10 @@ function VODViewer({ event }: { event: VODEventDetail }) {
             </button>
             <button
               type="button"
-              className={`${VIEWER_ICON_BTN_CLS}${muted || volume === 0 ? " is-muted !bg-[rgba(239,68,68,0.85)] !border-[rgba(239,68,68,0.9)] text-white hover:!bg-[rgba(239,68,68,0.95)]" : ""}`}
+              className={`${VIEWER_ICON_BTN_CLS}${muted || volume === 0 ? " is-muted !bg-[rgba(239,68,68,0.85)] !border-[rgba(239,68,68,0.9)] hover:!bg-[rgba(239,68,68,0.95)]" : ""}`}
               onClick={toggleMute}
               aria-label={muted || volume === 0 ? "Дуу нээх" : "Дуу хаах"}
               aria-pressed={muted || volume === 0}
-              title={muted || volume === 0 ? "Дуу нээх" : "Дуу хаах"}
             >
               <svg
                 className="block [.is-muted_&]:hidden"
