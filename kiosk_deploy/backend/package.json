@@ -1,0 +1,26 @@
+{
+  "name": "kiosk-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local hardware bridge for the stadium kiosk — proxies the kiosk web UI to the on-box E-Barimt POSAPI and card POS terminal, with CORS/PNA + idempotency around money operations.",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "qrcode": "^1.5.4",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.14.0",
+    "@types/qrcode": "^1.5.5",
+    "tsx": "^4.16.0",
+    "typescript": "^5.5.0"
+  }
+}

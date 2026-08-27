@@ -114,6 +114,41 @@ function relativeFrom(
   return `${months} сарын дараа`;
 }
 
+const CHIP_CLS =
+  "inline-flex items-center h-[18px] px-1.5 rounded text-[10.5px] font-medium tracking-[0.01em] ring-1 ring-inset";
+
+/** Which storefronts this event is published to — web, kiosk, or both. */
+function ChannelChips({ event }: { event: AdminEventRecord }) {
+  return (
+    <>
+      {event.showOnWeb && (
+        <span
+          className={`${CHIP_CLS} bg-[#eef0fd] text-brand-blue ring-[#dadffb]`}
+          title="Вэб сайт дээр нэмэгдсэн"
+        >
+          Вэб
+        </span>
+      )}
+      {event.showOnKiosk && (
+        <span
+          className={`${CHIP_CLS} bg-amber-50 text-amber-700 ring-amber-100`}
+          title="Касс (kiosk) дээр нэмэгдсэн"
+        >
+          Касс
+        </span>
+      )}
+      {!event.showOnWeb && !event.showOnKiosk && (
+        <span
+          className={`${CHIP_CLS} bg-zinc-100 text-zinc-500 ring-zinc-200`}
+          title="Хаана ч нэмэгдээгүй"
+        >
+          Нийтлээгүй
+        </span>
+      )}
+    </>
+  );
+}
+
 export default function EventsList() {
   const confirm = useConfirm();
   const toast = useToast();
@@ -451,6 +486,7 @@ export default function EventsList() {
                             </Link>
                           </div>
                           <div className="text-[11.5px] text-zinc-500 mt-0.5 flex items-center gap-1.5">
+                            <ChannelChips event={e} />
                             <span className="font-mono text-[10.5px] text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity">
                               {e.id.slice(0, 8)}
                             </span>

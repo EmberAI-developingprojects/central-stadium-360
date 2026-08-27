@@ -108,6 +108,10 @@ export interface DbEvent {
   created_at: string;
   title_en?: string | null;
   description_en?: string | null;
+  /** Listed & sellable on the website (live/replay stream tickets). */
+  show_on_web?: boolean;
+  /** Listed & sellable on the stadium kiosk (in-person zone tickets). */
+  show_on_kiosk?: boolean;
 }
 
 export type EventInput = {
@@ -129,6 +133,8 @@ export type EventInput = {
   featured?: boolean;
   title_en?: string | null;
   description_en?: string | null;
+  show_on_web?: boolean;
+  show_on_kiosk?: boolean;
 };
 
 export type EventPatch = Partial<EventInput>;

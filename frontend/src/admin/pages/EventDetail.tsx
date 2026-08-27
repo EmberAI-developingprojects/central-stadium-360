@@ -125,6 +125,8 @@ function dbToRecord(row: import("@cs360/shared").DbEvent): EventRecord {
     live_end_at: row.live_end_at,
     replay_available_until: row.replay_available_until,
     thumbnail_url: row.thumbnail_url,
+    showOnWeb: row.show_on_web !== false,
+    showOnKiosk: row.show_on_kiosk !== false,
   };
 }
 

@@ -10,6 +10,12 @@ import {
   requireAdmin,
   type AuthEnv,
 } from "../middleware/require-user";
+import {
+  CHANNEL_COLS,
+  channelColumnsReady,
+  stripChannelFields,
+  withChannelFallback,
+} from "../lib/event-channels";
 
 const adminEvents = new Hono<AuthEnv>();
 
@@ -23,10 +29,13 @@ const SELECT_COLS_NO_EN =
 
 let eventEnColumnsAvailable: boolean | null = null;
 
-function selectCols(): string {
-  return eventEnColumnsAvailable === false
-    ? SELECT_COLS_NO_EN
-    : SELECT_COLS_FULL;
+// The admin form is the only surface that reads/writes the publish flags, so
+// it always asks for them — unless a query has proved migration 0029 has not
+// been pushed yet, in which case both surfaces stay "published" by default.
+function selectCols(withChannels: boolean = channelColumnsReady()): string {
+  const base =
+    eventEnColumnsAvailable === false ? SELECT_COLS_NO_EN : SELECT_COLS_FULL;
+  return withChannels ? `${base},${CHANNEL_COLS}` : base;
 }
 
 function isMissingEventEnError(
@@ -80,6 +89,8 @@ const createSchema = z.object({
   featured: z.boolean().optional(),
   title_en: z.string().nullable().optional(),
   description_en: z.string().nullable().optional(),
+  show_on_web: z.boolean().optional(),
+  show_on_kiosk: z.boolean().optional(),
 });
 
 const patchSchema = createSchema.partial();
@@ -98,16 +109,17 @@ adminEvents.get("/", async (c) => {
       503,
     );
   }
-  let { data, error } = await admin
-    .from("events")
-    .select(`${selectCols()},recordings(count)`)
-    .order("start_time", { ascending: true });
+  const listAll = () =>
+    withChannelFallback((withChannels) =>
+      admin
+        .from("events")
+        .select(`${selectCols(withChannels)},recordings(count)`)
+        .order("start_time", { ascending: true }),
+    );
+  let { data, error } = await listAll();
   if (error && isMissingEventEnError(error)) {
     eventEnColumnsAvailable = false;
-    const retry = await admin
-      .from("events")
-      .select(`${selectCols()},recordings(count)`)
-      .order("start_time", { ascending: true });
+    const retry = await listAll();
     data = retry.data;
     error = retry.error;
   }
@@ -134,18 +146,18 @@ adminEvents.get("/:id", async (c) => {
     );
   }
   const id = c.req.param("id");
-  let { data, error } = await admin
-    .from("events")
-    .select(selectCols())
-    .eq("id", id)
-    .maybeSingle<DbEvent>();
+  const readOne = () =>
+    withChannelFallback<DbEvent>((withChannels) =>
+      admin
+        .from("events")
+        .select(selectCols(withChannels))
+        .eq("id", id)
+        .maybeSingle<DbEvent>(),
+    );
+  let { data, error } = await readOne();
   if (error && isMissingEventEnError(error)) {
     eventEnColumnsAvailable = false;
-    const retry = await admin
-      .from("events")
-      .select(selectCols())
-      .eq("id", id)
-      .maybeSingle<DbEvent>();
+    const retry = await readOne();
     data = retry.data;
     error = retry.error;
   }
@@ -189,18 +201,21 @@ adminEvents.post("/", async (c) => {
     }
   }
 
-  let { data, error } = await admin
-    .from("events")
-    .insert(parsed.data)
-    .select(selectCols())
-    .single<DbEvent>();
+  const insertOne = () =>
+    withChannelFallback<DbEvent>((withChannels) => {
+      const payload = eventEnColumnsAvailable === false
+        ? stripEnFields(parsed.data)
+        : parsed.data;
+      return admin
+        .from("events")
+        .insert(withChannels ? payload : stripChannelFields(payload))
+        .select(selectCols(withChannels))
+        .single<DbEvent>();
+    });
+  let { data, error } = await insertOne();
   if (error && isMissingEventEnError(error)) {
     eventEnColumnsAvailable = false;
-    const retry = await admin
-      .from("events")
-      .insert(stripEnFields(parsed.data))
-      .select(selectCols())
-      .single<DbEvent>();
+    const retry = await insertOne();
     data = retry.data;
     error = retry.error;
   }
@@ -243,20 +258,22 @@ adminEvents.on(["PATCH", "PUT"], "/:id", async (c) => {
     }
   }
 
-  let { data, error } = await admin
-    .from("events")
-    .update(parsed.data)
-    .eq("id", id)
-    .select(selectCols())
-    .maybeSingle<DbEvent>();
+  const updateOne = () =>
+    withChannelFallback<DbEvent>((withChannels) => {
+      const payload = eventEnColumnsAvailable === false
+        ? stripEnFields(parsed.data)
+        : parsed.data;
+      return admin
+        .from("events")
+        .update(withChannels ? payload : stripChannelFields(payload))
+        .eq("id", id)
+        .select(selectCols(withChannels))
+        .maybeSingle<DbEvent>();
+    });
+  let { data, error } = await updateOne();
   if (error && isMissingEventEnError(error)) {
     eventEnColumnsAvailable = false;
-    const retry = await admin
-      .from("events")
-      .update(stripEnFields(parsed.data))
-      .eq("id", id)
-      .select(selectCols())
-      .maybeSingle<DbEvent>();
+    const retry = await updateOne();
     data = retry.data;
     error = retry.error;
   }
@@ -296,12 +313,14 @@ adminEvents.post("/:id/feature", async (c) => {
     return c.json({ ok: false, error: clearErr.message } as const, 500);
   }
 
-  const { data, error } = await admin
-    .from("events")
-    .update({ featured: true })
-    .eq("id", id)
-    .select(selectCols())
-    .maybeSingle<DbEvent>();
+  const { data, error } = await withChannelFallback<DbEvent>((withChannels) =>
+    admin
+      .from("events")
+      .update({ featured: true })
+      .eq("id", id)
+      .select(selectCols(withChannels))
+      .maybeSingle<DbEvent>(),
+  );
   if (error) {
     return c.json({ ok: false, error: error.message } as const, 500);
   }

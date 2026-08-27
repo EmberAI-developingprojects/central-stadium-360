@@ -40,6 +40,8 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin": "Хяналтын самбар",
   "/admin/events": "Арга хэмжээ",
   "/admin/events/new": "Шинэ арга хэмжээ",
+  "/admin/events/new/web": "Шинэ арга хэмжээ — вэб",
+  "/admin/events/new/kiosk": "Шинэ арга хэмжээ — касс",
   "/admin/orders": "Захиалга",
   "/admin/kiosk": "Касс — биечлэн тасалбар",
   "/admin/users": "Хэрэглэгч",

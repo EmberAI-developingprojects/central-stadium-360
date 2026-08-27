@@ -37,3 +37,13 @@ frontend.rar
 *.rar
 *.zip
 env-vars.yaml
+
+# --- kiosk_deploy: this is a deployable bundle, not source ---
+# The kiosk box runs `node dist/server.js`, so the built bridge IS the artifact
+# we ship. Same for its own package-lock (kiosk box uses npm, not pnpm).
+!kiosk_deploy/backend/dist/
+!kiosk_deploy/backend/package-lock.json
+
+# Vendor POS drivers (Golomt IPPOS + Verifone) — 33 MB of .rar/.msi archives,
+# distribute out-of-band (Google Drive / USB) instead of via git.
+kiosk_deploy/IPPOS*/
