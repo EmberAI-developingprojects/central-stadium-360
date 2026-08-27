@@ -19,6 +19,7 @@ import {
   isQPayConfigured,
 } from "./qpay";
 import { buildKioskCallbackUrl, getCallbackSecret } from "./qpay-signature";
+import { publishedOn, withChannelFallback } from "./event-channels";
 
 export type VenueResult<T> =
   | { ok: true; data: T }
@@ -56,14 +57,23 @@ export async function createKioskOrder(
   const items = (input.items ?? []).filter((i) => i && i.qty > 0);
   if (items.length === 0) return { ok: false, error: "no_items", status: 400 };
 
-  const { data: event, error: evErr } = await admin
-    .from("events")
-    .select("id,title,status")
-    .eq("id", input.event_id)
-    .maybeSingle<{ id: string; title: string; status: string }>();
+  type SaleEvent = {
+    id: string;
+    title: string;
+    status: string;
+    show_on_kiosk?: boolean;
+  };
+  const { data: event, error: evErr } = await withChannelFallback<SaleEvent>(
+    (withChannels) =>
+      admin
+        .from("events")
+        .select("id,title,status" + (withChannels ? ",show_on_kiosk" : ""))
+        .eq("id", input.event_id)
+        .maybeSingle<SaleEvent>(),
+  );
   if (evErr) return { ok: false, error: "internal_error", status: 500 };
   if (!event) return { ok: false, error: "event_not_found", status: 404 };
-  if (event.status === "expired") {
+  if (event.status === "expired" || !publishedOn(event.show_on_kiosk)) {
     return { ok: false, error: "event_not_on_sale", status: 409 };
   }
 

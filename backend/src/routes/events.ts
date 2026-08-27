@@ -11,6 +11,7 @@ import {
 } from "../lib/tickets";
 import { requireUser, type AuthEnv } from "../middleware/require-user";
 import { discoverRecordingsForEvent } from "../lib/recordings";
+import { publishedOn, withChannelFallback } from "../lib/event-channels";
 
 const events = new Hono<AuthEnv>();
 
@@ -28,10 +29,13 @@ events.get("/", async (c) => {
   const NO_EN =
     "id,title,description,status,start_time,price,live_price,replay_price,price_standard,price_multi3,price_multi5,live_start_at,live_end_at,replay_available_until,thumbnail_url,image,featured,created_at";
 
-  let { data, error } = await supabase
-    .from("events")
-    .select(FULL)
-    .order("start_time", { ascending: true });
+  // Kiosk-only events are never listed on the website.
+  let { data, error } = await withChannelFallback((withChannels) => {
+    const q = supabase.from("events").select(FULL);
+    return (withChannels ? q.eq("show_on_web", true) : q).order("start_time", {
+      ascending: true,
+    });
+  });
 
   if (
     error &&
@@ -40,10 +44,13 @@ events.get("/", async (c) => {
         (error.message.includes("title_en") ||
           error.message.includes("description_en"))))
   ) {
-    const retry = await supabase
-      .from("events")
-      .select(NO_EN)
-      .order("start_time", { ascending: true });
+    const retry = await withChannelFallback((withChannels) => {
+      const q = supabase.from("events").select(NO_EN);
+      return (withChannels ? q.eq("show_on_web", true) : q).order(
+        "start_time",
+        { ascending: true },
+      );
+    });
     data = (retry.data ?? null) as typeof data;
     error = retry.error;
   }
@@ -91,15 +98,19 @@ events.get("/archived", async (c) => {
   const archiveReadyIso = new Date(
     now.getTime() - 10 * 60 * 1000,
   ).toISOString();
-  const { data, error } = await supabase
-    .from("events")
-    .select(
-      "id,title,start_time,thumbnail_url,image,replay_price,live_end_at,recordings(count)",
-    )
-    .not("live_end_at", "is", null)
-    .lt("live_end_at", archiveReadyIso)
-    .gt("replay_available_until", nowIso)
-    .order("live_end_at", { ascending: false });
+  const { data, error } = await withChannelFallback((withChannels) => {
+    const q = supabase
+      .from("events")
+      .select(
+        "id,title,start_time,thumbnail_url,image,replay_price,live_end_at,recordings(count)",
+      )
+      .not("live_end_at", "is", null)
+      .lt("live_end_at", archiveReadyIso)
+      .gt("replay_available_until", nowIso);
+    return (withChannels ? q.eq("show_on_web", true) : q).order("live_end_at", {
+      ascending: false,
+    });
+  });
   if (error) {
     return c.json({ ok: false, error: error.message } as const, 500);
   }
@@ -145,7 +156,7 @@ type EventDetailRaw = Pick<
   | "replay_available_until"
   | "live_start_at"
   | "live_end_at"
->;
+> & { show_on_web?: boolean };
 
 const ARCHIVE_GRACE_MS = 10 * 60 * 1000;
 
@@ -174,17 +185,22 @@ events.get("/:id/replay", async (c) => {
     );
   }
   const id = c.req.param("id");
-  const { data: event, error } = await supabase
-    .from("events")
-    .select(
-      "id,title,description,start_time,status,replay_price,thumbnail_url,image,replay_available_until,live_start_at,live_end_at",
-    )
-    .eq("id", id)
-    .maybeSingle<EventDetailRaw>();
+  const { data: event, error } = await withChannelFallback<EventDetailRaw>(
+    (withChannels) =>
+      supabase
+        .from("events")
+        .select(
+          "id,title,description,start_time,status,replay_price,thumbnail_url,image,replay_available_until,live_start_at,live_end_at" +
+            (withChannels ? ",show_on_web" : ""),
+        )
+        .eq("id", id)
+        .maybeSingle<EventDetailRaw>(),
+  );
   if (error) {
     return c.json({ ok: false, error: error.message } as const, 500);
   }
-  if (!event) {
+  // A kiosk-only event has no web replay page.
+  if (!event || !publishedOn(event.show_on_web)) {
     return c.json({ ok: false, error: "not_found" } as const, 404);
   }
 
@@ -254,21 +270,29 @@ events.post("/:id/buy-replay", requireUser, async (c) => {
     );
   }
   const id = c.req.param("id");
-  const { data: event, error } = await admin
-    .from("events")
-    .select("id,title,status,replay_price,replay_available_until")
-    .eq("id", id)
-    .maybeSingle<{
-      id: string;
-      title: string;
-      status: EventStatus;
-      replay_price: number;
-      replay_available_until: string | null;
-    }>();
+  type BuyReplayEvent = {
+    id: string;
+    title: string;
+    status: EventStatus;
+    replay_price: number;
+    replay_available_until: string | null;
+    show_on_web?: boolean;
+  };
+  const { data: event, error } = await withChannelFallback<BuyReplayEvent>(
+    (withChannels) =>
+      admin
+        .from("events")
+        .select(
+          "id,title,status,replay_price,replay_available_until" +
+            (withChannels ? ",show_on_web" : ""),
+        )
+        .eq("id", id)
+        .maybeSingle<BuyReplayEvent>(),
+  );
   if (error) {
     return c.json({ ok: false, error: "internal_error" } as const, 500);
   }
-  if (!event) {
+  if (!event || !publishedOn(event.show_on_web)) {
     return c.json({ ok: false, error: "event_not_found" } as const, 404);
   }
   if (event.status !== "archived") {

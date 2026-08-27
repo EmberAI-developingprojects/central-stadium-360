@@ -33,6 +33,7 @@ import {
   createKioskOrder,
   getKioskOrderStatus,
 } from "../lib/venue";
+import { withChannelFallback } from "../lib/event-channels";
 
 const adminKiosk = new Hono<AuthEnv>();
 
@@ -52,13 +53,19 @@ adminKiosk.get("/events", async (c) => {
       503,
     );
   }
-  const { data, error } = await admin
-    .from("events")
-    .select(
-      `id,title,description,status,start_time,image,thumbnail_url,zones(${ZONE_COLS})`,
-    )
-    .in("status", ["upcoming", "live"])
-    .order("start_time", { ascending: true });
+  // Mirrors /api/kiosk/events — web-only events are not sellable at a counter.
+  const { data, error } = await withChannelFallback((withChannels) => {
+    const q = admin
+      .from("events")
+      .select(
+        `id,title,description,status,start_time,image,thumbnail_url,zones(${ZONE_COLS})`,
+      )
+      .in("status", ["upcoming", "live"]);
+    return (withChannels ? q.eq("show_on_kiosk", true) : q).order(
+      "start_time",
+      { ascending: true },
+    );
+  });
   if (error) {
     return c.json({ ok: false, error: error.message } as const, 500);
   }

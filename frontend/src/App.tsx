@@ -32,6 +32,9 @@ const Dashboard = lazy(() => import("./admin/pages/Dashboard"));
 const EventsList = lazy(() => import("./admin/pages/EventsList"));
 const EventEdit = lazy(() => import("./admin/pages/EventEdit"));
 const EventCreate = lazy(() => import("./admin/pages/EventCreate"));
+const EventCreateChoose = lazy(
+  () => import("./admin/pages/EventCreateChoose"),
+);
 const AdminEventDetail = lazy(() => import("./admin/pages/EventDetail"));
 const OrdersList = lazy(() => import("./admin/pages/OrdersList"));
 const OrderView = lazy(() => import("./admin/pages/OrderView"));
@@ -181,7 +184,8 @@ export default function App() {
           >
             <Route index element={<Dashboard />} />
             <Route path="events" element={<EventsList />} />
-            <Route path="events/new" element={<EventCreate />} />
+            <Route path="events/new" element={<EventCreateChoose />} />
+            <Route path="events/new/:channel" element={<EventCreate />} />
             <Route path="events/:id" element={<AdminEventDetail />} />
             <Route path="events/:id/edit" element={<EventEdit />} />
             <Route path="orders" element={<OrdersList />} />

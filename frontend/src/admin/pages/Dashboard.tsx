@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  listEvents,
+  listAdminEvents,
   listOrders,
   listUsers,
   ordersStats,
@@ -96,7 +96,8 @@ export default function Dashboard() {
       ordersStats(),
       listOrders(),
       listUsers(),
-      listEvents(),
+      // Admin-scoped: the public list drops kiosk-only events.
+      listAdminEvents(),
     ]).then(([s, o, u, ev]) => {
       if (!alive) return;
       setStats(

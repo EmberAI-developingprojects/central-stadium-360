@@ -6,7 +6,7 @@ import {
   type DragEvent,
   type FormEvent,
 } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { createEvent } from "../../data/store";
 import { api } from "../../lib/api";
 import DatePicker from "../components/DatePicker";
@@ -118,6 +118,34 @@ function EventEnglishSection({
   );
 }
 
+type Channel = "web" | "kiosk";
+
+const CHANNEL_META: Record<
+  Channel,
+  {
+    label: string;
+    lead: string;
+    chipCls: string;
+    other: string;
+    otherHint: string;
+  }
+> = {
+  web: {
+    label: "Вэб дээр нэмэх",
+    lead: "Сайт дээр жагсаагдаж, онлайн шууд ба нөхөж үзэх тасалбар зарагдана.",
+    chipCls: "bg-[#eef0fd] text-brand-blue ring-[#dadffb]",
+    other: "Мөн касс (kiosk) дээр нэмэх",
+    otherHint: "Бүсийн тасалбарыг цэнгэлдэх дээр биечлэн бас зарна.",
+  },
+  kiosk: {
+    label: "Касс (kiosk) дээр нэмэх",
+    lead: "Цэнгэлдэх дээрх касс дээр гарч, бүсийн тасалбар биечлэн зарагдана.",
+    chipCls: "bg-amber-50 text-amber-700 ring-amber-100",
+    other: "Мөн вэб сайт дээр нэмэх",
+    otherHint: "Онлайн шууд ба нөхөж үзэх тасалбарыг сайт дээр бас зарна.",
+  },
+};
+
 function combineDateTime(date: string, time: string): string | null {
   if (!date || !time) return null;
   const d = new Date(`${date}T${time}`);
@@ -133,6 +161,13 @@ function addDays(iso: string, days: number): string {
 export default function EventCreate() {
   const navigate = useNavigate();
   const toast = useToast();
+  // The chooser step (/admin/events/new) routes here with the storefront
+  // already picked, so the form only shows the fields that channel needs.
+  const { channel } = useParams<{ channel: string }>();
+  const primary: Channel = channel === "kiosk" ? "kiosk" : "web";
+  const meta = CHANNEL_META[primary];
+  // A hand-typed / stale URL must not silently default to the web form.
+  const unknownChannel = channel !== "web" && channel !== "kiosk";
 
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
@@ -148,6 +183,10 @@ export default function EventCreate() {
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [nameEn, setNameEn] = useState("");
   const [descEn, setDescEn] = useState("");
+  // The chosen channel is always on; the other one is an opt-in extra.
+  const [alsoOther, setAlsoOther] = useState(false);
+  const showOnWeb = primary === "web" || alsoOther;
+  const showOnKiosk = primary === "kiosk" || alsoOther;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -251,9 +290,17 @@ export default function EventCreate() {
         replay_available_until: replayUntilIso,
         thumbnail_url: cover || null,
         image: cover || undefined,
+        showOnWeb,
+        showOnKiosk,
       });
       toast.success("Арга хэмжээ үүсгэгдлээ.");
-      navigate(`/admin/events/${created.id}`);
+      // Kiosk events are useless without zones, and zones need the event to
+      // exist first — so drop the admin straight into the zones editor.
+      navigate(
+        showOnKiosk
+          ? `/admin/events/${created.id}/edit`
+          : `/admin/events/${created.id}`,
+      );
     } catch (err) {
       setError((err as Error).message || "Үүсгэх боломжгүй.");
     } finally {
@@ -261,18 +308,20 @@ export default function EventCreate() {
     }
   };
 
+  if (unknownChannel) return <Navigate to="/admin/events/new" replace />;
+
   return (
     <>
       <div className={ADMIN_PAGE_HEADER_CLS}>
         <div>
-          <h2>Шинэ арга хэмжээ</h2>
-          <p>VOD дамжуулалттай арга хэмжээний үндсэн мэдээллийг үүсгэх.</p>
+          <h2>{meta.label}</h2>
+          <p>{meta.lead}</p>
         </div>
         <Link
-          to="/admin/events"
+          to="/admin/events/new"
           className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_GHOST_CLS}`}
         >
-          ← Буцах
+          ← Сонголт солих
         </Link>
       </div>
 
@@ -283,7 +332,9 @@ export default function EventCreate() {
           <header className={CARD_HEAD_CLS}>
             <h3 className={CARD_HEAD_TITLE_CLS}>Үндсэн мэдээлэл</h3>
             <p className={CARD_HEAD_DESC_CLS}>
-              Үзэгчдэд харагдах нэр, огноо, эхлэх ба дуусах цаг, нүүр зураг.
+              {showOnWeb
+                ? "Үзэгчдэд харагдах нэр, огноо, эхлэх ба дуусах цаг, нүүр зураг."
+                : "Үзэгчдэд харагдах нэр, огноо, эхлэх цаг, нүүр зураг."}
             </p>
           </header>
           <div className={CARD_BODY_CLS}>
@@ -341,26 +392,30 @@ export default function EventCreate() {
               </div>
             </div>
 
-            <div className={TWO_COL_CLS}>
-              <div className={ADMIN_FIELD_CLS}>
-                <label htmlFor="ev-end-date">Дуусах огноо</label>
-                <DatePicker
-                  id="ev-end-date"
-                  value={endDate}
-                  onChange={setEndDate}
-                  allowPast
-                />
+            {/* The live end anchors the stream + replay windows, so it only
+                matters on the web. Kiosk admissions just need a start. */}
+            {showOnWeb && (
+              <div className={TWO_COL_CLS}>
+                <div className={ADMIN_FIELD_CLS}>
+                  <label htmlFor="ev-end-date">Дуусах огноо</label>
+                  <DatePicker
+                    id="ev-end-date"
+                    value={endDate}
+                    onChange={setEndDate}
+                    allowPast
+                  />
+                </div>
+                <div className={ADMIN_FIELD_CLS}>
+                  <label htmlFor="ev-end-time">Дуусах цаг</label>
+                  <input
+                    id="ev-end-time"
+                    type="time"
+                    value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                  />
+                </div>
               </div>
-              <div className={ADMIN_FIELD_CLS}>
-                <label htmlFor="ev-end-time">Дуусах цаг</label>
-                <input
-                  id="ev-end-time"
-                  type="time"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                />
-              </div>
-            </div>
+            )}
 
             <EventEnglishSection
               nameEn={nameEn}
@@ -478,6 +533,64 @@ export default function EventCreate() {
 
         <section className={CARD_CLS}>
           <header className={CARD_HEAD_CLS}>
+            <h3 className={CARD_HEAD_TITLE_CLS}>Хаана нэмэх</h3>
+            <p className={CARD_HEAD_DESC_CLS}>
+              Эхлээд сонгосон газраа нэмэгдэнэ. Хоёуланд нь зарах бол доороос
+              нөгөөг нь нэмнэ үү.
+            </p>
+          </header>
+          <div className={CARD_BODY_CLS}>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span
+                className={`inline-flex items-center h-7 px-2.5 rounded-md text-[12.5px] font-semibold ring-1 ring-inset ${meta.chipCls}`}
+              >
+                {meta.label}
+              </span>
+              <Link
+                to="/admin/events/new"
+                className="text-[12.5px] text-zinc-500 hover:text-zinc-900 underline underline-offset-[3px] decoration-zinc-300"
+              >
+                Солих
+              </Link>
+            </div>
+            <label
+              htmlFor="ev-also-other"
+              className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition-colors ${
+                alsoOther
+                  ? "border-zinc-300 bg-white"
+                  : "border-[#ececef] bg-[#fafafa] hover:border-zinc-200"
+              }`}
+            >
+              <input
+                id="ev-also-other"
+                type="checkbox"
+                checked={alsoOther}
+                disabled={busy}
+                onChange={(e) => setAlsoOther(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-zinc-900"
+              />
+              <span className="min-w-0">
+                <span className="block text-[13.5px] font-semibold text-zinc-900 leading-tight">
+                  {meta.other}
+                </span>
+                <span className="block text-[12.5px] text-zinc-500 mt-0.5 leading-[1.45]">
+                  {meta.otherHint}
+                </span>
+              </span>
+            </label>
+            {showOnKiosk && (
+              <p className="m-0 text-[12.5px] text-zinc-500 leading-[1.45]">
+                VIP / Fan Zone / Энгийн гэсэн 3 төрлийн үнэ ба багтаамжийг
+                үүсгэсний дараа, засварлах хуудсан дээр оруулна. Бүсгүй бол касс
+                дээр зарагдахгүй.
+              </p>
+            )}
+          </div>
+        </section>
+
+        {showOnWeb && (
+        <section className={CARD_CLS}>
+          <header className={CARD_HEAD_CLS}>
             <h3 className={CARD_HEAD_TITLE_CLS}>Тасалбарын үнэ</h3>
             <p className={CARD_HEAD_DESC_CLS}>
               Тасалбар 3 төрөлтэй: Энгийн (1 төхөөрөмж), 3 хэрэглэгчийн (3
@@ -569,6 +682,7 @@ export default function EventCreate() {
             </div>
           </div>
         </section>
+        )}
 
         <div className={ADMIN_FORM_ACTIONS_CLS}>
           <button
@@ -576,7 +690,11 @@ export default function EventCreate() {
             className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_PRIMARY_CLS}`}
             disabled={busy}
           >
-            {busy ? "Үүсгэж байна…" : "Үүсгэх"}
+            {busy
+              ? "Үүсгэж байна…"
+              : showOnKiosk
+                ? "Үүсгээд бүс нэмэх"
+                : "Үүсгэх"}
           </button>
           <Link
             to="/admin/events"

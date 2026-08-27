@@ -34,6 +34,10 @@ export type EventRecord = {
   thumbnail_url: string | null;
   titleEn?: string;
   descEn?: string;
+  /** Listed & sellable on the website (live/replay stream tickets). */
+  showOnWeb: boolean;
+  /** Listed & sellable on the stadium kiosk (in-person zone tickets). */
+  showOnKiosk: boolean;
 };
 
 export type OrderStatus = "paid" | "refunded";
@@ -225,6 +229,10 @@ function dbToEvent(row: DbEvent): EventRecord {
     thumbnail_url: row.thumbnail_url || row.image || null,
     titleEn: row.title_en ?? "",
     descEn: row.description_en ?? "",
+    // Undefined means migration 0029 has not landed — pre-split events were
+    // published to both surfaces.
+    showOnWeb: row.show_on_web !== false,
+    showOnKiosk: row.show_on_kiosk !== false,
   };
 }
 
@@ -260,6 +268,16 @@ export async function getEvent(id: string): Promise<EventRecord | null> {
   return found ? dbToEvent(found) : null;
 }
 
+/**
+ * Admin-scoped read. The public list only carries web-published events, so the
+ * admin forms must go through the admin endpoint or a kiosk-only event would
+ * be unopenable.
+ */
+export async function getAdminEvent(id: string): Promise<EventRecord | null> {
+  const res = await api.admin.getEvent(id);
+  return res.ok ? dbToEvent(res.data) : null;
+}
+
 function toEventInput(input: EventInput) {
   const body: Record<string, unknown> = {
     title: (input.title ?? "").trim(),
@@ -291,6 +309,8 @@ function toEventInput(input: EventInput) {
   if (input.thumbnail_url !== undefined)
     body.thumbnail_url = input.thumbnail_url;
   if (input.status !== undefined) body.status = input.status;
+  if (input.showOnWeb !== undefined) body.show_on_web = !!input.showOnWeb;
+  if (input.showOnKiosk !== undefined) body.show_on_kiosk = !!input.showOnKiosk;
   return body;
 }
 
@@ -336,6 +356,8 @@ export async function updateEvent(
   if (patch.thumbnail_url !== undefined)
     body.thumbnail_url = patch.thumbnail_url;
   if (patch.status !== undefined) body.status = patch.status;
+  if (patch.showOnWeb !== undefined) body.show_on_web = !!patch.showOnWeb;
+  if (patch.showOnKiosk !== undefined) body.show_on_kiosk = !!patch.showOnKiosk;
   const row = unwrap(await api.admin.updateEvent(id, body));
   return dbToEvent(row);
 }

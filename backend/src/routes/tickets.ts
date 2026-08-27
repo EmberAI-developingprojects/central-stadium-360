@@ -11,6 +11,7 @@ import {
   reusePendingInvoice,
   voidEbarimtForTicket,
 } from "../lib/tickets";
+import { publishedOn, withChannelFallback } from "../lib/event-channels";
 
 const tickets = new Hono<AuthEnv>();
 
@@ -57,29 +58,37 @@ tickets.post("/create", async (c) => {
     );
   }
 
-  const { data: event, error: evErr } = await admin
-    .from("events")
-    .select(
-      "id, title, status, price, live_price, replay_price, price_standard, price_multi3, price_multi5, live_end_at, replay_available_until",
-    )
-    .eq("id", event_id)
-    .maybeSingle<{
-      id: string;
-      title: string;
-      status: "upcoming" | "live" | "ended" | "archived" | "expired";
-      price: number;
-      live_price: number;
-      replay_price: number;
-      price_standard: number | null;
-      price_multi3: number | null;
-      price_multi5: number | null;
-      live_end_at: string | null;
-      replay_available_until: string | null;
-    }>();
+  type PurchasableEvent = {
+    id: string;
+    title: string;
+    status: "upcoming" | "live" | "ended" | "archived" | "expired";
+    price: number;
+    live_price: number;
+    replay_price: number;
+    price_standard: number | null;
+    price_multi3: number | null;
+    price_multi5: number | null;
+    live_end_at: string | null;
+    replay_available_until: string | null;
+    show_on_web?: boolean;
+  };
+  const { data: event, error: evErr } = await withChannelFallback<
+    PurchasableEvent
+  >((withChannels) =>
+    admin
+      .from("events")
+      .select(
+        "id, title, status, price, live_price, replay_price, price_standard, price_multi3, price_multi5, live_end_at, replay_available_until" +
+          (withChannels ? ", show_on_web" : ""),
+      )
+      .eq("id", event_id)
+      .maybeSingle<PurchasableEvent>(),
+  );
   if (evErr) {
     return c.json({ ok: false, error: "internal_error" } as const, 500);
   }
-  if (!event) {
+  // Kiosk-only events are not sold online at all.
+  if (!event || !publishedOn(event.show_on_web)) {
     return c.json({ ok: false, error: "event_not_found" } as const, 404);
   }
   if (ticket_type === "live" && event.status === "ended") {

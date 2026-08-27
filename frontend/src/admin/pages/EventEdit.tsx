@@ -9,7 +9,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   createEvent,
   deleteEvent,
-  getEvent,
+  getAdminEvent,
   updateEvent,
 } from "../../data/store";
 import type { EventRecord } from "../../data/store";
@@ -17,6 +17,7 @@ import { api } from "../../lib/api";
 import { useConfirm } from "../components/ConfirmDialog";
 import DatePicker from "../components/DatePicker";
 import EventZonesEditor from "../components/EventZonesEditor";
+import PublishChannels from "../components/PublishChannels";
 import { useToast } from "../components/Toast";
 import { LoadingState } from "../components/Skeleton";
 import {
@@ -51,6 +52,8 @@ const EMPTY: EventRecord = {
   thumbnail_url: null,
   titleEn: "",
   descEn: "",
+  showOnWeb: true,
+  showOnKiosk: false,
 };
 
 function isoToLocalInput(iso: string): string {
@@ -164,7 +167,7 @@ export default function EventEdit() {
 
   useEffect(() => {
     if (isNew || !id) return;
-    getEvent(id).then((e) => {
+    getAdminEvent(id).then((e) => {
       if (!e) {
         setError("Арга хэмжээ олдсонгүй.");
         setLoaded(true);
@@ -189,6 +192,10 @@ export default function EventEdit() {
     }
     if (!form.start_time) {
       setError("Огноо, цаг шаардлагатай.");
+      return;
+    }
+    if (!form.showOnWeb && !form.showOnKiosk) {
+      setError("Вэб эсвэл касс — дор хаяж нэгийг сонгоно уу.");
       return;
     }
     setBusy(true);
@@ -489,6 +496,9 @@ export default function EventEdit() {
                     })()}
                 </div>
 
+                {/* The live end drives the stream and replay windows, so it
+                    only applies on the web. Kiosk-only events need a start. */}
+                {form.showOnWeb && (
                 <div className={ADMIN_FIELD_CLS}>
                   <label className="flex items-center gap-1.5">
                     <svg
@@ -563,6 +573,7 @@ export default function EventEdit() {
                     цонх эхэлнэ.
                   </small>
                 </div>
+                )}
 
                 <div className={ADMIN_FIELD_CLS}>
                   <label
@@ -590,6 +601,8 @@ export default function EventEdit() {
               </div>
             </section>
 
+            {/* Stream ticket tiers — kiosk prices live on the zones instead. */}
+            {form.showOnWeb && (
             <section className={CARD_CLS}>
               <header className={CARD_HEAD_CLS}>
                 <span className={CARD_HEAD_ICON_EMERALD} aria-hidden="true">
@@ -772,7 +785,49 @@ export default function EventEdit() {
                 </div>
               </div>
             </section>
+            )}
 
+            <section className={CARD_CLS}>
+              <header className={CARD_HEAD_CLS}>
+                <span className={CARD_HEAD_ICON_EMERALD} aria-hidden="true">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M4 11a9 9 0 0 1 9 9" />
+                    <path d="M4 4a16 16 0 0 1 16 16" />
+                    <circle cx="5" cy="19" r="1.5" />
+                  </svg>
+                </span>
+                <div className="min-w-0">
+                  <h3 className={CARD_HEAD_TITLE_CLS}>Хаана нэмэх</h3>
+                  <p className={CARD_HEAD_DESC_CLS}>
+                    Вэб ба касс тус тусдаа. Зөвхөн сонгосон газартаа л энэ арга
+                    хэмжээ гарч, тасалбар зарагдана.
+                  </p>
+                </div>
+              </header>
+              <div className={CARD_BODY_CLS}>
+                <PublishChannels
+                  value={{
+                    showOnWeb: form.showOnWeb,
+                    showOnKiosk: form.showOnKiosk,
+                  }}
+                  onChange={update}
+                  disabled={busy}
+                />
+              </div>
+            </section>
+
+            {/* Rendered even with the kiosk flag off — an event that was on
+                sale at the gate may still have zones with sold tickets that
+                the admin needs to see. */}
             {!isNew && id && <EventZonesEditor eventId={id} />}
           </div>
 
