@@ -16,8 +16,14 @@ import type { EventRecord } from "../../data/store";
 import { api } from "../../lib/api";
 import { useConfirm } from "../components/ConfirmDialog";
 import DatePicker from "../components/DatePicker";
-import EventZonesEditor from "../components/EventZonesEditor";
-import PublishChannels from "../components/PublishChannels";
+import KioskZoneFields from "../components/KioskZoneFields";
+import {
+  blankZoneDrafts,
+  hasSellableZone,
+  loadZoneDrafts,
+  saveZoneDrafts,
+  type ZoneDraft,
+} from "../lib/kiosk-zones";
 import { useToast } from "../components/Toast";
 import { LoadingState } from "../components/Skeleton";
 import {
@@ -115,6 +121,7 @@ const CARD_HEAD_ICON_BASE =
 const CARD_HEAD_ICON_BLUE = `${CARD_HEAD_ICON_BASE} bg-[#eef0fd] text-brand-blue ring-[#dadffb]`;
 const CARD_HEAD_ICON_EMERALD = `${CARD_HEAD_ICON_BASE} bg-emerald-50 text-emerald-600 ring-emerald-100`;
 const CARD_HEAD_ICON_VIOLET = `${CARD_HEAD_ICON_BASE} bg-violet-50 text-violet-600 ring-violet-100`;
+const CARD_HEAD_ICON_AMBER = `${CARD_HEAD_ICON_BASE} bg-amber-50 text-amber-600 ring-amber-100`;
 const CARD_HEAD_TITLE_CLS =
   "text-[14.5px] font-semibold tracking-[-0.01em] text-zinc-900 m-0 leading-tight";
 const CARD_HEAD_DESC_CLS =
@@ -163,6 +170,7 @@ export default function EventEdit() {
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [zones, setZones] = useState<ZoneDraft[]>(blankZoneDrafts);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -176,6 +184,12 @@ export default function EventEdit() {
       setForm(e);
       setLoaded(true);
     });
+  }, [id, isNew]);
+
+  // Loaded for every existing event; only rendered for kiosk ones.
+  useEffect(() => {
+    if (isNew || !id) return;
+    loadZoneDrafts(id).then(setZones);
   }, [id, isNew]);
 
   if (!loaded) return <LoadingState label="Арга хэмжээ уншиж байна…" />;
@@ -194,8 +208,10 @@ export default function EventEdit() {
       setError("Огноо, цаг шаардлагатай.");
       return;
     }
-    if (!form.showOnWeb && !form.showOnKiosk) {
-      setError("Вэб эсвэл касс — дор хаяж нэгийг сонгоно уу.");
+    if (form.showOnKiosk && !hasSellableZone(zones)) {
+      setError(
+        "VIP / Fan Zone / Энгийн-ийн дор хаяж нэгэнд багтаамж оруулна уу.",
+      );
       return;
     }
     setBusy(true);
@@ -205,6 +221,8 @@ export default function EventEdit() {
         toast.success("Арга хэмжээ үүсгэгдлээ.");
       } else if (id) {
         await updateEvent(id, form);
+        // Tiers go with the event — one button saves the whole screen.
+        if (form.showOnKiosk) await saveZoneDrafts(id, zones);
         toast.success("Өөрчлөлт хадгалагдлаа.");
       }
       navigate("/admin/events");
@@ -309,7 +327,17 @@ export default function EventEdit() {
           <div>
             <div className="flex items-center gap-2">
               <h2>{isNew ? "Шинэ арга хэмжээ" : "Арга хэмжээ засах"}</h2>
-              {isNew}
+              {/* Read-only: the storefront is picked when the event is created. */}
+              {form.showOnWeb && (
+                <span className="inline-flex items-center h-[22px] px-2 rounded-md text-[11.5px] font-medium ring-1 ring-inset bg-[#eef0fd] text-brand-blue ring-[#dadffb]">
+                  Вэб
+                </span>
+              )}
+              {form.showOnKiosk && (
+                <span className="inline-flex items-center h-[22px] px-2 rounded-md text-[11.5px] font-medium ring-1 ring-inset bg-amber-50 text-amber-700 ring-amber-100">
+                  Касс
+                </span>
+              )}
             </div>
             <p>
               {isNew
@@ -787,48 +815,47 @@ export default function EventEdit() {
             </section>
             )}
 
-            <section className={CARD_CLS}>
-              <header className={CARD_HEAD_CLS}>
-                <span className={CARD_HEAD_ICON_EMERALD} aria-hidden="true">
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M4 11a9 9 0 0 1 9 9" />
-                    <path d="M4 4a16 16 0 0 1 16 16" />
-                    <circle cx="5" cy="19" r="1.5" />
-                  </svg>
-                </span>
-                <div className="min-w-0">
-                  <h3 className={CARD_HEAD_TITLE_CLS}>Хаана нэмэх</h3>
-                  <p className={CARD_HEAD_DESC_CLS}>
-                    Вэб ба касс тус тусдаа. Зөвхөн сонгосон газартаа л энэ арга
-                    хэмжээ гарч, тасалбар зарагдана.
-                  </p>
+            {form.showOnKiosk && (
+              <section className={CARD_CLS}>
+                <header className={CARD_HEAD_CLS}>
+                  <span className={CARD_HEAD_ICON_AMBER} aria-hidden="true">
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M2 9V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 0 0 4v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-4a2 2 0 0 0 0-4z" />
+                      <line x1="13" y1="5" x2="13" y2="19" strokeDasharray="2 3" />
+                    </svg>
+                  </span>
+                  <div className="min-w-0">
+                    <h3 className={CARD_HEAD_TITLE_CLS}>
+                      Тасалбарын үнэ — VIP / Fan Zone / Энгийн
+                    </h3>
+                    <p className={CARD_HEAD_DESC_CLS}>
+                      Касс дээр эдгээр 3 төрлийн тасалбар зарагдана. Доод талын
+                      «Хадгалах» товч бүгдийг хамт хадгална.
+                    </p>
+                  </div>
+                </header>
+                <div className={CARD_BODY_CLS}>
+                  <KioskZoneFields
+                    value={zones}
+                    onChange={(idx, patch) =>
+                      setZones((zs) =>
+                        zs.map((z, i) => (i === idx ? { ...z, ...patch } : z)),
+                      )
+                    }
+                    disabled={busy}
+                  />
                 </div>
-              </header>
-              <div className={CARD_BODY_CLS}>
-                <PublishChannels
-                  value={{
-                    showOnWeb: form.showOnWeb,
-                    showOnKiosk: form.showOnKiosk,
-                  }}
-                  onChange={update}
-                  disabled={busy}
-                />
-              </div>
-            </section>
-
-            {/* Rendered even with the kiosk flag off — an event that was on
-                sale at the gate may still have zones with sold tickets that
-                the admin needs to see. */}
-            {!isNew && id && <EventZonesEditor eventId={id} />}
+              </section>
+            )}
           </div>
 
           <aside className="min-w-0 flex flex-col gap-5 sticky top-[76px] self-start">

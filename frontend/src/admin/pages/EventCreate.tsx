@@ -10,6 +10,13 @@ import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { createEvent } from "../../data/store";
 import { api } from "../../lib/api";
 import DatePicker from "../components/DatePicker";
+import KioskZoneFields from "../components/KioskZoneFields";
+import {
+  blankZoneDrafts,
+  hasSellableZone,
+  saveZoneDrafts,
+  type ZoneDraft,
+} from "../lib/kiosk-zones";
 import { useToast } from "../components/Toast";
 import {
   ADMIN_ALERT_CLS,
@@ -118,31 +125,21 @@ function EventEnglishSection({
   );
 }
 
+/**
+ * Web and kiosk are two separate events. The chooser step picks one, and this
+ * form then only ever shows that channel's fields — there is no cross-channel
+ * switch here on purpose.
+ */
 type Channel = "web" | "kiosk";
 
-const CHANNEL_META: Record<
-  Channel,
-  {
-    label: string;
-    lead: string;
-    chipCls: string;
-    other: string;
-    otherHint: string;
-  }
-> = {
+const CHANNEL_META: Record<Channel, { label: string; lead: string }> = {
   web: {
     label: "Вэб дээр нэмэх",
     lead: "Сайт дээр жагсаагдаж, онлайн шууд ба нөхөж үзэх тасалбар зарагдана.",
-    chipCls: "bg-[#eef0fd] text-brand-blue ring-[#dadffb]",
-    other: "Мөн касс (kiosk) дээр нэмэх",
-    otherHint: "Бүсийн тасалбарыг цэнгэлдэх дээр биечлэн бас зарна.",
   },
   kiosk: {
     label: "Касс (kiosk) дээр нэмэх",
     lead: "Цэнгэлдэх дээрх касс дээр гарч, бүсийн тасалбар биечлэн зарагдана.",
-    chipCls: "bg-amber-50 text-amber-700 ring-amber-100",
-    other: "Мөн вэб сайт дээр нэмэх",
-    otherHint: "Онлайн шууд ба нөхөж үзэх тасалбарыг сайт дээр бас зарна.",
   },
 };
 
@@ -183,10 +180,9 @@ export default function EventCreate() {
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [nameEn, setNameEn] = useState("");
   const [descEn, setDescEn] = useState("");
-  // The chosen channel is always on; the other one is an opt-in extra.
-  const [alsoOther, setAlsoOther] = useState(false);
-  const showOnWeb = primary === "web" || alsoOther;
-  const showOnKiosk = primary === "kiosk" || alsoOther;
+  const showOnWeb = primary === "web";
+  const showOnKiosk = primary === "kiosk";
+  const [zones, setZones] = useState<ZoneDraft[]>(blankZoneDrafts);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -245,6 +241,12 @@ export default function EventCreate() {
       setError("Огноо шаардлагатай.");
       return;
     }
+    if (showOnKiosk && !hasSellableZone(zones)) {
+      setError(
+        "VIP / Fan Zone / Энгийн-ийн дор хаяж нэгэнд багтаамж оруулна уу.",
+      );
+      return;
+    }
 
     const liveStartIso = combineDateTime(date, startTime);
     const liveEndIso = combineDateTime(endDate, endTime);
@@ -293,14 +295,23 @@ export default function EventCreate() {
         showOnWeb,
         showOnKiosk,
       });
+      // Zones need the event row to exist, so they follow in the same submit —
+      // the admin never has to save the tiers separately.
+      if (showOnKiosk) {
+        try {
+          await saveZoneDrafts(created.id, zones);
+        } catch (zoneErr) {
+          toast.error(
+            `Арга хэмжээ үүслээ, гэхдээ тасалбарын төрөл хадгалагдсангүй: ${
+              (zoneErr as Error).message
+            }`,
+          );
+          navigate(`/admin/events/${created.id}/edit`);
+          return;
+        }
+      }
       toast.success("Арга хэмжээ үүсгэгдлээ.");
-      // Kiosk events are useless without zones, and zones need the event to
-      // exist first — so drop the admin straight into the zones editor.
-      navigate(
-        showOnKiosk
-          ? `/admin/events/${created.id}/edit`
-          : `/admin/events/${created.id}`,
-      );
+      navigate(`/admin/events/${created.id}`);
     } catch (err) {
       setError((err as Error).message || "Үүсгэх боломжгүй.");
     } finally {
@@ -531,62 +542,30 @@ export default function EventCreate() {
           </div>
         </section>
 
-        <section className={CARD_CLS}>
-          <header className={CARD_HEAD_CLS}>
-            <h3 className={CARD_HEAD_TITLE_CLS}>Хаана нэмэх</h3>
-            <p className={CARD_HEAD_DESC_CLS}>
-              Эхлээд сонгосон газраа нэмэгдэнэ. Хоёуланд нь зарах бол доороос
-              нөгөөг нь нэмнэ үү.
-            </p>
-          </header>
-          <div className={CARD_BODY_CLS}>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span
-                className={`inline-flex items-center h-7 px-2.5 rounded-md text-[12.5px] font-semibold ring-1 ring-inset ${meta.chipCls}`}
-              >
-                {meta.label}
-              </span>
-              <Link
-                to="/admin/events/new"
-                className="text-[12.5px] text-zinc-500 hover:text-zinc-900 underline underline-offset-[3px] decoration-zinc-300"
-              >
-                Солих
-              </Link>
-            </div>
-            <label
-              htmlFor="ev-also-other"
-              className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition-colors ${
-                alsoOther
-                  ? "border-zinc-300 bg-white"
-                  : "border-[#ececef] bg-[#fafafa] hover:border-zinc-200"
-              }`}
-            >
-              <input
-                id="ev-also-other"
-                type="checkbox"
-                checked={alsoOther}
-                disabled={busy}
-                onChange={(e) => setAlsoOther(e.target.checked)}
-                className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-zinc-900"
-              />
-              <span className="min-w-0">
-                <span className="block text-[13.5px] font-semibold text-zinc-900 leading-tight">
-                  {meta.other}
-                </span>
-                <span className="block text-[12.5px] text-zinc-500 mt-0.5 leading-[1.45]">
-                  {meta.otherHint}
-                </span>
-              </span>
-            </label>
-            {showOnKiosk && (
-              <p className="m-0 text-[12.5px] text-zinc-500 leading-[1.45]">
-                VIP / Fan Zone / Энгийн гэсэн 3 төрлийн үнэ ба багтаамжийг
-                үүсгэсний дараа, засварлах хуудсан дээр оруулна. Бүсгүй бол касс
-                дээр зарагдахгүй.
+        {showOnKiosk && (
+          <section className={CARD_CLS}>
+            <header className={CARD_HEAD_CLS}>
+              <h3 className={CARD_HEAD_TITLE_CLS}>
+                Тасалбарын үнэ — VIP / Fan Zone / Энгийн
+              </h3>
+              <p className={CARD_HEAD_DESC_CLS}>
+                Касс дээр эдгээр 3 төрлийн тасалбар зарагдана. Үнэ ба багтаамжийг
+                оруулаад, доод талын нэг товчоор бүгдийг хамт хадгална.
               </p>
-            )}
-          </div>
-        </section>
+            </header>
+            <div className={CARD_BODY_CLS}>
+              <KioskZoneFields
+                value={zones}
+                onChange={(idx, patch) =>
+                  setZones((zs) =>
+                    zs.map((z, i) => (i === idx ? { ...z, ...patch } : z)),
+                  )
+                }
+                disabled={busy}
+              />
+            </div>
+          </section>
+        )}
 
         {showOnWeb && (
         <section className={CARD_CLS}>
@@ -690,11 +669,7 @@ export default function EventCreate() {
             className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_PRIMARY_CLS}`}
             disabled={busy}
           >
-            {busy
-              ? "Үүсгэж байна…"
-              : showOnKiosk
-                ? "Үүсгээд бүс нэмэх"
-                : "Үүсгэх"}
+            {busy ? "Нэмж байна…" : "Нэмэх"}
           </button>
           <Link
             to="/admin/events"
