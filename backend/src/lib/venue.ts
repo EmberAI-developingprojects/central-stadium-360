@@ -21,6 +21,17 @@ import {
 import { buildKioskCallbackUrl, getCallbackSecret } from "./qpay-signature";
 import { publishedOn, withChannelFallback } from "./event-channels";
 
+/**
+ * Kiosk events have a start but no end, so the counter retires an event this
+ * long after start_time. Long enough to keep selling at the gate for the whole
+ * show, short enough that yesterday's match is gone by the next morning.
+ */
+const KIOSK_SALE_GRACE_MS = 12 * 60 * 60 * 1000;
+
+export function kioskSaleCutoffIso(): string {
+  return new Date(Date.now() - KIOSK_SALE_GRACE_MS).toISOString();
+}
+
 export type VenueResult<T> =
   | { ok: true; data: T }
   | { ok: false; error: string; status: number };

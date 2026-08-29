@@ -32,6 +32,7 @@ import {
   applyCardResult,
   createKioskOrder,
   getKioskOrderStatus,
+  kioskSaleCutoffIso,
 } from "../lib/venue";
 import { withChannelFallback } from "../lib/event-channels";
 
@@ -60,7 +61,11 @@ adminKiosk.get("/events", async (c) => {
       .select(
         `id,title,description,status,start_time,image,thumbnail_url,zones(${ZONE_COLS})`,
       )
-      .in("status", ["upcoming", "live"]);
+      .in("status", ["upcoming", "live"])
+      // An event that started more than half a day ago is over — without an
+      // explicit kiosk end time this cutoff is what retires it from the
+      // counter, so stale events never linger as a "Зарагдсан" card.
+      .gte("start_time", kioskSaleCutoffIso());
     return (withChannels ? q.eq("show_on_kiosk", true) : q).order(
       "start_time",
       { ascending: true },
