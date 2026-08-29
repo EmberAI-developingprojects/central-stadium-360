@@ -6,16 +6,9 @@ import { config } from '../config.js';
 export const posRouter = Router();
 const ChargeBody = z.object({
     orderRef: z.string().min(1),
-    amount: z.number().int().positive(), // MNT
+    amount: z.number().int().positive(),
     description: z.string().optional(),
 });
-/**
- * POST /pos/charge — take a card payment on the on-box POS terminal.
- * Idempotent on orderRef so a retry never double-charges.
- *
- * The actual terminal is chosen by POS_DRIVER (mock | golomt); this route only
- * knows the PaymentTerminal interface, so swapping drivers changes nothing here.
- */
 posRouter.post('/charge', async (req, res) => {
     const parsed = ChargeBody.safeParse(req.body);
     if (!parsed.success) {
@@ -24,10 +17,7 @@ posRouter.post('/charge', async (req, res) => {
     const { orderRef, amount, description } = parsed.data;
     try {
         const result = await once(`pos:${orderRef}`, () => terminal.startSale({ orderRef, amount, description }));
-        // Keep the legacy `approved` boolean the Flutter client reads, alongside the
-        // richer status/rrn/authCode fields.
         const body = { ...result, approved: result.status === 'approved' };
-        // A clean decline is still a successful request — surface it as 402.
         if (!body.approved) {
             return res.status(402).json(body);
         }
@@ -37,11 +27,6 @@ posRouter.post('/charge', async (req, res) => {
         res.status(502).json({ error: 'pos_unreachable', detail: String(e) });
     }
 });
-/**
- * GET /pos/status — pre-flight check for the operator setting up a new box.
- * Reports which driver is active, whether the underlying PobRestService is
- * reachable, and which env vars are still empty. Safe to hit repeatedly.
- */
 posRouter.get('/status', async (_req, res) => {
     const info = {
         driver: config.posDriver,
@@ -55,9 +40,6 @@ posRouter.get('/status', async (_req, res) => {
         info.checks.reachable = 'skipped (mock)';
         return res.json(info);
     }
-    // Ping the service base URL; a WCF WebHttp endpoint that is up will return
-    // some HTTP status (often 400/415 for GET without data) — anything that is
-    // not a connection error means the service is listening.
     try {
         const ctl = new AbortController();
         const t = setTimeout(() => ctl.abort(), 3000);
@@ -69,7 +51,7 @@ posRouter.get('/status', async (_req, res) => {
     catch (e) {
         info.checks.reachable = false;
         info.checks.error = String(e).slice(0, 200);
-        info.checks.hint = 'Is PobRestService running? Check `sc query PobRestService` and http://localhost:8500/requestToPos/';
+        info.checks.hint = 'Is PobRestService running? Check `sc query PobRestService`';
     }
     if (!info.terminalId)
         info.checks.terminalId = 'MISSING — set POS_TERMINAL_ID in .env';
@@ -77,12 +59,6 @@ posRouter.get('/status', async (_req, res) => {
         info.checks.merchantId = 'MISSING — set POS_MERCHANT_ID in .env';
     res.json(info);
 });
-/**
- * POST /pos/probe — send an arbitrary payload to PobRestService and return the
- * raw response. This is the tool for figuring out OperationCode values and any
- * envelope quirks before wiring the real /charge path. Guarded behind
- * POS_DEBUG=on so it never runs on a locked-down production box.
- */
 posRouter.post('/probe', async (req, res) => {
     if (!config.posDebug) {
         return res.status(403).json({
