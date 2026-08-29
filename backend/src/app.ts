@@ -39,10 +39,18 @@ const DEV_ORIGINS = [
   "http://127.0.0.1:5174",
 ];
 
+// The stadium kiosk is a Flutter web build served from the kiosk box's own
+// loopback (run_web_kiosk.ps1 → http://127.0.0.1:8080) and calls this API
+// straight from that origin. Allowed in every environment — a loopback origin
+// only ever means a browser on the caller's own machine, and the kiosk routes
+// are gated by X-Kiosk-Key anyway.
+const KIOSK_ORIGINS = ["http://127.0.0.1:8080", "http://localhost:8080"];
+
 const allowedOrigins = new Set(
   [
     process.env.FRONTEND_URL,
     ...(process.env.CORS_ALLOWED_ORIGINS?.split(",") ?? []),
+    ...KIOSK_ORIGINS,
     ...(process.env.NODE_ENV === "production" ? [] : DEV_ORIGINS),
   ]
     .map((o) => o?.trim().replace(/\/$/, ""))
