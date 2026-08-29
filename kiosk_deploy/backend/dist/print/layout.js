@@ -18,14 +18,16 @@ export function ticketSpec(t) {
         { type: 'rule' },
         { type: 'kv', k: 'Арга хэмжээ', v: t.event },
         { type: 'kv', k: 'Бүс', v: t.zone },
-        { type: 'kv', k: 'Тоо ширхэг', v: String(t.quantity) },
-        { type: 'kv', k: 'Огноо', v: dt(t.startsAt) },
-        { type: 'space', mm: 2 },
-        { type: 'qr', data: t.qrData, sizeMm: 38 },
-        { type: 'text', text: t.orderRef, align: 'center', size: 'sm' },
-        { type: 'text', text: 'Хаалган дээр уг QR кодыг уншуулна уу', align: 'center', size: 'sm' },
-        { type: 'space', mm: 4 },
+        // seq ("2/3") reads better for the buyer than a bare quantity when the
+        // order printed several tickets; falls back to the legacy count.
+        { type: 'kv', k: 'Тасалбар', v: t.seq ?? String(t.quantity) },
     ];
+    if (t.price != null)
+        blocks.push({ type: 'kv', k: 'Үнэ', v: mnt(t.price) });
+    blocks.push({ type: 'kv', k: 'Тоглолтын огноо', v: dt(t.startsAt) });
+    if (t.purchasedAt)
+        blocks.push({ type: 'kv', k: 'Худалдан авсан', v: dt(t.purchasedAt) });
+    blocks.push({ type: 'space', mm: 2 }, { type: 'qr', data: t.qrData, sizeMm: 38 }, { type: 'text', text: t.orderRef, align: 'center', size: 'sm' }, { type: 'text', text: 'Хаалган дээр уг QR кодыг уншуулна уу', align: 'center', size: 'sm' }, { type: 'space', mm: 4 });
     return { title: `Ticket ${t.orderRef}`, blocks };
 }
 /**

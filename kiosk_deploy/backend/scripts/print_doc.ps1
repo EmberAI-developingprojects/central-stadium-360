@@ -37,7 +37,9 @@ function Align([string]$a) {
 function Invoke-Layout {
   param([System.Drawing.Graphics]$g, [bool]$draw)
   $black = [System.Drawing.Brushes]::Black
-  $grey  = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(110,110,110))
+  # NB: thermal printers have no greyscale — a grey brush dithers into sparse
+  # dots and prints almost invisibly. Everything prints solid black.
+  $grey  = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::Black)
   $pad = [int]($dpi * 0.06)                  # ~3mm side padding
   $innerW = $wPx - 2*$pad
   $y = [double]($dpi * 0.05)
@@ -70,7 +72,7 @@ function Invoke-Layout {
       'rule' {
         $y += $dpi * 0.04
         if ($draw) {
-          $pen = New-Object System.Drawing.Pen ([System.Drawing.Color]::FromArgb(150,150,150)), 1
+          $pen = New-Object System.Drawing.Pen ([System.Drawing.Color]::Black), 1
           $pen.DashStyle = [System.Drawing.Drawing2D.DashStyle]::Dash
           $g.DrawLine($pen, $pad, [single]$y, $wPx-$pad, [single]$y)
           $pen.Dispose()

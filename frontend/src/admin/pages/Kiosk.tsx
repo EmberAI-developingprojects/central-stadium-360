@@ -126,8 +126,23 @@ const EVENT_STATUS: Record<string, { label: string; cls: string }> = {
   expired: { label: "Дууссан", cls: ADMIN_BADGE_CANCELLED_CLS },
 };
 
-function EventStatusBadge({ status }: { status: EventStatus }) {
-  const s = EVENT_STATUS[status] ?? { label: status, cls: "" };
+// Matches the backend's kiosk retirement rule (start + 12h = over).
+const KIOSK_ENDED_AFTER_MS = 12 * 60 * 60 * 1000;
+
+function EventStatusBadge({
+  status,
+  startTime,
+}: {
+  status: EventStatus;
+  startTime?: string;
+}) {
+  // The stored status is unreliable for old rows (nothing flips a past event
+  // off "upcoming"), so a long-started event is labelled by the clock instead.
+  const startMs = startTime ? new Date(startTime).getTime() : NaN;
+  const s =
+    !Number.isNaN(startMs) && Date.now() - startMs > KIOSK_ENDED_AFTER_MS
+      ? { label: "Дууссан", cls: ADMIN_BADGE_CANCELLED_CLS }
+      : (EVENT_STATUS[status] ?? { label: status, cls: "" });
   return <span className={`${ADMIN_BADGE_CLS} ${s.cls}`}>{s.label}</span>;
 }
 
@@ -247,7 +262,7 @@ function SellThroughEventCard({ event }: { event: AdminSellThroughEvent }) {
             <h3 className="m-0 text-[14.5px] font-semibold text-zinc-900 truncate">
               {event.title}
             </h3>
-            <EventStatusBadge status={event.status} />
+            <EventStatusBadge status={event.status} startTime={event.start_time} />
           </div>
           <div className="text-[12px] text-zinc-500 mt-0.5 tabular-nums">
             {dt.primary}
@@ -629,7 +644,7 @@ function AdmissionEventCard({ event }: { event: AdminAdmissionEvent }) {
             <h3 className="m-0 text-[14.5px] font-semibold text-zinc-900 truncate">
               {event.title}
             </h3>
-            <EventStatusBadge status={event.status} />
+            <EventStatusBadge status={event.status} startTime={event.start_time} />
           </div>
           <div className="text-[12px] text-zinc-500 mt-0.5 tabular-nums">
             {dt.primary}

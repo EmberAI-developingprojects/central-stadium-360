@@ -36,5 +36,23 @@ export const config = {
     emailFrom: process.env.EMAIL_FROM ?? 'Tsengeldekh Stadium <tickets@stadium.mn>',
     /** Optional Reply-To (e.g. a support inbox). Empty → omitted. */
     emailReplyTo: process.env.EMAIL_REPLY_TO ?? '',
+    /** Cloud backend base URL (same one the kiosk UI sells against). When set
+     *  together with cloudKioskKey, the bridge auto-prints paid orders. */
+    cloudApiBase: (process.env.KIOSK_API_BASE ?? '').replace(/\/$/, ''),
+    /** X-Kiosk-Key for the cloud kiosk API (same value baked into the UI). */
+    cloudKioskKey: process.env.KIOSK_KEY ?? '',
+    /** This box's kiosk id — must match the id the UI sells under, because the
+     *  cloud only hands a box its own orders to print. */
+    cloudKioskId: process.env.KIOSK_ID ?? 'gate-1',
+    /** Venue name printed in the ticket header. */
+    venueName: process.env.VENUE_NAME ?? 'Үндэсний Төв Цэнгэлдэх',
+    /** How often to poll the cloud for new paid orders (ms). */
+    printPollMs: Number(process.env.PRINT_POLL_MS ?? 5000),
+    /** Merchant legal identity for the printed И-Баримт header (ТЕГ standard).
+     *  The QPay cloud rail issues the bill server-side and returns no merchant
+     *  block, so the paper header is stamped from these. */
+    ebarimtMerchantName: process.env.EBARIMT_MERCHANT_NAME ?? '',
+    ebarimtMerchantTin: process.env.EBARIMT_MERCHANT_TIN ?? '',
+    ebarimtPosNo: process.env.EBARIMT_POS_NO ?? '',
 };
 //# sourceMappingURL=config.js.map

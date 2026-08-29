@@ -6,6 +6,7 @@ import { posRouter } from './routes/pos.js';
 import { ebarimtRouter } from './routes/ebarimt.js';
 import { printRouter } from './routes/print.js';
 import { emailRouter } from './routes/email.js';
+import { startCloudPrintPoller } from './cloudprint.js';
 const app = express();
 app.use(express.json());
 app.use(corsPna);
@@ -100,6 +101,7 @@ app.listen(config.port, '127.0.0.1', () => {
     console.log(`  E-Barimt POSAPI      : ${config.ebarimtPosApiUrl}`);
     console.log(`  POS terminal service : ${config.posServiceUrl}`);
     console.log(`  email (Resend)       : ${config.resendApiKey ? 'configured' : 'SIMULATED (no key)'}`);
+    startCloudPrintPoller();
     // Fire and forget; failures are already rendered inside preflight().
     preflight().catch((e) => console.error('[preflight] internal error:', e));
 });

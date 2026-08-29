@@ -73475,7 +73475,7 @@ q=A.dp(B.eV,1)
 p=n===B.w?"\u0417\u0410\u0420\u0410\u0413\u0414\u0421\u0410\u041d":"SOLD OUT"
 g.push(A.akZ(0,A.bx(B.O,A.bx(o,A.ad(p,o,o,B.ad.dn(B.ao,16),o),B.l,o,o,new A.b5(B.i,o,q,r,o,o,B.y),o,o,o,B.CS,o,o,o),B.l,s,o,o,o,o,o,o,o,o,o)))}i=A.bx(o,A.uz(h,A.hC(B.b0,g,B.cq)),B.l,o,o,new A.b5(o,o,o,i,B.mz,o,B.y),o,o,o,o,o,o,o)
 h=A.c([A.eh(A.ca(A.c([A.ad(m.b,1,B.d5,B.a8,o),B.em,A.bF(A.c([B.E_,B.h3,new A.mT(1,B.iN,A.ad(new A.iC(n).qI(m.e),1,B.d5,B.U.dn(B.an,16),o),o)],f),B.x,B.B,B.r,o)],f),B.Y,B.r),1),B.xv],f)
-if(l){n=n===B.w?"\u0417\u0430\u0440\u0430\u0433\u0434\u0441\u0430\u043d":"Sold out"
+if(l){n=n===B.w?"\u0417\u0430\u0440\u0430\u0433\u0434\u0430\u0436 \u0434\u0443\u0443\u0441\u0441\u0430\u043d":"Sold out"
 h.push(A.ad(n,o,o,B.ad.fG(B.aW),o))}else{n=n===B.w?"\u042d\u0425\u041b\u042d\u0425 \u04ae\u041d\u042d":"FROM"
 h.push(A.bF(A.c([A.ca(A.c([A.ad(n,o,o,B.ad.fH(10),o),B.h4,A.ad(A.oW(m.gQW()),o,o,B.h8,o)],f),B.bv,B.r),B.d1,A.bx(o,B.DR,B.l,o,o,new A.b5(o,o,o,o,A.c([new A.cN(-2,B.aH,B.Q.bd(0.45),B.j,18)],t.V),B.bQ,B.c0),o,52,o,o,o,o,52)],f),B.x,B.B,B.r,o))}return A.fT(B.a2,!0,o,A.jl(!1,k,!0,A.ca(A.c([i,B.d2,new A.bt(B.D7,A.bF(h,B.x,B.B,B.r,o),o)],f),B.Y,B.r),o,!0,o,o,o,o,o,o,j,o,o,o),B.l,B.S,0,o,o,o,o,o,B.aB)}}
 A.FV.prototype={
@@ -74264,7 +74264,7 @@ n=n?p.d:p.e
 g=t.p
 return A.ant(A.fT(B.a2,!0,r,A.jl(!1,l,!0,A.akS(new A.bt(B.CQ,A.bF(A.c([i,B.ei,A.eh(A.ca(A.c([h,B.em,A.ad(n,r,r,B.U.dn(B.cI,17),r),B.cn,s.YL(a)],g),B.Y,B.r),1),B.ei,A.ad(A.oW(p.f),r,r,B.h8,r)],g),B.x,B.B,B.r,r),r),j),r,!0,r,r,r,r,r,r,k,r,r,r),B.l,B.S,0,r,r,r,r,r,B.aB),m,B.Cg,r,r,r)},
 YL(a){var s,r,q,p,o=null,n=A.cm(a),m=this.c,l=m.r-m.w
-if(l<=0){n=n===B.w?"\u0417\u0430\u0440\u0430\u0433\u0434\u0441\u0430\u043d":"Sold out"
+if(l<=0){n=n===B.w?"\u0417\u0430\u0440\u0430\u0433\u0434\u0430\u0436 \u0434\u0443\u0443\u0441\u0441\u0430\u043d":"Sold out"
 return A.ad(n,o,o,B.ad.fG(B.aW),o)}s=m.gO2()<0.15
 r=s?B.aW:B.Be
 q=t.p

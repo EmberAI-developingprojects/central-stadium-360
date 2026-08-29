@@ -47,3 +47,6 @@ env-vars.yaml
 # Vendor POS drivers (Golomt IPPOS + Verifone) — 33 MB of .rar/.msi archives,
 # distribute out-of-band (Google Drive / USB) instead of via git.
 kiosk_deploy/IPPOS*/
+
+# Kiosk bridge runtime ledger (per-box, never ship)
+kiosk_deploy/backend/printed-codes.json
