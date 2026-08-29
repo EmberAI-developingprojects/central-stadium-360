@@ -13,7 +13,11 @@ REM  Usage:  "Start Kiosk.bat"            start bridge + kiosk
 REM          "Start Kiosk.bat" /nobridge  kiosk only (no bridge)
 REM ============================================================
 set "ROOT=%~dp0"
-set "PORT=8080"
+
+REM Web UI port for the Chrome-served static server. NB: named WEB_PORT (not
+REM PORT) so it never leaks into Node.js's env — the bridge reads process.env.PORT
+REM for its OWN listener, and colliding with 8080 would EADDRINUSE it.
+set "WEB_PORT=8080"
 
 if /I "%~1"=="/nobridge" goto :kiosk
 
@@ -49,11 +53,20 @@ if not exist "%ROOT%backend\node_modules" (
   popd
 )
 
-echo === Starting on-box bridge ^(e-barimt / print / email^) ===
-start "kiosk-bridge" /D "%ROOT%backend" cmd /k "node dist\server.js"
+REM Refuse to launch a second bridge on top of an already-running one — the
+REM operator sometimes double-clicks Start Kiosk.bat. If TCP 7070 is already
+REM listening, we skip spawning a fresh bridge and go straight to the browser.
+netstat -ano | findstr /R /C:"127.0.0.1:7070 .* LISTENING" >nul 2>nul
+if not errorlevel 1 (
+  echo === Bridge already running on 127.0.0.1:7070 — skipping second launch ===
+) else (
+  echo === Starting on-box bridge ^(e-barimt / print / email^) ===
+  REM Explicitly unset PORT so it never overrides the bridge's default 7070.
+  start "kiosk-bridge" /D "%ROOT%backend" cmd /k "set PORT=&& node dist\server.js"
+)
 
 :kiosk
-echo === Launching web kiosk on http://127.0.0.1:%PORT% ===
-powershell -ExecutionPolicy Bypass -File "%ROOT%run_web_kiosk.ps1" -WebRoot "%ROOT%web" -Port %PORT%
+echo === Launching web kiosk on http://127.0.0.1:%WEB_PORT% ===
+powershell -ExecutionPolicy Bypass -File "%ROOT%run_web_kiosk.ps1" -WebRoot "%ROOT%web" -Port %WEB_PORT%
 
 endlocal

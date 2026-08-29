@@ -7,7 +7,7 @@ import {
   type FormEvent,
 } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
-import { createEvent } from "../../data/store";
+import { createEvent, deleteEvent } from "../../data/store";
 import { api } from "../../lib/api";
 import DatePicker from "../components/DatePicker";
 import KioskZoneFields from "../components/KioskZoneFields";
@@ -295,6 +295,22 @@ export default function EventCreate() {
         showOnWeb,
         showOnKiosk,
       });
+      // A backend deployed before the channel split silently drops the two
+      // flags, and the DB then defaults BOTH to true — the event would go live
+      // on the wrong storefront. Treat that as a failed create: roll it back
+      // and tell the admin instead of publishing everywhere.
+      if (
+        created.showOnWeb !== showOnWeb ||
+        created.showOnKiosk !== showOnKiosk
+      ) {
+        await deleteEvent(created.id).catch(() => undefined);
+        setError(
+          "Сервер вэб/кассын тохиргоог хүлээж авсангүй — backend хуучин " +
+            "хувилбартай байна. Шинэ хувилбарыг deploy хийсний дараа дахин " +
+            "оролдоно уу.",
+        );
+        return;
+      }
       // Zones need the event row to exist, so they follow in the same submit —
       // the admin never has to save the tiers separately.
       if (showOnKiosk) {
