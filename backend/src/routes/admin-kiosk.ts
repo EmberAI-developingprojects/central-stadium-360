@@ -31,6 +31,7 @@ import {
 import {
   applyCardResult,
   createKioskOrder,
+  expireStalePendingOrders,
   getKioskOrderStatus,
   kioskSaleCutoffIso,
 } from "../lib/venue";
@@ -55,6 +56,7 @@ adminKiosk.get("/events", async (c) => {
     );
   }
   // Mirrors /api/kiosk/events — web-only events are not sellable at a counter.
+  await expireStalePendingOrders();
   const { data, error } = await withChannelFallback((withChannels) => {
     const q = admin
       .from("events")
@@ -151,7 +153,11 @@ adminKiosk.get("/sell-through", async (c) => {
     .select(`id,title,status,start_time,zones(${ZONE_COLS})`)
     .order("start_time", { ascending: true });
   if (scope === "onsale") {
-    eventQuery = eventQuery.in("status", ["upcoming", "live"]);
+    // Same retirement rule as the kiosk feed: an event that started more than
+    // half a day ago is no longer "on sale" no matter what its status says.
+    eventQuery = eventQuery
+      .in("status", ["upcoming", "live"])
+      .gte("start_time", kioskSaleCutoffIso());
   }
   const { data: evData, error: evErr } = await eventQuery;
   if (evErr) {
@@ -395,7 +401,9 @@ adminKiosk.get("/admission", async (c) => {
     .order("start_time", { ascending: true });
   if (eventId) eventQuery = eventQuery.eq("id", eventId);
   else if (scope === "onsale") {
-    eventQuery = eventQuery.in("status", ["upcoming", "live"]);
+    eventQuery = eventQuery
+      .in("status", ["upcoming", "live"])
+      .gte("start_time", kioskSaleCutoffIso());
   }
   const { data: evData, error: evErr } = await eventQuery;
   if (evErr) {
