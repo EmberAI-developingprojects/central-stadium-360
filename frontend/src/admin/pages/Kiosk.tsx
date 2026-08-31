@@ -210,7 +210,7 @@ function SellThroughPanel() {
       ) : report.events.length === 0 ? (
         <div className={ADMIN_EMPTY_CLS}>
           <strong>Арга хэмжээ алга</strong>
-          Бүс тохируулсан, зарж буй арга хэмжээ одоогоор алга байна.
+          Касс дээр зарж буй арга хэмжээ одоогоор алга байна.
         </div>
       ) : (
         <>
@@ -218,7 +218,7 @@ function SellThroughPanel() {
             <StatCard
               label="Нийт багтаамж"
               value={report.totals.capacity.toLocaleString("en-US")}
-              sub="суудал / бүс"
+              sub="нийт тасалбар"
             />
             <StatCard
               label="Зарагдсан"
@@ -281,13 +281,13 @@ function SellThroughEventCard({ event }: { event: AdminSellThroughEvent }) {
 
       {event.zones.length === 0 ? (
         <div className="px-5 py-4 text-[13px] text-zinc-500">
-          Бүс тохируулаагүй.
+          Тасалбарын төрөл тохируулаагүй.
         </div>
       ) : (
         <table className={ADMIN_TABLE_CLS}>
           <thead>
             <tr>
-              <th>Бүс</th>
+              <th>Төрөл</th>
               <th style={{ width: "34%" }}>Дүүргэлт</th>
               <th style={{ textAlign: "right" }}>Үнэ</th>
               <th style={{ textAlign: "center" }}>Зарагдсан</th>
@@ -593,7 +593,7 @@ function AdmissionPanel() {
       ) : report.events.length === 0 ? (
         <div className={ADMIN_EMPTY_CLS}>
           <strong>Арга хэмжээ алга</strong>
-          Бүс тохируулсан, зарж буй арга хэмжээ одоогоор алга байна.
+          Касс дээр зарж буй арга хэмжээ одоогоор алга байна.
         </div>
       ) : (
         <>
@@ -663,13 +663,13 @@ function AdmissionEventCard({ event }: { event: AdminAdmissionEvent }) {
 
       {event.zones.length === 0 ? (
         <div className="px-5 py-4 text-[13px] text-zinc-500">
-          Бүс тохируулаагүй.
+          Тасалбарын төрөл тохируулаагүй.
         </div>
       ) : (
         <table className={ADMIN_TABLE_CLS}>
           <thead>
             <tr>
-              <th>Бүс</th>
+              <th>Төрөл</th>
               <th style={{ width: "38%" }}>Нэвтрэлт</th>
               <th style={{ textAlign: "center" }}>Нэвтэрсэн</th>
               <th style={{ textAlign: "center" }}>Ороогүй</th>
@@ -908,7 +908,7 @@ function SalesPanel() {
               <tr>
                 <th>Лавлах</th>
                 <th>Арга хэмжээ</th>
-                <th>Бүс</th>
+                <th>Төрөл</th>
                 <th>Худалдан авагч</th>
                 <th style={{ textAlign: "center" }}>Тоо</th>
                 <th style={{ textAlign: "right" }}>Дүн</th>
@@ -1111,7 +1111,7 @@ function OrderDetailModal({
 
               <div>
                 <div className="text-[11px] text-zinc-500 uppercase tracking-[.06em] font-medium mb-2">
-                  Захиалсан бүс
+                  Захиалсан төрөл
                 </div>
                 <div className="flex flex-col gap-1.5">
                   {order.items.map((it, i) => (
