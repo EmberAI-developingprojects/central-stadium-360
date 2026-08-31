@@ -75,6 +75,9 @@ const MIN_ZOOM = 1;
 const MAX_ZOOM = 4;
 const ZOOM_STEP = 0.25;
 const BASE_FOV = 75;
+// Skip the pre-match warm-up frames on first load. Only applied when the
+// recording is comfortably longer than the skip so short clips still play.
+const INTRO_SKIP_SECS = 300;
 
 const camLabel = (rec: DbRecording) => `Камер ${rec.camera_number}`;
 // With multi-session events a camera can have several recordings; the session
@@ -449,7 +452,7 @@ function VODViewer({ event }: { event: VODEventDetail }) {
 
   useEffect(() => {
     if (recordings.length === 0) return;
-    void loadSignedUrl(recordings[0].id, null);
+    void loadSignedUrl(recordings[0].id, INTRO_SKIP_SECS);
   }, [recordings, loadSignedUrl]);
 
   const switchCamera = useCallback(
@@ -480,9 +483,14 @@ function VODViewer({ event }: { event: VODEventDetail }) {
     const applyPendingSeek = () => {
       const seek = pendingSeekRef.current;
       if (seek !== null && Number.isFinite(seek)) {
-        try {
-          video.currentTime = seek;
-        } catch {}
+        // Guard: don't seek past the end of a short recording (would land at
+        // "ended" and immediately pause).
+        const dur = video.duration;
+        if (!Number.isFinite(dur) || dur <= 0 || seek < dur - 5) {
+          try {
+            video.currentTime = seek;
+          } catch {}
+        }
       }
       pendingSeekRef.current = null;
       setSwitching(false);
@@ -1142,6 +1150,26 @@ function VODViewer({ event }: { event: VODEventDetail }) {
             }}
             onDoubleClick={toggleStageFs}
           />
+
+          {paused && !switching && !signError && (
+            <button
+              type="button"
+              onClick={togglePlay}
+              aria-label="Тоглуулах"
+              className="absolute inset-0 grid place-items-center bg-black/30 z-[4] cursor-pointer border-0 p-0 [transition:background_.15s_ease] hover:bg-black/40"
+            >
+              <span className="w-[88px] h-[88px] rounded-full bg-black/65 border-2 border-solid border-white/85 grid place-items-center shadow-[0_10px_28px_-8px_rgba(0,0,0,0.6)] [transition:transform_.15s_ease] hover:scale-105 max-[540px]:w-[64px] max-[540px]:h-[64px]">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="white"
+                  aria-hidden="true"
+                  className="w-11 h-11 ml-1 max-[540px]:w-8 max-[540px]:h-8"
+                >
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </span>
+            </button>
+          )}
 
           {switching && (
             <div
