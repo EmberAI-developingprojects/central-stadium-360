@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import type { AdminTicketRow, DbRecording, EventStatus } from "@cs360/shared";
+import type {
+  AdminSellThroughEvent,
+  AdminTicketRow,
+  DbRecording,
+  EventStatus,
+} from "@cs360/shared";
 import { api } from "../../lib/api";
 import type { EventRecord } from "../../data/store";
 import RecordingFormDialog from "../components/RecordingFormDialog";
@@ -130,6 +135,13 @@ function dbToRecord(row: import("@cs360/shared").DbEvent): EventRecord {
   };
 }
 
+/** Kiosk events have no stream — "live" just means the show is on right now. */
+function kioskStatusLabel(status: EventStatus): string {
+  if (status === "upcoming") return "Удахгүй";
+  if (status === "live") return "Явагдаж байна";
+  return "Дууссан";
+}
+
 const REDISCOVER_GRACE_MS = 10 * 60 * 1000;
 
 export default function EventDetail() {
@@ -144,19 +156,30 @@ export default function EventDetail() {
   const [rediscoverMsg, setRediscoverMsg] = useState<string | null>(null);
   const [endingLive, setEndingLive] = useState(false);
   const [endLiveMsg, setEndLiveMsg] = useState<string | null>(null);
+  const [kioskSales, setKioskSales] = useState<AdminSellThroughEvent | null>(
+    null,
+  );
 
   const refresh = useCallback(async () => {
     if (!id) return;
     setLoading(true);
-    const [evRes, recRes, ticRes] = await Promise.all([
+    const [evRes, recRes, ticRes, kioskRes] = await Promise.all([
       api.admin.getEvent(id),
       api.admin.listEventRecordings(id),
       api.admin.listTickets({ eventId: id }),
+      // Paid-only kiosk sales for this event (zones.sold would also count
+      // pending holds, which is the wrong number for a report).
+      api.admin.kiosk.sellThrough("all"),
     ]);
     if (evRes.ok) setEvent(dbToRecord(evRes.data));
     else setError(evRes.error);
     if (recRes.ok) setRecordings(recRes.data);
     if (ticRes.ok) setTickets(ticRes.data);
+    if (kioskRes.ok && kioskRes.data) {
+      setKioskSales(
+        kioskRes.data.events.find((e) => e.event_id === id) ?? null,
+      );
+    }
     setLoading(false);
   }, [id]);
 
@@ -249,6 +272,9 @@ export default function EventDetail() {
 
   const status = deriveEventStatus(event);
   const readyCount = recordings.filter((r) => r.status === "ready").length;
+  // A kiosk-only event has no stream, no recordings and no replay window —
+  // every streaming-side section below is web-only.
+  const kioskOnly = event.showOnKiosk && !event.showOnWeb;
 
   return (
     <>
@@ -272,8 +298,13 @@ export default function EventDetail() {
               <span
                 className={`inline-flex items-center py-0.5 px-2 rounded-full text-[11px] font-medium ring-1 ring-inset ${statusClass[status]}`}
               >
-                {statusLabel[status]}
+                {kioskOnly ? kioskStatusLabel(status) : statusLabel[status]}
               </span>
+              {kioskOnly && (
+                <span className="inline-flex items-center py-0.5 px-2 rounded-full text-[11px] font-medium ring-1 ring-inset bg-amber-50 text-amber-700 ring-amber-100">
+                  Касс
+                </span>
+              )}
             </div>
             <p className="!m-0 !mt-1 text-[13px] text-zinc-500">
               {fmtDate(event.start_time)}
@@ -281,7 +312,7 @@ export default function EventDetail() {
           </div>
         </div>
         <div className="flex gap-2">
-          {status === "live" && (
+          {status === "live" && !kioskOnly && (
             <Link
               to={`/watch`}
               className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_PRIMARY_CLS}`}
@@ -304,6 +335,34 @@ export default function EventDetail() {
         </div>
       </div>
 
+      {kioskOnly ? (
+        <div className={STAT_GRID_CLS}>
+          <div className={STAT_CARD_CLS}>
+            <div className={STAT_LABEL_CLS}>Зарагдсан тасалбар</div>
+            <div className={STAT_VALUE_CLS}>{kioskSales?.sold ?? 0}</div>
+            <div className="text-[12px] text-zinc-500 mt-1">
+              төлөгдсөн, касс дээр
+            </div>
+          </div>
+          <div className={STAT_CARD_CLS}>
+            <div className={STAT_LABEL_CLS}>Орлого</div>
+            <div className={STAT_VALUE_CLS}>
+              {money(kioskSales?.revenue ?? 0)}
+            </div>
+          </div>
+          <div className={STAT_CARD_CLS}>
+            <div className={STAT_LABEL_CLS}>Багтаамж</div>
+            <div className={STAT_VALUE_CLS}>{kioskSales?.capacity ?? 0}</div>
+            <div className="text-[12px] text-zinc-500 mt-1">нийт тасалбар</div>
+          </div>
+          <div className={STAT_CARD_CLS}>
+            <div className={STAT_LABEL_CLS}>Дүүргэлт</div>
+            <div className={STAT_VALUE_CLS}>
+              {Math.round((kioskSales?.pct ?? 0) * 100)}%
+            </div>
+          </div>
+        </div>
+      ) : (
       <div className={STAT_GRID_CLS}>
         <div className={STAT_CARD_CLS}>
           <div className={STAT_LABEL_CLS}>Шууд тасалбар</div>
@@ -329,32 +388,105 @@ export default function EventDetail() {
           <div className="text-[12px] text-zinc-500 mt-1">бэлэн</div>
         </div>
       </div>
+      )}
 
       <section className={`${CARD_CLS} mt-6`}>
         <header className={CARD_HEAD_CLS}>
           <div>
             <h3 className={CARD_HEAD_TITLE_CLS}>Дэлгэрэнгүй</h3>
             <p className={CARD_HEAD_DESC_CLS}>
-              Хуваарь, үнэ, нөхөж үзэх хугацаа.
+              {kioskOnly
+                ? "Тоглолтын хуваарь, төлөв."
+                : "Хуваарь, үнэ, нөхөж үзэх хугацаа."}
             </p>
           </div>
         </header>
         <div className={CARD_BODY_CLS}>
           <dl className="grid gap-4 [grid-template-columns:repeat(2,minmax(0,1fr))] max-[640px]:[grid-template-columns:1fr]">
-            <DetailRow
-              label="Шууд эхлэх"
-              value={fmtDate(event.live_start_at ?? event.start_time)}
-            />
-            <DetailRow label="Шууд дуусах" value={fmtDate(event.live_end_at)} />
-            <DetailRow
-              label="Нөхөж үзэх хугацаа"
-              value={fmtDate(event.replay_available_until)}
-            />
-            <DetailRow label="Төлөв" value={statusLabel[status]} />
+            {kioskOnly ? (
+              <>
+                <DetailRow
+                  label="Тоглолт эхлэх"
+                  value={fmtDate(event.start_time)}
+                />
+                <DetailRow label="Төлөв" value={kioskStatusLabel(status)} />
+              </>
+            ) : (
+              <>
+                <DetailRow
+                  label="Шууд эхлэх"
+                  value={fmtDate(event.live_start_at ?? event.start_time)}
+                />
+                <DetailRow
+                  label="Шууд дуусах"
+                  value={fmtDate(event.live_end_at)}
+                />
+                <DetailRow
+                  label="Нөхөж үзэх хугацаа"
+                  value={fmtDate(event.replay_available_until)}
+                />
+                <DetailRow label="Төлөв" value={statusLabel[status]} />
+              </>
+            )}
           </dl>
         </div>
       </section>
 
+      {kioskOnly && (
+        <section className={`${CARD_CLS} mt-6`}>
+          <header className={CARD_HEAD_CLS}>
+            <div>
+              <h3 className={CARD_HEAD_TITLE_CLS}>
+                Тасалбарын төрлүүд — касс
+              </h3>
+              <p className={CARD_HEAD_DESC_CLS}>
+                Төлөгдсөн борлуулалт төрөл тус бүрээр.
+              </p>
+            </div>
+            <Link
+              to="/admin/kiosk"
+              className="text-[12.5px] text-zinc-500 hover:text-zinc-900 underline underline-offset-[3px] decoration-zinc-300"
+            >
+              Кассын тайлан →
+            </Link>
+          </header>
+          {!kioskSales || kioskSales.zones.length === 0 ? (
+            <div className="px-6 py-5 text-[13px] text-zinc-500">
+              Тасалбарын төрөл тохируулаагүй байна — засах хуудсан дээр үнэ,
+              багтаамжаа оруулна уу.
+            </div>
+          ) : (
+            <div>
+              {kioskSales.zones.map((z) => (
+                <div
+                  key={z.zone_id}
+                  className="flex items-center gap-3 px-6 py-3.5 border-b border-[#f4f4f5] last:border-b-0"
+                >
+                  <span
+                    className="h-4 w-1.5 rounded-full shrink-0"
+                    style={{ background: z.color || "#2230C6" }}
+                    aria-hidden="true"
+                  />
+                  <span className="text-[13.5px] font-medium text-zinc-900 min-w-[90px]">
+                    {z.name_mn}
+                  </span>
+                  <span className="text-[12.5px] text-zinc-500 tabular-nums">
+                    {money(z.price)}
+                  </span>
+                  <span className="ml-auto text-[13px] tabular-nums text-zinc-700">
+                    {z.sold}/{z.capacity} зарагдсан
+                  </span>
+                  <span className="text-[13px] font-semibold tabular-nums text-zinc-900 min-w-[80px] text-right">
+                    {money(z.revenue)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {!kioskOnly && (
       <section className={`${CARD_CLS} mt-6`}>
         <header className={CARD_HEAD_CLS}>
           <div>
@@ -444,7 +576,9 @@ export default function EventDetail() {
           </div>
         )}
       </section>
+      )}
 
+      {!kioskOnly && (
       <details className="mt-4 rounded-2xl border border-[#ececef] bg-white/60 [&_summary]:cursor-pointer [&_summary]:list-none">
         <summary className="px-6 py-4 text-[12.5px] font-semibold text-zinc-500 uppercase tracking-[0.06em] hover:text-zinc-700">
           Дэвшилтэт · Бичлэгийг гараар нэмэх
@@ -468,6 +602,7 @@ export default function EventDetail() {
           </div>
         </div>
       </details>
+      )}
 
       <RecordingFormDialog
         open={dialogCam !== null}

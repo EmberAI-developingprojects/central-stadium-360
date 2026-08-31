@@ -22,11 +22,20 @@ import {
 } from "../_adminStyles";
 
 type StatusKind = EventStatus;
-type StatusFilter = "all" | "live" | "upcoming" | "ended" | "archived";
+// Status filters plus the two storefront channels — admins mostly ask "what's
+// on the kiosk / on the web", so those filter alongside the lifecycle states.
+type StatusFilter = "all" | "live" | "upcoming" | "ended" | "web" | "kiosk";
 
-const matchesFilter = (status: StatusKind, filter: StatusFilter): boolean => {
+const matchesFilter = (
+  event: AdminEventRecord,
+  status: StatusKind,
+  filter: StatusFilter,
+): boolean => {
   if (filter === "all") return true;
-  if (filter === "ended") return status === "ended" || status === "expired";
+  if (filter === "web") return event.showOnWeb;
+  if (filter === "kiosk") return event.showOnKiosk;
+  if (filter === "ended")
+    return status === "ended" || status === "expired" || status === "archived";
   return status === filter;
 };
 
@@ -226,7 +235,7 @@ export default function EventsList() {
 
   const filtered = useMemo(() => {
     return enriched.filter((r) => {
-      if (!matchesFilter(r.status, statusFilter)) return false;
+      if (!matchesFilter(r.event, r.status, statusFilter)) return false;
       if (!q) return true;
       const needle = q.toLowerCase();
       return (r.event.title || "").toLowerCase().includes(needle);
@@ -355,10 +364,11 @@ export default function EventsList() {
             {(
               [
                 ["all", "Бүгд"],
+                ["web", "Вэб"],
+                ["kiosk", "Касс"],
                 ["live", "Шууд"],
                 ["upcoming", "Удахгүй"],
                 ["ended", "Дууссан"],
-                ["archived", "Нөхөж үзэх боломжтой"],
               ] as Array<[StatusFilter, string]>
             ).map(([key, label]) => (
               <button

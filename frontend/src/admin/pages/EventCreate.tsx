@@ -139,7 +139,7 @@ const CHANNEL_META: Record<Channel, { label: string; lead: string }> = {
   },
   kiosk: {
     label: "Касс (kiosk) дээр нэмэх",
-    lead: "Цэнгэлдэх дээрх касс дээр гарч, бүсийн тасалбар биечлэн зарагдана.",
+    lead: "Цэнгэлдэх дээрх касс дээр гарч, VIP / Fan Zone / Энгийн тасалбар биечлэн зарагдана.",
   },
 };
 
