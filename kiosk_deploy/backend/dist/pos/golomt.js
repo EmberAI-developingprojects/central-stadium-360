@@ -1,14 +1,58 @@
 import { config } from '../config.js';
 
+// Real SAO_* enum values extracted from Golomt's DualConnector.dll metadata
+// (2026-09-01): SALE=1, REFUND=3, VOID=4, SETTLEMENT=59. The old 200/201/202/500
+// defaults were placeholders that made the service NRE-crash as "error 91".
 const OP = {
-    SALE: Number(process.env.POS_OP_SALE ?? 200),
-    VOID: Number(process.env.POS_OP_VOID ?? 201),
-    REFUND: Number(process.env.POS_OP_REFUND ?? 202),
-    SETTLEMENT: Number(process.env.POS_OP_SETTLEMENT ?? 500),
+    SALE: Number(process.env.POS_OP_SALE ?? 1),
+    VOID: Number(process.env.POS_OP_VOID ?? 4),
+    REFUND: Number(process.env.POS_OP_REFUND ?? 3),
+    SETTLEMENT: Number(process.env.POS_OP_SETTLEMENT ?? 59),
 };
 const AMOUNT_MULT = Number(process.env.POS_AMOUNT_MULTIPLIER ?? 1);
+// Terminal channel params — PobRestLibrary passes these straight into
+// DCLink.SetChannelTerminalParam / Exchange. Values match DualConnector.xml
+// (terminal on COM10 @ 115200) and the 3-minute card timeout, in seconds.
+const COM_PORT = process.env.POS_COM_PORT ?? '10';
+const BAUD_RATE = process.env.POS_BAUDRATE ?? '115200';
+// Exchange timeout is in MILLISECONDS — field-proven 2026-09-01: sending "180"
+// cancelled the terminal ~0.2s after the card prompt ("Operation timeout",
+// code 11). 180000 = the intended 3 minutes for tap + PIN.
+const EXCHANGE_TIMEOUT_MS = String(
+    Number(process.env.POS_EXCHANGE_TIMEOUT_MS
+        ?? (process.env.POS_EXCHANGE_TIMEOUT_S
+            ? Number(process.env.POS_EXCHANGE_TIMEOUT_S) * 1000
+            : 180000)));
+
+/**
+ * Full 14-field request contract of PobRestLibrary (recovered from the DLL's
+ * field table, 2026-09-01). EVERY string field must be present: the service
+ * calls .Equals("") on cMode/cMode2/cardEntryMode without a null check, so a
+ * missing key = NullReferenceException = the infamous "91 Issuer system error".
+ * All values are strings — the service Int32.Parse-es the numeric ones itself.
+ */
+function baseEnvelope(operationCode, requestID) {
+    return {
+        requestID,
+        portNo: COM_PORT,
+        bandwidth: BAUD_RATE,
+        timeout: EXCHANGE_TIMEOUT_MS,
+        terminalID: process.env.POS_TERMINAL_ID ?? '',
+        amount: '',
+        currencyCode: '496',
+        operationCode: String(operationCode),
+        cMode: '',
+        cMode2: '',
+        additionalData: '',
+        cardEntryMode: '',
+        fileData: '',
+        token: '',
+    };
+}
 const APPROVED_STATUS = (process.env.POS_APPROVED_STATUS ?? 'approved').toLowerCase();
-const REQUEST_TIMEOUT_MS = Number(process.env.POS_REQUEST_TIMEOUT_MS ?? 180000);
+const REQUEST_TIMEOUT_MS = Math.max(
+    Number(process.env.POS_REQUEST_TIMEOUT_MS ?? 180000),
+    Number(process.env.POS_EXCHANGE_TIMEOUT_MS ?? 180000) + 30000);
 
 function b64encodeUtf8(s) {
     return Buffer.from(s, 'utf-8').toString('base64');
@@ -71,7 +115,45 @@ async function sendToPos(payload) {
             return outer;
         }
     }
-    return outer;
+    return unwrapPosResult(outer);
+}
+
+/**
+ * The live Golomt WCF service answers as
+ *   { "PosResult": "{\"data\":\"<base64>\",\"responseCode\":\"91\",...}" }
+ * — a JSON string inside a JSON envelope, with the transaction detail base64'd
+ * inside THAT. Field-observed 2026-08-29; without this unwrap even an approved
+ * sale (responseCode "00") would read as declined, because the code never
+ * surfaced out of the PosResult wrapper.
+ */
+function unwrapPosResult(outer) {
+    if (!outer || typeof outer !== 'object' || typeof outer.PosResult !== 'string') {
+        return outer;
+    }
+    let inner;
+    try {
+        inner = JSON.parse(outer.PosResult);
+    } catch {
+        return outer;
+    }
+    const result = {
+        responseCode: inner?.responseCode,
+        responseDesc: inner?.responseDesc,
+        PosResultRaw: outer.PosResult,
+    };
+    if (typeof inner?.data === 'string' && inner.data) {
+        try {
+            const decoded = b64decodeUtf8(inner.data);
+            try {
+                Object.assign(result, JSON.parse(decoded));
+            } catch {
+                result.dataText = decoded;
+            }
+        } catch {
+            result.dataText = inner.data;
+        }
+    }
+    return result;
 }
 
 function isApproved(r) {
@@ -82,6 +164,12 @@ function isApproved(r) {
         return true;
     if (String(r?.ResponseCode ?? '') === '00')
         return true;
+    // Live envelope: ISO-8583-style approval code from the unwrapped PosResult.
+    if (String(r?.responseCode ?? '') === '00')
+        return true;
+    // Inner SAPacket status: 1 = approved (set alongside responseCode 00).
+    if (String(r?.status ?? '') === '1')
+        return true;
     return false;
 }
 
@@ -89,37 +177,27 @@ export class GolomtTerminal {
     name = 'golomt';
 
     async startSale(input) {
-        const req = {
-            OperationCode: OP.SALE,
-            Amount: Math.round(input.amount * AMOUNT_MULT),
-            TerminalID: process.env.POS_TERMINAL_ID ?? '',
-            MerchantID: process.env.POS_MERCHANT_ID ?? '',
-            requestID: input.orderRef,
-        };
+        const req = baseEnvelope(OP.SALE, input.orderRef);
+        req.amount = String(Math.round(input.amount * AMOUNT_MULT));
         const r = await sendToPos(req);
         const approved = isApproved(r);
         return {
             status: approved ? 'approved' : 'declined',
             orderRef: input.orderRef,
             amount: input.amount,
-            authCode: r?.AuthorizationCode ?? undefined,
-            rrn: r?.ReferenceNumber ?? undefined,
-            cardMasked: r?.PAN ?? undefined,
-            terminalId: r?.TerminalID ?? undefined,
-            merchantId: r?.MerchantID ?? undefined,
-            receipt: r?.ReceiptData ?? r?.TextResponse ?? undefined,
-            errorText: approved ? undefined : (r?.ErrorDescription ?? r?.TextResponse ?? undefined),
+            authCode: r?.authorizationCode ?? r?.AuthorizationCode ?? undefined,
+            rrn: r?.referenceNo ?? r?.ReferenceNumber ?? undefined,
+            cardMasked: r?.pan ?? r?.PAN ?? undefined,
+            terminalId: r?.terminalID ?? r?.TerminalID ?? undefined,
+            merchantId: r?.merchantID ?? r?.MerchantID ?? undefined,
+            receipt: r?.receiptData ?? r?.ReceiptData ?? r?.textResp ?? undefined,
+            errorText: approved ? undefined : (r?.errorDesc || (r?.responseDesc ?? r?.dataText) || undefined),
             raw: r,
         };
     }
 
     async cancel(orderRef) {
-        const req = {
-            OperationCode: OP.VOID,
-            requestID: orderRef,
-            TerminalID: process.env.POS_TERMINAL_ID ?? '',
-            MerchantID: process.env.POS_MERCHANT_ID ?? '',
-        };
+        const req = baseEnvelope(OP.VOID, orderRef);
         const r = await sendToPos(req);
         const approved = isApproved(r);
         return {
@@ -128,18 +206,16 @@ export class GolomtTerminal {
             amount: r?.Amount ? Math.round(Number(r.Amount) / (AMOUNT_MULT || 1)) : 0,
             authCode: r?.AuthorizationCode ?? undefined,
             rrn: r?.ReferenceNumber ?? undefined,
-            errorText: approved ? undefined : (r?.ErrorDescription ?? r?.TextResponse ?? undefined),
+            errorText: approved ? undefined : (r?.errorDesc || (r?.responseDesc ?? r?.dataText) || undefined),
             raw: r,
         };
     }
 
     async lastSettlement(date) {
-        const req = {
-            OperationCode: OP.SETTLEMENT,
-            requestID: `settle-${date || new Date().toISOString().slice(0, 10)}`,
-            TerminalID: process.env.POS_TERMINAL_ID ?? '',
-            MerchantID: process.env.POS_MERCHANT_ID ?? '',
-        };
+        const req = baseEnvelope(
+            OP.SETTLEMENT,
+            `settle-${date || new Date().toISOString().slice(0, 10)}`,
+        );
         const r = await sendToPos(req);
         if (Array.isArray(r?.Sales))
             return r.Sales;

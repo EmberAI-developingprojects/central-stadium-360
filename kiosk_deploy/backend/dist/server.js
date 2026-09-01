@@ -83,7 +83,7 @@ async function preflight() {
     }
     console.log('  ' + '─'.repeat(72) + '\n');
 }
-app.listen(config.port, '127.0.0.1', () => {
+const srv = app.listen(config.port, '127.0.0.1', () => {
     console.log(`kiosk-bridge listening on http://127.0.0.1:${config.port}`);
     console.log(`  allowed kiosk origin : ${config.kioskOrigin}`);
     console.log(`  E-Barimt POSAPI      : ${config.ebarimtPosApiUrl}`);
@@ -91,5 +91,20 @@ app.listen(config.port, '127.0.0.1', () => {
     console.log(`  email (Resend)       : ${config.resendApiKey ? 'configured' : 'SIMULATED (no key)'}`);
     startCloudPrintPoller();
     preflight().catch((e) => console.error('[preflight] internal error:', e));
+});
+srv.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+        console.error(`\nPort ${config.port} is already in use — a bridge is probably`);
+        console.error('already running. Close its window (or reboot) and re-run Start Kiosk.bat.');
+    }
+    else if (err.code === 'EACCES') {
+        console.error(`\nWindows refused to bind port ${config.port} (EACCES).`);
+        console.error('Run in admin PowerShell:  netsh interface ipv4 show excludedportrange protocol=tcp');
+        console.error(`and pick a PORT in backend\\.env outside every listed range (ports below 1025 are never reserved).`);
+    }
+    else {
+        console.error('kiosk-bridge failed to start:', err);
+    }
+    process.exit(1);
 });
 //# sourceMappingURL=server.js.map

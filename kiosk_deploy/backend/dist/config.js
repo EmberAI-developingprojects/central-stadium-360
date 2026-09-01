@@ -1,6 +1,6 @@
 export const config = {
-    port: Number(process.env.PORT ?? 7070),
-    kioskOrigin: process.env.KIOSK_ORIGIN ?? 'http://localhost:7070',
+    port: Number(process.env.PORT || 1017),
+    kioskOrigin: process.env.KIOSK_ORIGIN ?? 'http://localhost:1017',
     ebarimtPosApiUrl: process.env.EBARIMT_POSAPI_URL ?? 'http://localhost:7080',
     ebarimtDistrictCode: process.env.EBARIMT_DISTRICT_CODE ?? '3420',
     ebarimtBranchNo: process.env.EBARIMT_BRANCH_NO ?? '1',

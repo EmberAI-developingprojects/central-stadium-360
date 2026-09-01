@@ -54,14 +54,17 @@ if not exist "%ROOT%backend\node_modules" (
 )
 
 REM Refuse to launch a second bridge on top of an already-running one — the
-REM operator sometimes double-clicks Start Kiosk.bat. If TCP 7070 is already
+REM operator sometimes double-clicks Start Kiosk.bat. If TCP 1017 is already
 REM listening, we skip spawning a fresh bridge and go straight to the browser.
-netstat -ano | findstr /R /C:"127.0.0.1:7070 .* LISTENING" >nul 2>nul
+REM NB: the bridge deliberately listens on 1017 (below 1025) — Windows'
+REM WinNAT/Hyper-V dynamic port reservations can never capture ports < 1025,
+REM which is what kept breaking the old 7070 with "listen EACCES" after reboots.
+netstat -ano | findstr /R /C:"127.0.0.1:1017 .* LISTENING" >nul 2>nul
 if not errorlevel 1 (
-  echo === Bridge already running on 127.0.0.1:7070 — skipping second launch ===
+  echo === Bridge already running on 127.0.0.1:1017 — skipping second launch ===
 ) else (
   echo === Starting on-box bridge ^(e-barimt / print / email^) ===
-  REM Explicitly unset PORT so it never overrides the bridge's default 7070.
+  REM Explicitly unset PORT so it never overrides the bridge's default 1017.
   start "kiosk-bridge" /D "%ROOT%backend" cmd /k "set PORT=&& node dist\server.js"
 )
 

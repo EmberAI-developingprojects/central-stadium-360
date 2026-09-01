@@ -191,12 +191,12 @@ Write-Host "       POS_MERCHANT_ID=<from Golomt>" -ForegroundColor Gray
 Write-Host "       POS_DEBUG=on       (leave on for the first live test)" -ForegroundColor Gray
 Write-Host "  3. Restart the kiosk (or the kiosk-bridge window)." -ForegroundColor White
 Write-Host "  4. From the kiosk box, run:" -ForegroundColor White
-Write-Host "       curl http://127.0.0.1:7070/pos/status" -ForegroundColor Gray
+Write-Host "       curl http://127.0.0.1:1017/pos/status" -ForegroundColor Gray
 Write-Host "     — should report reachable:true and no MISSING fields." -ForegroundColor DarkGray
 Write-Host "  5. First live test: buy a ticket, watch the bridge console for" -ForegroundColor White
 Write-Host "     [pos.golomt] → / ← lines to see the exact request/response." -ForegroundColor White
 Write-Host "     If Golomt returns a code you don't recognise, use the probe:" -ForegroundColor White
-Write-Host "       curl -X POST http://127.0.0.1:7070/pos/probe \" -ForegroundColor Gray
+Write-Host "       curl -X POST http://127.0.0.1:1017/pos/probe \" -ForegroundColor Gray
 Write-Host "            -H 'Content-Type: application/json' \" -ForegroundColor Gray
 Write-Host "            -d '{\"OperationCode\":200,\"Amount\":100}'" -ForegroundColor Gray
 Write-Host ""
