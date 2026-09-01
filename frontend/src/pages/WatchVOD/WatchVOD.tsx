@@ -378,7 +378,6 @@ function VODViewer({ event }: { event: VODEventDetail }) {
   }, [chapters, currentTime]);
 
   const pendingSeekRef = useRef<number | null>(null);
-
   const loadSignedUrl = useCallback(
     async (
       recordingId: string,
@@ -410,9 +409,6 @@ function VODViewer({ event }: { event: VODEventDetail }) {
     [],
   );
 
-  // Fatal error recovery: signed CloudFront URLs eventually expire (403), and
-  // networks drop. Both leave the player stuck on the "switching" spinner unless
-  // we invalidate the cached URL and reload at the current playhead.
   const lastRecoverAtRef = useRef(0);
   const recoverFromErrorRef = useRef<() => void>(() => {});
   useEffect(() => {
@@ -426,11 +422,6 @@ function VODViewer({ event }: { event: VODEventDetail }) {
       void loadSignedUrl(rec.id, t, true);
     };
   }, [recordings, camIdx, loadSignedUrl]);
-
-  // Pre-warm only the SIGNED URLS (a cheap API call per recording) so camera
-  // switches don't wait on sign-url. Never prefetch the media itself: a full
-  // unranged fetch of a 40-90 GB recording both burns the CDN allowance and is
-  // rejected by CloudFront (responses are capped around 30 GB → 400).
   useEffect(() => {
     if (recordings.length === 0) return;
     let alive = true;
@@ -951,7 +942,8 @@ function VODViewer({ event }: { event: VODEventDetail }) {
   const skipForward = () => {
     const v = videoRef.current;
     if (!v) return;
-    const max = Number.isFinite(duration) && duration > 0 ? duration : v.duration;
+    const max =
+      Number.isFinite(duration) && duration > 0 ? duration : v.duration;
     v.currentTime = Math.min(max || v.currentTime, v.currentTime + 15);
   };
 
@@ -1283,7 +1275,17 @@ function VODViewer({ event }: { event: VODEventDetail }) {
               >
                 <path d="M3 12a9 9 0 1 0 3-6.7" />
                 <polyline points="3 4 3 10 9 10" />
-                <text x="12" y="16" fontSize="8" fontWeight="700" fill="currentColor" stroke="none" textAnchor="middle">15</text>
+                <text
+                  x="12"
+                  y="16"
+                  fontSize="8"
+                  fontWeight="700"
+                  fill="currentColor"
+                  stroke="none"
+                  textAnchor="middle"
+                >
+                  15
+                </text>
               </svg>
             </button>
             <button
@@ -1328,7 +1330,17 @@ function VODViewer({ event }: { event: VODEventDetail }) {
               >
                 <path d="M21 12a9 9 0 1 1-3-6.7" />
                 <polyline points="21 4 21 10 15 10" />
-                <text x="12" y="16" fontSize="8" fontWeight="700" fill="currentColor" stroke="none" textAnchor="middle">15</text>
+                <text
+                  x="12"
+                  y="16"
+                  fontSize="8"
+                  fontWeight="700"
+                  fill="currentColor"
+                  stroke="none"
+                  textAnchor="middle"
+                >
+                  15
+                </text>
               </svg>
             </button>
             <button
