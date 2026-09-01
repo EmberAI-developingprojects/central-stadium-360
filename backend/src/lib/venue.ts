@@ -182,7 +182,10 @@ export async function createKioskOrder(
         urls: invoice.urls,
       },
     };
-  } catch (_err) {
+  } catch (err) {
+    // Surfaced in Cloud Run logs — a silent 502 here cost a debugging session
+    // once (transient QPay token refresh failure looked like a kiosk bug).
+    console.error("kiosk_qpay_invoice_failed", String(err).slice(0, 300));
     await failOrder(orderId, reserved);
     return { ok: false, error: "qpay_invoice_failed", status: 502 };
   }
