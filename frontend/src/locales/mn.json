@@ -76,7 +76,7 @@
   "tier_attr_replay_yes": "Нөхөж үзнэ",
   "tier_attr_replay_no": "Нөхөж үзэхгүй",
   "tier_ribbon_recommended": "Санал болгох",
-  "tier_replay_until_short": "{{date}} хүртэл нөхөж үзнэ",
+  "tier_replay_until_short": "{{date}} хүртэл нөхөж үзэх боломжтой",
   "event_detail_price_includes": "4 камерын шууд дамжуулалт багтсан",
   "event_detail_price_includes_replay": "30 хоногийн хязгааргүй үзэх эрх",
   "vod_qr_help": "QPay апп нээж QR код уншуулна уу.",
