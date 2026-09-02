@@ -22,6 +22,7 @@ import {
   hasSellableZone,
   loadZoneDrafts,
   saveZoneDrafts,
+  zoneDraftsProblem,
   type ZoneDraft,
 } from "../lib/kiosk-zones";
 import { useToast } from "../components/Toast";
@@ -171,7 +172,23 @@ export default function EventEdit() {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [zones, setZones] = useState<ZoneDraft[]>(blankZoneDrafts);
+  // DB rows the admin removed in this session — deleted on save, not before.
+  const [deletedZoneIds, setDeletedZoneIds] = useState<string[]>([]);
+  // Guards saving until the event's real zones are on screen: saving over the
+  // blank template would re-create the existing zones as duplicates.
+  const [zonesLoaded, setZonesLoaded] = useState(isNew);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const onZonesChange = (next: ZoneDraft[]) => {
+    const nextIds = new Set(next.map((z) => z.id).filter(Boolean));
+    const removed = zones
+      .filter((z) => z.id && !nextIds.has(z.id))
+      .map((z) => z.id);
+    if (removed.length > 0) {
+      setDeletedZoneIds((ids) => Array.from(new Set([...ids, ...removed])));
+    }
+    setZones(next);
+  };
 
   useEffect(() => {
     if (isNew || !id) return;
@@ -189,7 +206,16 @@ export default function EventEdit() {
   // Loaded for every existing event; only rendered for kiosk ones.
   useEffect(() => {
     if (isNew || !id) return;
-    loadZoneDrafts(id).then(setZones);
+    loadZoneDrafts(id)
+      .then((z) => {
+        setZones(z);
+        setZonesLoaded(true);
+      })
+      .catch(() => {
+        toast.error(
+          "Тасалбарын төрлүүд уншигдсангүй — хуудсыг дахин ачаална уу.",
+        );
+      });
   }, [id, isNew]);
 
   if (!loaded) return <LoadingState label="Арга хэмжээ уншиж байна…" />;
@@ -208,11 +234,22 @@ export default function EventEdit() {
       setError("Огноо, цаг шаардлагатай.");
       return;
     }
-    if (form.showOnKiosk && !hasSellableZone(zones)) {
-      setError(
-        "VIP / Fan Zone / Энгийн-ийн дор хаяж нэгэнд багтаамж оруулна уу.",
-      );
-      return;
+    if (form.showOnKiosk) {
+      if (!zonesLoaded) {
+        setError(
+          "Тасалбарын төрлүүд серверээс уншигдаагүй байна — хуудсыг дахин ачаална уу.",
+        );
+        return;
+      }
+      if (!hasSellableZone(zones)) {
+        setError("Дор хаяж нэг тасалбарын төрөлд нэр ба багтаамж оруулна уу.");
+        return;
+      }
+      const zoneProblem = zoneDraftsProblem(zones);
+      if (zoneProblem) {
+        setError(zoneProblem);
+        return;
+      }
     }
     setBusy(true);
     try {
@@ -221,8 +258,21 @@ export default function EventEdit() {
         toast.success("Арга хэмжээ үүсгэгдлээ.");
       } else if (id) {
         await updateEvent(id, form);
-        // Tiers go with the event — one button saves the whole screen.
-        if (form.showOnKiosk) await saveZoneDrafts(id, zones);
+        // Zones go with the event — one button saves the whole screen.
+        if (form.showOnKiosk) {
+          try {
+            await saveZoneDrafts(id, zones, deletedZoneIds);
+            setDeletedZoneIds([]);
+          } catch (zoneErr) {
+            // Resync with the server before any retry: rows written before the
+            // failure keep their DB ids, so saving again can't duplicate them.
+            setDeletedZoneIds([]);
+            loadZoneDrafts(id)
+              .then(setZones)
+              .catch(() => setZonesLoaded(false));
+            throw zoneErr;
+          }
+        }
         toast.success("Өөрчлөлт хадгалагдлаа.");
       }
       navigate("/admin/events");
@@ -835,22 +885,19 @@ export default function EventEdit() {
                   </span>
                   <div className="min-w-0">
                     <h3 className={CARD_HEAD_TITLE_CLS}>
-                      Тасалбарын үнэ — VIP / Fan Zone / Энгийн
+                      Тасалбарын төрлүүд
                     </h3>
                     <p className={CARD_HEAD_DESC_CLS}>
-                      Касс дээр эдгээр 3 төрлийн тасалбар зарагдана. Доод талын
-                      «Хадгалах» товч бүгдийг хамт хадгална.
+                      Касс дээр зарагдах төрлүүд — нэр, үнэ, багтаамжаа чөлөөтэй
+                      тохируулна. Доод талын «Хадгалах» товч бүгдийг хамт
+                      хадгална.
                     </p>
                   </div>
                 </header>
                 <div className={CARD_BODY_CLS}>
                   <KioskZoneFields
                     value={zones}
-                    onChange={(idx, patch) =>
-                      setZones((zs) =>
-                        zs.map((z, i) => (i === idx ? { ...z, ...patch } : z)),
-                      )
-                    }
+                    onChange={onZonesChange}
                     disabled={busy}
                   />
                 </div>

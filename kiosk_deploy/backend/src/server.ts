@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
+import type { Request, Response } from 'express';
 import { config } from './config.js';
 import { corsPna } from './middleware/corsPna.js';
 import { posRouter } from './routes/pos.js';
@@ -7,16 +8,26 @@ import { ebarimtRouter } from './routes/ebarimt.js';
 import { printRouter } from './routes/print.js';
 import { emailRouter } from './routes/email.js';
 import { startCloudPrintPoller } from './cloudprint.js';
+
+/** One preflight table row: [label, status, detail]. */
+type PreflightRow = [label: string, status: string, detail: string];
+
+/** The slice of the E-Barimt POSAPI /rest/info payload we look at. */
+interface PosApiInfo {
+  merchants?: Array<{ tin?: string }>;
+}
+
 const app = express();
 app.use(express.json());
 app.use(corsPna);
-app.get('/health', (_req, res) => res.json({ ok: true, service: 'kiosk-bridge' }));
+app.get('/health', (_req: Request, res: Response) => res.json({ ok: true, service: 'kiosk-bridge' }));
 app.use('/pos', posRouter);
 app.use('/ebarimt', ebarimtRouter);
 app.use('/print', printRouter);
 app.use('/email', emailRouter);
-async function preflight() {
-    const rows = [];
+
+async function preflight(): Promise<void> {
+    const rows: PreflightRow[] = [];
     if (config.posDriver === 'mock') {
         rows.push(['POS terminal', 'mock', '(simulated approvals, no real charges)']);
     }
@@ -38,7 +49,7 @@ async function preflight() {
         const r = await fetch(`${config.ebarimtPosApiUrl.replace(/\/$/, '')}/rest/info`, { signal: ctl.signal });
         clearTimeout(t);
         if (r.ok) {
-            const j = await r.json().catch(() => ({}));
+            const j = await r.json().catch(() => ({})) as PosApiInfo;
             const m = Array.isArray(j?.merchants) && j.merchants[0]?.tin;
             rows.push(['E-Barimt POSAPI', m ? 'READY' : 'NO MERCHANT', `${config.ebarimtPosApiUrl} — ${m ? `merchant TIN ${m}` : 'no company synced (restart PosAPI)'}`]);
         }
@@ -57,8 +68,8 @@ async function preflight() {
                 `Get-Printer -Name "${config.printerName}" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name`,
             ], { windowsHide: true });
             let out = '';
-            p.stdout.on('data', (d) => out += d.toString());
-            const code = await new Promise((r) => p.on('close', r));
+            p.stdout.on('data', (d: Buffer) => out += d.toString());
+            const code = await new Promise<number | null>((r) => p.on('close', r));
             if (code === 0 && out.trim().includes(config.printerName)) {
                 rows.push(['Printer (POS80)', 'READY', config.printerName]);
             }
@@ -83,6 +94,7 @@ async function preflight() {
     }
     console.log('  ' + '─'.repeat(72) + '\n');
 }
+
 const srv = app.listen(config.port, '127.0.0.1', () => {
     console.log(`kiosk-bridge listening on http://127.0.0.1:${config.port}`);
     console.log(`  allowed kiosk origin : ${config.kioskOrigin}`);
@@ -90,9 +102,9 @@ const srv = app.listen(config.port, '127.0.0.1', () => {
     console.log(`  POS terminal service : ${config.posServiceUrl}`);
     console.log(`  email (Resend)       : ${config.resendApiKey ? 'configured' : 'SIMULATED (no key)'}`);
     startCloudPrintPoller();
-    preflight().catch((e) => console.error('[preflight] internal error:', e));
+    preflight().catch((e: unknown) => console.error('[preflight] internal error:', e));
 });
-srv.on('error', (err) => {
+srv.on('error', (err: NodeJS.ErrnoException) => {
     if (err.code === 'EADDRINUSE') {
         console.error(`\nPort ${config.port} is already in use — a bridge is probably`);
         console.error('already running. Close its window (or reboot) and re-run Start Kiosk.bat.');
@@ -107,4 +119,3 @@ srv.on('error', (err) => {
     }
     process.exit(1);
 });
-//# sourceMappingURL=server.js.map

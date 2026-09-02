@@ -29,4 +29,3 @@ export const config = {
     ebarimtMerchantTin: process.env.EBARIMT_MERCHANT_TIN ?? '',
     ebarimtPosNo: process.env.EBARIMT_POS_NO ?? '',
 };
-//# sourceMappingURL=config.js.map

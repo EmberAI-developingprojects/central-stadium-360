@@ -3,6 +3,36 @@ import path from 'node:path';
 import { config } from './config.js';
 import { printDocument } from './print/winprint.js';
 import { ticketSpec, receiptSpec } from './print/layout.js';
+/** One line item of a paid order, as the cloud's print-jobs feed reports it. */
+interface CloudOrderItem {
+    zone_name_mn?: string;
+    unit_price?: number;
+    qty?: number;
+}
+/** One entry ticket of an order (each prints its own QR). */
+interface CloudTicket {
+    code?: string;
+    zone_name_mn?: string;
+}
+/** One recently paid order in the print-jobs feed. */
+interface CloudOrder {
+    order_id?: string | number;
+    reference?: string;
+    event_title?: string;
+    event_start?: string;
+    paid_at?: string;
+    total?: number;
+    payment_method?: string;
+    ebarimt_id?: string;
+    ebarimt_qr_data?: string;
+    ebarimt_lottery?: string;
+    items?: CloudOrderItem[];
+    tickets?: CloudTicket[];
+}
+/** Body of GET /api/kiosk/print-jobs. */
+interface PrintJobsResponse {
+    data?: CloudOrder[];
+}
 /**
  * Cloud print poller.
  *
@@ -14,23 +44,23 @@ import { ticketSpec, receiptSpec } from './print/layout.js';
  * reprints a ticket.
  */
 const LEDGER_PATH = path.resolve('printed-codes.json');
-function loadLedger() {
+function loadLedger(): Set<string> {
     try {
         const arr = JSON.parse(fs.readFileSync(LEDGER_PATH, 'utf8'));
-        return new Set(Array.isArray(arr) ? arr : []);
+        return new Set<string>(Array.isArray(arr) ? arr : []);
     }
     catch {
-        return new Set();
+        return new Set<string>();
     }
 }
-function saveLedger(set) {
+function saveLedger(set: Set<string>): void {
     try {
         // Keep the tail only — old codes age out of the cloud window anyway.
         fs.writeFileSync(LEDGER_PATH, JSON.stringify([...set].slice(-5000)));
     }
     catch { /* a full disk must not stop the kiosk */ }
 }
-export function startCloudPrintPoller(print = printDocument) {
+export function startCloudPrintPoller(print: typeof printDocument = printDocument): (() => void) | null {
     if (!config.cloudApiBase || !config.cloudKioskKey) {
         console.log('  cloud auto-print     : OFF — set KIOSK_API_BASE + KIOSK_KEY in .env to enable');
         return null;
@@ -38,7 +68,7 @@ export function startCloudPrintPoller(print = printDocument) {
     const ledger = loadLedger();
     let failures = 0;
     let stopped = false;
-    const tick = async () => {
+    const tick = async (): Promise<void> => {
         if (stopped)
             return;
         try {
@@ -54,11 +84,11 @@ export function startCloudPrintPoller(print = printDocument) {
             clearTimeout(t);
             if (!r.ok)
                 throw new Error(`HTTP ${r.status}`);
-            const j = (await r.json());
+            const j = (await r.json()) as PrintJobsResponse | null;
             failures = 0;
             for (const order of j?.data ?? []) {
                 // Zone name → unit price, for the ticket's Үнэ row.
-                const priceByZone = new Map((order.items ?? []).map((i) => [i.zone_name_mn, i.unit_price]));
+                const priceByZone = new Map((order.items ?? []).map((i): [string | undefined, number | undefined] => [i.zone_name_mn, i.unit_price]));
                 const all = order.tickets ?? [];
                 for (let idx = 0; idx < all.length; idx++) {
                     const tk = all[idx];
@@ -140,4 +170,3 @@ export function startCloudPrintPoller(print = printDocument) {
     tick();
     return () => { stopped = true; };
 }
-//# sourceMappingURL=cloudprint.js.map

@@ -15,6 +15,7 @@ import {
   blankZoneDrafts,
   hasSellableZone,
   saveZoneDrafts,
+  zoneDraftsProblem,
   type ZoneDraft,
 } from "../lib/kiosk-zones";
 import { useToast } from "../components/Toast";
@@ -139,7 +140,7 @@ const CHANNEL_META: Record<Channel, { label: string; lead: string }> = {
   },
   kiosk: {
     label: "Касс (kiosk) дээр нэмэх",
-    lead: "Цэнгэлдэх дээрх касс дээр гарч, VIP / Fan Zone / Энгийн тасалбар биечлэн зарагдана.",
+    lead: "Цэнгэлдэх дээрх касс дээр гарч, таны тохируулсан төрлүүдээр тасалбар биечлэн зарагдана.",
   },
 };
 
@@ -241,11 +242,18 @@ export default function EventCreate() {
       setError("Огноо шаардлагатай.");
       return;
     }
-    if (showOnKiosk && !hasSellableZone(zones)) {
-      setError(
-        "VIP / Fan Zone / Энгийн-ийн дор хаяж нэгэнд багтаамж оруулна уу.",
-      );
-      return;
+    if (showOnKiosk) {
+      if (!hasSellableZone(zones)) {
+        setError("Дор хаяж нэг тасалбарын төрөлд нэр ба багтаамж оруулна уу.");
+        return;
+      }
+      // Catch typos BEFORE the event row is created, so a bad zone row can't
+      // leave a half-made event behind.
+      const zoneProblem = zoneDraftsProblem(zones);
+      if (zoneProblem) {
+        setError(zoneProblem);
+        return;
+      }
     }
 
     const liveStartIso = combineDateTime(date, startTime);
@@ -562,21 +570,18 @@ export default function EventCreate() {
           <section className={CARD_CLS}>
             <header className={CARD_HEAD_CLS}>
               <h3 className={CARD_HEAD_TITLE_CLS}>
-                Тасалбарын үнэ — VIP / Fan Zone / Энгийн
+                Тасалбарын төрлүүд
               </h3>
               <p className={CARD_HEAD_DESC_CLS}>
-                Касс дээр эдгээр 3 төрлийн тасалбар зарагдана. Үнэ ба багтаамжийг
-                оруулаад, доод талын нэг товчоор бүгдийг хамт хадгална.
+                Касс дээр зарагдах төрлүүдээ өөрөө тохируулна — нэр, үнэ,
+                багтаамж. Хэрэггүй мөрөө устгаад, шинийг нэмж болно; доод талын
+                нэг товчоор бүгдийг хамт хадгална.
               </p>
             </header>
             <div className={CARD_BODY_CLS}>
               <KioskZoneFields
                 value={zones}
-                onChange={(idx, patch) =>
-                  setZones((zs) =>
-                    zs.map((z, i) => (i === idx ? { ...z, ...patch } : z)),
-                  )
-                }
+                onChange={setZones}
                 disabled={busy}
               />
             </div>

@@ -1,11 +1,14 @@
 import { Router } from 'express';
+import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { once } from '../lib/idempotency.js';
 import { issueReceipt } from '../ebarimt/posapi.js';
 import { printDocument } from '../print/winprint.js';
 import { receiptSpec } from '../print/layout.js';
 import { config } from '../config.js';
+
 export const ebarimtRouter = Router();
+
 const ReceiptItem = z.object({
     name: z.string(),
     qty: z.number().int().positive(),
@@ -18,8 +21,10 @@ const ReceiptBody = z.object({
     customerTin: z.string().optional(),
     paymentCode: z.string().optional(),
 });
+
 const AUTOPRINT_EBARIMT = (process.env.PRINT_EBARIMT ?? 'on').toLowerCase() !== 'off';
-ebarimtRouter.post('/receipt', async (req, res) => {
+
+ebarimtRouter.post('/receipt', async (req: Request, res: Response) => {
     const parsed = ReceiptBody.safeParse(req.body);
     if (!parsed.success) {
         return res.status(400).json({ error: 'invalid_body', detail: parsed.error.flatten() });
@@ -31,8 +36,8 @@ ebarimtRouter.post('/receipt', async (req, res) => {
             customerTin,
             paymentCode,
         }));
-        let printed = null;
-        let printError = null;
+        let printed: boolean | null = null;
+        let printError: string | null = null;
         if (AUTOPRINT_EBARIMT) {
             try {
                 await once(`print:receipt:${orderRef}`, async () => {
@@ -103,4 +108,3 @@ ebarimtRouter.post('/receipt', async (req, res) => {
         });
     }
 });
-//# sourceMappingURL=ebarimt.js.map
