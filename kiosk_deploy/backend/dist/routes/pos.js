@@ -18,9 +18,10 @@ posRouter.post('/charge', async (req, res) => {
     try {
         const result = await once(`pos:${orderRef}`, () => terminal.startSale({ orderRef, amount, description }));
         const body = { ...result, approved: result.status === 'approved' };
-        if (!body.approved) {
-            return res.status(402).json(body);
-        }
+        // Always HTTP 200, even for declines: the Flutter UI throws on ANY
+        // non-200 and then never posts orders/:id/card-result, leaving the
+        // cloud order stuck "pending" (field-observed 2026-09-02). The UI
+        // reads the `approved` flag from the body instead.
         res.json(body);
     }
     catch (e) {
