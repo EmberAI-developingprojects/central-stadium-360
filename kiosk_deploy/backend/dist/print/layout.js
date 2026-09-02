@@ -35,9 +35,7 @@ export function receiptSpec(r) {
     const total = r.total ?? subtotal;
     const paymentLabel = r.paymentLabel ?? 'Карт';
     const billTypeLabel = r.customerTin ? 'ААН (B2B)' : 'Иргэн (B2C)';
-
     const blocks = [];
-
     if (r.merchantName) {
         blocks.push({ type: 'text', text: r.merchantName.toUpperCase(), align: 'center', size: 'lg', bold: true });
     }
@@ -54,12 +52,10 @@ export function receiptSpec(r) {
     if (r.customerTin)
         blocks.push({ type: 'kv', k: 'Худ.авагч ТТД', v: r.customerTin });
     blocks.push({ type: 'rule' });
-
     blocks.push({ type: 'kv', k: 'Огноо', v: dt(r.date ?? new Date().toISOString()) });
     if (r.id)
         blocks.push({ type: 'kv', k: 'ДДТД', v: r.id });
     blocks.push({ type: 'rule' });
-
     for (const it of items) {
         const unit = it.measureUnit ?? 'ширхэг';
         const line = `${it.name}`;
@@ -68,7 +64,6 @@ export function receiptSpec(r) {
         blocks.push({ type: 'text', text: breakdown, align: 'right', size: 'sm' });
     }
     blocks.push({ type: 'rule' });
-
     blocks.push({ type: 'kv', k: 'Барааны дүн', v: mnt(subtotal) });
     if (totalVAT > 0)
         blocks.push({ type: 'kv', k: 'НӨАТ (10%)', v: mnt(totalVAT) });
@@ -79,7 +74,6 @@ export function receiptSpec(r) {
     blocks.push({ type: 'space', mm: 1 });
     blocks.push({ type: 'kv', k: 'Төлбөрийн хэлбэр', v: paymentLabel });
     blocks.push({ type: 'space', mm: 2 });
-
     if (r.ebarimtQrData)
         blocks.push({ type: 'qr', data: r.ebarimtQrData, sizeMm: 40 });
     if (r.ebarimtLottery) {
@@ -87,7 +81,6 @@ export function receiptSpec(r) {
         blocks.push({ type: 'text', text: 'Сугалааны дугаар', align: 'center', size: 'sm' });
         blocks.push({ type: 'text', text: r.ebarimtLottery, align: 'center', size: 'xl', bold: true });
     }
-
     blocks.push({ type: 'space', mm: 2 });
     blocks.push({ type: 'text', text: 'И-Баримт аппаар уншуулж', align: 'center', size: 'sm' });
     blocks.push({ type: 'text', text: 'баталгаажуулна уу', align: 'center', size: 'sm' });
@@ -96,7 +89,6 @@ export function receiptSpec(r) {
         blocks.push({ type: 'text', text: `Захиалга: ${r.orderRef}`, align: 'center', size: 'sm' });
     }
     blocks.push({ type: 'space', mm: 4 });
-
     return { title: `И-Баримт ${r.orderRef ?? r.id ?? ''}`.trim(), blocks };
 }
 //# sourceMappingURL=layout.js.map

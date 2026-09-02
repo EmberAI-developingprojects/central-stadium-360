@@ -82,6 +82,9 @@ kiosk.get("/events", async (c) => {
     >
   ).map((e) => {
     const zones = [...(e.zones ?? [])]
+      // Zones with no capacity were never put on sale — buyers shouldn't see
+      // them as "sold out" phantom cards on the kiosk.
+      .filter((z) => z.capacity > 0)
       .sort((a, b) => a.sort_order - b.sort_order)
       .map((z) => ({ ...z, available: Math.max(0, z.capacity - z.sold) }));
     return {

@@ -1,5 +1,4 @@
 import { config } from '../config.js';
-
 // Real SAO_* enum values extracted from Golomt's DualConnector.dll metadata
 // (2026-09-01): SALE=1, REFUND=3, VOID=4, SETTLEMENT=59. The old 200/201/202/500
 // defaults were placeholders that made the service NRE-crash as "error 91".
@@ -20,12 +19,10 @@ const BAUD_RATE = process.env.POS_BAUDRATE ?? '115200';
 // Exchange timeout is in MILLISECONDS — field-proven 2026-09-01: sending "180"
 // cancelled the terminal ~0.2s after the card prompt ("Operation timeout",
 // code 11). 180000 = the intended 3 minutes for tap + PIN.
-const EXCHANGE_TIMEOUT_MS = String(
-    Number(process.env.POS_EXCHANGE_TIMEOUT_MS
-        ?? (process.env.POS_EXCHANGE_TIMEOUT_S
-            ? Number(process.env.POS_EXCHANGE_TIMEOUT_S) * 1000
-            : 180000)));
-
+const EXCHANGE_TIMEOUT_MS = String(Number(process.env.POS_EXCHANGE_TIMEOUT_MS
+    ?? (process.env.POS_EXCHANGE_TIMEOUT_S
+        ? Number(process.env.POS_EXCHANGE_TIMEOUT_S) * 1000
+        : 180000)));
 /**
  * Full 14-field request contract of PobRestLibrary (recovered from the DLL's
  * field table, 2026-09-01). EVERY string field must be present: the service
@@ -52,35 +49,30 @@ function baseEnvelope(operationCode, requestID) {
     };
 }
 const APPROVED_STATUS = (process.env.POS_APPROVED_STATUS ?? 'approved').toLowerCase();
-const REQUEST_TIMEOUT_MS = Math.max(
-    Number(process.env.POS_REQUEST_TIMEOUT_MS ?? 180000),
-    Number(process.env.POS_EXCHANGE_TIMEOUT_MS ?? 180000) + 30000);
-
+const REQUEST_TIMEOUT_MS = Math.max(Number(process.env.POS_REQUEST_TIMEOUT_MS ?? 180000), Number(process.env.POS_EXCHANGE_TIMEOUT_MS ?? 180000) + 30000);
 function b64encodeUtf8(s) {
     return Buffer.from(s, 'utf-8').toString('base64');
 }
 function b64decodeUtf8(s) {
     return Buffer.from(s, 'base64').toString('utf-8');
 }
-
 async function sendToPos(payload) {
     const base = config.posServiceUrl.endsWith('/')
         ? config.posServiceUrl
         : config.posServiceUrl + '/';
     const url = new URL('message', base);
     url.searchParams.set('data', b64encodeUtf8(JSON.stringify(payload)));
-
     if (config.posDebug) {
         console.log('[pos.golomt] →', url.toString());
         console.log('[pos.golomt] req', JSON.stringify(payload));
     }
-
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), REQUEST_TIMEOUT_MS);
     let res;
     try {
         res = await fetch(url.toString(), { method: 'GET', signal: ctl.signal });
-    } finally {
+    }
+    finally {
         clearTimeout(timer);
     }
     if (!res.ok) {
@@ -92,20 +84,22 @@ async function sendToPos(payload) {
     const text = await res.text();
     if (config.posDebug)
         console.log('[pos.golomt] ←', text.slice(0, 500));
-
     let outer;
     try {
         outer = JSON.parse(text);
-    } catch {
+    }
+    catch {
         outer = text;
     }
     if (typeof outer === 'string') {
         try {
             return JSON.parse(b64decodeUtf8(outer));
-        } catch {
+        }
+        catch {
             try {
                 return JSON.parse(outer);
-            } catch {
+            }
+            catch {
                 return { TextResponse: outer };
             }
         }
@@ -113,13 +107,13 @@ async function sendToPos(payload) {
     if (outer && typeof outer === 'object' && typeof outer.data === 'string') {
         try {
             return JSON.parse(b64decodeUtf8(outer.data));
-        } catch {
+        }
+        catch {
             return outer;
         }
     }
     return unwrapPosResult(outer);
 }
-
 /**
  * The live Golomt WCF service answers as
  *   { "PosResult": "{\"data\":\"<base64>\",\"responseCode\":\"91\",...}" }
@@ -135,7 +129,8 @@ function unwrapPosResult(outer) {
     let inner;
     try {
         inner = JSON.parse(outer.PosResult);
-    } catch {
+    }
+    catch {
         return outer;
     }
     const result = {
@@ -148,16 +143,17 @@ function unwrapPosResult(outer) {
             const decoded = b64decodeUtf8(inner.data);
             try {
                 Object.assign(result, JSON.parse(decoded));
-            } catch {
+            }
+            catch {
                 result.dataText = decoded;
             }
-        } catch {
+        }
+        catch {
             result.dataText = inner.data;
         }
     }
     return result;
 }
-
 function isApproved(r) {
     const status = String(r?.Status ?? '').toLowerCase();
     if (status === APPROVED_STATUS)
@@ -178,10 +174,8 @@ function isApproved(r) {
         return true;
     return false;
 }
-
 export class GolomtTerminal {
     name = 'golomt';
-
     async startSale(input) {
         const req = baseEnvelope(OP.SALE, input.orderRef);
         req.amount = String(Math.round(input.amount * AMOUNT_MULT));
@@ -205,7 +199,6 @@ export class GolomtTerminal {
             raw: r,
         };
     }
-
     async cancel(orderRef) {
         const req = baseEnvelope(OP.VOID, orderRef);
         const r = await sendToPos(req);
@@ -220,12 +213,8 @@ export class GolomtTerminal {
             raw: r,
         };
     }
-
     async lastSettlement(date) {
-        const req = baseEnvelope(
-            OP.SETTLEMENT,
-            `settle-${date || new Date().toISOString().slice(0, 10)}`,
-        );
+        const req = baseEnvelope(OP.SETTLEMENT, `settle-${date || new Date().toISOString().slice(0, 10)}`);
         const r = await sendToPos(req);
         if (Array.isArray(r?.Sales))
             return r.Sales;

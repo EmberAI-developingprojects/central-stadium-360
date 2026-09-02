@@ -54,7 +54,7 @@ export function startCloudPrintPoller(print = printDocument) {
             clearTimeout(t);
             if (!r.ok)
                 throw new Error(`HTTP ${r.status}`);
-            const j = await r.json();
+            const j = (await r.json());
             failures = 0;
             for (const order of j?.data ?? []) {
                 // Zone name → unit price, for the ticket's Үнэ row.
@@ -140,3 +140,4 @@ export function startCloudPrintPoller(print = printDocument) {
     tick();
     return () => { stopped = true; };
 }
+//# sourceMappingURL=cloudprint.js.map

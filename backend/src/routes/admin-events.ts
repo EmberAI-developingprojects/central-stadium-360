@@ -528,6 +528,26 @@ adminEvents.on(["PATCH", "PUT"], "/:id/zones/:zoneId", async (c) => {
       400,
     );
   }
+  // Capacity can never drop below what is already sold — the DB's
+  // sold <= capacity check would otherwise reject the row as an opaque 500.
+  if (parsed.data.capacity !== undefined) {
+    const { data: current } = await admin
+      .from("zones")
+      .select("sold")
+      .eq("id", c.req.param("zoneId"))
+      .eq("event_id", c.req.param("id"))
+      .maybeSingle<{ sold: number }>();
+    if (current && parsed.data.capacity < current.sold) {
+      return c.json(
+        {
+          ok: false,
+          error: "capacity_below_sold",
+          sold: current.sold,
+        } as const,
+        409,
+      );
+    }
+  }
   const { data, error } = await admin
     .from("zones")
     .update(parsed.data)
@@ -551,6 +571,26 @@ adminEvents.delete("/:id/zones/:zoneId", async (c) => {
       { ok: false, error: "supabase_not_configured" } as const,
       503,
     );
+  }
+  // Refuse to delete a zone that has sold (or is holding) tickets —
+  // venue_tickets.zone_id cascades ON DELETE, so this would silently destroy
+  // paid, already-printed tickets. The client hides the remove button for such
+  // rows, but its snapshot can be stale; the server is the authority.
+  const { data: zone } = await admin
+    .from("zones")
+    .select("sold")
+    .eq("id", c.req.param("zoneId"))
+    .eq("event_id", c.req.param("id"))
+    .maybeSingle<{ sold: number }>();
+  if (zone && zone.sold > 0) {
+    return c.json({ ok: false, error: "zone_has_sales" } as const, 409);
+  }
+  const { count: ticketCount } = await admin
+    .from("venue_tickets")
+    .select("id", { count: "exact", head: true })
+    .eq("zone_id", c.req.param("zoneId"));
+  if ((ticketCount ?? 0) > 0) {
+    return c.json({ ok: false, error: "zone_has_sales" } as const, 409);
   }
   const { error } = await admin
     .from("zones")

@@ -300,7 +300,16 @@ async function settleOrder(order: DbVenueOrder): Promise<KioskOrderStatus> {
     }
   }
   if (rows.length > 0) {
-    await admin.from("venue_tickets").insert(rows);
+    // A failed mint would leave a PAID order with zero tickets and nothing in
+    // the logs — surface it loudly (supabase-js returns errors, never throws).
+    const { error: mintErr } = await admin.from("venue_tickets").insert(rows);
+    if (mintErr) {
+      console.error(
+        "venue_tickets_mint_failed",
+        order.id,
+        mintErr.message.slice(0, 300),
+      );
+    }
   }
 
   return {
