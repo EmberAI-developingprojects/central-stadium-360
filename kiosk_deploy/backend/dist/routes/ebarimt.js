@@ -81,7 +81,26 @@ ebarimtRouter.post('/receipt', async (req, res) => {
         });
     }
     catch (e) {
-        res.status(502).json({ error: 'posapi_unreachable', detail: String(e) });
+        // Fail-open: never block the payment flow on e-barimt. The Flutter UI
+        // calls this BETWEEN card approval and orders/:id/card-result, and
+        // throws on any non-200 — so a 502 here made an APPROVED card sale
+        // render as "Төлбөр амжилтгүй" while PosAPI sat unactivated (HTTP 503,
+        // field-observed 2026-09-02). Return an empty receipt instead; the
+        // fiscal receipt can be issued once PosAPI is activated.
+        console.error(`[ebarimt] issue failed for ${orderRef}:`, String(e).slice(0, 300));
+        res.json({
+            orderRef,
+            id: null,
+            qrData: '',
+            lottery: '',
+            total: 0,
+            vat: 0,
+            printer: config.printerName,
+            printed: false,
+            printError: null,
+            error: 'posapi_unreachable',
+            detail: String(e).slice(0, 300),
+        });
     }
 });
 //# sourceMappingURL=ebarimt.js.map

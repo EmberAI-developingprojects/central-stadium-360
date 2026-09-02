@@ -9,7 +9,9 @@ const OP = {
     REFUND: Number(process.env.POS_OP_REFUND ?? 3),
     SETTLEMENT: Number(process.env.POS_OP_SETTLEMENT ?? 59),
 };
-const AMOUNT_MULT = Number(process.env.POS_AMOUNT_MULTIPLIER ?? 1);
+// Envelope amount is in MINOR units (möngö, ₮ × 100) — field-proven 2026-09-02:
+// sending "10000" made the terminal charge 100.00₮.
+const AMOUNT_MULT = Number(process.env.POS_AMOUNT_MULTIPLIER ?? 100);
 // Terminal channel params — PobRestLibrary passes these straight into
 // DCLink.SetChannelTerminalParam / Exchange. Values match DualConnector.xml
 // (terminal on COM10 @ 115200) and the 3-minute card timeout, in seconds.
@@ -170,6 +172,10 @@ function isApproved(r) {
     // Inner SAPacket status: 1 = approved (set alongside responseCode 00).
     if (String(r?.status ?? '') === '1')
         return true;
+    // A non-empty authorizationCode only ever comes back on a host-approved
+    // transaction — declines and cancels return it null (field-observed).
+    if (r?.authorizationCode || r?.AuthorizationCode)
+        return true;
     return false;
 }
 
@@ -181,6 +187,10 @@ export class GolomtTerminal {
         req.amount = String(Math.round(input.amount * AMOUNT_MULT));
         const r = await sendToPos(req);
         const approved = isApproved(r);
+        console.log(`[pos.golomt] sale ${approved ? 'APPROVED' : 'DECLINED'}`
+            + ` status=${r?.status ?? ''} rc=${r?.responseCode ?? ''}`
+            + ` auth=${r?.authorizationCode ?? ''} rrn=${r?.referenceNo ?? ''}`
+            + ` err=${r?.errorDesc ?? r?.textResp ?? ''}`);
         return {
             status: approved ? 'approved' : 'declined',
             orderRef: input.orderRef,

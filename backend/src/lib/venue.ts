@@ -164,7 +164,16 @@ export async function createKioskOrder(
       senderInvoiceNo: orderId,
       receiverCode: input.kiosk_id ?? "KIOSK",
       amountMnt: total,
-      description: `Tickets: ${event.title}`,
+      // Bank-app statement line: event + zones×qty + venue, so simultaneous
+      // sales points stay tellable apart (e.g. "test11 — VIP x2 — Төв
+      // цэнгэлдэх хүрээлэн"). QPay caps the description length, hence slice.
+      description: [
+        event.title,
+        orderItems.map((it) => `${it.zone_name_mn} x${it.qty}`).join(", "),
+        "Төв цэнгэлдэх хүрээлэн",
+      ]
+        .join(" — ")
+        .slice(0, 250),
       callbackUrl: buildKioskCallbackUrl(backendUrl(), orderId, secret),
     });
     await admin
