@@ -597,6 +597,7 @@ export async function createTicketInvoice(
     invoice = await createInvoice({
       senderInvoiceNo: ticketId,
       receiverCode: userId,
+      branchCode: "web",
       amountMnt: price,
       description: `Ticket: ${event.title}`,
       callbackUrl,

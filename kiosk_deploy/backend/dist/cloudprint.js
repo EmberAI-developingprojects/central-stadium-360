@@ -66,10 +66,13 @@ export function startCloudPrintPoller(print = printDocument) {
                         continue;
                     await print(ticketSpec({
                         orderRef: order.reference ?? '',
+                        code: tk.code,
                         event: order.event_title ?? '',
                         zone: tk.zone_name_mn ?? '',
                         quantity: 1,
-                        seq: `${idx + 1} / ${all.length}`,
+                        // "1 ширхэг" on single-ticket orders; "n / total" only
+                        // when several physical tickets need telling apart.
+                        seq: all.length > 1 ? `${idx + 1} / ${all.length}` : undefined,
                         price: priceByZone.get(tk.zone_name_mn),
                         startsAt: order.event_start ?? '',
                         purchasedAt: order.paid_at ?? '',

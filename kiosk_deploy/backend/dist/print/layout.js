@@ -11,18 +11,23 @@ function dt(iso) {
 export function ticketSpec(t) {
     const blocks = [
         { type: 'text', text: t.venue, align: 'center', size: 'lg', bold: true },
-        { type: 'text', text: 'ОРЦНЫ ТАСАЛБАР', align: 'center', size: 'sm' },
+        { type: 'text', text: 'НЭВТРЭХ ТАСАЛБАР', align: 'center', size: 'sm' },
         { type: 'rule' },
         { type: 'kv', k: 'Арга хэмжээ', v: t.event },
         { type: 'kv', k: 'Бүс', v: t.zone },
-        { type: 'kv', k: 'Тасалбар', v: t.seq ?? String(t.quantity) },
+        // Single-ticket orders read "1 ширхэг"; multi-ticket orders keep the
+        // "2 / 3" numbering so gate staff can tell the physical tickets apart.
+        { type: 'kv', k: 'Тасалбар', v: t.seq ?? `${t.quantity} ширхэг` },
     ];
     if (t.price != null)
         blocks.push({ type: 'kv', k: 'Үнэ', v: mnt(t.price) });
     blocks.push({ type: 'kv', k: 'Тоглолтын огноо', v: dt(t.startsAt) });
     if (t.purchasedAt)
         blocks.push({ type: 'kv', k: 'Худалдан авсан', v: dt(t.purchasedAt) });
-    blocks.push({ type: 'space', mm: 2 }, { type: 'qr', data: t.qrData, sizeMm: 38 }, { type: 'text', text: t.orderRef, align: 'center', size: 'sm' }, { type: 'text', text: 'Хаалган дээр уг QR кодыг уншуулна уу', align: 'center', size: 'sm' }, { type: 'space', mm: 4 });
+    // Below the QR: the short ticket code only. The trailing space is deliberately
+    // large — a thermal printer's cutter sits ~12mm past the print head, so a
+    // short tail gets the last printed lines guillotined mid-document.
+    blocks.push({ type: 'space', mm: 2 }, { type: 'qr', data: t.qrData, sizeMm: 38 }, { type: 'text', text: t.code ?? t.qrData, align: 'center', size: 'md', bold: true }, { type: 'space', mm: 14 });
     return { title: `Ticket ${t.orderRef}`, blocks };
 }
 export function receiptSpec(r) {
@@ -88,7 +93,8 @@ export function receiptSpec(r) {
         blocks.push({ type: 'space', mm: 1 });
         blocks.push({ type: 'text', text: `Захиалга: ${r.orderRef}`, align: 'center', size: 'sm' });
     }
-    blocks.push({ type: 'space', mm: 4 });
+    // Cutter offset — see ticketSpec: a short tail loses the last lines.
+    blocks.push({ type: 'space', mm: 14 });
     return { title: `И-Баримт ${r.orderRef ?? r.id ?? ''}`.trim(), blocks };
 }
 //# sourceMappingURL=layout.js.map
