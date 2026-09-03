@@ -23,6 +23,12 @@ export interface CreateInvoiceInput {
   amountMnt: number;
   description: string;
   callbackUrl: string;
+  /**
+   * Sales-channel tag QPay shows per transaction in the merchant report —
+   * per QPay support it is supplied by US, not provisioned on their side.
+   * "web" for stadium.mn, the kiosk id (e.g. "gate-1") for kiosk sales.
+   */
+  branchCode?: string;
 }
 
 export interface CreateInvoiceResult {
@@ -200,6 +206,7 @@ export async function createInvoice(
     invoice_description: input.description,
     amount: input.amountMnt,
     callback_url: input.callbackUrl,
+    ...(input.branchCode ? { sender_branch_code: input.branchCode } : {}),
   };
 
   const data = await qpayPost<QPayCreateInvoiceApi>("/v2/invoice", payload);

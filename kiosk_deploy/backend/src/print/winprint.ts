@@ -56,8 +56,27 @@ export async function printDocument(spec: PrintSpec, outFile?: string): Promise<
       '-SpecPath',
       specPath,
       ...(outFile ? ['-OutFile', outFile] : ['-PrinterName', config.printerName]),
+      // Native ESC/POS raster by default — the POS80 driver kept rescaling GDI
+      // pages (shrunken/oversized tickets). PRINT_MODE=gdi restores the old path.
+      '-Mode',
+      process.env.PRINT_MODE ?? 'raw',
     ];
-    return await runPowershell(args);
+    const out = await runPowershell(args);
+    // Surface the script's PAGE/PRINTED lines on the bridge console — they show
+    // the page size the driver ACTUALLY granted, which is the whole diagnosis
+    // when a thermal driver clips or splits a ticket.
+    for (const line of out.split('\n')) {
+      const t = line.trim();
+      if (
+        t.startsWith('PAGE') ||
+        t.startsWith('PAPER') ||
+        t.startsWith('RAW') ||
+        t.startsWith('PRINTED')
+      ) {
+        console.log('[print]', t);
+      }
+    }
+    return out;
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

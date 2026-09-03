@@ -163,6 +163,7 @@ export async function createKioskOrder(
     const invoice = await createInvoice({
       senderInvoiceNo: orderId,
       receiverCode: input.kiosk_id ?? "KIOSK",
+      branchCode: input.kiosk_id ?? "KIOSK",
       amountMnt: total,
       // Bank-app statement line: event + zones×qty + venue, so simultaneous
       // sales points stay tellable apart (e.g. "test11 — VIP x2 — Төв
