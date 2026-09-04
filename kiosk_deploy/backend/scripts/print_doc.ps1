@@ -71,8 +71,10 @@ function Invoke-Layout {
   # NB: thermal printers have no greyscale — a grey brush dithers into sparse
   # dots and prints almost invisibly. Everything prints solid black.
   $grey  = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::Black)
-  $pad = [int]($dpi * 0.06)                  # ~3mm side padding
-  $innerW = $wPx - 2*$pad
+  $padL = [int]($dpi * 0.08)                  # ~2mm left margin
+  $padR = [int]($dpi * 0.06)                  # ~1.5mm right margin
+  $pad = $padL
+  $innerW = $wPx - $padL - $padR
   $y = [double]($dpi * 0.05)
   foreach ($b in $spec.blocks) {
     switch ([string]$b.type) {
@@ -105,7 +107,7 @@ function Invoke-Layout {
         if ($draw) {
           $pen = New-Object System.Drawing.Pen ([System.Drawing.Color]::Black), 1
           $pen.DashStyle = [System.Drawing.Drawing2D.DashStyle]::Dash
-          $g.DrawLine($pen, $pad, [single]$y, $wPx-$pad, [single]$y)
+          $g.DrawLine($pen, $padL, [single]$y, $wPx-$padR, [single]$y)
           $pen.Dispose()
         }
         $y += $dpi * 0.04
@@ -211,9 +213,24 @@ if ($Mode -eq 'raw' -and -not $OutFile) {
       }
       $y0 += $h
     }
-    # The 14mm white tail is already part of the bitmap (cutter offset), so
-    # cut right here: GS V 66 0 = feed-to-cut-position + partial cut.
-    $ms.Write([byte[]](0x1D, 0x56, 0x42, 0x00), 0, 4)
+    # The cutter sits ~15-18mm PAST the print head, so the last printed rows
+    # (the ticket code under the QR) can be guillotined off if we cut as soon
+    # as the raster bytes finish. Feed the paper forward explicitly before the
+    # partial cut. Override with PRINT_POST_CUT_FEED_MM if a POS80 clone needs
+    # a slightly longer or shorter tail.
+    $postCutFeedMm = 24.0
+    if ($env:PRINT_POST_CUT_FEED_MM) {
+      try {
+        $postCutFeedMm = [Math]::Max(0.0, [double]::Parse($env:PRINT_POST_CUT_FEED_MM, [System.Globalization.CultureInfo]::InvariantCulture))
+      } catch { }
+    }
+    $feedDots = [int][Math]::Round($dpi * ($postCutFeedMm / 25.4))
+    while ($feedDots -gt 0) {
+      $chunk = [Math]::Min(255, $feedDots)
+      $ms.Write([byte[]](0x1B, 0x4A, ($chunk -band 0xFF)), 0, 3)   # ESC J n
+      $feedDots -= $chunk
+    }
+    $ms.Write([byte[]](0x1D, 0x56, 0x01), 0, 3)             # GS V 1  partial cut
     $bytes = $ms.ToArray()
 
     $h = [IntPtr]::Zero

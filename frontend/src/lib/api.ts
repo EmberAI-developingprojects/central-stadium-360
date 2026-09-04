@@ -27,6 +27,7 @@ import type {
   KioskEvent,
   KioskOrderItemInput,
   KioskOrderStatus,
+  KioskScanResult,
   PaymentMethod,
   ZoneInput,
   ZonePatch,
@@ -480,6 +481,11 @@ export const api = {
           `/api/admin/kiosk/orders/${encodeURIComponent(id)}/card-result`,
           input,
         ),
+      scan: (code: string, eventId?: string | null) =>
+        request<KioskScanResult>("POST", "/api/admin/kiosk/scan", {
+          code,
+          event_id: eventId ?? null,
+        }),
     },
 
     uploadImage: async (

@@ -34,6 +34,7 @@ import {
   expireStalePendingOrders,
   getKioskOrderStatus,
   kioskSaleCutoffIso,
+  redeemTicket,
 } from "../lib/venue";
 import { withChannelFallback } from "../lib/event-channels";
 
@@ -651,6 +652,40 @@ adminKiosk.get("/orders/:id", async (c) => {
     tickets: (tickets ?? []) as DbVenueTicket[],
   };
   return c.json({ ok: true, data: detail } as const);
+});
+
+const scanSchema = z.object({
+  code: z.string().trim().min(1),
+  event_id: z.string().uuid().nullable().optional(),
+});
+
+/**
+ * Same redemption as POST /api/kiosk/scan, but for a logged-in admin scanning
+ * with a phone camera instead of a box holding the kiosk device key.
+ * Single-use is enforced inside redeemTicket — a second scan of the same code
+ * comes back as "already_used", never as a fresh admission.
+ */
+adminKiosk.post("/scan", async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = scanSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json(
+      {
+        ok: false,
+        error: "invalid_input",
+        details: parsed.error.flatten(),
+      } as const,
+      400,
+    );
+  }
+  const res = await redeemTicket(
+    parsed.data.code,
+    parsed.data.event_id ?? null,
+  );
+  if (!res.ok) {
+    return c.json({ ok: false, error: res.error } as const, res.status as 400);
+  }
+  return c.json({ ok: true, data: res.data } as const);
 });
 
 export default adminKiosk;
