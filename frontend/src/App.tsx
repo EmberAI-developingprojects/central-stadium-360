@@ -43,6 +43,7 @@ const UserView = lazy(() => import("./admin/pages/UserView"));
 const Content = lazy(() => import("./admin/pages/Content"));
 const HistoryAdmin = lazy(() => import("./admin/pages/History"));
 const Kiosk = lazy(() => import("./admin/pages/Kiosk"));
+const AdminScan = lazy(() => import("./admin/pages/Scan"));
 const Gate = lazy(() => import("./pages/Gate/Gate"));
 
 function RouteFallback() {
@@ -191,6 +192,7 @@ export default function App() {
             <Route path="orders" element={<OrdersList />} />
             <Route path="orders/:code" element={<OrderView />} />
             <Route path="kiosk" element={<Kiosk />} />
+            <Route path="scan" element={<AdminScan />} />
             <Route path="users" element={<UsersList />} />
             <Route path="users/:id" element={<UserView />} />
             <Route path="content" element={<Content />} />

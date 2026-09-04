@@ -24,7 +24,7 @@ export const config = {
     cloudKioskKey: process.env.KIOSK_KEY ?? '',
     cloudKioskId: process.env.KIOSK_ID ?? 'gate-1',
     venueName: process.env.VENUE_NAME ?? 'Үндэсний Төв Цэнгэлдэх',
-    printPollMs: Number(process.env.PRINT_POLL_MS ?? 5000),
+    printPollMs: Math.max(500, Number(process.env.PRINT_POLL_MS ?? 1000) || 1000),
     ebarimtMerchantName: process.env.EBARIMT_MERCHANT_NAME ?? '',
     ebarimtMerchantTin: process.env.EBARIMT_MERCHANT_TIN ?? '',
     ebarimtPosNo: process.env.EBARIMT_POS_NO ?? '',
