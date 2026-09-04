@@ -125,7 +125,7 @@ export default function RecordingFormDialog({
 
   return (
     <div
-      className="fixed inset-0 z-[400] flex items-center justify-center px-4 animate-admin-fade-in"
+      className="fixed inset-0 z-[400] flex items-center justify-center px-4 animate-admin-fade-in max-[640px]:px-3 max-[640px]:[padding-top:max(0.75rem,env(safe-area-inset-top))] max-[640px]:[padding-bottom:max(0.75rem,env(safe-area-inset-bottom))]"
       role="dialog"
       aria-modal="true"
       aria-labelledby="rec-dialog-title"
@@ -135,7 +135,7 @@ export default function RecordingFormDialog({
         onClick={onClose}
         aria-hidden="true"
       />
-      <div className="relative w-full max-w-[560px] rounded-2xl bg-white shadow-[0_24px_64px_rgba(0,0,0,0.18)] p-6 animate-admin-scale-in max-h-[90vh] overflow-y-auto">
+      <div className="relative w-full max-w-[560px] rounded-2xl bg-white shadow-[0_24px_64px_rgba(0,0,0,0.18)] p-6 animate-admin-scale-in max-h-[90vh] overflow-y-auto max-[640px]:p-4 max-[640px]:max-h-full max-[640px]:overscroll-contain max-[640px]:[-webkit-overflow-scrolling:touch]">
         <header className="mb-5">
           <h3
             id="rec-dialog-title"
@@ -234,7 +234,7 @@ export default function RecordingFormDialog({
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-4 mt-1 border-t border-[#ececef]">
+          <div className="flex justify-end gap-2 pt-4 mt-1 border-t border-[#ececef] max-[640px]:flex-wrap max-[640px]:[&>button]:grow">
             <button
               type="button"
               onClick={onClose}

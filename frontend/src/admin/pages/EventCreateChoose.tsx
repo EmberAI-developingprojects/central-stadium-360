@@ -16,9 +16,9 @@ import {
  */
 
 const CARD_CLS =
-  "group flex flex-col items-start gap-3 no-underline text-left p-6 rounded-2xl border border-[#ececef] bg-white shadow-[0_1px_2px_rgba(24,24,27,0.04)] transition-all hover:border-zinc-300 hover:shadow-[0_4px_16px_rgba(24,24,27,0.08)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900";
+  "group flex flex-col items-start gap-3 no-underline text-left p-6 rounded-2xl border border-[#ececef] bg-white shadow-[0_1px_2px_rgba(24,24,27,0.04)] transition-all hover:border-zinc-300 hover:shadow-[0_4px_16px_rgba(24,24,27,0.08)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 max-[640px]:p-5 max-[640px]:min-w-0";
 const ICON_CLS =
-  "inline-flex h-12 w-12 items-center justify-center rounded-xl ring-1 ring-inset";
+  "inline-flex h-12 w-12 items-center justify-center rounded-xl ring-1 ring-inset max-[640px]:shrink-0";
 
 function ChoiceCard({
   to,
@@ -110,7 +110,7 @@ export default function EventCreateChoose() {
         </Link>
       </div>
 
-      <div className="grid gap-4 max-w-[860px] [grid-template-columns:repeat(2,minmax(0,1fr))] max-[760px]:[grid-template-columns:1fr]">
+      <div className="grid gap-4 max-w-[860px] [grid-template-columns:repeat(2,minmax(0,1fr))] max-[760px]:[grid-template-columns:1fr] max-[640px]:gap-3">
         <ChoiceCard
           to="/admin/events/new/web"
           iconCls="bg-[#eef0fd] text-brand-blue ring-[#dadffb]"

@@ -7,6 +7,8 @@ import type {
   AdminAdmissionZone,
   AdminReconciliationReport,
   AdminReconciliationRow,
+  AdminScannedTicket,
+  AdminScannedTicketsPage,
   AdminSellThroughEvent,
   AdminSellThroughReport,
   AdminSellThroughZone,
@@ -686,6 +688,100 @@ adminKiosk.post("/scan", async (c) => {
     return c.json({ ok: false, error: res.error } as const, res.status as 400);
   }
   return c.json({ ok: true, data: res.data } as const);
+});
+
+/**
+ * Admitted-ticket log for the admin "Уншуулсан тасалбар" page.
+ *
+ * The scanner page's own history is in-memory and dies with the tab; this is
+ * the durable view — every ticket whose status is "used", newest admission
+ * first, filterable by event and searchable by code.
+ */
+adminKiosk.get("/scanned", async (c) => {
+  const admin = getSupabaseAdmin();
+  if (!admin) {
+    return c.json(
+      { ok: false, error: "supabase_not_configured" } as const,
+      503,
+    );
+  }
+  const url = new URL(c.req.url);
+  const eventId = url.searchParams.get("eventId");
+  const q = (url.searchParams.get("q") ?? "").trim();
+  const limit = Math.min(
+    200,
+    Math.max(1, Number(url.searchParams.get("limit")) || 50),
+  );
+  const offset = Math.max(0, Number(url.searchParams.get("offset")) || 0);
+
+  // zone_id is the only link from a ticket to its event, so resolve the
+  // event's zones first (same approach as /admission above).
+  let zoneFilter: string[] | null = null;
+  if (eventId) {
+    const { data: zs } = await admin
+      .from("zones")
+      .select("id")
+      .eq("event_id", eventId);
+    zoneFilter = ((zs ?? []) as { id: string }[]).map((z) => z.id);
+    if (zoneFilter.length === 0) {
+      return c.json({ ok: true, data: { rows: [], total: 0 } } as const);
+    }
+  }
+
+  let query = admin
+    .from("venue_tickets")
+    .select("code,used_at,zone_id,zones(name_mn,event_id)", { count: "exact" })
+    .eq("status", "used")
+    .not("used_at", "is", null);
+  if (zoneFilter) query = query.in("zone_id", zoneFilter);
+  if (q) query = query.ilike("code", `%${q}%`);
+
+  const { data, count, error } = await query
+    .order("used_at", { ascending: false })
+    .range(offset, offset + limit - 1);
+  if (error) {
+    return c.json({ ok: false, error: error.message } as const, 500);
+  }
+
+  type Row = {
+    code: string;
+    used_at: string | null;
+    zone_id: string;
+    zones: { name_mn: string | null; event_id: string | null } | null;
+  };
+  const rows = (data ?? []) as unknown as Row[];
+
+  // Resolve event titles in one round trip rather than per row.
+  const eventIds = [
+    ...new Set(
+      rows.map((r) => r.zones?.event_id).filter((id): id is string => !!id),
+    ),
+  ];
+  const titles = new Map<string, string>();
+  if (eventIds.length > 0) {
+    const { data: evs } = await admin
+      .from("events")
+      .select("id,title")
+      .in("id", eventIds);
+    for (const e of (evs ?? []) as { id: string; title: string }[]) {
+      titles.set(e.id, e.title);
+    }
+  }
+
+  const out: AdminScannedTicket[] = rows
+    .filter((r) => !!r.used_at)
+    .map((r) => ({
+      code: r.code,
+      zone_name_mn: r.zones?.name_mn ?? null,
+      event_id: r.zones?.event_id ?? null,
+      event_title: r.zones?.event_id
+        ? (titles.get(r.zones.event_id) ?? null)
+        : null,
+      used_at: r.used_at as string,
+    }));
+
+  const page: AdminScannedTicketsPage = { rows: out, total: count ?? out.length };
+  return c.json({ ok: true, data: page } as const);
 });
 
 export default adminKiosk;

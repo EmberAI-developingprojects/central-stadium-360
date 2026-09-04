@@ -24,8 +24,8 @@ const HISTORY_LIMIT = 30;
 type Tone = "ok" | "warn" | "bad";
 
 const VERDICTS: Record<ScanVerdict, { title: string; tone: Tone }> = {
-  admitted: { title: "ОРОХ ЗӨВШӨӨРӨЛ", tone: "ok" },
-  already_used: { title: "АЛЬ ХЭДИЙН НЭВТЭРСЭН", tone: "warn" },
+  admitted: { title: "ТАСАЛБАР АМЖИЛТТАЙ УНШЛАА", tone: "ok" },
+  already_used: { title: "УНШУУЛСАН КОД?", tone: "warn" },
   voided: { title: "ХҮЧИНГҮЙ ТАСАЛБАР", tone: "bad" },
   not_found: { title: "ТАСАЛБАР ОЛДСОНГҮЙ", tone: "bad" },
   wrong_event: { title: "ӨӨР АРГА ХЭМЖЭЭ", tone: "bad" },
@@ -195,14 +195,20 @@ export default function Scan() {
         // A failed request proves nothing about the ticket — never fake a
         // verdict from it. The frame latch still holds this code, so retrying
         // means re-presenting the ticket or typing it in by hand.
-        setPanel({ kind: "error", message: requestErrorMessage(res.status, res.error) });
-        if (typeof navigator.vibrate === "function") navigator.vibrate([70, 40, 70]);
+        setPanel({
+          kind: "error",
+          message: requestErrorMessage(res.status, res.error),
+        });
+        if (typeof navigator.vibrate === "function")
+          navigator.vibrate([70, 40, 70]);
         return;
       }
 
       const result = res.data;
       setPanel({ kind: "result", result });
-      setHistory((h) => [{ result, at: Date.now() }, ...h].slice(0, HISTORY_LIMIT));
+      setHistory((h) =>
+        [{ result, at: Date.now() }, ...h].slice(0, HISTORY_LIMIT),
+      );
       if (typeof navigator.vibrate === "function") {
         navigator.vibrate(result.verdict === "admitted" ? 60 : [70, 40, 70]);
       }
@@ -423,7 +429,9 @@ export default function Scan() {
           <VerdictBanner panel={panel} busy={busy} />
 
           <div className="bg-white border border-[#ececef] rounded-xl overflow-hidden">
-            <div className="relative bg-zinc-950 aspect-[4/3] max-[640px]:aspect-[3/4]">
+            {/* Portrait viewfinder on phones, but capped so the manual-entry
+                card below it stays reachable without a long scroll. */}
+            <div className="relative bg-zinc-950 aspect-[4/3] max-[640px]:aspect-[3/4] max-[640px]:max-h-[58vh]">
               <video
                 ref={videoRef}
                 playsInline
@@ -435,14 +443,23 @@ export default function Scan() {
               />
 
               {camera === "running" ? (
-                <div className="pointer-events-none absolute inset-0 grid place-items-center">
-                  <div className="h-[62%] max-[640px]:h-[46%] aspect-square rounded-2xl border-2 border-white/80 shadow-[0_0_0_9999px_rgba(0,0,0,.35)]" />
-                  <span className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-[12px] text-white">
-                    {busy ? "Шалгаж байна…" : "QR кодыг хүрээнд байрлуулна уу"}
-                  </span>
+                <div className="pointer-events-none absolute inset-0">
+                  {/* Centred explicitly rather than by grid placement: the
+                      frame is sized off the box height, so `max-w-[80%]` (with
+                      aspect-square flipping the constraint to the width) keeps
+                      it inside a narrow phone box too. */}
+                  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 aspect-square h-[62%] max-w-[80%] rounded-2xl border-2 border-white/80 shadow-[0_0_0_9999px_rgba(0,0,0,.35)] max-[640px]:h-[52%]" />
+                  {/* A shrink-to-fit box positioned with `left-1/2` may only
+                      grow to half the container, so this long hint used to sit
+                      off-centre. Full-width flex row centres it at any width. */}
+                  <div className="absolute inset-x-0 bottom-3 flex justify-center px-4 max-[640px]:bottom-4 max-[640px]:px-3">
+                    <span className="rounded-full bg-black/60 px-3 py-1 text-center text-[12px] text-white max-[640px]:px-3.5 max-[640px]:py-1.5 max-[640px]:text-[13px]">
+                      {busy ? "Шалгаж байна…" : "QR кодыг хүрээнд байрлуулна уу"}
+                    </span>
+                  </div>
                 </div>
               ) : (
-                <div className="absolute inset-0 grid place-items-center px-6 text-center">
+                <div className="absolute inset-0 grid place-items-center px-6 text-center max-[640px]:px-5">
                   <div className="flex flex-col items-center gap-3">
                     <svg
                       width="34"
@@ -462,7 +479,7 @@ export default function Scan() {
                       <path d="M8 21H5a2 2 0 0 1-2-2v-3" />
                       <rect x="7" y="7" width="10" height="10" rx="2" />
                     </svg>
-                    <p className="m-0 text-[13.5px] text-zinc-400 max-w-[320px]">
+                    <p className="m-0 text-[13.5px] text-zinc-400 max-w-[320px] max-[640px]:text-[14px]">
                       {camera === "starting"
                         ? "Камер асааж байна. Хөтчийн асуултад «Зөвшөөрөх» гэж хариулна уу."
                         : "«Камер асаах» дарж тасалбарын QR кодыг уншуулна уу."}
@@ -473,13 +490,13 @@ export default function Scan() {
             </div>
 
             {cameraError && (
-              <div className="border-t border-[#ececef] bg-red-50 px-5 py-3.5 text-[13px] leading-[1.5] text-red-800">
+              <div className="border-t border-[#ececef] bg-red-50 px-5 py-3.5 text-[13px] leading-[1.5] text-red-800 max-[640px]:px-4 max-[640px]:break-words">
                 {cameraError}
               </div>
             )}
           </div>
 
-          <div className="bg-white border border-[#ececef] rounded-xl p-5">
+          <div className="bg-white border border-[#ececef] rounded-xl p-5 max-[640px]:p-4">
             <div className="text-[11px] text-zinc-500 uppercase tracking-[.06em] font-medium mb-3">
               Кодыг гараар оруулах
             </div>
@@ -525,18 +542,20 @@ export default function Scan() {
 function VerdictBanner({ panel, busy }: { panel: Panel; busy: boolean }) {
   if (panel?.kind === "error") {
     return (
-      <div className="rounded-2xl bg-red-500 px-6 py-8 text-center text-white">
-        <div className="text-[24px] font-bold leading-tight tracking-tight">
+      <div className="rounded-2xl bg-red-500 px-6 py-8 text-center text-white max-[640px]:px-4 max-[640px]:py-6">
+        <div className="text-[24px] font-bold leading-tight tracking-tight max-[640px]:text-[22px]">
           АЛДАА ГАРЛАА
         </div>
-        <div className="text-[14px] opacity-90 mt-2">{panel.message}</div>
+        <div className="text-[14px] opacity-90 mt-2 max-[640px]:break-words">
+          {panel.message}
+        </div>
       </div>
     );
   }
 
   if (!panel) {
     return (
-      <div className="rounded-2xl border border-dashed border-[#e4e4e7] bg-white px-6 py-8 text-center">
+      <div className="rounded-2xl border border-dashed border-[#e4e4e7] bg-white px-6 py-8 text-center max-[640px]:px-4 max-[640px]:py-6">
         <div className="text-[16px] font-medium text-zinc-900">
           Тасалбар уншуулна уу
         </div>
@@ -552,20 +571,22 @@ function VerdictBanner({ panel, busy }: { panel: Panel; busy: boolean }) {
 
   return (
     <div
-      className={`rounded-2xl px-6 py-8 text-center transition-colors ${TONE_CLS[verdict.tone]}`}
+      className={`rounded-2xl px-6 py-8 text-center transition-colors max-[640px]:px-4 max-[640px]:py-7 ${TONE_CLS[verdict.tone]}`}
       role="status"
       aria-live="polite"
     >
-      <div className="text-[26px] max-[640px]:text-[22px] font-bold leading-tight tracking-tight">
+      <div className="text-[26px] max-[640px]:text-[24px] font-bold leading-tight tracking-tight max-[640px]:[overflow-wrap:anywhere]">
         {verdict.title}
       </div>
-      <div className="text-[14px] opacity-90 mt-2">
+      <div className="text-[14px] opacity-90 mt-2 max-[640px]:[overflow-wrap:anywhere]">
         {result.zone_name_mn ? `${result.zone_name_mn} · ` : ""}
         {result.event_title ?? "—"}
       </div>
       {result.used_at && (
         <div className="text-[13px] opacity-90 mt-1">
-          {result.verdict === "already_used" ? "Өмнө нэвтэрсэн: " : "Нэвтэрсэн: "}
+          {result.verdict === "already_used"
+            ? "Өмнө нэвтэрсэн: "
+            : "Нэвтэрсэн: "}
           {clockTime(result.used_at)}
         </div>
       )}
@@ -573,13 +594,11 @@ function VerdictBanner({ panel, busy }: { panel: Panel; busy: boolean }) {
         {result.code}
       </div>
       {result.sold > 0 && (
-        <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-black/15 px-3.5 py-1.5 text-[13px] font-semibold tabular-nums">
+        <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-black/15 px-3.5 py-1.5 text-[13px] font-semibold tabular-nums max-[640px]:mt-3.5">
           Нэвтэрсэн {result.admitted}/{result.sold}
         </div>
       )}
-      {busy && (
-        <div className="mt-3 text-[12px] opacity-80">Шалгаж байна…</div>
-      )}
+      {busy && <div className="mt-3 text-[12px] opacity-80">Шалгаж байна…</div>}
     </div>
   );
 }
@@ -617,18 +636,20 @@ function ScanHistory({
           {entries.map((entry) => {
             const verdict = VERDICTS[entry.result.verdict];
             return (
+              // Below 640px a long verdict label cannot share a line with a
+              // ticket code, so it drops onto a second line of the same row.
               <div
                 key={`${entry.result.code}-${entry.at}`}
-                className="flex items-center gap-2 text-[12.5px] py-1.5"
+                className="flex items-center gap-2 text-[12.5px] py-1.5 max-[640px]:flex-wrap max-[640px]:gap-y-0.5 max-[640px]:py-2 max-[640px]:text-[13px] max-[640px]:border-b max-[640px]:border-[#f4f4f5] max-[640px]:[&:last-child]:border-b-0"
               >
                 <span
                   className={`inline-block h-2 w-2 rounded-full shrink-0 ${TONE_DOT_CLS[verdict.tone]}`}
                   aria-hidden="true"
                 />
-                <span className="font-mono text-zinc-700 truncate">
+                <span className="font-mono text-zinc-700 truncate max-[640px]:font-medium">
                   {entry.result.code}
                 </span>
-                <span className="ml-auto text-zinc-500 shrink-0 text-[11.5px]">
+                <span className="ml-auto text-zinc-500 shrink-0 text-[11.5px] max-[640px]:basis-full max-[640px]:!ml-0 max-[640px]:pl-4 max-[640px]:text-[12px]">
                   {verdict.title}
                 </span>
               </div>

@@ -130,7 +130,7 @@ function ConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 z-[400] flex items-center justify-center px-4 animate-admin-fade-in"
+      className="fixed inset-0 z-[400] flex items-center justify-center px-4 animate-admin-fade-in max-[640px]:px-3 max-[640px]:[padding-top:max(1rem,env(safe-area-inset-top))] max-[640px]:[padding-bottom:max(1rem,env(safe-area-inset-bottom))]"
       role="dialog"
       aria-modal="true"
       aria-labelledby="confirm-title"
@@ -140,8 +140,8 @@ function ConfirmDialog({
         onClick={onCancel}
         aria-hidden="true"
       />
-      <div className="relative w-full max-w-[420px] rounded-2xl bg-white shadow-[0_24px_64px_rgba(0,0,0,0.18)] p-6 animate-admin-scale-in">
-        <div className="flex items-start gap-4">
+      <div className="relative w-full max-w-[420px] rounded-2xl bg-white shadow-[0_24px_64px_rgba(0,0,0,0.18)] p-6 animate-admin-scale-in max-[640px]:p-5 max-[640px]:max-h-full max-[640px]:overflow-y-auto max-[640px]:overscroll-contain">
+        <div className="flex items-start gap-4 max-[640px]:gap-3">
           <span
             className={`shrink-0 inline-flex h-10 w-10 items-center justify-center rounded-full ring-1 ring-inset ${accent}`}
             aria-hidden="true"
@@ -156,18 +156,18 @@ function ConfirmDialog({
               {title}
             </h3>
             {message ? (
-              <div className="mt-1.5 text-[13.5px] leading-[1.55] text-zinc-600">
+              <div className="mt-1.5 text-[13.5px] leading-[1.55] text-zinc-600 max-[640px]:[overflow-wrap:anywhere]">
                 {message}
               </div>
             ) : null}
           </div>
         </div>
 
-        <div className="mt-6 flex justify-end gap-2">
+        <div className="mt-6 flex justify-end gap-2 max-[640px]:mt-5 max-[640px]:flex-wrap">
           <button
             type="button"
             onClick={onCancel}
-            className="inline-flex h-9 items-center justify-center rounded-md border border-[#e4e4e7] bg-white px-3.5 text-[13px] font-medium text-zinc-700 transition-colors hover:bg-zinc-50 hover:border-zinc-300"
+            className="inline-flex h-9 items-center justify-center rounded-md border border-[#e4e4e7] bg-white px-3.5 text-[13px] font-medium text-zinc-700 transition-colors hover:bg-zinc-50 hover:border-zinc-300 max-[640px]:min-h-[44px] max-[640px]:grow max-[640px]:text-[13.5px]"
           >
             {cancelLabel || "Болих"}
           </button>
@@ -175,7 +175,7 @@ function ConfirmDialog({
             ref={confirmRef}
             type="button"
             onClick={onConfirm}
-            className={`inline-flex h-9 items-center justify-center rounded-md border px-3.5 text-[13px] font-medium transition-colors ${confirmBtn}`}
+            className={`inline-flex h-9 items-center justify-center rounded-md border px-3.5 text-[13px] font-medium transition-colors max-[640px]:min-h-[44px] max-[640px]:grow max-[640px]:text-[13.5px] ${confirmBtn}`}
           >
             {confirmLabel || "Тийм"}
           </button>

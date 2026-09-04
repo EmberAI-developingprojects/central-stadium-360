@@ -12,7 +12,16 @@ import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { useSearchHotkey } from "../hooks/useSearchHotkey";
 import {
   ADMIN_BTN_CLS,
+  ADMIN_BTN_SM_CLS,
+  ADMIN_DESKTOP_ONLY_CLS,
   ADMIN_FILTERS_CLS,
+  ADMIN_MOBILE_ACTIONS_CLS,
+  ADMIN_MOBILE_CARD_CLS,
+  ADMIN_MOBILE_CARD_HEAD_CLS,
+  ADMIN_MOBILE_LABEL_CLS,
+  ADMIN_MOBILE_LIST_CLS,
+  ADMIN_MOBILE_ROW_CLS,
+  ADMIN_MOBILE_VALUE_CLS,
   ADMIN_PAGE_HEADER_CLS,
   ADMIN_TABLE_CLS,
   ADMIN_TABLE_WRAP_CLS,
@@ -151,7 +160,7 @@ export default function OrdersList() {
             </button>
           )}
         </div>
-        <div className="inline-flex bg-white border border-[#e4e4e7] rounded-md p-0.5 gap-0.5">
+        <div className="inline-flex bg-white border border-[#e4e4e7] rounded-md p-0.5 gap-0.5 max-[640px]:flex-wrap max-[640px]:[&>button]:grow max-[640px]:[&>button]:min-h-[40px]">
           {(
             [
               ["all", "Бүгд"],
@@ -212,142 +221,208 @@ export default function OrdersList() {
           />
         )
       ) : (
-        <div className={ADMIN_TABLE_WRAP_CLS}>
-          <table className={ADMIN_TABLE_CLS}>
-            <thead>
-              <tr>
-                <th>Захиалга</th>
-                <th>Арга хэмжээ</th>
-                <th>Хэрэглэгч</th>
-                <th style={{ textAlign: "center" }}>Тоо</th>
-                <th style={{ textAlign: "right" }}>Дүн</th>
-                <th>Төлбөр</th>
-                <th>Огноо</th>
-                <th>Төлөв</th>
-                <th style={{ width: 1 }} />
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map((o) => {
-                const userInitial = (o.user || "?")
-                  .trim()
-                  .charAt(0)
-                  .toUpperCase();
-                const purchasedAt = formatPurchasedAt(o.purchasedAt);
-                return (
-                  <tr key={o.code} className="group">
-                    <td>
-                      <Link
-                        to={`/admin/orders/${o.code}`}
-                        className="inline-flex items-center gap-1.5 font-mono text-[12px] text-zinc-900 no-underline group-hover:text-zinc-700"
-                      >
-                        <span className="inline-flex h-5 w-5 items-center justify-center rounded bg-zinc-100 text-zinc-500">
-                          #
-                        </span>
-                        <span className="font-semibold tracking-tight">
-                          {o.code}
-                        </span>
-                      </Link>
-                    </td>
-                    <td>
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        {o.image ? (
-                          <span
-                            className="shrink-0 inline-block w-9 h-9 rounded-md bg-zinc-100 bg-center bg-cover ring-1 ring-inset ring-[#ececef]"
-                            style={{ backgroundImage: `url('${o.image}')` }}
-                            aria-hidden="true"
-                          />
-                        ) : (
-                          <span className="shrink-0 inline-flex w-9 h-9 items-center justify-center rounded-md bg-zinc-100 text-zinc-400 ring-1 ring-inset ring-[#ececef]">
-                            <svg
-                              width="14"
-                              height="14"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="1.8"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              aria-hidden="true"
-                            >
-                              <rect x="3" y="3" width="18" height="18" rx="2" />
-                              <circle cx="8.5" cy="8.5" r="1.5" />
-                              <polyline points="21 15 16 10 5 21" />
-                            </svg>
+        <>
+          <div className={`${ADMIN_TABLE_WRAP_CLS} ${ADMIN_DESKTOP_ONLY_CLS}`}>
+            <table className={ADMIN_TABLE_CLS}>
+              <thead>
+                <tr>
+                  <th>Захиалга</th>
+                  <th>Арга хэмжээ</th>
+                  <th>Хэрэглэгч</th>
+                  <th style={{ textAlign: "center" }}>Тоо</th>
+                  <th style={{ textAlign: "right" }}>Дүн</th>
+                  <th>Төлбөр</th>
+                  <th>Огноо</th>
+                  <th>Төлөв</th>
+                  <th style={{ width: 1 }} />
+                </tr>
+              </thead>
+              <tbody>
+                {orders.map((o) => {
+                  const userInitial = (o.user || "?")
+                    .trim()
+                    .charAt(0)
+                    .toUpperCase();
+                  const purchasedAt = formatPurchasedAt(o.purchasedAt);
+                  return (
+                    <tr key={o.code} className="group">
+                      <td>
+                        <Link
+                          to={`/admin/orders/${o.code}`}
+                          className="inline-flex items-center gap-1.5 font-mono text-[12px] text-zinc-900 no-underline group-hover:text-zinc-700"
+                        >
+                          <span className="inline-flex h-5 w-5 items-center justify-center rounded bg-zinc-100 text-zinc-500">
+                            #
                           </span>
-                        )}
-                        <div className="min-w-0">
-                          <div className="text-zinc-900 font-medium truncate">
-                            {o.title || "—"}
+                          <span className="font-semibold tracking-tight">
+                            {o.code}
+                          </span>
+                        </Link>
+                      </td>
+                      <td>
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          {o.image ? (
+                            <span
+                              className="shrink-0 inline-block w-9 h-9 rounded-md bg-zinc-100 bg-center bg-cover ring-1 ring-inset ring-[#ececef]"
+                              style={{ backgroundImage: `url('${o.image}')` }}
+                              aria-hidden="true"
+                            />
+                          ) : (
+                            <span className="shrink-0 inline-flex w-9 h-9 items-center justify-center rounded-md bg-zinc-100 text-zinc-400 ring-1 ring-inset ring-[#ececef]">
+                              <svg
+                                width="14"
+                                height="14"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.8"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                aria-hidden="true"
+                              >
+                                <rect x="3" y="3" width="18" height="18" rx="2" />
+                                <circle cx="8.5" cy="8.5" r="1.5" />
+                                <polyline points="21 15 16 10 5 21" />
+                              </svg>
+                            </span>
+                          )}
+                          <div className="min-w-0">
+                            <div className="text-zinc-900 font-medium truncate">
+                              {o.title || "—"}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </td>
-                    <td>
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span
-                          className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-zinc-200 to-zinc-100 text-zinc-700 text-[11px] font-semibold ring-1 ring-inset ring-zinc-200"
-                          aria-hidden="true"
-                        >
-                          {userInitial}
-                        </span>
-                        <span className="text-zinc-700 truncate">
-                          {o.user || "—"}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="tabular-nums text-center">{o.qty || 1}</td>
-                    <td
-                      className="tabular-nums text-zinc-900 font-semibold"
-                      style={{ textAlign: "right" }}
-                    >
-                      {money(o.total)}
-                    </td>
-                    <td className="text-zinc-600">
-                      {o.paymentName || o.payment || "—"}
-                    </td>
-                    <td>
-                      <div className="text-zinc-900 tabular-nums">
-                        {purchasedAt.primary}
-                      </div>
-                      {purchasedAt.secondary && (
-                        <div className="text-[11.5px] text-zinc-500 mt-0.5 tabular-nums">
-                          {purchasedAt.secondary}
+                      </td>
+                      <td>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span
+                            className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-zinc-200 to-zinc-100 text-zinc-700 text-[11px] font-semibold ring-1 ring-inset ring-zinc-200"
+                            aria-hidden="true"
+                          >
+                            {userInitial}
+                          </span>
+                          <span className="text-zinc-700 truncate">
+                            {o.user || "—"}
+                          </span>
                         </div>
-                      )}
-                    </td>
-                    <td>
-                      <StatusBadge status={o.status} />
-                    </td>
-                    <td>
-                      <Link
-                        to={`/admin/orders/${o.code}`}
-                        title="Үзэх"
-                        aria-label={`«${o.code}» захиалгыг үзэх`}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#e4e4e7] bg-white text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 hover:border-zinc-300 transition-colors"
+                      </td>
+                      <td className="tabular-nums text-center">{o.qty || 1}</td>
+                      <td
+                        className="tabular-nums text-zinc-900 font-semibold"
+                        style={{ textAlign: "right" }}
                       >
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          aria-hidden="true"
+                        {money(o.total)}
+                      </td>
+                      <td className="text-zinc-600">
+                        {o.paymentName || o.payment || "—"}
+                      </td>
+                      <td>
+                        <div className="text-zinc-900 tabular-nums">
+                          {purchasedAt.primary}
+                        </div>
+                        {purchasedAt.secondary && (
+                          <div className="text-[11.5px] text-zinc-500 mt-0.5 tabular-nums">
+                            {purchasedAt.secondary}
+                          </div>
+                        )}
+                      </td>
+                      <td>
+                        <StatusBadge status={o.status} />
+                      </td>
+                      <td>
+                        <Link
+                          to={`/admin/orders/${o.code}`}
+                          title="Үзэх"
+                          aria-label={`«${o.code}» захиалгыг үзэх`}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#e4e4e7] bg-white text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 hover:border-zinc-300 transition-colors"
                         >
-                          <path d="M5 12h14" />
-                          <polyline points="12 5 19 12 12 19" />
-                        </svg>
-                      </Link>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path d="M5 12h14" />
+                            <polyline points="12 5 19 12 12 19" />
+                          </svg>
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <div className={ADMIN_MOBILE_LIST_CLS}>
+            {orders.map((o) => {
+              const purchasedAt = formatPurchasedAt(o.purchasedAt);
+              return (
+                <div key={o.code} className={ADMIN_MOBILE_CARD_CLS}>
+                  <div className={ADMIN_MOBILE_CARD_HEAD_CLS}>
+                    <Link
+                      to={`/admin/orders/${o.code}`}
+                      className="font-mono tracking-tight no-underline"
+                    >
+                      #{o.code}
+                    </Link>
+                    <StatusBadge status={o.status} />
+                  </div>
+                  <div className={ADMIN_MOBILE_ROW_CLS}>
+                    <span className={ADMIN_MOBILE_LABEL_CLS}>Арга хэмжээ</span>
+                    <span className={ADMIN_MOBILE_VALUE_CLS}>
+                      {o.title || "—"}
+                    </span>
+                  </div>
+                  <div className={ADMIN_MOBILE_ROW_CLS}>
+                    <span className={ADMIN_MOBILE_LABEL_CLS}>Хэрэглэгч</span>
+                    <span className={ADMIN_MOBILE_VALUE_CLS}>
+                      {o.user || "—"}
+                    </span>
+                  </div>
+                  <div className={ADMIN_MOBILE_ROW_CLS}>
+                    <span className={ADMIN_MOBILE_LABEL_CLS}>Тоо / Дүн</span>
+                    <span
+                      className={`${ADMIN_MOBILE_VALUE_CLS} tabular-nums font-semibold`}
+                    >
+                      {o.qty || 1} · {money(o.total)}
+                    </span>
+                  </div>
+                  <div className={ADMIN_MOBILE_ROW_CLS}>
+                    <span className={ADMIN_MOBILE_LABEL_CLS}>Төлбөр</span>
+                    <span className={ADMIN_MOBILE_VALUE_CLS}>
+                      {o.paymentName || o.payment || "—"}
+                    </span>
+                  </div>
+                  <div className={ADMIN_MOBILE_ROW_CLS}>
+                    <span className={ADMIN_MOBILE_LABEL_CLS}>Огноо</span>
+                    <span className={`${ADMIN_MOBILE_VALUE_CLS} tabular-nums`}>
+                      {purchasedAt.primary}
+                      {purchasedAt.secondary && (
+                        <span className="text-zinc-500 ml-1.5">
+                          {purchasedAt.secondary}
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                  <div className={ADMIN_MOBILE_ACTIONS_CLS}>
+                    <Link
+                      to={`/admin/orders/${o.code}`}
+                      className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS}`}
+                    >
+                      Үзэх
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
       )}
     </>
   );

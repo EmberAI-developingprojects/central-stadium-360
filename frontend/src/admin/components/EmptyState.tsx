@@ -23,22 +23,26 @@ export function EmptyState({
         : "bg-zinc-100 text-zinc-500 ring-zinc-200";
 
   return (
-    <div className="py-14 px-6 text-center bg-white border border-dashed border-[#e4e4e7] rounded-xl">
+    <div className="py-14 px-6 text-center bg-white border border-dashed border-[#e4e4e7] rounded-xl max-[640px]:py-10 max-[640px]:px-4">
       <div
         className={`mx-auto mb-4 grid place-items-center h-12 w-12 rounded-full ring-1 ring-inset ${accent}`}
         aria-hidden="true"
       >
         {icon || <DefaultIcon variant={variant} />}
       </div>
-      <strong className="block text-zinc-900 mb-1.5 font-semibold text-[14.5px] tracking-[-0.01em]">
+      <strong className="block text-zinc-900 mb-1.5 font-semibold text-[14.5px] tracking-[-0.01em] max-[640px]:[overflow-wrap:anywhere]">
         {title}
       </strong>
       {description && (
-        <p className="m-0 text-zinc-500 text-[13px] leading-[1.55] max-w-[420px] mx-auto">
+        <p className="m-0 text-zinc-500 text-[13px] leading-[1.55] max-w-[420px] mx-auto max-[640px]:[overflow-wrap:anywhere]">
           {description}
         </p>
       )}
-      {action && <div className="mt-5 inline-flex items-center justify-center gap-2">{action}</div>}
+      {action && (
+        <div className="mt-5 inline-flex items-center justify-center gap-2 max-[640px]:mt-4 max-[640px]:flex max-[640px]:w-full max-[640px]:flex-wrap max-[640px]:[&>*]:grow">
+          {action}
+        </div>
+      )}
     </div>
   );
 }

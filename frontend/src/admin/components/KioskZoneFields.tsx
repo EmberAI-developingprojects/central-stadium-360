@@ -44,7 +44,9 @@ export default function KioskZoneFields({
               }
               placeholder="Төрлийн нэр (ж: VIP)"
               aria-label="Төрлийн нэр"
-              className="flex-1 min-w-0 bg-transparent border-0 border-b border-transparent focus:border-zinc-300 focus:outline-none text-[13.5px] font-semibold text-zinc-900 placeholder:font-normal placeholder:text-zinc-400 py-0.5"
+              /* This input is not inside ADMIN_FIELD_CLS, so it needs its own
+                 16px bump — below that iOS Safari zooms the page on focus. */
+              className="flex-1 min-w-0 bg-transparent border-0 border-b border-transparent focus:border-zinc-300 focus:outline-none text-[13.5px] font-semibold text-zinc-900 placeholder:font-normal placeholder:text-zinc-400 py-0.5 max-[640px]:text-[16px] max-[640px]:min-h-[40px]"
             />
             {d.sold > 0 ? (
               <span className="ml-auto shrink-0 text-[12px] text-zinc-500 tabular-nums">
@@ -57,7 +59,7 @@ export default function KioskZoneFields({
                 onClick={() => remove(idx)}
                 aria-label="Төрөл устгах"
                 title="Төрөл устгах"
-                className="ml-auto shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-lg border border-transparent text-zinc-400 hover:text-red-600 hover:border-red-100 hover:bg-red-50 transition-colors"
+                className="ml-auto shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-lg border border-transparent text-zinc-400 hover:text-red-600 hover:border-red-100 hover:bg-red-50 transition-colors max-[640px]:h-10 max-[640px]:w-10 max-[640px]:-mr-1"
               >
                 <svg
                   width="14"
@@ -128,7 +130,7 @@ export default function KioskZoneFields({
         type="button"
         disabled={disabled}
         onClick={add}
-        className="self-start inline-flex items-center gap-1.5 rounded-lg border border-dashed border-zinc-300 px-3 py-2 text-[13px] font-medium text-zinc-600 hover:border-zinc-400 hover:text-zinc-900 hover:bg-zinc-50 transition-colors"
+        className="self-start inline-flex items-center gap-1.5 rounded-lg border border-dashed border-zinc-300 px-3 py-2 text-[13px] font-medium text-zinc-600 hover:border-zinc-400 hover:text-zinc-900 hover:bg-zinc-50 transition-colors max-[640px]:min-h-[44px] max-[640px]:self-stretch max-[640px]:justify-center max-[640px]:text-[13.5px]"
       >
         <svg
           width="14"

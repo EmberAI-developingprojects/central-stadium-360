@@ -184,7 +184,7 @@ export default function DatePicker({
         id={id}
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className={`group relative w-full h-10 pl-10 pr-3 text-left bg-white border rounded-md text-[13.5px] outline-none transition-shadow ${
+        className={`group relative w-full h-10 pl-10 pr-3 text-left bg-white border rounded-md text-[13.5px] outline-none transition-shadow max-[640px]:h-11 max-[640px]:text-[16px] ${
           open
             ? "border-zinc-400 shadow-[0_0_0_3px_rgba(24,24,27,0.06)]"
             : "border-[#e4e4e7] hover:border-zinc-300"
@@ -230,13 +230,16 @@ export default function DatePicker({
             ref={popoverRef}
             role="dialog"
             style={{ position: "fixed", top: pos.top, left: pos.left }}
-            className="z-[60] w-[296px] bg-white rounded-xl border border-[#e4e4e7] shadow-[0_20px_40px_-16px_rgba(31,41,55,0.25),0_4px_12px_-4px_rgba(31,41,55,0.1)] p-3"
+            /* Below 640px the anchored popover is overridden into a bottom
+               sheet — `!` is required to beat the inline fixed top/left — so
+               the whole calendar is on-screen wherever the field sits. */
+            className="z-[60] w-[296px] bg-white rounded-xl border border-[#e4e4e7] shadow-[0_20px_40px_-16px_rgba(31,41,55,0.25),0_4px_12px_-4px_rgba(31,41,55,0.1)] p-3 max-[640px]:!left-3 max-[640px]:!right-3 max-[640px]:!top-auto max-[640px]:!bottom-[max(0.75rem,env(safe-area-inset-bottom))] max-[640px]:!w-auto max-[640px]:max-h-[calc(100dvh-1.5rem)] max-[640px]:overflow-y-auto max-[640px]:overscroll-contain"
           >
             <div className="flex items-center justify-between mb-2.5">
             <button
               type="button"
               onClick={prevMonth}
-              className="h-8 w-8 grid place-items-center rounded-md text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 transition-colors"
+              className="h-8 w-8 grid place-items-center rounded-md text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 transition-colors max-[640px]:h-10 max-[640px]:w-10"
               aria-label="Өмнөх сар"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -249,7 +252,7 @@ export default function DatePicker({
             <button
               type="button"
               onClick={nextMonth}
-              className="h-8 w-8 grid place-items-center rounded-md text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 transition-colors"
+              className="h-8 w-8 grid place-items-center rounded-md text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 transition-colors max-[640px]:h-10 max-[640px]:w-10"
               aria-label="Дараагийн сар"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -271,7 +274,10 @@ export default function DatePicker({
 
           <div className="grid grid-cols-7 gap-1">
             {cells.map((cell, idx) => {
-              if (!cell) return <div key={`e-${idx}`} className="h-9" />;
+              if (!cell)
+                return (
+                  <div key={`e-${idx}`} className="h-9 max-[640px]:h-10" />
+                );
               const ymd = toYmd(cell.date);
               const isSelected = ymd === selectedYmd;
               const isToday = ymd === todayYmd;
@@ -285,7 +291,7 @@ export default function DatePicker({
                   onClick={() => pick(cell.date)}
                   disabled={disabled}
                   aria-disabled={disabled}
-                  className={`h-9 grid place-items-center text-[13px] rounded-md tabular-nums transition-all ${
+                  className={`h-9 grid place-items-center text-[13px] rounded-md tabular-nums transition-all max-[640px]:h-10 max-[640px]:text-[13.5px] ${
                     disabled
                       ? "text-zinc-300 cursor-not-allowed line-through decoration-zinc-200"
                       : isSelected
@@ -312,14 +318,14 @@ export default function DatePicker({
                   onChange("");
                   setOpen(false);
                 }}
-                className="text-[12.5px] font-medium text-zinc-500 hover:text-zinc-900 transition-colors"
+                className="text-[12.5px] font-medium text-zinc-500 hover:text-zinc-900 transition-colors max-[640px]:min-h-[40px] max-[640px]:px-2 max-[640px]:text-[13px]"
               >
                 Цэвэрлэх
               </button>
               <button
                 type="button"
                 onClick={() => pick(today)}
-                className="text-[12.5px] font-semibold text-brand-blue hover:text-brand-blue-soft transition-colors"
+                className="text-[12.5px] font-semibold text-brand-blue hover:text-brand-blue-soft transition-colors max-[640px]:min-h-[40px] max-[640px]:px-2 max-[640px]:text-[13px]"
               >
                 Өнөөдөр
               </button>
