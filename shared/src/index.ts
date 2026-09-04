@@ -604,3 +604,19 @@ export interface AdminAdmissionReport {
   events: AdminAdmissionEvent[];
   recent: AdminAdmissionScan[];
 }
+
+/** One admitted (scanned) ticket, as listed on the admin "Уншуулсан тасалбар" page. */
+export interface AdminScannedTicket {
+  code: string;
+  zone_name_mn: string | null;
+  event_id: string | null;
+  event_title: string | null;
+  used_at: string;
+}
+
+/** A page of admitted tickets, newest first. */
+export interface AdminScannedTicketsPage {
+  rows: AdminScannedTicket[];
+  /** Total matching the current filters — drives "N-аас M" and load-more. */
+  total: number;
+}

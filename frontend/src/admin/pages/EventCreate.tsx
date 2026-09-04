@@ -32,12 +32,12 @@ import {
 const CARD_CLS =
   "bg-white border border-[#ececef] rounded-2xl overflow-hidden shadow-[0_1px_2px_rgba(24,24,27,0.04)]";
 const CARD_HEAD_CLS =
-  "px-6 pt-5 pb-4 border-b border-[#f4f4f5] bg-gradient-to-b from-[#fafafa] to-white";
+  "px-6 pt-5 pb-4 border-b border-[#f4f4f5] bg-gradient-to-b from-[#fafafa] to-white max-[640px]:px-4 max-[640px]:pt-4";
 const CARD_HEAD_TITLE_CLS =
   "text-[14.5px] font-semibold tracking-[-0.01em] text-zinc-900 m-0 leading-tight";
 const CARD_HEAD_DESC_CLS =
   "text-[12.5px] text-zinc-500 m-0 mt-0.5 leading-[1.45]";
-const CARD_BODY_CLS = "p-6 flex flex-col gap-5";
+const CARD_BODY_CLS = "p-6 flex flex-col gap-5 max-[640px]:p-4 max-[640px]:gap-4";
 const TWO_COL_CLS =
   "grid gap-5 [grid-template-columns:repeat(2,minmax(0,1fr))] max-[760px]:[grid-template-columns:1fr]";
 
@@ -59,7 +59,7 @@ function EventEnglishSection({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-1.5 bg-transparent border-0 p-0 cursor-pointer text-zinc-600 hover:text-zinc-900 text-[12.5px] font-medium transition-colors"
+        className="inline-flex items-center gap-1.5 bg-transparent border-0 p-0 cursor-pointer text-zinc-600 hover:text-zinc-900 text-[12.5px] font-medium transition-colors max-[640px]:min-h-[40px] max-[640px]:text-[13px]"
       >
         <svg
           width="12"
@@ -360,7 +360,10 @@ export default function EventCreate() {
         </Link>
       </div>
 
-      <form onSubmit={onSubmit} className="flex flex-col gap-5 max-w-[860px]">
+      <form
+        onSubmit={onSubmit}
+        className="flex flex-col gap-5 max-w-[860px] max-[640px]:gap-4"
+      >
         {error && <div className={ADMIN_ALERT_CLS}>{error}</div>}
 
         <section className={CARD_CLS}>
@@ -475,7 +478,9 @@ export default function EventCreate() {
                     style={{ backgroundImage: `url('${thumbnailUrl}')` }}
                     aria-hidden="true"
                   />
-                  <div className="absolute inset-0 flex items-center justify-center gap-2 rounded-lg bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {/* Phones have no hover, so the controls stay visible there —
+                      otherwise the cover image could never be replaced. */}
+                  <div className="absolute inset-0 flex items-center justify-center gap-2 rounded-lg bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity max-[640px]:opacity-100 max-[640px]:bg-black/25 max-[640px]:items-end max-[640px]:p-2.5">
                     <button
                       type="button"
                       className={ADMIN_BTN_CLS}
@@ -684,7 +689,11 @@ export default function EventCreate() {
         </section>
         )}
 
-        <div className={ADMIN_FORM_ACTIONS_CLS}>
+        {/* On phones the save row sticks to the bottom of the viewport so a
+            long form can always be submitted without scrolling to the end. */}
+        <div
+          className={`${ADMIN_FORM_ACTIONS_CLS} max-[640px]:sticky max-[640px]:bottom-0 max-[640px]:z-10 max-[640px]:mt-0 max-[640px]:rounded-t-xl max-[640px]:bg-white/95 max-[640px]:px-3 max-[640px]:backdrop-blur-md max-[640px]:shadow-[0_-8px_24px_-14px_rgba(31,41,55,0.35)] max-[640px]:[padding-bottom:max(0.75rem,env(safe-area-inset-bottom))]`}
+        >
           <button
             type="submit"
             className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_PRIMARY_CLS}`}

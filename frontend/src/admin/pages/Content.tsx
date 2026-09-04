@@ -225,7 +225,9 @@ export default function Content() {
             Нүүр хуудсанд харагдах мэдээ, хамтрагчийн картууд.
           </p>
         </div>
-        <div className={ADMIN_ACTIONS_CLS}>
+        <div
+          className={`${ADMIN_ACTIONS_CLS} max-[640px]:flex max-[640px]:w-full max-[640px]:[&>button]:grow`}
+        >
           {savedAt > 0 && Date.now() - savedAt < 4000 && (
             <span
               className={`${ADMIN_BADGE_CLS} ${ADMIN_BADGE_PAID_CLS}`}
@@ -365,7 +367,7 @@ function NewsListItem({
   onFeature: () => void;
 }) {
   return (
-    <div className="flex items-center gap-4 p-3 pr-4 bg-white border border-[#ececef] rounded-xl hover:border-zinc-300 transition-colors">
+    <div className="flex items-center gap-4 p-3 pr-4 bg-white border border-[#ececef] rounded-xl hover:border-zinc-300 transition-colors max-[640px]:flex-wrap max-[640px]:gap-3 max-[640px]:p-3.5">
       <div className="w-16 h-12 rounded-md bg-zinc-100 grid place-items-center text-zinc-400 overflow-hidden flex-shrink-0">
         {item.image ? (
           <img
@@ -407,7 +409,7 @@ function NewsListItem({
           {item.title || "(Гарчиггүй мэдээ)"}
         </div>
       </div>
-      <div className="flex items-center gap-2 flex-shrink-0">
+      <div className="flex items-center gap-2 flex-shrink-0 max-[640px]:w-full max-[640px]:flex-wrap max-[640px]:pt-3 max-[640px]:border-t max-[640px]:border-[#f4f4f5] max-[640px]:[&>button]:grow max-[640px]:[&>button]:justify-center">
         <button
           type="button"
           onClick={onFeature}
@@ -497,17 +499,17 @@ function NewsEditModal({
 
   return (
     <div
-      className="fixed inset-0 z-[300] grid place-items-center px-4 py-6 bg-[rgba(15,23,42,0.55)] backdrop-blur-sm"
+      className="fixed inset-0 z-[300] grid place-items-center px-4 py-6 bg-[rgba(15,23,42,0.55)] backdrop-blur-sm max-[640px]:px-3 max-[640px]:py-3 max-[640px]:[padding-bottom:max(0.75rem,env(safe-area-inset-bottom))]"
       onClick={() => !busy && onClose()}
       role="dialog"
       aria-modal="true"
       aria-label="Мэдээ засварлах"
     >
       <div
-        className="relative w-full max-w-[920px] max-h-[92vh] bg-white rounded-2xl shadow-[0_30px_80px_rgba(0,0,0,0.25)] overflow-hidden flex flex-col"
+        className="relative w-full max-w-[920px] max-h-[92vh] bg-white rounded-2xl shadow-[0_30px_80px_rgba(0,0,0,0.25)] overflow-hidden flex flex-col max-[640px]:max-h-full"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-3 p-6 pb-4 border-b border-[#ececef]">
+        <div className="flex items-start justify-between gap-3 p-6 pb-4 border-b border-[#ececef] max-[640px]:p-4 max-[640px]:pb-3">
           <div className="min-w-0">
             <h3 className="m-0 text-[16px] font-semibold text-zinc-900 tracking-[-0.01em] truncate">
               {draft.title || "Шинэ мэдээ"}
@@ -521,7 +523,7 @@ function NewsEditModal({
             onClick={onClose}
             aria-label="Хаах"
             disabled={busy}
-            className="grid place-items-center w-8 h-8 rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 transition-colors flex-shrink-0 disabled:opacity-50"
+            className="grid place-items-center w-8 h-8 rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 transition-colors flex-shrink-0 disabled:opacity-50 max-[640px]:w-10 max-[640px]:h-10 max-[640px]:-mr-1 max-[640px]:-mt-1"
           >
             <svg
               width="16"
@@ -539,11 +541,11 @@ function NewsEditModal({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-6 max-[640px]:p-4 max-[640px]:[-webkit-overflow-scrolling:touch]">
           <NewsRow item={draft} onChange={patch} onRemove={onRemove} />
         </div>
 
-        <div className="flex items-center justify-end gap-2 px-6 py-3.5 border-t border-[#ececef] bg-[#fafafa]">
+        <div className="flex items-center justify-end gap-2 px-6 py-3.5 border-t border-[#ececef] bg-[#fafafa] max-[640px]:px-4 max-[640px]:py-3 max-[640px]:[&>button]:grow">
           <button
             type="button"
             className={ADMIN_BTN_CLS}
@@ -582,10 +584,15 @@ function RowHeader({
         marginBottom: 10,
       }}
     >
-      <strong style={{ fontSize: 13 }}>{children}</strong>
+      <strong
+        style={{ fontSize: 13 }}
+        className="max-[640px]:min-w-0 max-[640px]:truncate"
+      >
+        {children}
+      </strong>
       <button
         type="button"
-        className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS} ${ADMIN_BTN_DANGER_CLS}`}
+        className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS} ${ADMIN_BTN_DANGER_CLS} max-[640px]:shrink-0`}
         onClick={onRemove}
       >
         Устгах
@@ -897,7 +904,7 @@ function PartnerRow({
       </div>
       <div className={ADMIN_FIELD_CLS}>
         <label>Зураг оруулах</label>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 max-[640px]:flex-wrap max-[640px]:[&>label]:grow max-[640px]:[&>button]:grow">
           <label className={`${ADMIN_BTN_CLS} cursor-pointer`}>
             Файл сонгох
             <input

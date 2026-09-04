@@ -116,7 +116,7 @@ const money = (n: number): string => n.toLocaleString("en-US") + "₮";
 const CARD_CLS =
   "bg-white border border-[#ececef] rounded-2xl overflow-hidden shadow-[0_1px_2px_rgba(24,24,27,0.04)]";
 const CARD_HEAD_CLS =
-  "flex items-start gap-3 px-6 pt-5 pb-4 border-b border-[#f4f4f5] bg-gradient-to-b from-[#fafafa] to-white";
+  "flex items-start gap-3 px-6 pt-5 pb-4 border-b border-[#f4f4f5] bg-gradient-to-b from-[#fafafa] to-white max-[640px]:gap-2.5 max-[640px]:px-4 max-[640px]:pt-4";
 const CARD_HEAD_ICON_BASE =
   "shrink-0 inline-flex h-10 w-10 items-center justify-center rounded-xl ring-1 ring-inset";
 const CARD_HEAD_ICON_BLUE = `${CARD_HEAD_ICON_BASE} bg-[#eef0fd] text-brand-blue ring-[#dadffb]`;
@@ -127,7 +127,7 @@ const CARD_HEAD_TITLE_CLS =
   "text-[14.5px] font-semibold tracking-[-0.01em] text-zinc-900 m-0 leading-tight";
 const CARD_HEAD_DESC_CLS =
   "text-[12.5px] text-zinc-500 m-0 mt-0.5 leading-[1.45]";
-const CARD_BODY_CLS = "p-6 flex flex-col gap-5";
+const CARD_BODY_CLS = "p-6 flex flex-col gap-5 max-[640px]:p-4 max-[640px]:gap-4";
 const TWO_COL_CLS =
   "grid gap-5 [grid-template-columns:repeat(2,minmax(0,1fr))] max-[760px]:[grid-template-columns:1fr]";
 
@@ -374,8 +374,8 @@ export default function EventEdit() {
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
             </svg>
           </span>
-          <div>
-            <div className="flex items-center gap-2">
+          <div className="max-[640px]:min-w-0">
+            <div className="flex items-center gap-2 max-[640px]:flex-wrap">
               <h2>{isNew ? "Шинэ арга хэмжээ" : "Арга хэмжээ засах"}</h2>
               {/* Read-only: the storefront is picked when the event is created. */}
               {form.showOnWeb && (
@@ -905,7 +905,9 @@ export default function EventEdit() {
             )}
           </div>
 
-          <aside className="min-w-0 flex flex-col gap-5 sticky top-[76px] self-start">
+          {/* Single-column below 1100px: pinning the preview to the top makes
+              it eat the phone viewport, so it scrolls with the form there. */}
+          <aside className="min-w-0 flex flex-col gap-5 sticky top-[76px] self-start max-[980px]:static max-[640px]:gap-4">
             <section className={CARD_CLS}>
               <header className={CARD_HEAD_CLS}>
                 <span className={CARD_HEAD_ICON_VIOLET} aria-hidden="true">
@@ -1001,7 +1003,9 @@ export default function EventEdit() {
                       style={{ backgroundImage: `url('${form.image}')` }}
                       aria-hidden="true"
                     />
-                    <div className="absolute inset-0 flex items-center justify-center gap-2 rounded-lg bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {/* Phones have no hover, so the controls stay visible there —
+                        otherwise the cover image could never be replaced. */}
+                    <div className="absolute inset-0 flex items-center justify-center gap-2 rounded-lg bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity max-[640px]:opacity-100 max-[640px]:bg-black/25 max-[640px]:items-end max-[640px]:p-2.5">
                       <button
                         type="button"
                         className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS}`}
@@ -1092,10 +1096,13 @@ export default function EventEdit() {
           </aside>
         </div>
 
-        <div className="sticky bottom-0 -mx-8 mt-6 bg-white/95 backdrop-blur-md border-t border-[#ececef] px-8 py-4 flex items-center gap-2.5 z-10 shadow-[0_-8px_24px_-12px_rgba(31,41,55,0.12)]">
+        {/* -mx-8/px-8 mirror ADMIN_CONTENT_CLS's padding so the bar is
+            full-bleed; that padding tightens on phones, so the bleed must
+            follow it or the row overflows the viewport sideways. */}
+        <div className="sticky bottom-0 -mx-8 mt-6 bg-white/95 backdrop-blur-md border-t border-[#ececef] px-8 py-4 flex items-center gap-2.5 z-10 shadow-[0_-8px_24px_-12px_rgba(31,41,55,0.12)] max-[640px]:-mx-4 max-[640px]:mt-5 max-[640px]:flex-wrap max-[640px]:gap-2 max-[640px]:px-4 max-[640px]:[padding-bottom:max(1rem,env(safe-area-inset-bottom))] max-[480px]:-mx-3 max-[480px]:px-3">
           <button
             type="submit"
-            className="inline-flex items-center justify-center gap-2 h-10 px-5 rounded-lg font-[inherit] text-[13.5px] font-semibold bg-brand-blue text-white border-0 cursor-pointer transition-all shadow-[0_8px_20px_-8px_rgba(34,48,198,0.55)] hover:bg-brand-blue-soft hover:-translate-y-px hover:shadow-[0_12px_24px_-10px_rgba(34,48,198,0.65)] active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none"
+            className="inline-flex items-center justify-center gap-2 h-10 px-5 rounded-lg font-[inherit] text-[13.5px] font-semibold bg-brand-blue text-white border-0 cursor-pointer transition-all shadow-[0_8px_20px_-8px_rgba(34,48,198,0.55)] hover:bg-brand-blue-soft hover:-translate-y-px hover:shadow-[0_12px_24px_-10px_rgba(34,48,198,0.65)] active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0 disabled:shadow-none max-[640px]:min-h-[44px] max-[640px]:grow max-[640px]:px-4"
             disabled={busy}
           >
             {busy ? (
@@ -1185,7 +1192,7 @@ function EventEnglishSection({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-1.5 bg-transparent border-0 p-0 cursor-pointer text-zinc-600 hover:text-zinc-900 text-[12.5px] font-medium transition-colors"
+        className="inline-flex items-center gap-1.5 bg-transparent border-0 p-0 cursor-pointer text-zinc-600 hover:text-zinc-900 text-[12.5px] font-medium transition-colors max-[640px]:min-h-[40px] max-[640px]:text-[13px]"
       >
         <svg
           width="12"

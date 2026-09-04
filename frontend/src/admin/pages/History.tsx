@@ -187,7 +187,7 @@ function FigureRow({
     ? `${figure.yearStart}${figure.yearEnd ? ` — ${figure.yearEnd}` : " — одоо"}`
     : "—";
   return (
-    <div className="flex items-center gap-4 p-3 pr-4 bg-white border border-[#ececef] rounded-xl hover:border-zinc-300 transition-colors">
+    <div className="flex items-center gap-4 p-3 pr-4 bg-white border border-[#ececef] rounded-xl hover:border-zinc-300 transition-colors max-[640px]:flex-wrap max-[640px]:gap-3 max-[640px]:p-3.5">
       <div className="w-12 h-12 rounded-full bg-zinc-100 grid place-items-center text-zinc-400 text-[11px] font-bold flex-shrink-0 overflow-hidden">
         {figure.image ? (
           <img
@@ -207,7 +207,7 @@ function FigureRow({
           {figure.role} · {years}
         </div>
       </div>
-      <div className="flex items-center gap-2 flex-shrink-0">
+      <div className="flex items-center gap-2 flex-shrink-0 max-[640px]:w-full max-[640px]:flex-wrap max-[640px]:pt-3 max-[640px]:border-t max-[640px]:border-[#f4f4f5] max-[640px]:[&>button]:grow max-[640px]:[&>button]:justify-center">
         <button
           type="button"
           className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS}`}
@@ -268,18 +268,18 @@ function FigureModal({
 
   return (
     <div
-      className="fixed inset-0 z-[300] grid place-items-center px-4 py-8 bg-[rgba(15,23,42,0.55)] backdrop-blur-sm"
+      className="fixed inset-0 z-[300] grid place-items-center px-4 py-8 bg-[rgba(15,23,42,0.55)] backdrop-blur-sm max-[640px]:px-3 max-[640px]:py-3 max-[640px]:[padding-bottom:max(0.75rem,env(safe-area-inset-bottom))]"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-label={isNew ? "Шинэ түүхэн хүн" : "Түүхэн хүн засах"}
     >
       <div
-        className="relative w-full max-w-[720px] max-h-[92vh] bg-white rounded-2xl shadow-[0_30px_80px_rgba(0,0,0,0.25)] overflow-hidden flex flex-col"
+        className="relative w-full max-w-[720px] max-h-[92vh] bg-white rounded-2xl shadow-[0_30px_80px_rgba(0,0,0,0.25)] overflow-hidden flex flex-col max-[640px]:max-h-full"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-3 p-6 pb-4 border-b border-[#ececef]">
-          <div>
+        <div className="flex items-start justify-between gap-3 p-6 pb-4 border-b border-[#ececef] max-[640px]:p-4 max-[640px]:pb-3">
+          <div className="max-[640px]:min-w-0">
             <h3 className="m-0 text-[16px] font-semibold text-zinc-900 tracking-[-0.01em]">
               {isNew ? "Шинэ түүхэн хүн нэмэх" : "Түүхэн хүн засах"}
             </h3>
@@ -293,7 +293,7 @@ function FigureModal({
             type="button"
             onClick={onClose}
             aria-label="Хаах"
-            className="grid place-items-center w-8 h-8 rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 transition-colors"
+            className="grid place-items-center w-8 h-8 rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 transition-colors max-[640px]:shrink-0 max-[640px]:w-10 max-[640px]:h-10 max-[640px]:-mr-1 max-[640px]:-mt-1"
           >
             <svg
               width="16"
@@ -311,7 +311,7 @@ function FigureModal({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-5">
+        <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-5 max-[640px]:p-4 max-[640px]:gap-4 max-[640px]:[-webkit-overflow-scrolling:touch]">
           <div className={ADMIN_FIELD_CLS}>
             <label>
               Нэр <span className="text-red-500">*</span>
@@ -365,7 +365,7 @@ function FigureModal({
           <FigureEnglishSection draft={draft} patch={patch} />
         </div>
 
-        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-[#ececef] bg-[#fafafa]">
+        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-[#ececef] bg-[#fafafa] max-[640px]:px-4 max-[640px]:py-3 max-[640px]:[&>button]:grow">
           <button
             type="button"
             className={ADMIN_BTN_CLS}
@@ -520,13 +520,13 @@ function ImageUploadField({
       />
 
       {value ? (
-        <div className="flex items-start gap-4 flex-wrap">
+        <div className="flex items-start gap-4 flex-wrap max-[640px]:gap-3">
           <img
             src={value}
             alt={altName}
-            className="w-[140px] h-[180px] object-cover rounded-lg border border-[#ececef] bg-[#fafafa]"
+            className="w-[140px] h-[180px] object-cover rounded-lg border border-[#ececef] bg-[#fafafa] max-[640px]:w-[110px] max-[640px]:h-[142px]"
           />
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 max-[640px]:grow max-[640px]:min-w-0">
             <button
               type="button"
               className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS}`}

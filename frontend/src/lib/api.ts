@@ -1,6 +1,7 @@
 import type {
   AdminAdmissionReport,
   AdminReconciliationReport,
+  AdminScannedTicketsPage,
   AdminSellThroughReport,
   AdminTicketRow,
   AdminTicketStats,
@@ -486,6 +487,23 @@ export const api = {
           code,
           event_id: eventId ?? null,
         }),
+      scannedTickets: (opts?: {
+        eventId?: string | null;
+        q?: string;
+        limit?: number;
+        offset?: number;
+      }) => {
+        const qs = new URLSearchParams();
+        if (opts?.eventId) qs.set("eventId", opts.eventId);
+        if (opts?.q) qs.set("q", opts.q);
+        if (opts?.limit != null) qs.set("limit", String(opts.limit));
+        if (opts?.offset != null) qs.set("offset", String(opts.offset));
+        const suffix = qs.toString() ? `?${qs.toString()}` : "";
+        return request<AdminScannedTicketsPage>(
+          "GET",
+          `/api/admin/kiosk/scanned${suffix}`,
+        );
+      },
     },
 
     uploadImage: async (

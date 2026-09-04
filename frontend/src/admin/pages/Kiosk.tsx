@@ -26,8 +26,15 @@ import {
   ADMIN_BADGE_CLS,
   ADMIN_BADGE_PAID_CLS,
   ADMIN_BADGE_REFUNDED_CLS,
+  ADMIN_DESKTOP_ONLY_CLS,
   ADMIN_EMPTY_CLS,
   ADMIN_FILTERS_CLS,
+  ADMIN_MOBILE_CARD_CLS,
+  ADMIN_MOBILE_CARD_HEAD_CLS,
+  ADMIN_MOBILE_LABEL_CLS,
+  ADMIN_MOBILE_LIST_CLS,
+  ADMIN_MOBILE_ROW_CLS,
+  ADMIN_MOBILE_VALUE_CLS,
   ADMIN_PAGE_HEADER_CLS,
   ADMIN_TABLE_CLS,
   ADMIN_TABLE_WRAP_CLS,
@@ -214,7 +221,7 @@ function SellThroughPanel() {
         </div>
       ) : (
         <>
-          <div className="grid gap-3 mb-5 [grid-template-columns:repeat(4,minmax(0,1fr))] max-[980px]:[grid-template-columns:repeat(2,minmax(0,1fr))]">
+          <div className="grid gap-3 mb-5 [grid-template-columns:repeat(4,minmax(0,1fr))] max-[980px]:[grid-template-columns:repeat(2,minmax(0,1fr))] max-[480px]:[grid-template-columns:minmax(0,1fr)]">
             <StatCard
               label="Нийт багтаамж"
               value={report.totals.capacity.toLocaleString("en-US")}
@@ -256,10 +263,10 @@ function SellThroughEventCard({ event }: { event: AdminSellThroughEvent }) {
   const dt = formatDateTime(event.start_time);
   return (
     <div className="bg-white border border-[#ececef] rounded-xl overflow-hidden">
-      <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-[#f4f4f5]">
+      <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-[#f4f4f5] max-[640px]:flex-col max-[640px]:items-stretch max-[640px]:gap-2 max-[640px]:px-4 max-[640px]:py-3.5">
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <h3 className="m-0 text-[14.5px] font-semibold text-zinc-900 truncate">
+          <div className="flex items-center gap-2 max-[640px]:flex-wrap">
+            <h3 className="m-0 text-[14.5px] font-semibold text-zinc-900 truncate max-[640px]:whitespace-normal max-[640px]:[overflow-wrap:anywhere]">
               {event.title}
             </h3>
             <EventStatusBadge status={event.status} startTime={event.start_time} />
@@ -269,7 +276,7 @@ function SellThroughEventCard({ event }: { event: AdminSellThroughEvent }) {
             {dt.secondary ? ` · ${dt.secondary}` : ""}
           </div>
         </div>
-        <div className="text-right shrink-0">
+        <div className="text-right shrink-0 max-[640px]:flex max-[640px]:items-baseline max-[640px]:justify-between max-[640px]:gap-3 max-[640px]:text-left">
           <div className="text-[15px] font-semibold tabular-nums text-zinc-900">
             {money(event.revenue)}
           </div>
@@ -280,63 +287,130 @@ function SellThroughEventCard({ event }: { event: AdminSellThroughEvent }) {
       </div>
 
       {event.zones.length === 0 ? (
-        <div className="px-5 py-4 text-[13px] text-zinc-500">
+        <div className="px-5 py-4 text-[13px] text-zinc-500 max-[640px]:px-4">
           Тасалбарын төрөл тохируулаагүй.
         </div>
       ) : (
-        <table className={ADMIN_TABLE_CLS}>
-          <thead>
-            <tr>
-              <th>Төрөл</th>
-              <th style={{ width: "34%" }}>Дүүргэлт</th>
-              <th style={{ textAlign: "right" }}>Үнэ</th>
-              <th style={{ textAlign: "center" }}>Зарагдсан</th>
-              <th style={{ textAlign: "right" }}>Орлого</th>
-            </tr>
-          </thead>
-          <tbody>
-            {event.zones.map((z) => (
-              <tr key={z.zone_id}>
-                <td>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="h-3 w-1.5 rounded-full shrink-0"
-                      style={{ background: z.color || "#2230C6" }}
-                      aria-hidden="true"
-                    />
-                    <span className="text-zinc-900 font-medium">
-                      {z.name_mn}
-                    </span>
-                  </div>
-                </td>
-                <td>
-                  <div className="flex items-center gap-2">
-                    <FillBar pct={z.pct} color={z.color} />
-                    <span className="text-[12px] tabular-nums text-zinc-500 shrink-0 w-9 text-right">
-                      {pctText(z.pct)}
-                    </span>
-                  </div>
-                </td>
-                <td
-                  className="tabular-nums text-zinc-600"
-                  style={{ textAlign: "right" }}
-                >
-                  {money(z.price)}
-                </td>
-                <td className="tabular-nums text-center">
-                  {z.sold}/{z.capacity}
-                </td>
-                <td
-                  className="tabular-nums text-zinc-900 font-semibold"
-                  style={{ textAlign: "right" }}
-                >
-                  {money(z.revenue)}
-                </td>
+        <>
+          <table className={`${ADMIN_TABLE_CLS} ${ADMIN_DESKTOP_ONLY_CLS}`}>
+            <thead>
+              <tr>
+                <th>Төрөл</th>
+                <th style={{ width: "34%" }}>Дүүргэлт</th>
+                <th style={{ textAlign: "right" }}>Үнэ</th>
+                <th style={{ textAlign: "center" }}>Зарагдсан</th>
+                <th style={{ textAlign: "right" }}>Орлого</th>
               </tr>
+            </thead>
+            <tbody>
+              {event.zones.map((z) => (
+                <tr key={z.zone_id}>
+                  <td>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="h-3 w-1.5 rounded-full shrink-0"
+                        style={{ background: z.color || "#2230C6" }}
+                        aria-hidden="true"
+                      />
+                      <span className="text-zinc-900 font-medium">
+                        {z.name_mn}
+                      </span>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="flex items-center gap-2">
+                      <FillBar pct={z.pct} color={z.color} />
+                      <span className="text-[12px] tabular-nums text-zinc-500 shrink-0 w-9 text-right">
+                        {pctText(z.pct)}
+                      </span>
+                    </div>
+                  </td>
+                  <td
+                    className="tabular-nums text-zinc-600"
+                    style={{ textAlign: "right" }}
+                  >
+                    {money(z.price)}
+                  </td>
+                  <td className="tabular-nums text-center">
+                    {z.sold}/{z.capacity}
+                  </td>
+                  <td
+                    className="tabular-nums text-zinc-900 font-semibold"
+                    style={{ textAlign: "right" }}
+                  >
+                    {money(z.revenue)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <div className={`${ADMIN_MOBILE_LIST_CLS} px-4 py-3.5`}>
+            {event.zones.map((z) => (
+              <ZoneMobileRow
+                key={z.zone_id}
+                name={z.name_mn}
+                color={z.color}
+                pct={z.pct}
+                trailing={money(z.revenue)}
+                left={`Зарагдсан ${z.sold}/${z.capacity}`}
+                right={money(z.price)}
+              />
             ))}
-          </tbody>
-        </table>
+          </div>
+        </>
       )}
+    </div>
+  );
+}
+
+/**
+ * One zone rendered as a stacked block below 640px, where the 4-5 column zone
+ * tables cannot be read. Desktop never renders this (the parent list is
+ * `hidden` above 640px).
+ */
+function ZoneMobileRow({
+  name,
+  color,
+  pct,
+  trailing,
+  left,
+  right,
+}: {
+  name: string;
+  color?: string | null;
+  pct: number;
+  trailing: string;
+  left: string;
+  right?: string;
+}) {
+  return (
+    <div className="flex flex-col gap-2 rounded-lg border border-[#f4f4f5] bg-[#fafafa] p-3">
+      <div className="flex items-start justify-between gap-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <span
+            className="h-3 w-1.5 rounded-full shrink-0"
+            style={{ background: color || "#2230C6" }}
+            aria-hidden="true"
+          />
+          <span className="text-[13px] font-medium text-zinc-900 [overflow-wrap:anywhere]">
+            {name}
+          </span>
+        </div>
+        <span className="shrink-0 text-[13px] font-semibold tabular-nums text-zinc-900">
+          {trailing}
+        </span>
+      </div>
+      <div className="flex items-center gap-2">
+        <FillBar pct={pct} color={color} />
+        <span className="w-9 shrink-0 text-right text-[12px] tabular-nums text-zinc-500">
+          {pctText(pct)}
+        </span>
+      </div>
+      <div className="flex items-center justify-between gap-2 text-[12px] tabular-nums text-zinc-500">
+        <span>{left}</span>
+        {right && <span>{right}</span>}
+      </div>
     </div>
   );
 }
@@ -423,7 +497,7 @@ function ReconciliationPanel() {
                   style={{ width: `${100 - qpayPct}%` }}
                 />
               </div>
-              <div className="flex justify-between text-[12px] text-zinc-500 mt-2 tabular-nums">
+              <div className="flex justify-between text-[12px] text-zinc-500 mt-2 tabular-nums max-[640px]:flex-wrap max-[640px]:gap-x-3 max-[640px]:gap-y-0.5">
                 <span>QPay {money(mix?.qpay ?? 0)}</span>
                 <span>Карт/Бэлэн {money(mix?.card ?? 0)}</span>
               </div>
@@ -436,56 +510,105 @@ function ReconciliationPanel() {
               Сонгосон хугацаанд төлөгдсөн борлуулалт бүртгэгдээгүй байна.
             </div>
           ) : (
-            <div className={ADMIN_TABLE_WRAP_CLS}>
-              <table className={ADMIN_TABLE_CLS}>
-                <thead>
-                  <tr>
-                    <th>Касс / Ажилтан</th>
-                    <th style={{ textAlign: "center" }}>Захиалга</th>
-                    <th style={{ textAlign: "center" }}>Тасалбар</th>
-                    <th style={{ textAlign: "right" }}>QPay</th>
-                    <th style={{ textAlign: "right" }}>Карт/Бэлэн</th>
-                    <th style={{ textAlign: "right" }}>Нийт</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {report.kiosks.map((k) => (
-                    <tr key={k.kiosk_id ?? "__none__"}>
-                      <td>
-                        <span className="text-zinc-900 font-medium">
-                          {k.label}
-                        </span>
+            <>
+              <div className={`${ADMIN_TABLE_WRAP_CLS} ${ADMIN_DESKTOP_ONLY_CLS}`}>
+                <table className={ADMIN_TABLE_CLS}>
+                  <thead>
+                    <tr>
+                      <th>Касс / Ажилтан</th>
+                      <th style={{ textAlign: "center" }}>Захиалга</th>
+                      <th style={{ textAlign: "center" }}>Тасалбар</th>
+                      <th style={{ textAlign: "right" }}>QPay</th>
+                      <th style={{ textAlign: "right" }}>Карт/Бэлэн</th>
+                      <th style={{ textAlign: "right" }}>Нийт</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {report.kiosks.map((k) => (
+                      <tr key={k.kiosk_id ?? "__none__"}>
+                        <td>
+                          <span className="text-zinc-900 font-medium">
+                            {k.label}
+                          </span>
+                          {k.staff_id && (
+                            <span className="ml-2 text-[11px] text-zinc-400">
+                              ажилтан
+                            </span>
+                          )}
+                        </td>
+                        <td className="tabular-nums text-center">{k.orders}</td>
+                        <td className="tabular-nums text-center">{k.tickets}</td>
+                        <td
+                          className="tabular-nums text-zinc-600"
+                          style={{ textAlign: "right" }}
+                        >
+                          {money(k.qpay)}
+                        </td>
+                        <td
+                          className="tabular-nums text-zinc-600"
+                          style={{ textAlign: "right" }}
+                        >
+                          {money(k.card)}
+                        </td>
+                        <td
+                          className="tabular-nums text-zinc-900 font-semibold"
+                          style={{ textAlign: "right" }}
+                        >
+                          {money(k.revenue)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className={ADMIN_MOBILE_LIST_CLS}>
+                {report.kiosks.map((k) => (
+                  <div
+                    key={k.kiosk_id ?? "__none__"}
+                    className={ADMIN_MOBILE_CARD_CLS}
+                  >
+                    <div className={ADMIN_MOBILE_CARD_HEAD_CLS}>
+                      <span>
+                        {k.label}
                         {k.staff_id && (
-                          <span className="ml-2 text-[11px] text-zinc-400">
+                          <span className="ml-2 text-[11px] font-normal text-zinc-400">
                             ажилтан
                           </span>
                         )}
-                      </td>
-                      <td className="tabular-nums text-center">{k.orders}</td>
-                      <td className="tabular-nums text-center">{k.tickets}</td>
-                      <td
-                        className="tabular-nums text-zinc-600"
-                        style={{ textAlign: "right" }}
-                      >
-                        {money(k.qpay)}
-                      </td>
-                      <td
-                        className="tabular-nums text-zinc-600"
-                        style={{ textAlign: "right" }}
-                      >
-                        {money(k.card)}
-                      </td>
-                      <td
-                        className="tabular-nums text-zinc-900 font-semibold"
-                        style={{ textAlign: "right" }}
-                      >
+                      </span>
+                      <span className="text-[14px] font-semibold tabular-nums text-zinc-900">
                         {money(k.revenue)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      </span>
+                    </div>
+                    <div className={ADMIN_MOBILE_ROW_CLS}>
+                      <span className={ADMIN_MOBILE_LABEL_CLS}>Захиалга</span>
+                      <span className={`${ADMIN_MOBILE_VALUE_CLS} tabular-nums`}>
+                        {k.orders}
+                      </span>
+                    </div>
+                    <div className={ADMIN_MOBILE_ROW_CLS}>
+                      <span className={ADMIN_MOBILE_LABEL_CLS}>Тасалбар</span>
+                      <span className={`${ADMIN_MOBILE_VALUE_CLS} tabular-nums`}>
+                        {k.tickets}
+                      </span>
+                    </div>
+                    <div className={ADMIN_MOBILE_ROW_CLS}>
+                      <span className={ADMIN_MOBILE_LABEL_CLS}>QPay</span>
+                      <span className={`${ADMIN_MOBILE_VALUE_CLS} tabular-nums`}>
+                        {money(k.qpay)}
+                      </span>
+                    </div>
+                    <div className={ADMIN_MOBILE_ROW_CLS}>
+                      <span className={ADMIN_MOBILE_LABEL_CLS}>Карт/Бэлэн</span>
+                      <span className={`${ADMIN_MOBILE_VALUE_CLS} tabular-nums`}>
+                        {money(k.card)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </>
       )}
@@ -503,13 +626,15 @@ function Segmented<T extends string>({
   options: Array<[T, string]>;
 }) {
   return (
-    <div className="inline-flex bg-white border border-[#e4e4e7] rounded-md p-0.5 gap-0.5">
+    // Below 640px this sits as a full-width child of ADMIN_FILTERS_CLS, so the
+    // segments share the row instead of huddling on the left.
+    <div className="inline-flex bg-white border border-[#e4e4e7] rounded-md p-0.5 gap-0.5 max-[640px]:w-full">
       {options.map(([key, label]) => (
         <button
           key={key}
           type="button"
           onClick={() => onChange(key)}
-          className={`px-3 h-8 rounded text-[12.5px] font-medium transition-colors ${
+          className={`px-3 h-8 rounded text-[12.5px] font-medium transition-colors max-[640px]:grow max-[640px]:min-h-[40px] max-[640px]:text-[13px] ${
             value === key
               ? "bg-zinc-900 text-white"
               : "text-zinc-600 hover:text-zinc-900"
@@ -570,7 +695,7 @@ function AdmissionPanel() {
         <button
           type="button"
           onClick={() => setLive((v) => !v)}
-          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-[#e4e4e7] bg-white text-[12.5px] font-medium text-zinc-700 hover:bg-zinc-50"
+          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-[#e4e4e7] bg-white text-[12.5px] font-medium text-zinc-700 hover:bg-zinc-50 max-[640px]:min-h-[44px] max-[640px]:justify-center max-[640px]:text-[13.5px]"
         >
           <span
             className={`inline-block h-2 w-2 rounded-full ${
@@ -582,7 +707,7 @@ function AdmissionPanel() {
         <button
           type="button"
           onClick={load}
-          className="inline-flex items-center h-8 px-3 rounded-md border border-[#e4e4e7] bg-white text-[12.5px] font-medium text-zinc-700 hover:bg-zinc-50"
+          className="inline-flex items-center h-8 px-3 rounded-md border border-[#e4e4e7] bg-white text-[12.5px] font-medium text-zinc-700 hover:bg-zinc-50 max-[640px]:min-h-[44px] max-[640px]:justify-center max-[640px]:text-[13.5px]"
         >
           Шинэчлэх
         </button>
@@ -597,7 +722,7 @@ function AdmissionPanel() {
         </div>
       ) : (
         <>
-          <div className="grid gap-3 mb-5 [grid-template-columns:repeat(4,minmax(0,1fr))] max-[980px]:[grid-template-columns:repeat(2,minmax(0,1fr))]">
+          <div className="grid gap-3 mb-5 [grid-template-columns:repeat(4,minmax(0,1fr))] max-[980px]:[grid-template-columns:repeat(2,minmax(0,1fr))] max-[480px]:[grid-template-columns:minmax(0,1fr)]">
             <StatCard
               label="Нэвтэрсэн"
               value={totals.admitted.toLocaleString("en-US")}
@@ -620,8 +745,8 @@ function AdmissionPanel() {
             />
           </div>
 
-          <div className="grid gap-4 [grid-template-columns:1fr_320px] max-[1100px]:[grid-template-columns:1fr]">
-            <div className="flex flex-col gap-4">
+          <div className="grid gap-4 [grid-template-columns:1fr_320px] max-[1100px]:[grid-template-columns:1fr] max-[980px]:[grid-template-columns:minmax(0,1fr)]">
+            <div className="flex flex-col gap-4 max-[980px]:min-w-0">
               {report.events.map((e) => (
                 <AdmissionEventCard key={e.event_id} event={e} />
               ))}
@@ -638,10 +763,10 @@ function AdmissionEventCard({ event }: { event: AdminAdmissionEvent }) {
   const dt = formatDateTime(event.start_time);
   return (
     <div className="bg-white border border-[#ececef] rounded-xl overflow-hidden">
-      <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-[#f4f4f5]">
+      <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-[#f4f4f5] max-[640px]:flex-col max-[640px]:items-stretch max-[640px]:gap-2 max-[640px]:px-4 max-[640px]:py-3.5">
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <h3 className="m-0 text-[14.5px] font-semibold text-zinc-900 truncate">
+          <div className="flex items-center gap-2 max-[640px]:flex-wrap">
+            <h3 className="m-0 text-[14.5px] font-semibold text-zinc-900 truncate max-[640px]:whitespace-normal max-[640px]:[overflow-wrap:anywhere]">
               {event.title}
             </h3>
             <EventStatusBadge status={event.status} startTime={event.start_time} />
@@ -651,7 +776,7 @@ function AdmissionEventCard({ event }: { event: AdminAdmissionEvent }) {
             {dt.secondary ? ` · ${dt.secondary}` : ""}
           </div>
         </div>
-        <div className="text-right shrink-0">
+        <div className="text-right shrink-0 max-[640px]:flex max-[640px]:items-baseline max-[640px]:justify-between max-[640px]:gap-3 max-[640px]:text-left">
           <div className="text-[15px] font-semibold tabular-nums text-zinc-900">
             {event.admitted}/{event.sold}
           </div>
@@ -662,52 +787,67 @@ function AdmissionEventCard({ event }: { event: AdminAdmissionEvent }) {
       </div>
 
       {event.zones.length === 0 ? (
-        <div className="px-5 py-4 text-[13px] text-zinc-500">
+        <div className="px-5 py-4 text-[13px] text-zinc-500 max-[640px]:px-4">
           Тасалбарын төрөл тохируулаагүй.
         </div>
       ) : (
-        <table className={ADMIN_TABLE_CLS}>
-          <thead>
-            <tr>
-              <th>Төрөл</th>
-              <th style={{ width: "38%" }}>Нэвтрэлт</th>
-              <th style={{ textAlign: "center" }}>Нэвтэрсэн</th>
-              <th style={{ textAlign: "center" }}>Ороогүй</th>
-            </tr>
-          </thead>
-          <tbody>
-            {event.zones.map((z) => (
-              <tr key={z.zone_id}>
-                <td>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="h-3 w-1.5 rounded-full shrink-0"
-                      style={{ background: z.color || "#2230C6" }}
-                      aria-hidden="true"
-                    />
-                    <span className="text-zinc-900 font-medium">
-                      {z.name_mn}
-                    </span>
-                  </div>
-                </td>
-                <td>
-                  <div className="flex items-center gap-2">
-                    <FillBar pct={z.pct} color={z.color} />
-                    <span className="text-[12px] tabular-nums text-zinc-500 shrink-0 w-9 text-right">
-                      {pctText(z.pct)}
-                    </span>
-                  </div>
-                </td>
-                <td className="tabular-nums text-center">
-                  {z.admitted}/{z.sold}
-                </td>
-                <td className="tabular-nums text-center text-zinc-600">
-                  {Math.max(0, z.sold - z.admitted)}
-                </td>
+        <>
+          <table className={`${ADMIN_TABLE_CLS} ${ADMIN_DESKTOP_ONLY_CLS}`}>
+            <thead>
+              <tr>
+                <th>Төрөл</th>
+                <th style={{ width: "38%" }}>Нэвтрэлт</th>
+                <th style={{ textAlign: "center" }}>Нэвтэрсэн</th>
+                <th style={{ textAlign: "center" }}>Ороогүй</th>
               </tr>
+            </thead>
+            <tbody>
+              {event.zones.map((z) => (
+                <tr key={z.zone_id}>
+                  <td>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="h-3 w-1.5 rounded-full shrink-0"
+                        style={{ background: z.color || "#2230C6" }}
+                        aria-hidden="true"
+                      />
+                      <span className="text-zinc-900 font-medium">
+                        {z.name_mn}
+                      </span>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="flex items-center gap-2">
+                      <FillBar pct={z.pct} color={z.color} />
+                      <span className="text-[12px] tabular-nums text-zinc-500 shrink-0 w-9 text-right">
+                        {pctText(z.pct)}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="tabular-nums text-center">
+                    {z.admitted}/{z.sold}
+                  </td>
+                  <td className="tabular-nums text-center text-zinc-600">
+                    {Math.max(0, z.sold - z.admitted)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <div className={`${ADMIN_MOBILE_LIST_CLS} px-4 py-3.5`}>
+            {event.zones.map((z) => (
+              <ZoneMobileRow
+                key={z.zone_id}
+                name={z.name_mn}
+                color={z.color}
+                pct={z.pct}
+                trailing={`${z.admitted}/${z.sold}`}
+                left={`Ороогүй ${Math.max(0, z.sold - z.admitted)}`}
+              />
             ))}
-          </tbody>
-        </table>
+          </div>
+        </>
       )}
     </div>
   );
@@ -730,7 +870,7 @@ function RecentScans({ report }: { report: AdminAdmissionReport }) {
             return (
               <div
                 key={`${r.code}-${i}`}
-                className="flex items-center gap-2 text-[12.5px] py-1.5"
+                className="flex items-center gap-2 text-[12.5px] py-1.5 max-[640px]:text-[13px] max-[640px]:py-2"
               >
                 <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
                 <span className="font-mono text-zinc-700 truncate">
@@ -859,7 +999,9 @@ function SalesPanel() {
             className="!pl-9 !min-w-[300px]"
           />
         </div>
-        <div className="inline-flex bg-white border border-[#e4e4e7] rounded-md p-0.5 gap-0.5">
+        {/* Four long Mongolian labels never fit one 375px row — below 640px the
+            pills wrap onto two rows and share the width instead. */}
+        <div className="inline-flex bg-white border border-[#e4e4e7] rounded-md p-0.5 gap-0.5 max-[640px]:w-full max-[640px]:flex-wrap">
           {(
             [
               ["all", "Бүгд"],
@@ -872,7 +1014,7 @@ function SalesPanel() {
               key={key}
               type="button"
               onClick={() => setStatus(key)}
-              className={`px-3 h-8 rounded text-[12.5px] font-medium transition-colors ${
+              className={`px-3 h-8 rounded text-[12.5px] font-medium transition-colors max-[640px]:grow max-[640px]:min-h-[40px] max-[640px]:text-[13px] ${
                 status === key
                   ? "bg-zinc-900 text-white"
                   : "text-zinc-600 hover:text-zinc-900"
@@ -902,99 +1044,165 @@ function SalesPanel() {
             : "Одоогоор биечлэн борлуулалт бүртгэгдээгүй байна."}
         </div>
       ) : (
-        <div className={ADMIN_TABLE_WRAP_CLS}>
-          <table className={ADMIN_TABLE_CLS}>
-            <thead>
-              <tr>
-                <th>Лавлах</th>
-                <th>Арга хэмжээ</th>
-                <th>Төрөл</th>
-                <th>Худалдан авагч</th>
-                <th style={{ textAlign: "center" }}>Тоо</th>
-                <th style={{ textAlign: "right" }}>Дүн</th>
-                <th>Төлбөр</th>
-                <th>Огноо</th>
-                <th>Төлөв</th>
-                <th style={{ width: 1 }} />
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((o) => {
-                const dt = formatDateTime(o.created_at);
-                const qtyTotal = o.items.reduce((s, it) => s + it.qty, 0);
-                const zones = o.items
-                  .map((it) => `${it.zone_name_mn} × ${it.qty}`)
-                  .join(", ");
-                return (
-                  <tr
-                    key={o.id}
-                    className="group cursor-pointer"
-                    onClick={() => setDetailId(o.id)}
-                  >
-                    <td>
-                      <span className="font-mono text-[12px] font-semibold tracking-tight text-zinc-900">
-                        {o.reference.slice(0, 8).toUpperCase()}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="text-zinc-900 font-medium">
-                        {o.event_title || "—"}
-                      </span>
-                    </td>
-                    <td
-                      className="text-zinc-600 max-w-[220px] truncate"
-                      title={zones}
+        <>
+          <div className={`${ADMIN_TABLE_WRAP_CLS} ${ADMIN_DESKTOP_ONLY_CLS}`}>
+            <table className={ADMIN_TABLE_CLS}>
+              <thead>
+                <tr>
+                  <th>Лавлах</th>
+                  <th>Арга хэмжээ</th>
+                  <th>Төрөл</th>
+                  <th>Худалдан авагч</th>
+                  <th style={{ textAlign: "center" }}>Тоо</th>
+                  <th style={{ textAlign: "right" }}>Дүн</th>
+                  <th>Төлбөр</th>
+                  <th>Огноо</th>
+                  <th>Төлөв</th>
+                  <th style={{ width: 1 }} />
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((o) => {
+                  const dt = formatDateTime(o.created_at);
+                  const qtyTotal = o.items.reduce((s, it) => s + it.qty, 0);
+                  const zones = o.items
+                    .map((it) => `${it.zone_name_mn} × ${it.qty}`)
+                    .join(", ");
+                  return (
+                    <tr
+                      key={o.id}
+                      className="group cursor-pointer"
+                      onClick={() => setDetailId(o.id)}
                     >
-                      {zones || "—"}
-                    </td>
-                    <td className="text-zinc-600">{o.buyer_phone || "—"}</td>
-                    <td className="tabular-nums text-center">{qtyTotal}</td>
-                    <td
-                      className="tabular-nums text-zinc-900 font-semibold"
-                      style={{ textAlign: "right" }}
-                    >
-                      {money(o.total)}
-                    </td>
-                    <td className="text-zinc-600 uppercase text-[12px]">
-                      {o.payment_method || "—"}
-                    </td>
-                    <td>
-                      <div className="text-zinc-900 tabular-nums">
-                        {dt.primary}
-                      </div>
-                      {dt.secondary && (
-                        <div className="text-[11.5px] text-zinc-500 mt-0.5 tabular-nums">
-                          {dt.secondary}
+                      <td>
+                        <span className="font-mono text-[12px] font-semibold tracking-tight text-zinc-900">
+                          {o.reference.slice(0, 8).toUpperCase()}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="text-zinc-900 font-medium">
+                          {o.event_title || "—"}
+                        </span>
+                      </td>
+                      <td
+                        className="text-zinc-600 max-w-[220px] truncate"
+                        title={zones}
+                      >
+                        {zones || "—"}
+                      </td>
+                      <td className="text-zinc-600">{o.buyer_phone || "—"}</td>
+                      <td className="tabular-nums text-center">{qtyTotal}</td>
+                      <td
+                        className="tabular-nums text-zinc-900 font-semibold"
+                        style={{ textAlign: "right" }}
+                      >
+                        {money(o.total)}
+                      </td>
+                      <td className="text-zinc-600 uppercase text-[12px]">
+                        {o.payment_method || "—"}
+                      </td>
+                      <td>
+                        <div className="text-zinc-900 tabular-nums">
+                          {dt.primary}
                         </div>
-                      )}
-                    </td>
-                    <td>
-                      <StatusBadge status={o.status} />
-                    </td>
-                    <td>
-                      <span className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#e4e4e7] bg-white text-zinc-600 group-hover:bg-zinc-50 group-hover:text-zinc-900 transition-colors">
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          aria-hidden="true"
-                        >
-                          <path d="M5 12h14" />
-                          <polyline points="12 5 19 12 12 19" />
-                        </svg>
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                        {dt.secondary && (
+                          <div className="text-[11.5px] text-zinc-500 mt-0.5 tabular-nums">
+                            {dt.secondary}
+                          </div>
+                        )}
+                      </td>
+                      <td>
+                        <StatusBadge status={o.status} />
+                      </td>
+                      <td>
+                        <span className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#e4e4e7] bg-white text-zinc-600 group-hover:bg-zinc-50 group-hover:text-zinc-900 transition-colors">
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                          >
+                            <path d="M5 12h14" />
+                            <polyline points="12 5 19 12 12 19" />
+                          </svg>
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <div className={ADMIN_MOBILE_LIST_CLS}>
+            {filtered.map((o) => {
+              const dt = formatDateTime(o.created_at);
+              const qtyTotal = o.items.reduce((s, it) => s + it.qty, 0);
+              const zones = o.items
+                .map((it) => `${it.zone_name_mn} × ${it.qty}`)
+                .join(", ");
+              return (
+                <button
+                  key={o.id}
+                  type="button"
+                  onClick={() => setDetailId(o.id)}
+                  className={`${ADMIN_MOBILE_CARD_CLS} w-full text-left`}
+                >
+                  <div className={ADMIN_MOBILE_CARD_HEAD_CLS}>
+                    <span>{o.event_title || "—"}</span>
+                    <StatusBadge status={o.status} />
+                  </div>
+                  <div className={ADMIN_MOBILE_ROW_CLS}>
+                    <span className={ADMIN_MOBILE_LABEL_CLS}>Лавлах</span>
+                    <span className={`${ADMIN_MOBILE_VALUE_CLS} font-mono font-semibold tracking-tight`}>
+                      {o.reference.slice(0, 8).toUpperCase()}
+                    </span>
+                  </div>
+                  <div className={ADMIN_MOBILE_ROW_CLS}>
+                    <span className={ADMIN_MOBILE_LABEL_CLS}>Төрөл</span>
+                    <span className={ADMIN_MOBILE_VALUE_CLS}>{zones || "—"}</span>
+                  </div>
+                  <div className={ADMIN_MOBILE_ROW_CLS}>
+                    <span className={ADMIN_MOBILE_LABEL_CLS}>Худалдан авагч</span>
+                    <span className={ADMIN_MOBILE_VALUE_CLS}>
+                      {o.buyer_phone || "—"}
+                    </span>
+                  </div>
+                  <div className={ADMIN_MOBILE_ROW_CLS}>
+                    <span className={ADMIN_MOBILE_LABEL_CLS}>Тоо</span>
+                    <span className={`${ADMIN_MOBILE_VALUE_CLS} tabular-nums`}>
+                      {qtyTotal}
+                    </span>
+                  </div>
+                  <div className={ADMIN_MOBILE_ROW_CLS}>
+                    <span className={ADMIN_MOBILE_LABEL_CLS}>Дүн</span>
+                    <span className={`${ADMIN_MOBILE_VALUE_CLS} tabular-nums font-semibold`}>
+                      {money(o.total)}
+                    </span>
+                  </div>
+                  <div className={ADMIN_MOBILE_ROW_CLS}>
+                    <span className={ADMIN_MOBILE_LABEL_CLS}>Төлбөр</span>
+                    <span className={`${ADMIN_MOBILE_VALUE_CLS} uppercase`}>
+                      {o.payment_method || "—"}
+                    </span>
+                  </div>
+                  <div className={ADMIN_MOBILE_ROW_CLS}>
+                    <span className={ADMIN_MOBILE_LABEL_CLS}>Огноо</span>
+                    <span className={`${ADMIN_MOBILE_VALUE_CLS} tabular-nums`}>
+                      {dt.primary}
+                      {dt.secondary ? ` · ${dt.secondary}` : ""}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </>
       )}
 
       {detailId && (
@@ -1014,11 +1222,11 @@ function StatCard({
   sub: string;
 }) {
   return (
-    <div className="bg-white border border-[#ececef] rounded-xl p-4">
+    <div className="bg-white border border-[#ececef] rounded-xl p-4 max-[640px]:min-w-0">
       <span className="text-[11px] text-zinc-500 uppercase tracking-[.06em] font-medium">
         {label}
       </span>
-      <div className="text-[22px] font-semibold tracking-[-0.02em] leading-none mt-2 text-zinc-900">
+      <div className="text-[22px] font-semibold tracking-[-0.02em] leading-none mt-2 text-zinc-900 max-[640px]:text-[20px] max-[640px]:leading-tight max-[640px]:break-words">
         {value}
       </div>
       <div className="text-[11.5px] text-zinc-500 mt-2">{sub}</div>
@@ -1052,22 +1260,22 @@ function OrderDetailModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4"
+      className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 max-[640px]:p-3 max-[640px]:[padding-top:max(0.75rem,env(safe-area-inset-top))] max-[640px]:[padding-bottom:max(0.75rem,env(safe-area-inset-bottom))]"
       role="dialog"
       aria-modal="true"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-[520px] max-h-[88vh] overflow-y-auto rounded-2xl bg-white shadow-xl"
+        className="w-full max-w-[520px] max-h-[88vh] overflow-y-auto rounded-2xl bg-white shadow-xl max-[640px]:max-h-full"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-3 px-6 pt-5 pb-4 border-b border-[#f4f4f5] sticky top-0 bg-white">
+        <div className="flex items-start justify-between gap-3 px-6 pt-5 pb-4 border-b border-[#f4f4f5] sticky top-0 bg-white max-[640px]:px-4 max-[640px]:pt-4 max-[640px]:pb-3">
           <div className="min-w-0">
-            <h3 className="m-0 text-[15px] font-semibold text-zinc-900 truncate">
+            <h3 className="m-0 text-[15px] font-semibold text-zinc-900 truncate max-[640px]:whitespace-normal max-[640px]:[overflow-wrap:anywhere]">
               {order?.event_title || "Захиалга"}
             </h3>
             {order && (
-              <p className="m-0 mt-0.5 text-[12.5px] text-zinc-500 font-mono truncate">
+              <p className="m-0 mt-0.5 text-[12.5px] text-zinc-500 font-mono truncate max-[640px]:whitespace-normal max-[640px]:[overflow-wrap:anywhere]">
                 {order.reference}
               </p>
             )}
@@ -1075,14 +1283,14 @@ function OrderDetailModal({
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-md text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900"
+            className="shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-md text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 max-[640px]:h-10 max-[640px]:w-10 max-[640px]:text-[16px]"
             aria-label="Хаах"
           >
             ✕
           </button>
         </div>
 
-        <div className="p-6 flex flex-col gap-5">
+        <div className="p-6 flex flex-col gap-5 max-[640px]:p-4 max-[640px]:gap-4">
           {loading ? (
             <div className="py-6 text-center text-[13.5px] text-zinc-500">
               Уншиж байна…
@@ -1093,7 +1301,7 @@ function OrderDetailModal({
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 gap-3 text-[13px]">
+              <div className="grid grid-cols-2 gap-3 text-[13px] max-[480px]:grid-cols-1">
                 <Meta
                   label="Төлөв"
                   value={<StatusBadge status={order.status} />}
@@ -1117,12 +1325,12 @@ function OrderDetailModal({
                   {order.items.map((it, i) => (
                     <div
                       key={`${it.zone_id}-${i}`}
-                      className="flex justify-between gap-2 text-[13px]"
+                      className="flex justify-between gap-2 text-[13px] max-[640px]:min-w-0"
                     >
-                      <span className="text-zinc-600">
+                      <span className="text-zinc-600 max-[640px]:min-w-0 max-[640px]:[overflow-wrap:anywhere]">
                         {it.zone_name_mn} × {it.qty}
                       </span>
-                      <span className="tabular-nums text-zinc-900">
+                      <span className="tabular-nums text-zinc-900 max-[640px]:shrink-0">
                         {money(it.qty * it.unit_price)}
                       </span>
                     </div>
@@ -1179,11 +1387,13 @@ function OrderDetailModal({
 
 function Meta({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div>
+    <div className="max-[640px]:min-w-0">
       <div className="text-[11px] text-zinc-500 uppercase tracking-[.06em] font-medium mb-1">
         {label}
       </div>
-      <div className="text-zinc-900">{value}</div>
+      <div className="text-zinc-900 max-[640px]:[overflow-wrap:anywhere]">
+        {value}
+      </div>
     </div>
   );
 }

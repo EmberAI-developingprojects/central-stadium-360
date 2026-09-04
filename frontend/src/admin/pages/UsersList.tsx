@@ -20,9 +20,18 @@ import { useSearchHotkey } from "../hooks/useSearchHotkey";
 import {
   ADMIN_BTN_CLS,
   ADMIN_BTN_PRIMARY_CLS,
+  ADMIN_BTN_SM_CLS,
+  ADMIN_DESKTOP_ONLY_CLS,
   ADMIN_FIELD_CLS,
   ADMIN_FILTERS_CLS,
   ADMIN_LINK_CLS,
+  ADMIN_MOBILE_ACTIONS_CLS,
+  ADMIN_MOBILE_CARD_CLS,
+  ADMIN_MOBILE_CARD_HEAD_CLS,
+  ADMIN_MOBILE_LABEL_CLS,
+  ADMIN_MOBILE_LIST_CLS,
+  ADMIN_MOBILE_ROW_CLS,
+  ADMIN_MOBILE_VALUE_CLS,
   ADMIN_PAGE_HEADER_CLS,
   ADMIN_TABLE_CLS,
   ADMIN_TABLE_WRAP_CLS,
@@ -176,7 +185,7 @@ export default function UsersList() {
       {!users ? (
         <SkeletonStatGrid count={4} />
       ) : users.length > 0 ? (
-        <div className="grid gap-3 mb-5 [grid-template-columns:repeat(4,minmax(0,1fr))] max-[980px]:[grid-template-columns:repeat(2,minmax(0,1fr))]">
+        <div className="grid gap-3 mb-5 [grid-template-columns:repeat(4,minmax(0,1fr))] max-[980px]:[grid-template-columns:repeat(2,minmax(0,1fr))] max-[480px]:[grid-template-columns:minmax(0,1fr)]">
           <StatCard
             label="Нийт хэрэглэгч"
             value={stats.total.toString()}
@@ -256,7 +265,7 @@ export default function UsersList() {
             </button>
           )}
         </div>
-        <div className="inline-flex bg-white border border-[#e4e4e7] rounded-md p-0.5 gap-0.5">
+        <div className="inline-flex bg-white border border-[#e4e4e7] rounded-md p-0.5 gap-0.5 max-[640px]:flex-wrap max-[640px]:[&>button]:grow max-[640px]:[&>button]:min-h-[40px]">
           {(
             [
               ["all", "Бүгд"],
@@ -327,196 +336,291 @@ export default function UsersList() {
           />
         )
       ) : (
-        <div className={ADMIN_TABLE_WRAP_CLS}>
-          <table className={ADMIN_TABLE_CLS}>
-            <thead>
-              <tr>
-                <th>Хэрэглэгч</th>
-                <th>Эрх</th>
-                <th style={{ textAlign: "center" }}>Захиалга</th>
-                <th>Бүртгүүлсэн</th>
-                <th style={{ width: 1 }} />
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((u) => {
-                const display = u.fullname || u.identifier;
-                const initial = (u.fullname || u.identifier || "?")
-                  .trim()
-                  .charAt(0)
-                  .toUpperCase();
-                const isAdmin = u.role === "admin";
-                const orderCount = orderCounts[u.identifier] || 0;
-                return (
-                  <tr key={u.id} className="group">
-                    <td>
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span
-                          className={`shrink-0 inline-flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-semibold ring-1 ring-inset ${
-                            isAdmin
-                              ? "bg-gradient-to-br from-violet-100 to-violet-50 text-violet-700 ring-violet-200"
-                              : "bg-gradient-to-br from-zinc-200 to-zinc-100 text-zinc-700 ring-zinc-200"
-                          }`}
-                          aria-hidden="true"
-                        >
-                          {initial}
-                        </span>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <Link
-                              to={`/admin/users/${u.id}`}
-                              className={`${ADMIN_LINK_CLS} truncate`}
-                            >
-                              {display}
-                            </Link>
-                            {u.disabled && (
-                              <span className="inline-flex items-center gap-1 shrink-0 rounded-full bg-red-50 border border-red-200 text-red-700 text-[10.5px] font-semibold px-1.5 py-0.5 leading-none">
-                                <svg
-                                  width="9"
-                                  height="9"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2.5"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  aria-hidden="true"
-                                >
-                                  <circle cx="12" cy="12" r="10" />
-                                  <line
-                                    x1="4.93"
-                                    y1="4.93"
-                                    x2="19.07"
-                                    y2="19.07"
-                                  />
-                                </svg>
-                                ХЯЗГААРЛАГДСАН
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-[11.5px] text-zinc-500 mt-0.5 truncate">
-                            {u.identifier}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      {isAdmin ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 text-violet-700 border border-violet-200 text-[11px] font-semibold px-2 py-0.5">
-                          <svg
-                            width="10"
-                            height="10"
-                            viewBox="0 0 24 24"
-                            fill="currentColor"
+        <>
+          <div className={`${ADMIN_TABLE_WRAP_CLS} ${ADMIN_DESKTOP_ONLY_CLS}`}>
+            <table className={ADMIN_TABLE_CLS}>
+              <thead>
+                <tr>
+                  <th>Хэрэглэгч</th>
+                  <th>Эрх</th>
+                  <th style={{ textAlign: "center" }}>Захиалга</th>
+                  <th>Бүртгүүлсэн</th>
+                  <th style={{ width: 1 }} />
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((u) => {
+                  const display = u.fullname || u.identifier;
+                  const initial = (u.fullname || u.identifier || "?")
+                    .trim()
+                    .charAt(0)
+                    .toUpperCase();
+                  const isAdmin = u.role === "admin";
+                  const orderCount = orderCounts[u.identifier] || 0;
+                  return (
+                    <tr key={u.id} className="group">
+                      <td>
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span
+                            className={`shrink-0 inline-flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-semibold ring-1 ring-inset ${
+                              isAdmin
+                                ? "bg-gradient-to-br from-violet-100 to-violet-50 text-violet-700 ring-violet-200"
+                                : "bg-gradient-to-br from-zinc-200 to-zinc-100 text-zinc-700 ring-zinc-200"
+                            }`}
                             aria-hidden="true"
                           >
-                            <path d="M12 2l3 7h7l-5.5 4 2 8L12 17l-6.5 4 2-8L2 9h7z" />
-                          </svg>
-                          Админ
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center rounded-full bg-zinc-100 text-zinc-600 border border-zinc-200 text-[11px] font-medium px-2 py-0.5">
-                          Хэрэглэгч
-                        </span>
-                      )}
-                    </td>
-                    <td className="tabular-nums text-center">
-                      {orderCount > 0 ? (
-                        <span className="inline-flex items-center justify-center min-w-[28px] h-6 rounded-full bg-zinc-100 text-zinc-900 text-[12px] font-semibold px-2">
-                          {orderCount}
-                        </span>
-                      ) : (
-                        <span className="text-zinc-400">0</span>
-                      )}
-                    </td>
-                    <td className="text-zinc-500 tabular-nums">
-                      {(u.createdAt || "").slice(0, 10) || "—"}
-                    </td>
-                    <td>
-                      <div className="inline-flex gap-1">
-                        <button
-                          type="button"
-                          onClick={() => onToggleRole(u)}
-                          title={
-                            isAdmin ? "Админ эрхийг хасах" : "Админ болгох"
-                          }
-                          aria-label={
-                            isAdmin ? "Админ эрхийг хасах" : "Админ болгох"
-                          }
-                          className={`inline-flex h-8 w-8 items-center justify-center rounded-md border transition-colors ${
-                            isAdmin
-                              ? "border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100"
-                              : "border-[#e4e4e7] bg-white text-zinc-600 hover:bg-violet-50 hover:text-violet-700 hover:border-violet-200"
-                          }`}
+                            {initial}
+                          </span>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Link
+                                to={`/admin/users/${u.id}`}
+                                className={`${ADMIN_LINK_CLS} truncate`}
+                              >
+                                {display}
+                              </Link>
+                              {u.disabled && (
+                                <span className="inline-flex items-center gap-1 shrink-0 rounded-full bg-red-50 border border-red-200 text-red-700 text-[10.5px] font-semibold px-1.5 py-0.5 leading-none">
+                                  <svg
+                                    width="9"
+                                    height="9"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    aria-hidden="true"
+                                  >
+                                    <circle cx="12" cy="12" r="10" />
+                                    <line
+                                      x1="4.93"
+                                      y1="4.93"
+                                      x2="19.07"
+                                      y2="19.07"
+                                    />
+                                  </svg>
+                                  ХЯЗГААРЛАГДСАН
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[11.5px] text-zinc-500 mt-0.5 truncate">
+                              {u.identifier}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        {isAdmin ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 text-violet-700 border border-violet-200 text-[11px] font-semibold px-2 py-0.5">
+                            <svg
+                              width="10"
+                              height="10"
+                              viewBox="0 0 24 24"
+                              fill="currentColor"
+                              aria-hidden="true"
+                            >
+                              <path d="M12 2l3 7h7l-5.5 4 2 8L12 17l-6.5 4 2-8L2 9h7z" />
+                            </svg>
+                            Админ
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center rounded-full bg-zinc-100 text-zinc-600 border border-zinc-200 text-[11px] font-medium px-2 py-0.5">
+                            Хэрэглэгч
+                          </span>
+                        )}
+                      </td>
+                      <td className="tabular-nums text-center">
+                        {orderCount > 0 ? (
+                          <span className="inline-flex items-center justify-center min-w-[28px] h-6 rounded-full bg-zinc-100 text-zinc-900 text-[12px] font-semibold px-2">
+                            {orderCount}
+                          </span>
+                        ) : (
+                          <span className="text-zinc-400">0</span>
+                        )}
+                      </td>
+                      <td className="text-zinc-500 tabular-nums">
+                        {(u.createdAt || "").slice(0, 10) || "—"}
+                      </td>
+                      <td>
+                        <div className="inline-flex gap-1">
+                          <button
+                            type="button"
+                            onClick={() => onToggleRole(u)}
+                            title={
+                              isAdmin ? "Админ эрхийг хасах" : "Админ болгох"
+                            }
+                            aria-label={
+                              isAdmin ? "Админ эрхийг хасах" : "Админ болгох"
+                            }
+                            className={`inline-flex h-8 w-8 items-center justify-center rounded-md border transition-colors ${
+                              isAdmin
+                                ? "border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100"
+                                : "border-[#e4e4e7] bg-white text-zinc-600 hover:bg-violet-50 hover:text-violet-700 hover:border-violet-200"
+                            }`}
+                          >
+                            <svg
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path d="M12 2l3 7h7l-5.5 4 2 8L12 17l-6.5 4 2-8L2 9h7z" />
+                            </svg>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onToggleDisabled(u)}
+                            title={
+                              u.disabled ? "Дахин идэвхжүүлэх" : "Хязгаарлах"
+                            }
+                            aria-label={
+                              u.disabled ? "Дахин идэвхжүүлэх" : "Хязгаарлах"
+                            }
+                            className={`inline-flex h-8 w-8 items-center justify-center rounded-md border transition-colors ${
+                              u.disabled
+                                ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                                : "border-[#e4e4e7] bg-white text-zinc-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+                            }`}
+                          >
+                            {u.disabled ? (
+                              <svg
+                                width="14"
+                                height="14"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.8"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                aria-hidden="true"
+                              >
+                                <path d="M5 12l5 5L20 7" />
+                              </svg>
+                            ) : (
+                              <svg
+                                width="14"
+                                height="14"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.8"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                aria-hidden="true"
+                              >
+                                <circle cx="12" cy="12" r="10" />
+                                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                              </svg>
+                            )}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <div className={ADMIN_MOBILE_LIST_CLS}>
+            {filtered.map((u) => {
+              const display = u.fullname || u.identifier;
+              const isAdmin = u.role === "admin";
+              const orderCount = orderCounts[u.identifier] || 0;
+              return (
+                <div key={u.id} className={ADMIN_MOBILE_CARD_CLS}>
+                  <div className={ADMIN_MOBILE_CARD_HEAD_CLS}>
+                    <Link to={`/admin/users/${u.id}`} className={ADMIN_LINK_CLS}>
+                      {display}
+                    </Link>
+                    {isAdmin ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 text-violet-700 border border-violet-200 text-[11px] font-semibold px-2 py-0.5">
+                        <svg
+                          width="10"
+                          height="10"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                          aria-hidden="true"
                         >
+                          <path d="M12 2l3 7h7l-5.5 4 2 8L12 17l-6.5 4 2-8L2 9h7z" />
+                        </svg>
+                        Админ
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center rounded-full bg-zinc-100 text-zinc-600 border border-zinc-200 text-[11px] font-medium px-2 py-0.5">
+                        Хэрэглэгч
+                      </span>
+                    )}
+                  </div>
+                  <div className={ADMIN_MOBILE_ROW_CLS}>
+                    <span className={ADMIN_MOBILE_LABEL_CLS}>Бүртгэл</span>
+                    <span className={ADMIN_MOBILE_VALUE_CLS}>{u.identifier}</span>
+                  </div>
+                  <div className={ADMIN_MOBILE_ROW_CLS}>
+                    <span className={ADMIN_MOBILE_LABEL_CLS}>Захиалга</span>
+                    <span className={`${ADMIN_MOBILE_VALUE_CLS} tabular-nums`}>
+                      {orderCount}
+                    </span>
+                  </div>
+                  <div className={ADMIN_MOBILE_ROW_CLS}>
+                    <span className={ADMIN_MOBILE_LABEL_CLS}>Бүртгүүлсэн</span>
+                    <span className={`${ADMIN_MOBILE_VALUE_CLS} tabular-nums`}>
+                      {(u.createdAt || "").slice(0, 10) || "—"}
+                    </span>
+                  </div>
+                  <div className={ADMIN_MOBILE_ROW_CLS}>
+                    <span className={ADMIN_MOBILE_LABEL_CLS}>Төлөв</span>
+                    <span className={ADMIN_MOBILE_VALUE_CLS}>
+                      {u.disabled ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-red-50 border border-red-200 text-red-700 text-[10.5px] font-semibold px-1.5 py-0.5 leading-none">
                           <svg
-                            width="14"
-                            height="14"
+                            width="9"
+                            height="9"
                             viewBox="0 0 24 24"
                             fill="none"
                             stroke="currentColor"
-                            strokeWidth="1.8"
+                            strokeWidth="2.5"
                             strokeLinecap="round"
                             strokeLinejoin="round"
                             aria-hidden="true"
                           >
-                            <path d="M12 2l3 7h7l-5.5 4 2 8L12 17l-6.5 4 2-8L2 9h7z" />
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
                           </svg>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => onToggleDisabled(u)}
-                          title={
-                            u.disabled ? "Дахин идэвхжүүлэх" : "Хязгаарлах"
-                          }
-                          aria-label={
-                            u.disabled ? "Дахин идэвхжүүлэх" : "Хязгаарлах"
-                          }
-                          className={`inline-flex h-8 w-8 items-center justify-center rounded-md border transition-colors ${
-                            u.disabled
-                              ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                              : "border-[#e4e4e7] bg-white text-zinc-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
-                          }`}
-                        >
-                          {u.disabled ? (
-                            <svg
-                              width="14"
-                              height="14"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="1.8"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              aria-hidden="true"
-                            >
-                              <path d="M5 12l5 5L20 7" />
-                            </svg>
-                          ) : (
-                            <svg
-                              width="14"
-                              height="14"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="1.8"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              aria-hidden="true"
-                            >
-                              <circle cx="12" cy="12" r="10" />
-                              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
-                            </svg>
-                          )}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                          ХЯЗГААРЛАГДСАН
+                        </span>
+                      ) : (
+                        "Идэвхтэй"
+                      )}
+                    </span>
+                  </div>
+                  <div className={ADMIN_MOBILE_ACTIONS_CLS}>
+                    <button
+                      type="button"
+                      className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS}`}
+                      onClick={() => onToggleRole(u)}
+                    >
+                      {isAdmin ? "Эрх хасах" : "Админ болгох"}
+                    </button>
+                    <button
+                      type="button"
+                      className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS}`}
+                      onClick={() => onToggleDisabled(u)}
+                    >
+                      {u.disabled ? "Идэвхжүүлэх" : "Хязгаарлах"}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
       )}
 
       {showModal && (
@@ -570,7 +674,7 @@ function AddUserModal({
 
   return (
     <div
-      className="fixed inset-0 z-[400] flex items-center justify-center px-4 animate-admin-fade-in"
+      className="fixed inset-0 z-[400] flex items-center justify-center px-4 animate-admin-fade-in max-[640px]:px-3 max-[640px]:py-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="add-user-title"
@@ -580,7 +684,7 @@ function AddUserModal({
         className="absolute inset-0 bg-black/45 backdrop-blur-[3px]"
         aria-hidden="true"
       />
-      <div className="relative w-full max-w-[440px] rounded-2xl bg-white shadow-[0_24px_64px_rgba(0,0,0,0.18)] p-6 animate-admin-scale-in">
+      <div className="relative w-full max-w-[440px] rounded-2xl bg-white shadow-[0_24px_64px_rgba(0,0,0,0.18)] p-6 animate-admin-scale-in max-[640px]:p-4 max-[640px]:max-h-[85vh] max-[640px]:overflow-y-auto max-[640px]:[-webkit-overflow-scrolling:touch] max-[640px]:[padding-bottom:max(1rem,env(safe-area-inset-bottom))]">
         <div className="flex items-center justify-between mb-5">
           <h3
             id="add-user-title"
@@ -592,7 +696,7 @@ function AddUserModal({
             type="button"
             onClick={onClose}
             disabled={saving}
-            className="p-1 -m-1 text-zinc-500 hover:text-zinc-900 transition-colors disabled:opacity-50"
+            className="p-1 -m-1 text-zinc-500 hover:text-zinc-900 transition-colors disabled:opacity-50 max-[640px]:inline-flex max-[640px]:h-10 max-[640px]:w-10 max-[640px]:shrink-0 max-[640px]:items-center max-[640px]:justify-center max-[640px]:p-0 max-[640px]:m-0 max-[640px]:-mr-2"
             aria-label="Хаах"
           >
             <svg
@@ -660,7 +764,7 @@ function AddUserModal({
             </div>
           )}
 
-          <div className="flex gap-2 justify-end mt-1">
+          <div className="flex gap-2 justify-end mt-1 max-[640px]:[&>button]:grow">
             <button
               type="button"
               className={ADMIN_BTN_CLS}

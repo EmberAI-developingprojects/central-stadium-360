@@ -16,8 +16,14 @@ import {
   ADMIN_BADGE_CLS,
   ADMIN_BTN_CLS,
   ADMIN_CARD_CLS,
+  ADMIN_DESKTOP_ONLY_CLS,
   ADMIN_EMPTY_CLS,
   ADMIN_LINK_CLS,
+  ADMIN_MOBILE_CARD_HEAD_CLS,
+  ADMIN_MOBILE_LABEL_CLS,
+  ADMIN_MOBILE_ONLY_CLS,
+  ADMIN_MOBILE_ROW_CLS,
+  ADMIN_MOBILE_VALUE_CLS,
   ADMIN_TABLE_CLS,
 } from "../_adminStyles";
 
@@ -316,7 +322,10 @@ export default function Dashboard() {
     );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+    <div
+      className="max-[640px]:!gap-4"
+      style={{ display: "flex", flexDirection: "column", gap: 20 }}
+    >
       <div
         style={{
           display: "flex",
@@ -326,8 +335,9 @@ export default function Dashboard() {
           gap: 12,
         }}
       >
-        <div>
+        <div className="max-[640px]:w-full max-[640px]:min-w-0">
           <h2
+            className="max-[640px]:!text-[18px]"
             style={{
               margin: 0,
               fontSize: 20,
@@ -344,6 +354,7 @@ export default function Dashboard() {
           </p>
         </div>
         <div
+          className="max-[640px]:!w-full max-[640px]:!flex-wrap max-[640px]:!gap-2 max-[640px]:[&>*]:w-full max-[640px]:[&>*]:min-w-0"
           style={{
             display: "flex",
             alignItems: "center",
@@ -399,9 +410,17 @@ export default function Dashboard() {
         />
       </div>
 
-      <div className="grid gap-3.5 items-stretch [grid-template-columns:1fr_340px] max-[900px]:[grid-template-columns:minmax(0,1fr)]">
-        <div className={ADMIN_CARD_CLS} style={{ padding: "20px 24px" }}>
+      {/* The bare `1fr` track has min-width:auto, so between 641px and the
+          900px collapse the chart column refuses to shrink and pushes the
+          340px donut card past the viewport. minmax(0,1fr) lets it shrink;
+          scoped to <=980px so the desktop track stays byte-identical. */}
+      <div className="grid gap-3.5 items-stretch [grid-template-columns:1fr_340px] max-[980px]:[grid-template-columns:minmax(0,1fr)_340px] max-[900px]:[grid-template-columns:minmax(0,1fr)]">
+        <div
+          className={`${ADMIN_CARD_CLS} max-[640px]:!p-4`}
+          style={{ padding: "20px 24px" }}
+        >
           <div
+            className="max-[640px]:!flex-col max-[640px]:!items-stretch max-[640px]:!gap-3"
             style={{
               display: "flex",
               alignItems: "flex-start",
@@ -410,17 +429,21 @@ export default function Dashboard() {
               marginBottom: 14,
             }}
           >
-            <div>
+            <div className="max-[640px]:min-w-0">
               <div style={{ fontSize: 13, fontWeight: 600, color: "#111" }}>
                 Ticket борлуулалт
               </div>
-              <div style={{ fontSize: 12, color: "#71717a", marginTop: 2 }}>
+              <div
+                className="max-[640px]:[overflow-wrap:anywhere]"
+                style={{ fontSize: 12, color: "#71717a", marginTop: 2 }}
+              >
                 {selectedEvent
                   ? selectedEvent.title
                   : "Бүх тоглолтын нийт борлуулалт"}
               </div>
             </div>
             <div
+              className="max-[640px]:!flex max-[640px]:!w-full"
               style={{
                 display: "inline-flex",
                 padding: 3,
@@ -436,6 +459,7 @@ export default function Dashboard() {
                     key={p}
                     type="button"
                     onClick={() => setChartPeriod(p)}
+                    className="max-[640px]:grow max-[640px]:min-h-[40px]"
                     style={{
                       height: 26,
                       padding: "0 12px",
@@ -488,6 +512,7 @@ export default function Dashboard() {
                 <button
                   type="button"
                   onClick={() => setSelectedEventId("all")}
+                  className="max-[640px]:!min-h-[40px] max-[640px]:!px-2 max-[640px]:!-mr-2 max-[640px]:shrink-0"
                   style={{
                     border: "none",
                     background: "transparent",
@@ -504,6 +529,7 @@ export default function Dashboard() {
               )}
             </div>
             <div
+              className="max-[980px]:[-webkit-overflow-scrolling:touch] max-[980px]:[overscroll-behavior-x:contain] max-[640px]:[scrollbar-width:none] max-[640px]:[&::-webkit-scrollbar]:hidden"
               style={{
                 display: "flex",
                 gap: 6,
@@ -542,6 +568,7 @@ export default function Dashboard() {
 
           {selectedEventId !== "all" && (
             <div
+              className="max-[640px]:![grid-template-columns:repeat(3,minmax(0,1fr))] max-[640px]:!gap-2 max-[640px]:!p-3"
               style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(3, 1fr)",
@@ -572,7 +599,7 @@ export default function Dashboard() {
         </div>
 
         <div
-          className={ADMIN_CARD_CLS}
+          className={`${ADMIN_CARD_CLS} max-[640px]:!p-4`}
           style={{
             padding: "22px 24px 20px",
             display: "flex",
@@ -750,10 +777,11 @@ export default function Dashboard() {
       </div>
 
       <div
-        className={ADMIN_CARD_CLS}
+        className={`${ADMIN_CARD_CLS} max-[980px]:!overflow-x-auto max-[980px]:[-webkit-overflow-scrolling:touch] max-[980px]:[overscroll-behavior-x:contain]`}
         style={{ padding: 0, overflow: "hidden" }}
       >
         <div
+          className="max-[640px]:!p-4 max-[640px]:!gap-3"
           style={{
             padding: "16px 20px",
             borderBottom: "1px solid #f4f4f5",
@@ -762,7 +790,10 @@ export default function Dashboard() {
             justifyContent: "space-between",
           }}
         >
-          <div style={{ fontSize: 13, fontWeight: 600, color: "#111" }}>
+          <div
+            className="max-[640px]:min-w-0"
+            style={{ fontSize: 13, fontWeight: 600, color: "#111" }}
+          >
             Сүүлд бүртгүүлсэн хэрэглэгчид
             <span
               style={{
@@ -777,6 +808,7 @@ export default function Dashboard() {
           </div>
           <Link
             to="/admin/users"
+            className="max-[640px]:inline-flex max-[640px]:items-center max-[640px]:min-h-[40px] max-[640px]:shrink-0"
             style={{
               fontSize: 12,
               color: "#2230C6",
@@ -795,7 +827,7 @@ export default function Dashboard() {
             Хэрэглэгч алга
           </div>
         ) : (
-          <table className={ADMIN_TABLE_CLS}>
+          <table className={`${ADMIN_TABLE_CLS} ${ADMIN_DESKTOP_ONLY_CLS}`}>
             <thead>
               <tr>
                 <th>Хэрэглэгч</th>
@@ -853,6 +885,53 @@ export default function Dashboard() {
             </tbody>
           </table>
         )}
+
+        {/* Mobile (<=640px) stand-in for the table above: the desktop table is
+            hidden and each user renders as a stacked label/value row instead. */}
+        {derived.recentUsers.length > 0 && (
+          <div className={`${ADMIN_MOBILE_ONLY_CLS} px-4 pb-4`}>
+            {derived.recentUsers.map((u) => (
+              <div
+                key={u.id}
+                className="flex flex-col gap-2 min-w-0 py-3.5 border-b border-[#f4f4f5] last:border-b-0 last:pb-0"
+              >
+                <div className={ADMIN_MOBILE_CARD_HEAD_CLS}>
+                  <div className="flex items-center gap-2.5">
+                    <span
+                      aria-hidden="true"
+                      className="w-[30px] h-[30px] shrink-0 rounded-full [background:linear-gradient(135deg,#2230C6,#4451DC)] grid place-items-center text-white text-[11px] font-semibold"
+                    >
+                      {(u.fullname || u.identifier || "?")
+                        .slice(0, 1)
+                        .toUpperCase()}
+                    </span>
+                    <Link
+                      to={`/admin/users/${u.id}`}
+                      className={`${ADMIN_LINK_CLS} inline-flex items-center min-h-[40px]`}
+                    >
+                      {u.fullname || "—"}
+                    </Link>
+                  </div>
+                  <span
+                    className={`${ADMIN_BADGE_CLS} ${u.role === "admin" ? "!bg-violet-50 !text-violet-700" : ""}`}
+                  >
+                    {u.role || "user"}
+                  </span>
+                </div>
+                <div className={ADMIN_MOBILE_ROW_CLS}>
+                  <span className={ADMIN_MOBILE_LABEL_CLS}>Хаяг</span>
+                  <span className={ADMIN_MOBILE_VALUE_CLS}>{u.identifier}</span>
+                </div>
+                <div className={ADMIN_MOBILE_ROW_CLS}>
+                  <span className={ADMIN_MOBILE_LABEL_CLS}>Бүртгүүлсэн</span>
+                  <span className={ADMIN_MOBILE_VALUE_CLS}>
+                    {(u.createdAt || "").slice(0, 10)}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -873,6 +952,7 @@ function StatCard({
 }) {
   return (
     <div
+      className="max-[980px]:min-w-0 max-[480px]:!px-4"
       style={{
         background: blue ? "linear-gradient(135deg,#2230C6,#4451DC)" : "#fff",
         border: blue ? "none" : "1px solid #ececef",
@@ -884,6 +964,7 @@ function StatCard({
       }}
     >
       <div
+        className="max-[980px]:gap-2.5"
         style={{
           display: "flex",
           alignItems: "center",
@@ -891,6 +972,7 @@ function StatCard({
         }}
       >
         <span
+          className="max-[980px]:min-w-0"
           style={{
             fontSize: 11,
             fontWeight: 600,
@@ -902,6 +984,7 @@ function StatCard({
           {label}
         </span>
         <span
+          className="max-[980px]:shrink-0"
           style={{
             width: 30,
             height: 30,
@@ -916,6 +999,7 @@ function StatCard({
         </span>
       </div>
       <div
+        className="max-[640px]:[overflow-wrap:anywhere]"
         style={{
           fontSize: 30,
           fontWeight: 700,
@@ -973,6 +1057,8 @@ function BarChart({ bars, maxVal }: { bars: BarDatum[]; maxVal: number }) {
     <div style={{ position: "relative" }}>
       <svg
         viewBox={`0 0 ${totalW} ${H + 24}`}
+        preserveAspectRatio="xMidYMid meet"
+        className="max-[980px]:max-w-full max-[640px]:!h-auto"
         style={{ width: "100%", height: H + 24, display: "block" }}
         onMouseLeave={() => setTooltip(null)}
       >
@@ -1065,6 +1151,7 @@ function BarChart({ bars, maxVal }: { bars: BarDatum[]; maxVal: number }) {
           const b = bars[tooltip.i];
           return (
             <div
+              className="max-[640px]:!whitespace-normal max-[640px]:!max-w-[min(220px,calc(100vw-24px))]"
               style={{
                 position: "fixed",
                 left: tooltip.x,
@@ -1113,7 +1200,12 @@ function DonutChart({
   const gradId = "donut-watched-gradient";
 
   return (
-    <svg viewBox="0 0 180 180" style={{ width: 184, height: 184 }}>
+    <svg
+      viewBox="0 0 180 180"
+      preserveAspectRatio="xMidYMid meet"
+      className="max-[980px]:max-w-full max-[640px]:!w-full max-[640px]:!h-auto max-[640px]:!max-w-[184px]"
+      style={{ width: 184, height: 184 }}
+    >
       <defs>
         <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#2230C6" />
@@ -1281,10 +1373,15 @@ function PeriodDropdown({
   const current = PERIOD_OPTIONS.find((o) => o.value === value);
 
   return (
-    <div ref={ref} style={{ position: "relative" }}>
+    <div
+      ref={ref}
+      className="max-[640px]:w-full"
+      style={{ position: "relative" }}
+    >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
+        className="max-[640px]:!flex max-[640px]:!w-full max-[640px]:min-h-[44px] max-[640px]:[&>span]:grow max-[640px]:[&>span]:text-left"
         style={{
           display: "inline-flex",
           alignItems: "center",
@@ -1344,6 +1441,7 @@ function PeriodDropdown({
       {open && (
         <div
           role="listbox"
+          className="max-[640px]:!left-0 max-[640px]:!min-w-0"
           style={{
             position: "absolute",
             top: "calc(100% + 6px)",
@@ -1451,6 +1549,7 @@ function EventChip({
       type="button"
       onClick={onClick}
       title={label}
+      className="max-[640px]:min-h-[40px] max-[640px]:!max-w-[min(220px,72vw)]"
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -1511,8 +1610,9 @@ function EventChip({
 
 function SummaryStat({ label, value }: { label: string; value: string }) {
   return (
-    <div>
+    <div className="max-[640px]:min-w-0">
       <div
+        className="max-[640px]:[overflow-wrap:anywhere]"
         style={{
           fontSize: 10,
           fontWeight: 600,
@@ -1525,6 +1625,7 @@ function SummaryStat({ label, value }: { label: string; value: string }) {
         {label}
       </div>
       <div
+        className="max-[640px]:[overflow-wrap:anywhere] max-[480px]:!text-[15px]"
         style={{
           fontSize: 16,
           fontWeight: 700,

@@ -14,8 +14,19 @@ import {
 import { useSearchHotkey } from "../hooks/useSearchHotkey";
 import {
   ADMIN_BTN_CLS,
+  ADMIN_BTN_DANGER_CLS,
   ADMIN_BTN_PRIMARY_CLS,
+  ADMIN_BTN_SM_CLS,
+  ADMIN_DESKTOP_ONLY_CLS,
   ADMIN_FILTERS_CLS,
+  ADMIN_LINK_CLS,
+  ADMIN_MOBILE_ACTIONS_CLS,
+  ADMIN_MOBILE_CARD_CLS,
+  ADMIN_MOBILE_CARD_HEAD_CLS,
+  ADMIN_MOBILE_LABEL_CLS,
+  ADMIN_MOBILE_LIST_CLS,
+  ADMIN_MOBILE_ROW_CLS,
+  ADMIN_MOBILE_VALUE_CLS,
   ADMIN_PAGE_HEADER_CLS,
   ADMIN_TABLE_CLS,
   ADMIN_TABLE_WRAP_CLS,
@@ -158,6 +169,42 @@ function ChannelChips({ event }: { event: AdminEventRecord }) {
   );
 }
 
+/**
+ * Cover thumbnail for the phone-only card list (<= 640px). The desktop table
+ * keeps its own markup untouched.
+ */
+function MobileThumb({ event }: { event: AdminEventRecord }) {
+  return (
+    <span
+      className="shrink-0 block w-[42px] h-[42px] rounded-lg bg-zinc-100 bg-center bg-cover ring-1 ring-inset ring-[#ececef]"
+      style={{
+        backgroundImage: event.image ? `url('${event.image}')` : undefined,
+      }}
+      aria-hidden="true"
+    >
+      {!event.image && (
+        <span className="w-full h-full grid place-items-center text-zinc-400">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <polyline points="21 15 16 10 5 21" />
+          </svg>
+        </span>
+      )}
+    </span>
+  );
+}
+
 export default function EventsList() {
   const confirm = useConfirm();
   const toast = useToast();
@@ -288,7 +335,7 @@ export default function EventsList() {
       </div>
 
       {events.length > 0 && (
-        <div className="grid gap-3 mb-5 [grid-template-columns:repeat(3,minmax(0,1fr))] max-[980px]:[grid-template-columns:repeat(2,minmax(0,1fr))]">
+        <div className="grid gap-3 mb-5 [grid-template-columns:repeat(3,minmax(0,1fr))] max-[980px]:[grid-template-columns:repeat(2,minmax(0,1fr))] max-[640px]:gap-2.5 max-[640px]:mb-4">
           <StatCard
             label="Нийт"
             value={stats.total.toString()}
@@ -360,7 +407,9 @@ export default function EventsList() {
               </button>
             )}
           </div>
-          <div className="inline-flex bg-white border border-[#e4e4e7] rounded-md p-0.5 gap-0.5">
+          {/* Below 640px ADMIN_FILTERS_CLS stretches this row to full width, so
+              the segments wrap into two lines and share it evenly. */}
+          <div className="inline-flex bg-white border border-[#e4e4e7] rounded-md p-0.5 gap-0.5 max-[640px]:w-full max-[640px]:flex-wrap max-[640px]:[&>button]:basis-[30%] max-[640px]:[&>button]:grow max-[640px]:[&>button]:min-h-[40px] max-[640px]:[&>button]:text-[13px]">
             {(
               [
                 ["all", "Бүгд"],
@@ -385,7 +434,7 @@ export default function EventsList() {
               </button>
             ))}
           </div>
-          <span className="text-[12px] text-zinc-500 ml-auto">
+          <span className="text-[12px] text-zinc-500 ml-auto max-[640px]:ml-0">
             Нийт{" "}
             <strong className="font-semibold text-zinc-900">
               {filtered.length}
@@ -429,186 +478,287 @@ export default function EventsList() {
           }
         />
       ) : (
-        <div className={ADMIN_TABLE_WRAP_CLS}>
-          <table className={ADMIN_TABLE_CLS}>
-            <thead>
-              <tr>
-                <th>Арга хэмжээ</th>
-                <th>Огноо</th>
-                <th>Төлөв</th>
-                <th style={{ textAlign: "right" }}>Шууд / Нөхөж үзэх</th>
-                <th style={{ textAlign: "center" }}>Бичлэг</th>
-                <th style={{ textAlign: "center" }}>Зарагдсан</th>
-                <th style={{ width: 1 }} />
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(({ event: e, status, sales }) => {
-                const date = formatDate(e.start_time, e.date);
-                const relative = relativeFrom(e.start_time, status);
-                return (
-                  <tr key={e.id} className="group">
-                    <td>
-                      <div className="flex items-center gap-3 min-w-0">
-                        <Link
-                          to={`/admin/events/${e.id}`}
-                          className="shrink-0 block w-[44px] h-[44px] rounded-lg bg-zinc-100 bg-center bg-cover ring-1 ring-inset ring-[#ececef] hover:ring-zinc-300 transition-shadow"
-                          style={{
-                            backgroundImage: e.image
-                              ? `url('${e.image}')`
-                              : undefined,
-                          }}
-                          aria-label={`«${e.title}»-г засах`}
-                        >
-                          {!e.image && (
-                            <span className="w-full h-full grid place-items-center text-zinc-400">
-                              <svg
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="1.8"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                aria-hidden="true"
-                              >
-                                <rect
-                                  x="3"
-                                  y="3"
+        <>
+          <div className={`${ADMIN_TABLE_WRAP_CLS} ${ADMIN_DESKTOP_ONLY_CLS}`}>
+            <table className={ADMIN_TABLE_CLS}>
+              <thead>
+                <tr>
+                  <th>Арга хэмжээ</th>
+                  <th>Огноо</th>
+                  <th>Төлөв</th>
+                  <th style={{ textAlign: "right" }}>Шууд / Нөхөж үзэх</th>
+                  <th style={{ textAlign: "center" }}>Бичлэг</th>
+                  <th style={{ textAlign: "center" }}>Зарагдсан</th>
+                  <th style={{ width: 1 }} />
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(({ event: e, status, sales }) => {
+                  const date = formatDate(e.start_time, e.date);
+                  const relative = relativeFrom(e.start_time, status);
+                  return (
+                    <tr key={e.id} className="group">
+                      <td>
+                        <div className="flex items-center gap-3 min-w-0">
+                          <Link
+                            to={`/admin/events/${e.id}`}
+                            className="shrink-0 block w-[44px] h-[44px] rounded-lg bg-zinc-100 bg-center bg-cover ring-1 ring-inset ring-[#ececef] hover:ring-zinc-300 transition-shadow"
+                            style={{
+                              backgroundImage: e.image
+                                ? `url('${e.image}')`
+                                : undefined,
+                            }}
+                            aria-label={`«${e.title}»-г засах`}
+                          >
+                            {!e.image && (
+                              <span className="w-full h-full grid place-items-center text-zinc-400">
+                                <svg
                                   width="18"
                                   height="18"
-                                  rx="2"
-                                />
-                                <circle cx="8.5" cy="8.5" r="1.5" />
-                                <polyline points="21 15 16 10 5 21" />
-                              </svg>
-                            </span>
-                          )}
-                        </Link>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <Link
-                              to={`/admin/events/${e.id}`}
-                              className="text-zinc-900 no-underline font-medium hover:underline underline-offset-[3px] decoration-zinc-300 truncate"
-                            >
-                              {e.title || "Untitled"}
-                            </Link>
-                          </div>
-                          <div className="text-[11.5px] text-zinc-500 mt-0.5 flex items-center gap-1.5">
-                            <ChannelChips event={e} />
-                            <span className="font-mono text-[10.5px] text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                              {e.id.slice(0, 8)}
-                            </span>
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="1.8"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  aria-hidden="true"
+                                >
+                                  <rect
+                                    x="3"
+                                    y="3"
+                                    width="18"
+                                    height="18"
+                                    rx="2"
+                                  />
+                                  <circle cx="8.5" cy="8.5" r="1.5" />
+                                  <polyline points="21 15 16 10 5 21" />
+                                </svg>
+                              </span>
+                            )}
+                          </Link>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Link
+                                to={`/admin/events/${e.id}`}
+                                className="text-zinc-900 no-underline font-medium hover:underline underline-offset-[3px] decoration-zinc-300 truncate"
+                              >
+                                {e.title || "Untitled"}
+                              </Link>
+                            </div>
+                            <div className="text-[11.5px] text-zinc-500 mt-0.5 flex items-center gap-1.5">
+                              <ChannelChips event={e} />
+                              <span className="font-mono text-[10.5px] text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                                {e.id.slice(0, 8)}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </td>
-                    <td>
-                      <div className="text-zinc-900 tabular-nums">
-                        {date.primary}
-                      </div>
-                      {date.secondary && (
-                        <div className="text-[11.5px] text-zinc-500 mt-0.5 tabular-nums">
-                          {date.secondary}
+                      </td>
+                      <td>
+                        <div className="text-zinc-900 tabular-nums">
+                          {date.primary}
                         </div>
-                      )}
-                    </td>
-                    <td>
-                      <StatusBadge status={status} hint={relative} />
-                    </td>
-                    <td
-                      style={{ textAlign: "right" }}
-                      className="tabular-nums text-zinc-900 font-medium"
-                    >
-                      <div>{money(e.live_price || e.base)}</div>
-                      <div className="text-[11.5px] text-zinc-500 mt-0.5">
-                        {e.replay_price > 0 ? money(e.replay_price) : "—"}
-                      </div>
-                    </td>
-                    <td
-                      style={{ textAlign: "center" }}
-                      className="tabular-nums"
-                    >
-                      <span
-                        className={
-                          e.recording_count >= 4
-                            ? "text-emerald-700 font-semibold"
-                            : e.recording_count > 0
-                              ? "text-amber-600 font-medium"
-                              : "text-zinc-400"
-                        }
+                        {date.secondary && (
+                          <div className="text-[11.5px] text-zinc-500 mt-0.5 tabular-nums">
+                            {date.secondary}
+                          </div>
+                        )}
+                      </td>
+                      <td>
+                        <StatusBadge status={status} hint={relative} />
+                      </td>
+                      <td
+                        style={{ textAlign: "right" }}
+                        className="tabular-nums text-zinc-900 font-medium"
                       >
-                        {e.recording_count}/4
-                      </span>
-                    </td>
-                    <td
-                      style={{ textAlign: "center" }}
-                      className="tabular-nums"
-                    >
-                      {sales > 0 ? (
-                        <span className="text-zinc-900 font-medium">
-                          {sales}
+                        <div>{money(e.live_price || e.base)}</div>
+                        <div className="text-[11.5px] text-zinc-500 mt-0.5">
+                          {e.replay_price > 0 ? money(e.replay_price) : "—"}
+                        </div>
+                      </td>
+                      <td
+                        style={{ textAlign: "center" }}
+                        className="tabular-nums"
+                      >
+                        <span
+                          className={
+                            e.recording_count >= 4
+                              ? "text-emerald-700 font-semibold"
+                              : e.recording_count > 0
+                                ? "text-amber-600 font-medium"
+                                : "text-zinc-400"
+                          }
+                        >
+                          {e.recording_count}/4
                         </span>
-                      ) : (
-                        <span className="text-zinc-400">0</span>
+                      </td>
+                      <td
+                        style={{ textAlign: "center" }}
+                        className="tabular-nums"
+                      >
+                        {sales > 0 ? (
+                          <span className="text-zinc-900 font-medium">
+                            {sales}
+                          </span>
+                        ) : (
+                          <span className="text-zinc-400">0</span>
+                        )}
+                      </td>
+                      <td>
+                        <div className="inline-flex gap-1">
+                          <Link
+                            to={`/admin/events/${e.id}`}
+                            title="Засах"
+                            aria-label={`«${e.title}»-г засах`}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#e4e4e7] bg-white text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 hover:border-zinc-300 transition-colors"
+                          >
+                            <svg
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path d="M12 20h9" />
+                              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z" />
+                            </svg>
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => onDelete(e.id, e.title)}
+                            title="Устгах"
+                            aria-label={`«${e.title}»-г устгах`}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#e4e4e7] bg-white text-zinc-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
+                          >
+                            <svg
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              aria-hidden="true"
+                            >
+                              <polyline points="3 6 5 6 21 6" />
+                              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                              <path d="M10 11v6M14 11v6" />
+                              <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Phone-only stack of the same rows — the 7-column table above is
+              unusable at 375px. */}
+          <div className={ADMIN_MOBILE_LIST_CLS}>
+            {filtered.map(({ event: e, status, sales }) => {
+              const date = formatDate(e.start_time, e.date);
+              const relative = relativeFrom(e.start_time, status);
+              return (
+                <div key={e.id} className={ADMIN_MOBILE_CARD_CLS}>
+                  <div className={ADMIN_MOBILE_CARD_HEAD_CLS}>
+                    <div className="flex items-start gap-3">
+                      <MobileThumb event={e} />
+                      <Link
+                        to={`/admin/events/${e.id}`}
+                        className={`${ADMIN_LINK_CLS} min-w-0`}
+                      >
+                        {e.title || "Untitled"}
+                      </Link>
+                    </div>
+                    <StatusBadge status={status} hint={relative} />
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <ChannelChips event={e} />
+                  </div>
+
+                  <div className={ADMIN_MOBILE_ROW_CLS}>
+                    <span className={ADMIN_MOBILE_LABEL_CLS}>Огноо</span>
+                    <span className={`${ADMIN_MOBILE_VALUE_CLS} tabular-nums`}>
+                      {date.primary}
+                      {date.secondary && (
+                        <span className="block text-[11.5px] text-zinc-500">
+                          {date.secondary}
+                        </span>
                       )}
-                    </td>
-                    <td>
-                      <div className="inline-flex gap-1">
-                        <Link
-                          to={`/admin/events/${e.id}`}
-                          title="Засах"
-                          aria-label={`«${e.title}»-г засах`}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#e4e4e7] bg-white text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 hover:border-zinc-300 transition-colors"
-                        >
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.8"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            aria-hidden="true"
-                          >
-                            <path d="M12 20h9" />
-                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z" />
-                          </svg>
-                        </Link>
-                        <button
-                          type="button"
-                          onClick={() => onDelete(e.id, e.title)}
-                          title="Устгах"
-                          aria-label={`«${e.title}»-г устгах`}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[#e4e4e7] bg-white text-zinc-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
-                        >
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.8"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            aria-hidden="true"
-                          >
-                            <polyline points="3 6 5 6 21 6" />
-                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                            <path d="M10 11v6M14 11v6" />
-                            <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
-                          </svg>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                    </span>
+                  </div>
+
+                  <div className={ADMIN_MOBILE_ROW_CLS}>
+                    <span className={ADMIN_MOBILE_LABEL_CLS}>
+                      Шууд / Нөхөж үзэх
+                    </span>
+                    <span
+                      className={`${ADMIN_MOBILE_VALUE_CLS} tabular-nums font-medium`}
+                    >
+                      {money(e.live_price || e.base)}
+                      <span className="block text-[11.5px] font-normal text-zinc-500">
+                        {e.replay_price > 0 ? money(e.replay_price) : "—"}
+                      </span>
+                    </span>
+                  </div>
+
+                  <div className={ADMIN_MOBILE_ROW_CLS}>
+                    <span className={ADMIN_MOBILE_LABEL_CLS}>Бичлэг</span>
+                    <span
+                      className={`${ADMIN_MOBILE_VALUE_CLS} tabular-nums ${
+                        e.recording_count >= 4
+                          ? "!text-emerald-700 font-semibold"
+                          : e.recording_count > 0
+                            ? "!text-amber-600 font-medium"
+                            : "!text-zinc-400"
+                      }`}
+                    >
+                      {e.recording_count}/4
+                    </span>
+                  </div>
+
+                  <div className={ADMIN_MOBILE_ROW_CLS}>
+                    <span className={ADMIN_MOBILE_LABEL_CLS}>Зарагдсан</span>
+                    <span
+                      className={`${ADMIN_MOBILE_VALUE_CLS} tabular-nums ${
+                        sales > 0 ? "font-medium" : "!text-zinc-400"
+                      }`}
+                    >
+                      {sales}
+                    </span>
+                  </div>
+
+                  <div className={ADMIN_MOBILE_ACTIONS_CLS}>
+                    <Link
+                      to={`/admin/events/${e.id}`}
+                      className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS}`}
+                      aria-label={`«${e.title}»-г засах`}
+                    >
+                      Засах
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => onDelete(e.id, e.title)}
+                      className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS} ${ADMIN_BTN_DANGER_CLS}`}
+                      aria-label={`«${e.title}»-г устгах`}
+                    >
+                      Устгах
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
       )}
     </>
   );
@@ -627,8 +777,8 @@ function StatCard({
 }) {
   const valueColor = accent === "live" ? "text-red-600" : "text-zinc-900";
   return (
-    <div className="bg-white border border-[#ececef] rounded-xl p-4">
-      <div className="flex items-center gap-1.5">
+    <div className="bg-white border border-[#ececef] rounded-xl p-4 max-[640px]:min-w-0 max-[640px]:p-3.5">
+      <div className="flex items-center gap-1.5 max-[640px]:min-w-0">
         {accent === "live" && (
           <span className="relative inline-flex h-2 w-2">
             <span className="absolute inset-0 rounded-full bg-red-500 opacity-75 animate-ping" />
@@ -640,7 +790,7 @@ function StatCard({
         </span>
       </div>
       <div
-        className={`text-[22px] font-semibold tracking-[-0.02em] leading-none mt-2 ${valueColor}`}
+        className={`text-[22px] font-semibold tracking-[-0.02em] leading-none mt-2 max-[640px]:text-[20px] max-[640px]:leading-tight max-[640px]:[overflow-wrap:anywhere] ${valueColor}`}
       >
         {value}
       </div>

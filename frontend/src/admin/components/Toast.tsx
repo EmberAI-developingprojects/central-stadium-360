@@ -57,7 +57,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={api}>
       {children}
       <div
-        className="fixed top-4 right-4 z-[500] flex flex-col gap-2 pointer-events-none"
+        className="fixed top-4 right-4 z-[500] flex flex-col gap-2 pointer-events-none max-[640px]:left-3 max-[640px]:right-3 max-[640px]:top-[max(0.75rem,env(safe-area-inset-top))]"
         aria-live="polite"
         aria-atomic="true"
       >
@@ -106,7 +106,7 @@ function ToastItemView({
   return (
     <div
       role="status"
-      className={`pointer-events-auto relative flex items-start gap-2.5 min-w-[280px] max-w-[360px] rounded-lg border ${style} shadow-[0_8px_24px_rgba(0,0,0,0.08)] py-2.5 pl-3 pr-2.5 animate-admin-slide-in-right overflow-hidden`}
+      className={`pointer-events-auto relative flex items-start gap-2.5 min-w-[280px] max-w-[360px] rounded-lg border ${style} shadow-[0_8px_24px_rgba(0,0,0,0.08)] py-2.5 pl-3 pr-2.5 animate-admin-slide-in-right overflow-hidden max-[640px]:min-w-0 max-[640px]:max-w-none max-[640px]:w-full max-[640px]:py-3`}
     >
       <span
         className={`shrink-0 mt-px inline-flex h-5 w-5 items-center justify-center rounded-full ${iconBg}`}
@@ -114,13 +114,13 @@ function ToastItemView({
       >
         <ToastIcon kind={item.kind} />
       </span>
-      <p className="flex-1 m-0 text-[13px] leading-[1.45] font-medium">
+      <p className="flex-1 m-0 text-[13px] leading-[1.45] font-medium max-[640px]:min-w-0 max-[640px]:[overflow-wrap:anywhere]">
         {item.message}
       </p>
       <button
         type="button"
         onClick={onClose}
-        className="shrink-0 -m-1 p-1 rounded text-current/60 hover:text-current opacity-60 hover:opacity-100 transition-opacity"
+        className="shrink-0 -m-1 p-1 rounded text-current/60 hover:text-current opacity-60 hover:opacity-100 transition-opacity max-[640px]:-m-2 max-[640px]:p-3"
         aria-label="Хаах"
       >
         <svg

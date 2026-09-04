@@ -21,23 +21,25 @@ import {
 const CARD_CLS =
   "bg-white border border-[#ececef] rounded-2xl overflow-hidden shadow-[0_1px_2px_rgba(24,24,27,0.04)]";
 const CARD_HEAD_CLS =
-  "flex items-center justify-between gap-3 px-6 pt-5 pb-4 border-b border-[#f4f4f5] bg-gradient-to-b from-[#fafafa] to-white";
+  "flex items-center justify-between gap-3 px-6 pt-5 pb-4 border-b border-[#f4f4f5] bg-gradient-to-b from-[#fafafa] to-white " +
+  "max-[640px]:flex-wrap max-[640px]:items-start max-[640px]:gap-2 max-[640px]:px-4 max-[640px]:pt-4";
 const CARD_HEAD_TITLE_CLS =
   "text-[14.5px] font-semibold tracking-[-0.01em] text-zinc-900 m-0 leading-tight";
 const CARD_HEAD_DESC_CLS =
   "text-[12.5px] text-zinc-500 m-0 mt-0.5 leading-[1.45]";
-const CARD_BODY_CLS = "p-6";
+const CARD_BODY_CLS = "p-6 max-[640px]:p-4";
 
 const STAT_GRID_CLS =
-  "grid gap-3 [grid-template-columns:repeat(4,minmax(0,1fr))] max-[860px]:[grid-template-columns:repeat(2,minmax(0,1fr))]";
+  "grid gap-3 [grid-template-columns:repeat(4,minmax(0,1fr))] max-[860px]:[grid-template-columns:repeat(2,minmax(0,1fr))] max-[640px]:gap-2.5";
 const STAT_CARD_CLS =
-  "bg-white border border-[#ececef] rounded-xl p-4 shadow-[0_1px_2px_rgba(24,24,27,0.04)]";
+  "bg-white border border-[#ececef] rounded-xl p-4 shadow-[0_1px_2px_rgba(24,24,27,0.04)] max-[640px]:min-w-0 max-[640px]:p-3.5";
 const STAT_LABEL_CLS =
-  "text-[11.5px] uppercase tracking-[0.08em] font-semibold text-zinc-500";
-const STAT_VALUE_CLS = "mt-2 text-[20px] font-bold text-zinc-900 tabular-nums";
+  "text-[11.5px] uppercase tracking-[0.08em] font-semibold text-zinc-500 max-[640px]:[overflow-wrap:anywhere]";
+const STAT_VALUE_CLS =
+  "mt-2 text-[20px] font-bold text-zinc-900 tabular-nums max-[640px]:[overflow-wrap:anywhere]";
 
 const REC_ROW_CLS =
-  "flex items-start gap-4 py-4 px-5 border-b border-[#f4f4f5] last:border-b-0";
+  "flex items-start gap-4 py-4 px-5 border-b border-[#f4f4f5] last:border-b-0 max-[640px]:gap-3 max-[640px]:px-4";
 
 type Stats = {
   liveCount: number;
@@ -279,16 +281,16 @@ export default function EventDetail() {
   return (
     <>
       <div className={ADMIN_PAGE_HEADER_CLS}>
-        <div className="flex items-start gap-4">
+        <div className="flex items-start gap-4 max-[640px]:gap-3">
           {event.thumbnail_url || event.image ? (
             <img
               src={event.thumbnail_url ?? event.image}
               alt=""
-              className="w-16 h-16 rounded-xl object-cover ring-1 ring-[#ececef]"
+              className="w-16 h-16 rounded-xl object-cover ring-1 ring-[#ececef] max-[640px]:shrink-0 max-[640px]:w-14 max-[640px]:h-14"
             />
           ) : (
             <span
-              className="w-16 h-16 rounded-xl bg-brand-blue-tint ring-1 ring-[#dadffb]"
+              className="w-16 h-16 rounded-xl bg-brand-blue-tint ring-1 ring-[#dadffb] max-[640px]:shrink-0 max-[640px]:w-14 max-[640px]:h-14"
               aria-hidden="true"
             />
           )}
@@ -311,7 +313,7 @@ export default function EventDetail() {
             </p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 max-[640px]:flex-wrap max-[640px]:[&>*]:grow max-[640px]:[&>*]:justify-center">
           {status === "live" && !kioskOnly && (
             <Link
               to={`/watch`}
@@ -445,13 +447,13 @@ export default function EventDetail() {
             </div>
             <Link
               to="/admin/kiosk"
-              className="text-[12.5px] text-zinc-500 hover:text-zinc-900 underline underline-offset-[3px] decoration-zinc-300"
+              className="text-[12.5px] text-zinc-500 hover:text-zinc-900 underline underline-offset-[3px] decoration-zinc-300 max-[640px]:inline-flex max-[640px]:items-center max-[640px]:min-h-[40px]"
             >
               Кассын тайлан →
             </Link>
           </header>
           {!kioskSales || kioskSales.zones.length === 0 ? (
-            <div className="px-6 py-5 text-[13px] text-zinc-500">
+            <div className="px-6 py-5 text-[13px] text-zinc-500 max-[640px]:px-4 max-[640px]:py-4">
               Тасалбарын төрөл тохируулаагүй байна — засах хуудсан дээр үнэ,
               багтаамжаа оруулна уу.
             </div>
@@ -460,14 +462,14 @@ export default function EventDetail() {
               {kioskSales.zones.map((z) => (
                 <div
                   key={z.zone_id}
-                  className="flex items-center gap-3 px-6 py-3.5 border-b border-[#f4f4f5] last:border-b-0"
+                  className="flex items-center gap-3 px-6 py-3.5 border-b border-[#f4f4f5] last:border-b-0 max-[640px]:flex-wrap max-[640px]:gap-x-2.5 max-[640px]:gap-y-1 max-[640px]:px-4"
                 >
                   <span
                     className="h-4 w-1.5 rounded-full shrink-0"
                     style={{ background: z.color || "#2230C6" }}
                     aria-hidden="true"
                   />
-                  <span className="text-[13.5px] font-medium text-zinc-900 min-w-[90px]">
+                  <span className="text-[13.5px] font-medium text-zinc-900 min-w-[90px] max-[640px]:!min-w-0">
                     {z.name_mn}
                   </span>
                   <span className="text-[12.5px] text-zinc-500 tabular-nums">
@@ -476,7 +478,7 @@ export default function EventDetail() {
                   <span className="ml-auto text-[13px] tabular-nums text-zinc-700">
                     {z.sold}/{z.capacity} зарагдсан
                   </span>
-                  <span className="text-[13px] font-semibold tabular-nums text-zinc-900 min-w-[80px] text-right">
+                  <span className="text-[13px] font-semibold tabular-nums text-zinc-900 min-w-[80px] text-right max-[640px]:ml-auto max-[640px]:!min-w-0">
                     {money(z.revenue)}
                   </span>
                 </div>
@@ -521,7 +523,7 @@ export default function EventDetail() {
                         s3://{rec.s3_bucket ?? "?"}/
                         {rec.master_playlist_path ?? "?"}
                       </code>
-                      <div className="flex flex-wrap gap-4 text-zinc-500">
+                      <div className="flex flex-wrap gap-4 text-zinc-500 max-[640px]:gap-x-3 max-[640px]:gap-y-1">
                         <span>
                           Үргэлжлэл: {fmtDuration(rec.duration_seconds)}
                         </span>
@@ -546,13 +548,13 @@ export default function EventDetail() {
           })}
         </div>
         {(canRediscover(event, readyCount) || rediscoverMsg || endLiveMsg) && (
-          <div className="flex items-center justify-between gap-3 flex-wrap px-5 py-4 border-t border-[#f4f4f5] bg-zinc-50/60">
-            <div className="text-[12.5px] text-zinc-600">
+          <div className="flex items-center justify-between gap-3 flex-wrap px-5 py-4 border-t border-[#f4f4f5] bg-zinc-50/60 max-[640px]:px-4 max-[640px]:[padding-bottom:max(1rem,env(safe-area-inset-bottom))]">
+            <div className="text-[12.5px] text-zinc-600 max-[640px]:min-w-0">
               {endLiveMsg ??
                 rediscoverMsg ??
                 "Зарим камерт бичлэг олдсонгүй. AWS S3-аас дахин хайхыг оролдоно уу."}
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 shrink-0 max-[640px]:w-full max-[640px]:flex-wrap max-[640px]:[&>button]:grow">
               <button
                 type="button"
                 onClick={onEndLive}
@@ -580,10 +582,10 @@ export default function EventDetail() {
 
       {!kioskOnly && (
       <details className="mt-4 rounded-2xl border border-[#ececef] bg-white/60 [&_summary]:cursor-pointer [&_summary]:list-none">
-        <summary className="px-6 py-4 text-[12.5px] font-semibold text-zinc-500 uppercase tracking-[0.06em] hover:text-zinc-700">
+        <summary className="px-6 py-4 text-[12.5px] font-semibold text-zinc-500 uppercase tracking-[0.06em] hover:text-zinc-700 max-[640px]:px-4">
           Дэвшилтэт · Бичлэгийг гараар нэмэх
         </summary>
-        <div className="px-6 pb-5 pt-2 border-t border-[#f4f4f5]">
+        <div className="px-6 pb-5 pt-2 border-t border-[#f4f4f5] max-[640px]:px-4">
           <p className="text-[12.5px] text-zinc-500 m-0 mb-3">
             Автомат хайлт амжилтгүй болсон тохиолдолд камер тус бүрд S3 замаар
             гараар нэмж болно.

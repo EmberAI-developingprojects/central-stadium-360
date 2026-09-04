@@ -22,12 +22,14 @@ export const ADMIN_BRAND_MARK_CLS =
 export const ADMIN_BRAND_TEXT_CLS =
   "flex flex-col leading-tight text-[11.5px] text-zinc-500 [&_strong]:text-zinc-900 [&_strong]:text-[13.5px] [&_strong]:font-semibold [&_strong]:tracking-[-0.01em] [&_strong]:mb-px";
 
+// On the mobile drawer the nav rows become real touch targets (>= 44px).
 export const ADMIN_NAV_CLS =
   "flex flex-col gap-0.5 flex-1 overflow-y-auto " +
   "[&_a]:flex [&_a]:items-center [&_a]:gap-2.5 [&_a]:py-[7px] [&_a]:px-2.5 [&_a]:rounded-md [&_a]:text-zinc-600 [&_a]:no-underline [&_a]:text-[13px] [&_a]:font-medium [&_a]:transition-colors " +
   "[&_a:hover]:bg-zinc-100 [&_a:hover]:text-zinc-900 " +
   "[&_a.is-active]:bg-zinc-100 [&_a.is-active]:text-zinc-900 " +
-  "[&_a_svg]:w-[16px] [&_a_svg]:h-[16px] [&_a_svg]:shrink-0 [&_a_svg]:text-zinc-400 [&_a:hover_svg]:text-zinc-700 [&_a.is-active_svg]:text-zinc-900";
+  "[&_a_svg]:w-[16px] [&_a_svg]:h-[16px] [&_a_svg]:shrink-0 [&_a_svg]:text-zinc-400 [&_a:hover_svg]:text-zinc-700 [&_a.is-active_svg]:text-zinc-900 " +
+  "max-[980px]:[&_a]:min-h-[44px] max-[980px]:[&_a]:py-2.5 max-[980px]:[&_a]:px-3 max-[980px]:[&_a]:text-[14px]";
 
 export const ADMIN_SIDEBAR_FOOTER_CLS =
   "border-t border-[#ececef] pt-2 mt-2 flex flex-col gap-0.5 " +
@@ -36,77 +38,101 @@ export const ADMIN_SIDEBAR_FOOTER_CLS =
   "[&>a_svg]:w-3.5 [&>a_svg]:h-3.5 [&>a_svg]:shrink-0 [&>a_svg]:text-zinc-400 [&>a:hover_svg]:text-zinc-700 " +
   "[&>button]:bg-transparent [&>button]:border-0 [&>button]:font-[inherit] [&>button]:text-left [&>button]:cursor-pointer [&>button]:flex [&>button]:items-center [&>button]:gap-2.5 [&>button]:py-[7px] [&>button]:px-2.5 [&>button]:rounded-md [&>button]:text-zinc-500 [&>button]:text-[12.5px] [&>button]:font-medium [&>button]:transition-colors " +
   "[&>button:hover]:bg-zinc-100 [&>button:hover]:text-zinc-900 " +
-  "[&>button_svg]:w-3.5 [&>button_svg]:h-3.5 [&>button_svg]:shrink-0 [&>button_svg]:text-zinc-400 [&>button:hover_svg]:text-zinc-700";
+  "[&>button_svg]:w-3.5 [&>button_svg]:h-3.5 [&>button_svg]:shrink-0 [&>button_svg]:text-zinc-400 [&>button:hover_svg]:text-zinc-700 " +
+  "max-[980px]:[&>a]:min-h-[44px] max-[980px]:[&>a]:py-2.5 max-[980px]:[&>a]:px-3 max-[980px]:[&>a]:text-[13.5px] " +
+  "max-[980px]:[&>button]:min-h-[44px] max-[980px]:[&>button]:py-2.5 max-[980px]:[&>button]:px-3 max-[980px]:[&>button]:text-[13.5px]";
 
 export const ADMIN_MAIN_CLS = "flex flex-col min-w-0";
+// The h1 must be allowed to shrink (min-w-0) and truncate on narrow screens,
+// otherwise a long page title pushes the avatar past the viewport edge.
 export const ADMIN_TOPBAR_CLS =
-  "bg-white/85 backdrop-blur-md border-b border-[#ececef] h-[60px] flex items-center px-8 max-[640px]:px-4 sticky top-0 z-[5] " +
-  "[&_h1]:text-[15px] [&_h1]:font-semibold [&_h1]:m-0 [&_h1]:text-zinc-900 [&_h1]:tracking-[-0.01em]";
-export const ADMIN_TOPBAR_SPACER_CLS = "flex-1";
+  "bg-white/85 backdrop-blur-md border-b border-[#ececef] h-[60px] flex items-center px-8 max-[640px]:px-4 max-[480px]:px-3 sticky top-0 z-[5] " +
+  "[&_h1]:text-[15px] [&_h1]:font-semibold [&_h1]:m-0 [&_h1]:text-zinc-900 [&_h1]:tracking-[-0.01em] " +
+  "max-[980px]:[&_h1]:min-w-0 max-[980px]:[&_h1]:truncate max-[640px]:[&_h1]:text-[14px]";
+export const ADMIN_TOPBAR_SPACER_CLS = "flex-1 max-[640px]:min-w-[8px]";
 export const ADMIN_TOPBAR_USER_CLS =
-  "flex items-center gap-2.5 text-[13px] text-zinc-600";
+  "flex items-center gap-2.5 text-[13px] text-zinc-600 max-[640px]:shrink-0 max-[640px]:gap-2";
 export const ADMIN_AVATAR_CLS =
-  "w-[30px] h-[30px] rounded-full bg-zinc-900 text-white grid place-items-center font-semibold text-[11px] tracking-tight";
+  "w-[30px] h-[30px] rounded-full bg-zinc-900 text-white grid place-items-center font-semibold text-[11px] tracking-tight max-[640px]:shrink-0";
 
 // min-w-0 lets this flex child shrink below its content's intrinsic width so
 // tables/tabs scroll internally instead of forcing page overflow. Tighter
 // padding on phones reclaims horizontal room.
 export const ADMIN_CONTENT_CLS =
-  "p-8 max-[640px]:p-4 flex-1 min-w-0 max-w-[1280px] w-full";
+  "p-8 max-[640px]:p-4 max-[480px]:p-3 flex-1 min-w-0 max-w-[1280px] w-full " +
+  "max-[640px]:[padding-bottom:max(1rem,env(safe-area-inset-bottom))]";
 
+// On phones the title block and every action button each take a full row, so a
+// wide "Шинэ ..." button can never push the header past the viewport.
 export const ADMIN_PAGE_HEADER_CLS =
   "flex flex-wrap items-start justify-between gap-4 mb-6 " +
   "[&_h2]:text-[22px] [&_h2]:font-semibold [&_h2]:m-0 [&_h2]:mb-1 [&_h2]:text-zinc-900 [&_h2]:tracking-[-0.02em] [&_h2]:leading-tight " +
-  "[&_p]:m-0 [&_p]:text-zinc-500 [&_p]:text-[13.5px]";
+  "[&_p]:m-0 [&_p]:text-zinc-500 [&_p]:text-[13.5px] " +
+  "max-[640px]:gap-3 max-[640px]:mb-4 max-[640px]:[&_h2]:text-[19px] max-[640px]:[&_p]:text-[13px] " +
+  "max-[640px]:[&>*]:min-w-0 max-[640px]:[&>*]:w-full";
 
 export const ADMIN_CARD_CLS =
-  "bg-white border border-[#ececef] rounded-xl p-6 " +
-  "[&_h3]:m-0 [&_h3]:mb-4 [&_h3]:text-[13.5px] [&_h3]:font-semibold [&_h3]:text-zinc-900 [&_h3]:tracking-[-0.01em]";
+  "bg-white border border-[#ececef] rounded-xl p-6 max-[640px]:p-4 " +
+  "[&_h3]:m-0 [&_h3]:mb-4 [&_h3]:text-[13.5px] [&_h3]:font-semibold [&_h3]:text-zinc-900 [&_h3]:tracking-[-0.01em] " +
+  "max-[640px]:[&_h3]:mb-3";
 
-export const ADMIN_GRID_CLS = "grid gap-4";
+export const ADMIN_GRID_CLS = "grid gap-4 max-[640px]:gap-3";
 export const ADMIN_GRID_4_CLS =
-  "[grid-template-columns:repeat(4,minmax(0,1fr))] max-[980px]:[grid-template-columns:repeat(2,minmax(0,1fr))]";
+  "[grid-template-columns:repeat(4,minmax(0,1fr))] max-[980px]:[grid-template-columns:repeat(2,minmax(0,1fr))] max-[480px]:[grid-template-columns:minmax(0,1fr)]";
 export const ADMIN_GRID_2_CLS =
   "[grid-template-columns:repeat(2,minmax(0,1fr))] max-[980px]:[grid-template-columns:1fr]";
 
 export const ADMIN_STAT_CARD_CLS =
-  "bg-white border border-[#ececef] rounded-xl p-5 " +
+  "bg-white border border-[#ececef] rounded-xl p-5 max-[640px]:p-4 max-[640px]:min-w-0 " +
   "[&_.stat-label]:text-[11px] [&_.stat-label]:text-zinc-500 [&_.stat-label]:uppercase [&_.stat-label]:tracking-[.06em] [&_.stat-label]:font-medium " +
   "[&_.stat-value]:text-[28px] [&_.stat-value]:font-semibold [&_.stat-value]:text-zinc-900 [&_.stat-value]:mt-2 [&_.stat-value]:tracking-[-0.02em] [&_.stat-value]:leading-none " +
-  "[&_.stat-sub]:text-[12px] [&_.stat-sub]:text-zinc-500 [&_.stat-sub]:mt-2.5";
+  "[&_.stat-sub]:text-[12px] [&_.stat-sub]:text-zinc-500 [&_.stat-sub]:mt-2.5 " +
+  "max-[640px]:[&_.stat-value]:text-[24px] max-[640px]:[&_.stat-value]:break-words max-[640px]:[&_.stat-sub]:mt-2";
 
 export const ADMIN_SPARKLINE_CLS = "w-full h-[160px] block";
 
+// `min-h` (not `h`) is used for the mobile bump so the desktop `h-9` string is
+// left untouched — min-height simply clamps the fixed height upwards on phones.
 export const ADMIN_BTN_CLS =
   "inline-flex items-center justify-center gap-1.5 h-9 px-3.5 rounded-md font-[inherit] text-[13px] font-medium border border-[#e4e4e7] bg-white text-zinc-900 cursor-pointer transition-colors no-underline outline-none " +
   "hover:bg-zinc-50 hover:border-zinc-300 active:bg-zinc-100 " +
   "focus-visible:ring-2 focus-visible:ring-zinc-900/15 focus-visible:border-zinc-400 " +
-  "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-[#e4e4e7]";
+  "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-[#e4e4e7] " +
+  "max-[640px]:min-h-[44px] max-[640px]:px-4 max-[640px]:text-[13.5px]";
 export const ADMIN_BTN_PRIMARY_CLS =
   "!bg-zinc-900 !border-zinc-900 !text-white hover:!bg-zinc-800 hover:!border-zinc-800 active:!bg-zinc-950";
 export const ADMIN_BTN_DANGER_CLS =
   "!bg-white !border-[#fecaca] !text-[#b91c1c] hover:!bg-[#fef2f2] hover:!border-[#fca5a5]";
 export const ADMIN_BTN_GHOST_CLS =
   "!border-transparent !bg-transparent !text-zinc-600 hover:!bg-zinc-100 hover:!text-zinc-900 hover:!border-transparent";
-export const ADMIN_BTN_SM_CLS = "!h-8 !px-2.5 !text-[12.5px]";
+export const ADMIN_BTN_SM_CLS =
+  "!h-8 !px-2.5 !text-[12.5px] max-[640px]:!min-h-[40px] max-[640px]:!px-3";
 
+// max-h-[calc(100vh-280px)] leaves almost nothing on a 667px-tall phone, so the
+// vertical cap is dropped below 640px and the wrapper simply grows with the page.
 export const ADMIN_TABLE_WRAP_CLS =
-  "bg-white border border-[#ececef] rounded-xl overflow-auto max-h-[calc(100vh-280px)] [scrollbar-gutter:stable]";
+  "bg-white border border-[#ececef] rounded-xl overflow-auto max-h-[calc(100vh-280px)] [scrollbar-gutter:stable] " +
+  "max-[980px]:[-webkit-overflow-scrolling:touch] max-[980px]:[overscroll-behavior-x:contain] " +
+  "max-[640px]:max-h-none max-[640px]:[scrollbar-gutter:auto]";
 export const ADMIN_TABLE_CLS =
   "w-full border-collapse text-[13px] " +
   "[&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-[2] " +
   "[&_th]:text-left [&_th]:py-3 [&_th]:px-4 [&_th]:border-b [&_th]:border-[#ececef] [&_th]:align-middle [&_th]:bg-[#fafafa] [&_th]:text-zinc-500 [&_th]:font-medium [&_th]:text-[11px] [&_th]:uppercase [&_th]:tracking-[.06em] [&_th]:whitespace-nowrap " +
   "[&_td]:text-left [&_td]:py-3.5 [&_td]:px-4 [&_td]:border-b [&_td]:border-[#f4f4f5] [&_td]:align-middle [&_td]:text-zinc-700 " +
-  "[&_tr:last-child_td]:border-b-0 [&_tbody_tr]:transition-colors [&_tbody_tr:hover]:bg-[#fafafa] [&_tbody_tr:focus-within]:bg-[#f4f4f5]";
+  "[&_tr:last-child_td]:border-b-0 [&_tbody_tr]:transition-colors [&_tbody_tr:hover]:bg-[#fafafa] [&_tbody_tr:focus-within]:bg-[#f4f4f5] " +
+  "max-[980px]:[&_th]:px-3 max-[980px]:[&_th]:py-2.5 max-[980px]:[&_td]:px-3 max-[980px]:[&_td]:py-3 " +
+  "max-[640px]:[&_th]:px-2.5 max-[640px]:[&_td]:px-2.5";
 
 export const ADMIN_TABLE_THUMB_CLS =
   "w-[60px] h-[36px] rounded-md bg-zinc-100 [background-size:cover] [background-position:center] inline-block ring-1 ring-inset ring-[#ececef]";
 
 export const ADMIN_EMPTY_CLS =
   "py-14 px-6 text-center text-zinc-500 text-[13.5px] bg-white border border-dashed border-[#e4e4e7] rounded-xl " +
-  "[&_strong]:block [&_strong]:text-zinc-900 [&_strong]:mb-1.5 [&_strong]:font-semibold [&_strong]:text-[14px]";
+  "[&_strong]:block [&_strong]:text-zinc-900 [&_strong]:mb-1.5 [&_strong]:font-semibold [&_strong]:text-[14px] " +
+  "max-[640px]:py-10 max-[640px]:px-4 max-[640px]:text-[13px]";
 
-export const ADMIN_FORM_CLS = "flex flex-col gap-5 max-w-[720px]";
+export const ADMIN_FORM_CLS =
+  "flex flex-col gap-5 max-w-[720px] max-[640px]:gap-4";
 export const ADMIN_FORM_ROW_CLS =
   "grid gap-5 [grid-template-columns:repeat(2,minmax(0,1fr))] max-[980px]:[grid-template-columns:1fr]";
 export const ADMIN_FIELD_CLS =
@@ -123,13 +149,23 @@ export const ADMIN_FIELD_CLS =
   "[&_textarea:focus]:border-zinc-400 [&_textarea:focus]:shadow-[0_0_0_3px_rgba(24,24,27,0.06)] " +
   "[&_textarea:disabled]:bg-zinc-50 [&_textarea:disabled]:text-zinc-400 [&_textarea:disabled]:cursor-not-allowed " +
   "[&_select]:font-[inherit] [&_select]:text-[13.5px] [&_select]:h-10 [&_select]:px-3 [&_select]:bg-white [&_select]:border [&_select]:border-[#e4e4e7] [&_select]:rounded-md [&_select]:text-zinc-900 [&_select]:outline-none [&_select]:transition-shadow " +
-  "[&_select:focus]:border-zinc-400 [&_select:focus]:shadow-[0_0_0_3px_rgba(24,24,27,0.06)]";
+  "[&_select:focus]:border-zinc-400 [&_select:focus]:shadow-[0_0_0_3px_rgba(24,24,27,0.06)] " +
+  // 16px form controls on phones: iOS Safari zooms the whole page whenever a
+  // focused control renders below 16px, which then breaks the layout.
+  "max-[640px]:[&_input]:text-[16px] max-[640px]:[&_input]:h-11 max-[640px]:[&_input]:w-full max-[640px]:[&_input]:min-w-0 " +
+  "max-[640px]:[&_textarea]:text-[16px] max-[640px]:[&_textarea]:w-full " +
+  "max-[640px]:[&_select]:text-[16px] max-[640px]:[&_select]:h-11 max-[640px]:[&_select]:w-full max-[640px]:[&_select]:min-w-0 " +
+  "max-[640px]:[&_label]:text-[13px]";
 
 export const ADMIN_CHECKBOX_CLS =
-  "flex items-center gap-2 text-[13.5px] text-zinc-700 [&_input]:w-4 [&_input]:h-4 [&_input]:accent-zinc-900 [&_input]:cursor-pointer";
+  "flex items-center gap-2 text-[13.5px] text-zinc-700 [&_input]:w-4 [&_input]:h-4 [&_input]:accent-zinc-900 [&_input]:cursor-pointer " +
+  "max-[640px]:min-h-[40px] max-[640px]:gap-2.5 max-[640px]:[&_input]:w-[18px] max-[640px]:[&_input]:h-[18px]";
 
 export const ADMIN_FORM_ACTIONS_CLS =
-  "flex gap-2.5 pt-5 mt-2 border-t border-[#ececef]";
+  "flex gap-2.5 pt-5 mt-2 border-t border-[#ececef] " +
+  "max-[640px]:flex-wrap max-[640px]:gap-2 max-[640px]:pt-4 " +
+  "max-[640px]:[&>button]:grow max-[640px]:[&>a]:grow " +
+  "max-[640px]:[padding-bottom:env(safe-area-inset-bottom)]";
 
 export const ADMIN_BADGE_CLS =
   "inline-flex items-center py-0.5 px-2 rounded-full text-[11px] font-medium bg-zinc-100 text-zinc-700 leading-[1.6]";
@@ -140,24 +176,93 @@ export const ADMIN_BADGE_CANCELLED_CLS = "!bg-amber-50 !text-amber-700";
 export const ADMIN_BADGE_DISABLED_CLS = "!bg-red-50 !text-red-700";
 export const ADMIN_BADGE_FEATURED_CLS = "!bg-amber-50 !text-amber-700";
 
+// Below 640px every direct child of a filter row takes a full line (search
+// wrappers, selects, buttons) — `[&_input]:!min-w-0` is important because some
+// pages pin the search box with `!min-w-[300px]`, which would otherwise overflow.
+// Text is bumped to 16px for the same iOS zoom reason as ADMIN_FIELD_CLS.
 export const ADMIN_FILTERS_CLS =
   "flex gap-2.5 items-center flex-wrap mb-4 " +
   "[&_input]:font-[inherit] [&_input]:text-[13px] [&_input]:h-9 [&_input]:px-3 [&_input]:bg-white [&_input]:border [&_input]:border-[#e4e4e7] [&_input]:rounded-md [&_input]:min-w-[260px] [&_input]:outline-none [&_input]:transition-shadow [&_input::placeholder]:text-zinc-400 [&_input:focus]:border-zinc-400 [&_input:focus]:shadow-[0_0_0_3px_rgba(24,24,27,0.06)] " +
-  "[&_select]:font-[inherit] [&_select]:text-[13px] [&_select]:h-9 [&_select]:px-3 [&_select]:bg-white [&_select]:border [&_select]:border-[#e4e4e7] [&_select]:rounded-md [&_select]:outline-none";
+  "[&_select]:font-[inherit] [&_select]:text-[13px] [&_select]:h-9 [&_select]:px-3 [&_select]:bg-white [&_select]:border [&_select]:border-[#e4e4e7] [&_select]:rounded-md [&_select]:outline-none " +
+  "max-[640px]:gap-2 max-[640px]:items-stretch max-[640px]:[&>*]:w-full max-[640px]:[&>*]:min-w-0 max-[640px]:[&>span]:w-auto " +
+  "max-[640px]:[&_input]:text-[16px] max-[640px]:[&_input]:h-11 max-[640px]:[&_input]:!min-w-0 max-[640px]:[&_input]:w-full " +
+  "max-[640px]:[&_select]:text-[16px] max-[640px]:[&_select]:h-11 max-[640px]:[&_select]:w-full max-[640px]:[&_select]:min-w-0";
 
 export const ADMIN_TABS_CLS =
   "flex gap-1 border-b border-[#ececef] mb-6 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden " +
   "[&_button]:bg-transparent [&_button]:border-0 [&_button]:font-[inherit] [&_button]:text-[13.5px] [&_button]:font-medium [&_button]:py-2.5 [&_button]:px-3.5 [&_button]:cursor-pointer [&_button]:text-zinc-500 [&_button]:border-b-2 [&_button]:border-transparent [&_button]:-mb-px [&_button]:transition-colors [&_button]:whitespace-nowrap [&_button]:shrink-0 " +
   "[&_button:hover]:text-zinc-900 " +
-  "[&_button.is-active]:text-zinc-900 [&_button.is-active]:!border-b-zinc-900";
+  "[&_button.is-active]:text-zinc-900 [&_button.is-active]:!border-b-zinc-900 " +
+  "max-[980px]:[-webkit-overflow-scrolling:touch] max-[980px]:[overscroll-behavior-x:contain] " +
+  "max-[640px]:mb-4 max-[640px]:[&_button]:min-h-[44px] max-[640px]:[&_button]:px-3";
 
 export const ADMIN_LINK_CLS =
-  "text-zinc-900 no-underline font-medium hover:underline underline-offset-[3px] decoration-zinc-300";
+  "text-zinc-900 no-underline font-medium hover:underline underline-offset-[3px] decoration-zinc-300 max-[640px]:break-words";
 
-export const ADMIN_ACTIONS_CLS = "inline-flex gap-1.5";
+export const ADMIN_ACTIONS_CLS =
+  "inline-flex gap-1.5 max-[640px]:flex-wrap max-[640px]:gap-2";
 
 export const ADMIN_ALERT_CLS =
-  "py-3 px-4 rounded-md border border-red-200 bg-red-50 text-red-800 text-[13px] leading-[1.5]";
+  "py-3 px-4 rounded-md border border-red-200 bg-red-50 text-red-800 text-[13px] leading-[1.5] max-[640px]:break-words";
 
 export const ADMIN_IMAGE_PREVIEW_CLS =
   "w-full max-w-[360px] [aspect-ratio:16/6] bg-zinc-100 [background-size:cover] [background-position:center] [background-repeat:no-repeat] rounded-lg border border-[#ececef] mt-2";
+
+// ---------------------------------------------------------------------------
+// Mobile list pattern (<= 640px)
+//
+// Wide list tables stay exactly as they are on desktop and are hidden below
+// 640px with ADMIN_DESKTOP_ONLY_CLS; a separate, mobile-only stack of record
+// cards renders in their place. The desktop DOM is therefore untouched.
+//
+//   <div className={`${ADMIN_TABLE_WRAP_CLS} ${ADMIN_DESKTOP_ONLY_CLS}`}>
+//     <table className={ADMIN_TABLE_CLS}>…</table>
+//   </div>
+//
+//   <div className={ADMIN_MOBILE_LIST_CLS}>
+//     {rows.map((r) => (
+//       <div key={r.id} className={ADMIN_MOBILE_CARD_CLS}>
+//         <div className={ADMIN_MOBILE_CARD_HEAD_CLS}>
+//           <Link to={…} className={ADMIN_LINK_CLS}>{r.title}</Link>
+//           <span className={ADMIN_BADGE_CLS}>{r.status}</span>
+//         </div>
+//         <div className={ADMIN_MOBILE_ROW_CLS}>
+//           <span className={ADMIN_MOBILE_LABEL_CLS}>Огноо</span>
+//           <span className={ADMIN_MOBILE_VALUE_CLS}>{r.date}</span>
+//         </div>
+//         <div className={ADMIN_MOBILE_ACTIONS_CLS}>
+//           <button className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS}`}>Засах</button>
+//         </div>
+//       </div>
+//     ))}
+//   </div>
+// ---------------------------------------------------------------------------
+
+export const ADMIN_DESKTOP_ONLY_CLS = "max-[640px]:hidden";
+export const ADMIN_MOBILE_ONLY_CLS = "hidden max-[640px]:block";
+
+export const ADMIN_MOBILE_LIST_CLS = "hidden max-[640px]:flex flex-col gap-2.5";
+
+export const ADMIN_MOBILE_CARD_CLS =
+  "bg-white border border-[#ececef] rounded-xl p-4 flex flex-col gap-2.5 min-w-0 text-[13px] text-zinc-700";
+
+// First child = record title (grows, wraps); last child = badge/status (fixed).
+export const ADMIN_MOBILE_CARD_HEAD_CLS =
+  "flex items-start justify-between gap-3 min-w-0 " +
+  "[&>*:first-child]:min-w-0 [&>*:first-child]:text-[14px] [&>*:first-child]:font-semibold [&>*:first-child]:text-zinc-900 [&>*:first-child]:tracking-[-0.01em] [&>*:first-child]:break-words " +
+  "[&>*:last-child]:shrink-0";
+
+export const ADMIN_MOBILE_ROW_CLS =
+  "flex items-start justify-between gap-3 min-w-0 leading-[1.45]";
+export const ADMIN_MOBILE_LABEL_CLS =
+  "shrink-0 text-[12px] font-medium text-zinc-500";
+export const ADMIN_MOBILE_VALUE_CLS =
+  "min-w-0 text-right text-[13px] text-zinc-900 [overflow-wrap:anywhere]";
+
+export const ADMIN_MOBILE_ACTIONS_CLS =
+  "flex flex-wrap gap-2 pt-2.5 border-t border-[#f4f4f5] [&>*]:grow [&>*]:justify-center";
+
+// Generic escape hatch for any single element too wide for a phone (long ID
+// strings, code blocks, a small 2-3 column table): let it scroll on its own.
+export const ADMIN_SCROLL_X_CLS =
+  "max-w-full overflow-x-auto max-[980px]:[-webkit-overflow-scrolling:touch] max-[980px]:[overscroll-behavior-x:contain]";

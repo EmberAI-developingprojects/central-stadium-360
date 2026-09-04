@@ -32,6 +32,7 @@ const NAV: NavItem[] = [
   { to: "/admin/orders", label: "360 Борлуулалт", icon: IconReceipt },
   { to: "/admin/kiosk", label: "Киоск борлуулалт", icon: IconKiosk },
   { to: "/admin/scan", label: "Тасалбар шалгах", icon: IconScan },
+  { to: "/admin/scanned", label: "Уншуулсан тасалбар", icon: IconTicketCheck },
   { to: "/admin/users", label: "Хэрэглэгч", icon: IconUsers },
   { to: "/admin/content", label: "Контент", icon: IconLayout },
   { to: "/admin/history", label: "Түүхэн хэсэг", icon: IconHistory },
@@ -46,6 +47,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin/orders": "Захиалга",
   "/admin/kiosk": "Касс — биечлэн тасалбар",
   "/admin/scan": "Тасалбар шалгах",
+  "/admin/scanned": "Уншуулсан тасалбар",
   "/admin/users": "Хэрэглэгч",
   "/admin/content": "Контент засварлагч",
   "/admin/history": "Түүхэн хэсэг",
@@ -138,19 +140,42 @@ function AdminShell({
         />
       )}
       <aside
-        className={`${ADMIN_SIDEBAR_CLS} max-[980px]:fixed max-[980px]:inset-y-0 max-[980px]:left-0 max-[980px]:z-[90] max-[980px]:w-[260px] max-[980px]:shadow-[0_24px_48px_-12px_rgba(0,0,0,0.18)] max-[980px]:transition-transform max-[980px]:duration-200 ${
+        className={`${ADMIN_SIDEBAR_CLS} max-[980px]:fixed max-[980px]:inset-y-0 max-[980px]:left-0 max-[980px]:z-[90] max-[980px]:w-[min(260px,86vw)] max-[980px]:max-w-[86vw] max-[980px]:shadow-[0_24px_48px_-12px_rgba(0,0,0,0.18)] max-[980px]:transition-transform max-[980px]:duration-200 max-[980px]:overscroll-contain max-[980px]:[padding-top:max(1rem,env(safe-area-inset-top))] max-[980px]:[padding-bottom:max(1rem,env(safe-area-inset-bottom))] max-[980px]:[padding-left:max(0.75rem,env(safe-area-inset-left))] ${
           drawerOpen
             ? "max-[980px]:translate-x-0"
             : "max-[980px]:-translate-x-full"
         }`}
         aria-label="Админ цэс"
       >
-        <div className={ADMIN_BRAND_CLS}>
-          <div className={ADMIN_BRAND_MARK_CLS}>TC</div>
-          <div className={ADMIN_BRAND_TEXT_CLS}>
+        <div className={`${ADMIN_BRAND_CLS} max-[980px]:mb-2`}>
+          <div className={`${ADMIN_BRAND_MARK_CLS} max-[980px]:shrink-0`}>TC</div>
+          <div
+            className={`${ADMIN_BRAND_TEXT_CLS} max-[980px]:min-w-0 max-[980px]:[&_strong]:truncate`}
+          >
             <strong>Төв Цэнгэлдэх</strong>
             <span>Админ панел</span>
           </div>
+          <button
+            type="button"
+            onClick={() => setDrawerOpen(false)}
+            aria-label="Цэс хаах"
+            className="hidden max-[980px]:inline-flex ml-auto -mr-1 h-11 w-11 shrink-0 items-center justify-center rounded-md text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
         </div>
 
         <nav className={ADMIN_NAV_CLS}>
@@ -190,7 +215,7 @@ function AdminShell({
             type="button"
             onClick={() => setDrawerOpen(true)}
             aria-label="Цэс нээх"
-            className="hidden max-[980px]:inline-flex h-9 w-9 mr-2 items-center justify-center rounded-md text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
+            className="hidden max-[980px]:inline-flex h-9 w-9 mr-2 items-center justify-center rounded-md text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 transition-colors max-[980px]:h-11 max-[980px]:w-11 max-[980px]:-ml-2 max-[980px]:mr-1 max-[980px]:shrink-0"
           >
             <svg
               width="18"
@@ -211,7 +236,9 @@ function AdminShell({
           <h1>{title}</h1>
           <div className={ADMIN_TOPBAR_SPACER_CLS} />
           <div className={ADMIN_TOPBAR_USER_CLS}>
-            <span className="max-[640px]:hidden">{fullname || identifier}</span>
+            <span className="max-[980px]:max-w-[160px] max-[980px]:truncate max-[640px]:hidden">
+              {fullname || identifier}
+            </span>
             <span className={ADMIN_AVATAR_CLS} aria-hidden="true">
               {initials}
             </span>
@@ -313,6 +340,22 @@ function IconScan() {
       <path d="M21 16v3a2 2 0 0 1-2 2h-3" />
       <path d="M8 21H5a2 2 0 0 1-2-2v-3" />
       <line x1="3" y1="12" x2="21" y2="12" />
+    </svg>
+  );
+}
+function IconTicketCheck() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M3 9V7a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v2a2 2 0 0 0 0 4v2a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-2a2 2 0 0 0 0-4z" />
+      <polyline points="9 12 11 14 15 10" />
     </svg>
   );
 }

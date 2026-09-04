@@ -26,8 +26,16 @@ import {
   ADMIN_BTN_PRIMARY_CLS,
   ADMIN_BTN_SM_CLS,
   ADMIN_CARD_CLS,
+  ADMIN_DESKTOP_ONLY_CLS,
   ADMIN_GRID_2_CLS,
   ADMIN_GRID_CLS,
+  ADMIN_MOBILE_ACTIONS_CLS,
+  ADMIN_MOBILE_CARD_CLS,
+  ADMIN_MOBILE_CARD_HEAD_CLS,
+  ADMIN_MOBILE_LABEL_CLS,
+  ADMIN_MOBILE_LIST_CLS,
+  ADMIN_MOBILE_ROW_CLS,
+  ADMIN_MOBILE_VALUE_CLS,
   ADMIN_PAGE_HEADER_CLS,
   ADMIN_TABLE_CLS,
 } from "../_adminStyles";
@@ -186,8 +194,12 @@ export default function UserView() {
     <>
       <div className={ADMIN_PAGE_HEADER_CLS}>
         <div>
-          <h2>{user.fullname || user.identifier}</h2>
-          <p>{user.identifier}</p>
+          <h2 className="max-[640px]:[overflow-wrap:anywhere]">
+            {user.fullname || user.identifier}
+          </h2>
+          <p className="max-[640px]:[overflow-wrap:anywhere]">
+            {user.identifier}
+          </p>
         </div>
         <Link
           to="/admin/users"
@@ -203,7 +215,9 @@ export default function UserView() {
       >
         <div className={ADMIN_CARD_CLS}>
           <h3>Профайл</h3>
-          <table className={ADMIN_TABLE_CLS}>
+          <table
+            className={`${ADMIN_TABLE_CLS} max-[640px]:[&_th]:whitespace-normal max-[640px]:[&_td]:[overflow-wrap:anywhere]`}
+          >
             <tbody>
               <tr>
                 <th>Нэр</th>
@@ -256,7 +270,7 @@ export default function UserView() {
         <div className={ADMIN_CARD_CLS}>
           <h3>Үйлдэл</h3>
           <div
-            className={ADMIN_ACTIONS_CLS}
+            className={`${ADMIN_ACTIONS_CLS} max-[640px]:w-full max-[640px]:[&>button]:w-full`}
             style={{
               flexDirection: "column",
               alignItems: "flex-start",
@@ -298,45 +312,82 @@ export default function UserView() {
             Энэ хэрэглэгч одоогоор тасалбар аваагүй байна.
           </div>
         ) : (
-          <table className={ADMIN_TABLE_CLS}>
-            <thead>
-              <tr>
-                <th>Код</th>
-                <th>Арга хэмжээ</th>
-                <th style={{ textAlign: "right" }}>Нийт</th>
-                <th>Төлөв</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
+          <>
+            <table className={`${ADMIN_TABLE_CLS} ${ADMIN_DESKTOP_ONLY_CLS}`}>
+              <thead>
+                <tr>
+                  <th>Код</th>
+                  <th>Арга хэмжээ</th>
+                  <th style={{ textAlign: "right" }}>Нийт</th>
+                  <th>Төлөв</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders.map((o) => (
+                  <tr key={o.code}>
+                    <td>
+                      <code style={{ fontSize: 12 }}>{o.code}</code>
+                    </td>
+                    <td>{o.title}</td>
+                    <td style={{ textAlign: "right" }}>{money(o.total)}</td>
+                    <td>
+                      <span
+                        className={
+                          ORDER_STATUS_BADGE[o.status] || ADMIN_BADGE_CLS
+                        }
+                      >
+                        {ORDER_STATUS_LABEL[o.status] || o.status}
+                      </span>
+                    </td>
+                    <td>
+                      <Link
+                        to={`/admin/orders/${o.code}`}
+                        className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS}`}
+                      >
+                        Үзэх
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <div className={ADMIN_MOBILE_LIST_CLS}>
               {orders.map((o) => (
-                <tr key={o.code}>
-                  <td>
-                    <code style={{ fontSize: 12 }}>{o.code}</code>
-                  </td>
-                  <td>{o.title}</td>
-                  <td style={{ textAlign: "right" }}>{money(o.total)}</td>
-                  <td>
+                <div key={o.code} className={ADMIN_MOBILE_CARD_CLS}>
+                  <div className={ADMIN_MOBILE_CARD_HEAD_CLS}>
+                    <code className="font-mono">{o.code}</code>
                     <span
-                      className={
-                        ORDER_STATUS_BADGE[o.status] || ADMIN_BADGE_CLS
-                      }
+                      className={ORDER_STATUS_BADGE[o.status] || ADMIN_BADGE_CLS}
                     >
                       {ORDER_STATUS_LABEL[o.status] || o.status}
                     </span>
-                  </td>
-                  <td>
+                  </div>
+                  <div className={ADMIN_MOBILE_ROW_CLS}>
+                    <span className={ADMIN_MOBILE_LABEL_CLS}>Арга хэмжээ</span>
+                    <span className={ADMIN_MOBILE_VALUE_CLS}>{o.title}</span>
+                  </div>
+                  <div className={ADMIN_MOBILE_ROW_CLS}>
+                    <span className={ADMIN_MOBILE_LABEL_CLS}>Нийт</span>
+                    <span
+                      className={`${ADMIN_MOBILE_VALUE_CLS} tabular-nums font-semibold`}
+                    >
+                      {money(o.total)}
+                    </span>
+                  </div>
+                  <div className={ADMIN_MOBILE_ACTIONS_CLS}>
                     <Link
                       to={`/admin/orders/${o.code}`}
                       className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS}`}
                     >
                       Үзэх
                     </Link>
-                  </td>
-                </tr>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          </>
         )}
       </div>
     </>

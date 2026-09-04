@@ -48,11 +48,16 @@ function StatusBadge({ status }: { status: string }) {
 
 type LoadState = OrderRecord | null | undefined;
 
+// Below 640px a 180px label column leaves nothing for the value, so the rows
+// become stacked blocks (label above value) — desktop layout is untouched.
 const DETAIL_TABLE_CLS =
   "w-full border-collapse text-[13px] " +
   "[&_tr]:border-b [&_tr]:border-[#f4f4f5] [&_tr:last-child]:border-b-0 " +
   "[&_th]:w-[180px] [&_th]:text-left [&_th]:align-top [&_th]:font-normal [&_th]:text-zinc-500 [&_th]:text-[12.5px] [&_th]:py-3 [&_th]:pr-4 " +
-  "[&_td]:text-left [&_td]:align-top [&_td]:text-zinc-900 [&_td]:py-3";
+  "[&_td]:text-left [&_td]:align-top [&_td]:text-zinc-900 [&_td]:py-3 " +
+  "max-[640px]:[&_tbody]:block max-[640px]:[&_tr]:block max-[640px]:[&_tr]:py-2.5 " +
+  "max-[640px]:[&_th]:block max-[640px]:[&_th]:w-auto max-[640px]:[&_th]:pr-0 max-[640px]:[&_th]:py-0 max-[640px]:[&_th]:pb-1 max-[640px]:[&_th]:text-[12px] " +
+  "max-[640px]:[&_td]:block max-[640px]:[&_td]:py-0 max-[640px]:[&_td]:[overflow-wrap:anywhere]";
 
 export default function OrderView() {
   const { code } = useParams<{ code: string }>();
@@ -93,9 +98,12 @@ export default function OrderView() {
     <>
       <div className={ADMIN_PAGE_HEADER_CLS}>
         <div>
-          <h2>{order.title}</h2>
+          <h2 className="max-[640px]:[overflow-wrap:anywhere]">{order.title}</h2>
           <p>
-            Код: <code>{order.code}</code>
+            Код:{" "}
+            <code className="max-[640px]:[overflow-wrap:anywhere]">
+              {order.code}
+            </code>
           </p>
         </div>
         <Link
