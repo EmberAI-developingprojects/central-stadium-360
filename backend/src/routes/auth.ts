@@ -94,9 +94,6 @@ const forgotResetSchema = z.object({
 });
 
 function getClientIp(c: Context): string {
-  // Cloud Run's front end appends the real client IP as the LAST
-  // x-forwarded-for entry; earlier entries are client-supplied and spoofable,
-  // so taking the first one would let attackers rotate their rate-limit key.
   const xff = c.req.header("x-forwarded-for");
   const last = xff
     ?.split(",")
@@ -503,8 +500,6 @@ const RESET_OTP_MAX_ATTEMPTS = 5;
 
 type AdminClient = NonNullable<ReturnType<typeof getSupabaseAdmin>>;
 
-// OTPs live in the auth_reset_otps table so they survive restarts and are
-// visible to every Cloud Run instance, not just the one that sent the SMS.
 async function setResetOtp(
   admin: AdminClient,
   phone: string,
@@ -521,9 +516,6 @@ async function setResetOtp(
   return !error;
 }
 
-// Atomic check via RPC: wrong codes increment the attempt counter and the
-// row is deleted once RESET_OTP_MAX_ATTEMPTS is reached. A correct code
-// does not consume the row (reset deletes it after the password update).
 async function checkResetOtp(
   admin: AdminClient,
   phone: string,

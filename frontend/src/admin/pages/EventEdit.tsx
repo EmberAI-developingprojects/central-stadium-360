@@ -172,10 +172,7 @@ export default function EventEdit() {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [zones, setZones] = useState<ZoneDraft[]>(blankZoneDrafts);
-  // DB rows the admin removed in this session — deleted on save, not before.
   const [deletedZoneIds, setDeletedZoneIds] = useState<string[]>([]);
-  // Guards saving until the event's real zones are on screen: saving over the
-  // blank template would re-create the existing zones as duplicates.
   const [zonesLoaded, setZonesLoaded] = useState(isNew);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -203,7 +200,6 @@ export default function EventEdit() {
     });
   }, [id, isNew]);
 
-  // Loaded for every existing event; only rendered for kiosk ones.
   useEffect(() => {
     if (isNew || !id) return;
     loadZoneDrafts(id)
@@ -258,14 +254,11 @@ export default function EventEdit() {
         toast.success("Арга хэмжээ үүсгэгдлээ.");
       } else if (id) {
         await updateEvent(id, form);
-        // Zones go with the event — one button saves the whole screen.
         if (form.showOnKiosk) {
           try {
             await saveZoneDrafts(id, zones, deletedZoneIds);
             setDeletedZoneIds([]);
           } catch (zoneErr) {
-            // Resync with the server before any retry: rows written before the
-            // failure keep their DB ids, so saving again can't duplicate them.
             setDeletedZoneIds([]);
             loadZoneDrafts(id)
               .then(setZones)
@@ -377,7 +370,6 @@ export default function EventEdit() {
           <div className="max-[640px]:min-w-0">
             <div className="flex items-center gap-2 max-[640px]:flex-wrap">
               <h2>{isNew ? "Шинэ арга хэмжээ" : "Арга хэмжээ засах"}</h2>
-              {/* Read-only: the storefront is picked when the event is created. */}
               {form.showOnWeb && (
                 <span className="inline-flex items-center h-[22px] px-2 rounded-md text-[11.5px] font-medium ring-1 ring-inset bg-[#eef0fd] text-brand-blue ring-[#dadffb]">
                   Вэб
@@ -574,8 +566,6 @@ export default function EventEdit() {
                     })()}
                 </div>
 
-                {/* The live end drives the stream and replay windows, so it
-                    only applies on the web. Kiosk-only events need a start. */}
                 {form.showOnWeb && (
                 <div className={ADMIN_FIELD_CLS}>
                   <label className="flex items-center gap-1.5">
@@ -679,7 +669,6 @@ export default function EventEdit() {
               </div>
             </section>
 
-            {/* Stream ticket tiers — kiosk prices live on the zones instead. */}
             {form.showOnWeb && (
             <section className={CARD_CLS}>
               <header className={CARD_HEAD_CLS}>
@@ -905,8 +894,6 @@ export default function EventEdit() {
             )}
           </div>
 
-          {/* Single-column below 1100px: pinning the preview to the top makes
-              it eat the phone viewport, so it scrolls with the form there. */}
           <aside className="min-w-0 flex flex-col gap-5 sticky top-[76px] self-start max-[980px]:static max-[640px]:gap-4">
             <section className={CARD_CLS}>
               <header className={CARD_HEAD_CLS}>
@@ -1003,8 +990,6 @@ export default function EventEdit() {
                       style={{ backgroundImage: `url('${form.image}')` }}
                       aria-hidden="true"
                     />
-                    {/* Phones have no hover, so the controls stay visible there —
-                        otherwise the cover image could never be replaced. */}
                     <div className="absolute inset-0 flex items-center justify-center gap-2 rounded-lg bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity max-[640px]:opacity-100 max-[640px]:bg-black/25 max-[640px]:items-end max-[640px]:p-2.5">
                       <button
                         type="button"
@@ -1096,9 +1081,6 @@ export default function EventEdit() {
           </aside>
         </div>
 
-        {/* -mx-8/px-8 mirror ADMIN_CONTENT_CLS's padding so the bar is
-            full-bleed; that padding tightens on phones, so the bleed must
-            follow it or the row overflows the viewport sideways. */}
         <div className="sticky bottom-0 -mx-8 mt-6 bg-white/95 backdrop-blur-md border-t border-[#ececef] px-8 py-4 flex items-center gap-2.5 z-10 shadow-[0_-8px_24px_-12px_rgba(31,41,55,0.12)] max-[640px]:-mx-4 max-[640px]:mt-5 max-[640px]:flex-wrap max-[640px]:gap-2 max-[640px]:px-4 max-[640px]:[padding-bottom:max(1rem,env(safe-area-inset-bottom))] max-[480px]:-mx-3 max-[480px]:px-3">
           <button
             type="submit"

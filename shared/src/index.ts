@@ -18,20 +18,12 @@ export type EventStatus =
 export type TicketStatus = "pending" | "paid" | "cancelled" | "refunded";
 export type TicketType = "live" | "replay";
 
-/**
- * Licensing tiers. Platform-wide fixed prices (MNT). Every tier grants LIVE
- * access on `maxDevices` concurrent devices; only `multi5` bundles replay.
- */
 export type TicketTier = "standard" | "multi3" | "multi5";
 
 export interface TierSpec {
   id: TicketTier;
   price: number;
   maxDevices: number;
-  /**
-   * Replay stays watchable until the END of the calendar month the event's
-   * live ends in (Ulaanbaatar time) — e.g. Naadam on Jul 11 → until Aug 1.
-   */
   replay: boolean;
 }
 
@@ -41,7 +33,6 @@ export const TICKET_TIERS: Record<TicketTier, TierSpec> = {
   multi5: { id: "multi5", price: 19900, maxDevices: 5, replay: true },
 };
 
-/** Per-event tier price overrides, entered by the admin. NULL/0 = default. */
 export type EventTierPricing = {
   price_standard?: number | null;
   price_multi3?: number | null;
@@ -54,11 +45,6 @@ const TIER_PRICE_FIELD: Record<TicketTier, keyof EventTierPricing> = {
   multi5: "price_multi5",
 };
 
-/**
- * The price actually charged for a tier on a given event: the admin-entered
- * per-event price when set (> 0), otherwise the platform default. Used by the
- * backend to bill and by the ticket modal to display — keep them identical.
- */
 export function tierPriceForEvent(
   tier: TicketTier,
   event: EventTierPricing | null | undefined,
@@ -95,7 +81,6 @@ export interface DbEvent {
   price: number;
   live_price: number;
   replay_price: number;
-  /** Admin-set per-event tier prices; null/0 falls back to TICKET_TIERS. */
   price_standard?: number | null;
   price_multi3?: number | null;
   price_multi5?: number | null;
@@ -108,9 +93,7 @@ export interface DbEvent {
   created_at: string;
   title_en?: string | null;
   description_en?: string | null;
-  /** Listed & sellable on the website (live/replay stream tickets). */
   show_on_web?: boolean;
-  /** Listed & sellable on the stadium kiosk (in-person zone tickets). */
   show_on_kiosk?: boolean;
 }
 
@@ -244,9 +227,7 @@ export interface DbTicket {
   event_id: string;
   status: TicketStatus;
   ticket_type: TicketType;
-  /** Licensing tier. Optional for back-compat with rows created before tiers. */
   tier?: TicketTier;
-  /** Concurrent-device cap for this ticket's tier. */
   max_devices?: number;
   price: number;
   qpay_invoice_id: string | null;
@@ -254,15 +235,13 @@ export interface DbTicket {
   paid_at: string | null;
   refunded_at: string | null;
   access_expires_at: string | null;
-  /** eBarimt fiscal receipt (PosAPI 3.0), set once the ticket is paid. */
+  qpay_payment_id?: string | null;
   ebarimt_id?: string | null;
   ebarimt_qr_data?: string | null;
   ebarimt_lottery?: string | null;
-  /** Buyer company TIN → B2B receipt (no lottery). Null/absent = B2C. */
   ebarimt_customer_tin?: string | null;
 }
 
-/** One YouTube-style chapter marker: `t` seconds into the recording. */
 export interface RecordingChapter {
   t: number;
   label: string;
@@ -281,7 +260,6 @@ export interface DbRecording {
   recording_ended_at: string | null;
   status: RecordingStatus;
   created_at: string;
-  /** Chapter markers for merged multi-session recordings (nullable/absent on old rows). */
   chapters?: RecordingChapter[] | null;
 }
 
@@ -372,12 +350,10 @@ export type ZoneInput = {
 
 export type ZonePatch = Partial<ZoneInput>;
 
-/** A zone as the kiosk sees it — capacity expanded into availability. */
 export interface KioskZone extends DbZone {
   available: number;
 }
 
-/** One line of a kiosk order, stored on venue_orders.items. */
 export interface VenueOrderItem {
   zone_id: string;
   zone_name_mn: string;
@@ -395,6 +371,7 @@ export interface DbVenueOrder {
   total: number;
   payment_method: PaymentMethod | null;
   qpay_invoice_id: string | null;
+  qpay_payment_id?: string | null;
   paid_at: string | null;
   buyer_phone: string | null;
   ebarimt_id: string | null;
@@ -414,7 +391,6 @@ export interface DbVenueTicket {
   created_at: string;
 }
 
-/** Event + its in-person zones, returned to the kiosk catalog. */
 export interface KioskEvent {
   id: string;
   title: string;
@@ -443,7 +419,6 @@ export interface KioskCreateOrderResponse {
   order_id: string;
   reference: string;
   total: number;
-  /** Present for the QPay rail — the QR to display. */
   qr_text?: string;
   qr_image?: string;
   urls?: QPayInvoiceLink[];
@@ -605,7 +580,6 @@ export interface AdminAdmissionReport {
   recent: AdminAdmissionScan[];
 }
 
-/** One admitted (scanned) ticket, as listed on the admin "Уншуулсан тасалбар" page. */
 export interface AdminScannedTicket {
   code: string;
   zone_name_mn: string | null;
@@ -614,9 +588,7 @@ export interface AdminScannedTicket {
   used_at: string;
 }
 
-/** A page of admitted tickets, newest first. */
 export interface AdminScannedTicketsPage {
   rows: AdminScannedTicket[];
-  /** Total matching the current filters — drives "N-аас M" and load-more. */
   total: number;
 }

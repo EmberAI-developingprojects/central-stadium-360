@@ -192,12 +192,13 @@ adminTickets.post("/:id/refund", async (c) => {
   const id = c.req.param("id");
   const { data: existing, error: selErr } = await admin
     .from("tickets")
-    .select("id,status,ebarimt_id")
+    .select("id,status,ebarimt_id,qpay_payment_id")
     .eq("id", id)
     .maybeSingle<{
       id: string;
       status: TicketStatus;
       ebarimt_id: string | null;
+      qpay_payment_id: string | null;
     }>();
   if (selErr) {
     return c.json({ ok: false, error: selErr.message } as const, 500);
@@ -207,11 +208,9 @@ adminTickets.post("/:id/refund", async (c) => {
     return c.json({ ok: false, error: "not_paid" } as const, 409);
   }
 
-  // Void ("буцаалт") the fiscal eBarimt receipt first. Best-effort: it never
-  // throws, so a POS/QPay hiccup can't strand the ticket in a paid state — the
-  // outcome is surfaced in the response for the admin to act on.
   const ebarimt = await voidEbarimtForTicket({
     ebarimt_id: existing.ebarimt_id,
+    qpay_payment_id: existing.qpay_payment_id,
   });
 
   const { error: updErr } = await admin

@@ -16,18 +16,17 @@ import {
   checkInvoicePayment,
   createEbarimt,
   createInvoice,
+  ebarimtFromCheck,
+  isEbarimtV3Enabled,
   isPaid,
   isQPayConfigured,
   paidPaymentId,
+  type EbarimtReceipt,
+  type PaymentCheckResult,
 } from "./qpay";
 import { buildKioskCallbackUrl, getCallbackSecret } from "./qpay-signature";
 import { publishedOn, withChannelFallback } from "./event-channels";
 
-/**
- * Kiosk events have a start but no end, so the counter retires an event this
- * long after start_time. Long enough to keep selling at the gate for the whole
- * show, short enough that yesterday's match is gone by the next morning.
- */
 const KIOSK_SALE_GRACE_MS = 12 * 60 * 60 * 1000;
 
 export function kioskSaleCutoffIso(): string {
@@ -37,6 +36,14 @@ export function kioskSaleCutoffIso(): string {
 export type VenueResult<T> =
   | { ok: true; data: T }
   | { ok: false; error: string; status: number };
+
+export interface CardEbarimtResult {
+  id?: string | null;
+  qrData?: string;
+  ebarimt_qr_data?: string;
+  lottery?: string;
+  ebarimt_lottery?: string;
+}
 
 type ZoneRow = {
   id: string;
@@ -165,9 +172,6 @@ export async function createKioskOrder(
       receiverCode: input.kiosk_id ?? "KIOSK",
       branchCode: input.kiosk_id ?? "KIOSK",
       amountMnt: total,
-      // Bank-app statement line: event + zones×qty + venue, so simultaneous
-      // sales points stay tellable apart (e.g. "test11 — VIP x2 — Төв
-      // цэнгэлдэх хүрээлэн"). QPay caps the description length, hence slice.
       description: [
         event.title,
         orderItems.map((it) => `${it.zone_name_mn} x${it.qty}`).join(", "),
@@ -175,6 +179,12 @@ export async function createKioskOrder(
       ]
         .join(" — ")
         .slice(0, 250),
+      lines: orderItems.map((it) => ({
+        description: `${event.title} — ${it.zone_name_mn}`,
+        qty: it.qty,
+        unitPrice: it.unit_price,
+        note: it.zone_name_en || undefined,
+      })),
       callbackUrl: buildKioskCallbackUrl(backendUrl(), orderId, secret),
     });
     await admin
@@ -193,15 +203,12 @@ export async function createKioskOrder(
       },
     };
   } catch (err) {
-    // Surfaced in Cloud Run logs — a silent 502 here cost a debugging session
-    // once (transient QPay token refresh failure looked like a kiosk bug).
     console.error("kiosk_qpay_invoice_failed", String(err).slice(0, 300));
     await failOrder(orderId, reserved);
     return { ok: false, error: "qpay_invoice_failed", status: 502 };
   }
 }
 
-/** Poll an order: settles it (mint tickets) the first time QPay reports paid. */
 export async function getKioskOrderStatus(
   orderId: string,
 ): Promise<VenueResult<KioskOrderStatus>> {
@@ -232,11 +239,7 @@ export async function getKioskOrderStatus(
     }
     if (isPaid(check) && check.paid_amount >= order.total) {
       const settled = await settleOrder(order);
-      // QPay rail fiscal receipt — same cloud rail web tickets use. The kiosk
-      // bridge polls /print-jobs and prints the И-Баримт as soon as these
-      // columns appear on the order. Best-effort: a failed issue never blocks
-      // the buyer's paid screen, and the null-guard keeps it single-issue.
-      await issueEbarimtForVenueOrder(order, paidPaymentId(check));
+      await issueEbarimtForVenueOrder(order, check);
       return { ok: true, data: settled };
     }
   }
@@ -244,10 +247,10 @@ export async function getKioskOrderStatus(
   return { ok: true, data: toView(order, []) };
 }
 
-/** Card rail: the kiosk reports the terminal charge outcome. */
 export async function applyCardResult(
   orderId: string,
   approved: boolean,
+  ebarimt?: CardEbarimtResult,
 ): Promise<VenueResult<KioskOrderStatus>> {
   const admin = getSupabaseAdmin();
   if (!admin)
@@ -256,6 +259,7 @@ export async function applyCardResult(
   const order = await loadOrder(orderId);
   if (!order) return { ok: false, error: "not_found", status: 404 };
   if (order.status === "paid") {
+    await persistCardEbarimt(order.id, ebarimt);
     return { ok: true, data: await loadOrderView(order) };
   }
   if (order.status !== "pending") {
@@ -267,7 +271,37 @@ export async function applyCardResult(
     return { ok: false, error: "card_declined", status: 402 };
   }
   const settled = await settleOrder(order);
+  await persistCardEbarimt(order.id, ebarimt);
   return { ok: true, data: settled };
+}
+
+async function persistCardEbarimt(
+  orderId: string,
+  ebarimt?: CardEbarimtResult,
+): Promise<void> {
+  const qrData = ebarimt?.qrData ?? ebarimt?.ebarimt_qr_data ?? "";
+  const lottery = ebarimt?.lottery ?? ebarimt?.ebarimt_lottery ?? "";
+  const id = ebarimt?.id ?? null;
+  if (!qrData && !lottery && !id) return;
+
+  const admin = getSupabaseAdmin();
+  if (!admin) return;
+  const patch: Partial<
+    Pick<DbVenueOrder, "ebarimt_id" | "ebarimt_qr_data" | "ebarimt_lottery">
+  > = {
+    ebarimt_qr_data: qrData || null,
+    ebarimt_lottery: lottery || null,
+  };
+  if (id) patch.ebarimt_id = id;
+
+  const { error } = await admin
+    .from("venue_orders")
+    .update(patch)
+    .eq("id", orderId)
+    .is("ebarimt_qr_data", null);
+  if (error) {
+    console.error("venue_order_card_ebarimt_persist_failed", orderId, error);
+  }
 }
 
 async function settleOrder(order: DbVenueOrder): Promise<KioskOrderStatus> {
@@ -301,8 +335,6 @@ async function settleOrder(order: DbVenueOrder): Promise<KioskOrderStatus> {
     }
   }
   if (rows.length > 0) {
-    // A failed mint would leave a PAID order with zero tickets and nothing in
-    // the logs — surface it loudly (supabase-js returns errors, never throws).
     const { error: mintErr } = await admin.from("venue_tickets").insert(rows);
     if (mintErr) {
       console.error(
@@ -325,20 +357,38 @@ async function settleOrder(order: DbVenueOrder): Promise<KioskOrderStatus> {
 
 async function issueEbarimtForVenueOrder(
   order: DbVenueOrder,
-  paymentId: string | null,
+  check: PaymentCheckResult,
 ): Promise<void> {
   const admin = getSupabaseAdmin();
-  if (!admin || !paymentId) return;
+  if (!admin) return;
+  const paymentId = paidPaymentId(check);
+  if (!paymentId) return;
   try {
-    const r = await createEbarimt(paymentId, "CITIZEN");
-    // qrData/lottery are display-only receipt secrets — never log them
-    // (see redactReceiptSecrets policy in lib/ebarimt.ts).
+    let receipt: EbarimtReceipt | null;
+    if (isEbarimtV3Enabled()) {
+      receipt = ebarimtFromCheck(check);
+      if (!receipt) {
+        console.error("venue_order_ebarimt_v3_missing", order.id, paymentId);
+      }
+    } else {
+      const r = await createEbarimt(paymentId, "CITIZEN");
+      receipt = {
+        id: r.id,
+        qrData: r.ebarimt_qr_data,
+        lottery: r.ebarimt_lottery,
+      };
+    }
     await admin
       .from("venue_orders")
       .update({
-        ebarimt_id: r.id,
-        ebarimt_qr_data: r.ebarimt_qr_data,
-        ebarimt_lottery: r.ebarimt_lottery,
+        qpay_payment_id: paymentId,
+        ...(receipt
+          ? {
+              ebarimt_id: receipt.id,
+              ebarimt_qr_data: receipt.qrData,
+              ebarimt_lottery: receipt.lottery,
+            }
+          : {}),
       })
       .eq("id", order.id)
       .is("ebarimt_lottery", null);
@@ -353,7 +403,7 @@ async function loadOrder(orderId: string): Promise<DbVenueOrder | null> {
   const { data } = await admin
     .from("venue_orders")
     .select(
-      "id,event_id,reference,status,items,total,payment_method,qpay_invoice_id,paid_at,buyer_phone,ebarimt_id,ebarimt_qr_data,ebarimt_lottery,kiosk_id,created_at",
+      "id,event_id,reference,status,items,total,payment_method,qpay_invoice_id,qpay_payment_id,paid_at,buyer_phone,ebarimt_id,ebarimt_qr_data,ebarimt_lottery,kiosk_id,created_at",
     )
     .eq("id", orderId)
     .maybeSingle<DbVenueOrder>();
@@ -392,18 +442,6 @@ function toView(
   };
 }
 
-/**
- * A pending order holds real zone capacity (reserve_zone runs at creation), so
- * an abandoned QPay QR or a card attempt whose failure never got reported back
- * would eat seats forever — this is exactly how a zone ends up "Зарагдсан" on
- * the kiosk while the admin report shows zero paid sales. The kiosk feed and
- * the bridge's print poller both call this sweep, so stale holds clear within
- * seconds of expiry, no cron needed.
- *
- * TTL note: after expiry a very late QPay payment would hit a cancelled order
- * and not settle — 15 minutes is far beyond how long a buyer stands at the
- * counter, and such a payment is refunded manually via QPay.
- */
 const PENDING_ORDER_TTL_MS = 15 * 60 * 1000;
 
 export async function expireStalePendingOrders(): Promise<void> {
@@ -417,8 +455,6 @@ export async function expireStalePendingOrders(): Promise<void> {
     .lt("created_at", cutoffIso)
     .limit(25);
   for (const o of (data ?? []) as { id: string; items: VenueOrderItem[] }[]) {
-    // Flip first, conditionally — only the caller that wins the flip releases
-    // the capacity, so concurrent sweeps can never double-release.
     const { data: won } = await admin
       .from("venue_orders")
       .update({ status: "cancelled" })

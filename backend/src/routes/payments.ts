@@ -15,7 +15,6 @@ import {
   verifyTicketSignature,
 } from "../lib/qpay-signature";
 
-/** Fetch an event's title for the eBarimt line item; falls back to a generic. */
 async function eventTitleFor(
   admin: ReturnType<typeof getSupabaseAdmin>,
   eventId: string,
@@ -130,6 +129,7 @@ payments.post("/qpay-callback", async (c) => {
     ticketType: ticket.ticket_type,
     price: ticket.price,
     qpayPaymentId: paidPaymentId(check),
+    qpayCheck: check,
     customerTin: ticket.ebarimt_customer_tin,
   });
 
@@ -232,6 +232,7 @@ statusRoute.get("/:invoiceId", async (c) => {
         ticketType: ticket.ticket_type,
         price: ticket.price,
         qpayPaymentId: paidPaymentId(check),
+        qpayCheck: check,
         customerTin: ticket.ebarimt_customer_tin,
       });
     }

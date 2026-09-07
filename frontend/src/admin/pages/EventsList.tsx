@@ -33,8 +33,6 @@ import {
 } from "../_adminStyles";
 
 type StatusKind = EventStatus;
-// Status filters plus the two storefront channels — admins mostly ask "what's
-// on the kiosk / on the web", so those filter alongside the lifecycle states.
 type StatusFilter = "all" | "live" | "upcoming" | "ended" | "web" | "kiosk";
 
 const matchesFilter = (
@@ -137,7 +135,6 @@ function relativeFrom(
 const CHIP_CLS =
   "inline-flex items-center h-[18px] px-1.5 rounded text-[10.5px] font-medium tracking-[0.01em] ring-1 ring-inset";
 
-/** Which storefronts this event is published to — web, kiosk, or both. */
 function ChannelChips({ event }: { event: AdminEventRecord }) {
   return (
     <>
@@ -169,10 +166,6 @@ function ChannelChips({ event }: { event: AdminEventRecord }) {
   );
 }
 
-/**
- * Cover thumbnail for the phone-only card list (<= 640px). The desktop table
- * keeps its own markup untouched.
- */
 function MobileThumb({ event }: { event: AdminEventRecord }) {
   return (
     <span
@@ -407,8 +400,6 @@ export default function EventsList() {
               </button>
             )}
           </div>
-          {/* Below 640px ADMIN_FILTERS_CLS stretches this row to full width, so
-              the segments wrap into two lines and share it evenly. */}
           <div className="inline-flex bg-white border border-[#e4e4e7] rounded-md p-0.5 gap-0.5 max-[640px]:w-full max-[640px]:flex-wrap max-[640px]:[&>button]:basis-[30%] max-[640px]:[&>button]:grow max-[640px]:[&>button]:min-h-[40px] max-[640px]:[&>button]:text-[13px]">
             {(
               [
@@ -660,8 +651,6 @@ export default function EventsList() {
             </table>
           </div>
 
-          {/* Phone-only stack of the same rows — the 7-column table above is
-              unusable at 375px. */}
           <div className={ADMIN_MOBILE_LIST_CLS}>
             {filtered.map(({ event: e, status, sales }) => {
               const date = formatDate(e.start_time, e.date);

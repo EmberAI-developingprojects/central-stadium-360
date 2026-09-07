@@ -129,9 +129,6 @@ export default function WatchEventDetail() {
     [event, i18n.language],
   );
 
-  // This page is full-dark; the default white <body> otherwise flashes through
-  // on overscroll bounce (top/bottom). Paint the document dark while mounted,
-  // restore on leave so lighter pages are unaffected.
   useEffect(() => {
     const html = document.documentElement;
     const body = document.body;
@@ -173,8 +170,6 @@ export default function WatchEventDetail() {
   const hasStarted = !Number.isNaN(startMs) && startMs <= Date.now();
   const isLive = hasStarted && access === "live";
 
-  // Replay tiers grant access for the admin-set window
-  // (replay_available_until); without one, until the event's month ends (UB).
   const replayUntil = useMemo(() => {
     const until = event?.replay_available_until
       ? new Date(event.replay_available_until)
@@ -338,9 +333,6 @@ export default function WatchEventDetail() {
                 </div>
               )}
 
-              {/* Live sale: show all three ticket tiers as separate cards so
-                  it's clear there are three options. Replay sale (past event):
-                  a single replay price. */}
               {!ownsTicket && access === "live" && (
                 <div className="mb-5 sm:mb-6">
                   <div className="flex items-center justify-between mb-3">
@@ -493,7 +485,6 @@ export default function WatchEventDetail() {
                 <button
                   type="button"
                   onClick={() => {
-                    // Buying needs an account — send guests to log in and back.
                     if (!session?.identifier) {
                       navigate(
                         `/login?next=${encodeURIComponent(`/watch/events/${event.id}`)}`,

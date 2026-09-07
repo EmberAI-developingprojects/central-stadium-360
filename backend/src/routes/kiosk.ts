@@ -52,10 +52,7 @@ kiosk.get("/events", async (c) => {
       503,
     );
   }
-  // Free capacity held by abandoned pending orders BEFORE reading zones, so
-  // the availability the buyer sees is real.
   await expireStalePendingOrders();
-  // Web-only events never reach the kiosk, even if they have zones.
   const { data, error } = await withChannelFallback((withChannels) => {
     const q = admin
       .from("events")
@@ -63,9 +60,6 @@ kiosk.get("/events", async (c) => {
         `id,title,description,status,start_time,image,thumbnail_url,zones(${ZONE_COLS})`,
       )
       .in("status", ["upcoming", "live"])
-      // An event that started more than half a day ago is over — without an
-      // explicit kiosk end time this cutoff is what retires it from the
-      // counter, so stale events never linger as a "Зарагдсан" card.
       .gte("start_time", kioskSaleCutoffIso());
     return (withChannels ? q.eq("show_on_kiosk", true) : q).order(
       "start_time",
@@ -82,8 +76,6 @@ kiosk.get("/events", async (c) => {
     >
   ).map((e) => {
     const zones = [...(e.zones ?? [])]
-      // Zones with no capacity were never put on sale — buyers shouldn't see
-      // them as "sold out" phantom cards on the kiosk.
       .filter((z) => z.capacity > 0)
       .sort((a, b) => a.sort_order - b.sort_order)
       .map((z) => ({ ...z, available: Math.max(0, z.capacity - z.sold) }));
@@ -101,12 +93,6 @@ kiosk.get("/events", async (c) => {
   return c.json({ ok: true, data: events } as const);
 });
 
-/**
- * The shipped kiosk web build never calls the on-box bridge's /print routes,
- * so the bridge polls this feed instead and prints paid orders autonomously.
- * This only reports recent facts — print idempotency (never printing a code
- * twice) lives on the bridge in its printed-code ledger.
- */
 const PRINT_JOB_WINDOW_MS = 15 * 60 * 1000;
 
 type PrintJobOrderRow = {
@@ -131,8 +117,6 @@ kiosk.get("/print-jobs", async (c) => {
       503,
     );
   }
-  // The bridge hits this every few seconds — piggyback the stale-hold sweep
-  // here so leaked reservations clear promptly even while nobody browses.
   await expireStalePendingOrders();
   const sinceIso = new Date(Date.now() - PRINT_JOB_WINDOW_MS).toISOString();
   let query = admin
@@ -143,8 +127,6 @@ kiosk.get("/print-jobs", async (c) => {
     .eq("status", "paid")
     .gte("paid_at", sinceIso)
     .order("paid_at", { ascending: true });
-  // Each box prints only its own sales — an order sold at gate-1 must not
-  // come out of gate-2's printer (or an admin desk's).
   const kioskId = c.get("kioskId");
   if (kioskId) query = query.eq("kiosk_id", kioskId);
   const { data, error } = await query;
@@ -252,6 +234,15 @@ kiosk.get("/orders/:id/status", async (c) => {
 const cardResultSchema = z.object({
   approved: z.boolean(),
   payment_ref: z.string().optional(),
+  ebarimt: z
+    .object({
+      id: z.string().nullable().optional(),
+      qrData: z.string().optional(),
+      ebarimt_qr_data: z.string().optional(),
+      lottery: z.string().optional(),
+      ebarimt_lottery: z.string().optional(),
+    })
+    .optional(),
 });
 
 kiosk.post("/orders/:id/card-result", async (c) => {
@@ -267,7 +258,11 @@ kiosk.post("/orders/:id/card-result", async (c) => {
       400,
     );
   }
-  const res = await applyCardResult(c.req.param("id"), parsed.data.approved);
+  const res = await applyCardResult(
+    c.req.param("id"),
+    parsed.data.approved,
+    parsed.data.ebarimt,
+  );
   if (!res.ok) {
     return c.json({ ok: false, error: res.error } as const, res.status as 402);
   }

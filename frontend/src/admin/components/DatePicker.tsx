@@ -230,9 +230,6 @@ export default function DatePicker({
             ref={popoverRef}
             role="dialog"
             style={{ position: "fixed", top: pos.top, left: pos.left }}
-            /* Below 640px the anchored popover is overridden into a bottom
-               sheet — `!` is required to beat the inline fixed top/left — so
-               the whole calendar is on-screen wherever the field sits. */
             className="z-[60] w-[296px] bg-white rounded-xl border border-[#e4e4e7] shadow-[0_20px_40px_-16px_rgba(31,41,55,0.25),0_4px_12px_-4px_rgba(31,41,55,0.1)] p-3 max-[640px]:!left-3 max-[640px]:!right-3 max-[640px]:!top-auto max-[640px]:!bottom-[max(0.75rem,env(safe-area-inset-bottom))] max-[640px]:!w-auto max-[640px]:max-h-[calc(100dvh-1.5rem)] max-[640px]:overflow-y-auto max-[640px]:overscroll-contain"
           >
             <div className="flex items-center justify-between mb-2.5">

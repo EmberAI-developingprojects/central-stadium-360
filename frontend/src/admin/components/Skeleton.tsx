@@ -41,8 +41,6 @@ export function SkeletonStatGrid({ count = 3 }: { count?: number }) {
 
 export function SkeletonFilters() {
   return (
-    // Mirrors ADMIN_FILTERS_CLS, where every control goes full width and
-    // 44px tall below 640px — otherwise the skeleton jumps when data lands.
     <div className="flex gap-2.5 items-center flex-wrap mb-4 max-[640px]:gap-2 max-[640px]:items-stretch">
       <Skeleton className="h-9 w-[260px] max-[640px]:h-11 max-[640px]:w-full" />
       <Skeleton className="h-9 w-[280px] max-[640px]:h-11 max-[640px]:w-full" />

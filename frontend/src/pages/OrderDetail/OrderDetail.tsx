@@ -90,15 +90,12 @@ const PAY_METHOD_CLS =
 const PAY_METHOD_STRONG_CLS = "text-white text-sm print:text-black";
 const ACTIONS_CLS =
   "flex flex-wrap gap-3 items-center justify-end py-[22px] px-7 bg-[rgba(255,255,255,0.02)] border-t border-solid border-[rgba(255,255,255,0.06)] max-[720px]:justify-stretch [&>a]:no-underline [&>button]:no-underline max-[720px]:[&>a]:flex-1 max-[720px]:[&>a]:justify-center max-[720px]:[&>button]:flex-1 max-[720px]:[&>button]:justify-center print:hidden";
-// Destructive "refund" action — a red-tinted variant of the ghost button.
 const REFUND_BTN_CLS =
   "!text-[#FCA5A5] !bg-[rgba(239,68,68,0.10)] !border-[rgba(239,68,68,0.35)] hover:!bg-[rgba(239,68,68,0.18)] hover:!text-[#FECACA] disabled:opacity-60 disabled:cursor-not-allowed";
-// Refunded status badge — amber, replacing the green "active" pill.
 const STATUS_REFUNDED_CLS =
   "inline-flex items-center gap-2 rounded-full text-[11px] font-bold uppercase py-1 px-3 w-fit bg-[rgba(245,158,11,0.15)] border border-solid border-[rgba(245,158,11,0.35)] text-[#FCD34D] tracking-[0.05em]";
 const STATUS_DOT_REFUNDED_CLS =
   "rounded-full w-[7px] h-[7px] bg-[#F59E0B] shadow-[0_0_0_4px_rgba(245,158,11,0.20)]";
-// Confirm-dialog styles.
 const MODAL_OVERLAY_CLS =
   "fixed inset-0 z-50 flex items-center justify-center p-4 bg-[rgba(0,0,0,0.65)] backdrop-blur-sm print:hidden";
 const MODAL_CARD_CLS =

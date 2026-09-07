@@ -19,15 +19,6 @@ import {
   ADMIN_TABLE_WRAP_CLS,
 } from "../_adminStyles";
 
-/**
- * Durable log of admitted tickets.
- *
- * The scanner page (/admin/scan) keeps its own history in memory, so it dies
- * with the tab. This page reads the same admissions back from the database —
- * every ticket whose status is "used", newest first — so staff can answer
- * "was this one already scanned, and when?" after the fact.
- */
-
 const PAGE_SIZE = 50;
 
 function dateTime(iso: string): string {
@@ -39,7 +30,6 @@ function dateTime(iso: string): string {
   )}:${p(d.getMinutes())}`;
 }
 
-/** "Өнөөдөр 14:32" / "Өчигдөр 21:05" / full stamp for anything older. */
 function friendlyWhen(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
@@ -53,20 +43,25 @@ function friendlyWhen(iso: string): string {
   return dateTime(iso);
 }
 
+function errorText(code: string): string {
+  if (code === "not_found") {
+    return "Серверийн шинэ хувилбар байршуулаагүй байна — backend-ээ deploy хийсний дараа энэ жагсаалт ажиллана.";
+  }
+  if (code === "network_error") return "Сүлжээнд холбогдож чадсангүй.";
+  if (code === "supabase_not_configured") return "Өгөгдлийн сан тохируулагдаагүй байна.";
+  return code;
+}
+
 export default function ScannedTickets() {
   const [rows, setRows] = useState<AdminScannedTicket[]>([]);
   const [total, setTotal] = useState(0);
   const [events, setEvents] = useState<KioskEvent[]>([]);
   const [eventId, setEventId] = useState("");
   const [search, setSearch] = useState("");
-  // Debounced copy of `search` — typing a code shouldn't fire a request a
-  // keystroke, and the code is long enough that it would.
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
-  // Guards against an older in-flight response overwriting a newer one when
-  // filters change quickly.
   const reqRef = useRef(0);
 
   useEffect(() => {
@@ -178,7 +173,7 @@ export default function ScannedTickets() {
       {error && (
         <div className={`${ADMIN_EMPTY_CLS} !border-red-200 !text-red-700`}>
           <strong>Уншиж чадсангүй</strong>
-          {error}
+          {errorText(error)}
         </div>
       )}
 

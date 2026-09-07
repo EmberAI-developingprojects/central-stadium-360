@@ -47,11 +47,6 @@ async function objectExists(
   }
 }
 
-/**
- * Pick the Wowza video that best matches an event window.
- * Prefers videos whose created_at falls inside the window (with lookback/lookahead
- * padding); falls back to the newest FINISHED asset within the padded window.
- */
 function pickVideoForWindow(
   videos: WowzaVideo[],
   startMs: number,
@@ -72,10 +67,6 @@ function pickVideoForWindow(
   return inWindow[0] ?? null;
 }
 
-/**
- * Stream a Wowza MP4 download URL directly into our S3 bucket via multipart
- * upload. Returns the object metadata written.
- */
 async function copyWowzaVideoToS3(
   s3: S3Client,
   bucket: string,
@@ -106,14 +97,6 @@ async function copyWowzaVideoToS3(
   return { contentLength };
 }
 
-/**
- * Discover recordings for an event by pulling Wowza VOD assets whose
- * created_at falls in the event window, copying each MP4 into our S3 bucket,
- * and upserting one row per camera.
- *
- * Idempotent: if a target S3 object already exists AND the recordings row is
- * already `ready`, the camera is skipped (no re-download).
- */
 export async function discoverRecordingsForEvent(
   event: Pick<DbEvent, "id" | "live_start_at" | "live_end_at">,
 ): Promise<DbRecording[]> {

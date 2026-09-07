@@ -98,7 +98,6 @@ type NavGroup = {
   children?: { label: string; href: string }[];
 };
 
-// Төрийн цахим үйлчилгээний гадаад холбоосууд (шинэ табд нээгдэнэ).
 const EGOV_LINKS: { label: string; href: string }[] = [
   { label: "e-Mongolia", href: "https://e-mongolia.mn" },
   { label: "e-Zasag", href: "https://ezasag.mn" },

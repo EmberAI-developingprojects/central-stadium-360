@@ -95,14 +95,10 @@ export default function Dashboard() {
 
   useEffect(() => {
     let alive = true;
-    // Load each dataset independently so one failing call (e.g. the backend is
-    // unreachable) can't stall the whole dashboard on the loading state. Any
-    // section that fails degrades to its empty default instead of hanging.
     Promise.allSettled([
       ordersStats(),
       listOrders(),
       listUsers(),
-      // Admin-scoped: the public list drops kiosk-only events.
       listAdminEvents(),
     ]).then(([s, o, u, ev]) => {
       if (!alive) return;
@@ -410,10 +406,6 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* The bare `1fr` track has min-width:auto, so between 641px and the
-          900px collapse the chart column refuses to shrink and pushes the
-          340px donut card past the viewport. minmax(0,1fr) lets it shrink;
-          scoped to <=980px so the desktop track stays byte-identical. */}
       <div className="grid gap-3.5 items-stretch [grid-template-columns:1fr_340px] max-[980px]:[grid-template-columns:minmax(0,1fr)_340px] max-[900px]:[grid-template-columns:minmax(0,1fr)]">
         <div
           className={`${ADMIN_CARD_CLS} max-[640px]:!p-4`}
@@ -886,8 +878,6 @@ export default function Dashboard() {
           </table>
         )}
 
-        {/* Mobile (<=640px) stand-in for the table above: the desktop table is
-            hidden and each user renders as a stacked label/value row instead. */}
         {derived.recentUsers.length > 0 && (
           <div className={`${ADMIN_MOBILE_ONLY_CLS} px-4 pb-4`}>
             {derived.recentUsers.map((u) => (

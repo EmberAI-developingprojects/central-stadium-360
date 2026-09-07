@@ -12,13 +12,9 @@ import {
   ADMIN_PAGE_HEADER_CLS,
 } from "../_adminStyles";
 
-/** Longest edge of the frame handed to jsQR — full-res frames stall phones. */
 const MAX_SCAN_EDGE = 640;
-/** Decoding every rAF tick burns battery for no gain; ~10 fps is plenty. */
 const SCAN_INTERVAL_MS = 100;
-/** A code POSTed once is ignored for this long (double-tap / flicker guard). */
 const REPEAT_COOLDOWN_MS = 5000;
-/** Session history cap — the aside is a working list, not an audit log. */
 const HISTORY_LIMIT = 30;
 
 type Tone = "ok" | "warn" | "bad";
@@ -60,11 +56,6 @@ function clockTime(iso: string | null): string {
     : d.toLocaleTimeString("mn-MN", { hour: "2-digit", minute: "2-digit" });
 }
 
-/**
- * Printed kiosk tickets encode the bare ticket code, but a QR carrying a
- * verification URL still resolves to one. The backend upper-cases too — doing
- * it here keeps the client-side duplicate map keyed consistently.
- */
 function normalizeCode(raw: string): string {
   let text = raw.trim();
   if (!text) return "";
@@ -76,7 +67,6 @@ function normalizeCode(raw: string): string {
         url.pathname.split("/").filter(Boolean).pop() ??
         "";
     } catch {
-      // Not a parseable URL — fall through with the raw payload.
     }
   }
   return text.trim().toUpperCase().slice(0, 64);
@@ -131,7 +121,6 @@ export default function Scan() {
   const streamRef = useRef<MediaStream | null>(null);
   const rafRef = useRef<number | null>(null);
   const lastFrameRef = useRef(0);
-  /** The code currently held in front of the lens — ignored until it changes. */
   const lastSeenRef = useRef<string | null>(null);
   const recentRef = useRef<Map<string, number>>(new Map());
   const inFlightRef = useRef(false);
@@ -169,8 +158,6 @@ export default function Scan() {
     async (raw: string, source: "camera" | "manual"): Promise<void> => {
       const code = normalizeCode(raw);
       if (!code) return;
-      // One request at a time: overlapping POSTs would race the server's
-      // single-use update and double-report the same ticket.
       if (inFlightRef.current) return;
 
       const now = Date.now();
@@ -178,8 +165,6 @@ export default function Scan() {
       for (const [key, at] of recent) {
         if (now - at > REPEAT_COOLDOWN_MS) recent.delete(key);
       }
-      // Manual entry is a deliberate act, so it bypasses the cooldown; the
-      // camera fires many frames a second and must not re-POST the same code.
       const seen = recent.get(code);
       if (source === "camera" && seen !== undefined) return;
       recent.set(code, now);
@@ -192,9 +177,6 @@ export default function Scan() {
       setBusy(false);
 
       if (!res.ok) {
-        // A failed request proves nothing about the ticket — never fake a
-        // verdict from it. The frame latch still holds this code, so retrying
-        // means re-presenting the ticket or typing it in by hand.
         setPanel({
           kind: "error",
           message: requestErrorMessage(res.status, res.error),
@@ -223,7 +205,6 @@ export default function Scan() {
     if (!video) return;
     const vw = video.videoWidth;
     const vh = video.videoHeight;
-    // Metadata not in yet, or the tab was backgrounded — nothing to read.
     if (video.readyState < 2 || vw === 0 || vh === 0) return;
 
     const now = performance.now();
@@ -257,11 +238,7 @@ export default function Scan() {
     const text = found?.data?.trim();
     if (!text) return;
 
-    // Same ticket still in the frame: skip until a different code appears.
     if (text === lastSeenRef.current) return;
-    // A POST is still open. Leave the latch untouched so a later frame picks
-    // this code up — an admin swapping to the next ticket before the previous
-    // response lands must not have that second ticket silently swallowed.
     if (inFlightRef.current) return;
     lastSeenRef.current = text;
     void submitCode(text, "camera");
@@ -317,8 +294,6 @@ export default function Scan() {
     }
 
     const video = videoRef.current;
-    // Unmounted (or torn down) while the permission prompt was open — the
-    // stream must still be released or the camera light stays on.
     if (!mountedRef.current || !video) {
       for (const track of stream.getTracks()) track.stop();
       cameraRef.current = "idle";
@@ -332,8 +307,6 @@ export default function Scan() {
     try {
       await video.play();
     } catch {
-      // Some browsers reject play() on a hidden/backgrounded tab; the rAF
-      // loop simply idles until frames arrive.
     }
 
     if (!mountedRef.current) {
@@ -348,8 +321,6 @@ export default function Scan() {
     rafRef.current = requestAnimationFrame(tick);
   }, [tick]);
 
-  // Release the camera on unmount — a leaked track keeps the phone's camera
-  // indicator lit long after the admin has navigated away.
   useEffect(() => stopCamera, [stopCamera]);
 
   const onManualSubmit = (): void => {
@@ -429,8 +400,6 @@ export default function Scan() {
           <VerdictBanner panel={panel} busy={busy} />
 
           <div className="bg-white border border-[#ececef] rounded-xl overflow-hidden">
-            {/* Portrait viewfinder on phones, but capped so the manual-entry
-                card below it stays reachable without a long scroll. */}
             <div className="relative bg-zinc-950 aspect-[4/3] max-[640px]:aspect-[3/4] max-[640px]:max-h-[58vh]">
               <video
                 ref={videoRef}
@@ -444,14 +413,7 @@ export default function Scan() {
 
               {camera === "running" ? (
                 <div className="pointer-events-none absolute inset-0">
-                  {/* Centred explicitly rather than by grid placement: the
-                      frame is sized off the box height, so `max-w-[80%]` (with
-                      aspect-square flipping the constraint to the width) keeps
-                      it inside a narrow phone box too. */}
                   <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 aspect-square h-[62%] max-w-[80%] rounded-2xl border-2 border-white/80 shadow-[0_0_0_9999px_rgba(0,0,0,.35)] max-[640px]:h-[52%]" />
-                  {/* A shrink-to-fit box positioned with `left-1/2` may only
-                      grow to half the container, so this long hint used to sit
-                      off-centre. Full-width flex row centres it at any width. */}
                   <div className="absolute inset-x-0 bottom-3 flex justify-center px-4 max-[640px]:bottom-4 max-[640px]:px-3">
                     <span className="rounded-full bg-black/60 px-3 py-1 text-center text-[12px] text-white max-[640px]:px-3.5 max-[640px]:py-1.5 max-[640px]:text-[13px]">
                       {busy ? "Шалгаж байна…" : "QR кодыг хүрээнд байрлуулна уу"}
@@ -636,8 +598,6 @@ function ScanHistory({
           {entries.map((entry) => {
             const verdict = VERDICTS[entry.result.verdict];
             return (
-              // Below 640px a long verdict label cannot share a line with a
-              // ticket code, so it drops onto a second line of the same row.
               <div
                 key={`${entry.result.code}-${entry.at}`}
                 className="flex items-center gap-2 text-[12.5px] py-1.5 max-[640px]:flex-wrap max-[640px]:gap-y-0.5 max-[640px]:py-2 max-[640px]:text-[13px] max-[640px]:border-b max-[640px]:border-[#f4f4f5] max-[640px]:[&:last-child]:border-b-0"

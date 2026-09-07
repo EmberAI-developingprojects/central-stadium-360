@@ -231,7 +231,6 @@ function Scanner({
 
   return (
     <div className="min-h-screen flex flex-col bg-zinc-950 text-white">
-      {/* Top bar: event binding + tally */}
       <header className="flex items-center gap-3 px-4 h-14 border-b border-zinc-800 shrink-0">
         <span className="text-[12px] uppercase tracking-[.18em] text-zinc-500 hidden sm:inline">
           Хаалга
@@ -269,7 +268,6 @@ function Scanner({
         </div>
       </header>
 
-      {/* Result */}
       <main className="flex-1 grid place-items-center p-5">
         <div className="w-full max-w-[460px] flex flex-col gap-5">
           <div

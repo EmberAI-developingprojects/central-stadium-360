@@ -126,11 +126,6 @@ function EventEnglishSection({
   );
 }
 
-/**
- * Web and kiosk are two separate events. The chooser step picks one, and this
- * form then only ever shows that channel's fields — there is no cross-channel
- * switch here on purpose.
- */
 type Channel = "web" | "kiosk";
 
 const CHANNEL_META: Record<Channel, { label: string; lead: string }> = {
@@ -159,12 +154,9 @@ function addDays(iso: string, days: number): string {
 export default function EventCreate() {
   const navigate = useNavigate();
   const toast = useToast();
-  // The chooser step (/admin/events/new) routes here with the storefront
-  // already picked, so the form only shows the fields that channel needs.
   const { channel } = useParams<{ channel: string }>();
   const primary: Channel = channel === "kiosk" ? "kiosk" : "web";
   const meta = CHANNEL_META[primary];
-  // A hand-typed / stale URL must not silently default to the web form.
   const unknownChannel = channel !== "web" && channel !== "kiosk";
 
   const [name, setName] = useState("");
@@ -247,8 +239,6 @@ export default function EventCreate() {
         setError("Дор хаяж нэг тасалбарын төрөлд нэр ба багтаамж оруулна уу.");
         return;
       }
-      // Catch typos BEFORE the event row is created, so a bad zone row can't
-      // leave a half-made event behind.
       const zoneProblem = zoneDraftsProblem(zones);
       if (zoneProblem) {
         setError(zoneProblem);
@@ -280,8 +270,6 @@ export default function EventCreate() {
     try {
       const cover = thumbnailUrl.trim();
       const trimmedDesc = desc.trim();
-      // Standard tier is the "base" price shown on event cards; live_price
-      // stays mirrored for the legacy (pre-tier) display paths.
       const standard = Number(priceStandard) || 0;
       const created = await createEvent({
         title: name.trim(),
@@ -303,10 +291,6 @@ export default function EventCreate() {
         showOnWeb,
         showOnKiosk,
       });
-      // A backend deployed before the channel split silently drops the two
-      // flags, and the DB then defaults BOTH to true — the event would go live
-      // on the wrong storefront. Treat that as a failed create: roll it back
-      // and tell the admin instead of publishing everywhere.
       if (
         created.showOnWeb !== showOnWeb ||
         created.showOnKiosk !== showOnKiosk
@@ -319,8 +303,6 @@ export default function EventCreate() {
         );
         return;
       }
-      // Zones need the event row to exist, so they follow in the same submit —
-      // the admin never has to save the tiers separately.
       if (showOnKiosk) {
         try {
           await saveZoneDrafts(created.id, zones);
@@ -430,8 +412,6 @@ export default function EventCreate() {
               </div>
             </div>
 
-            {/* The live end anchors the stream + replay windows, so it only
-                matters on the web. Kiosk admissions just need a start. */}
             {showOnWeb && (
               <div className={TWO_COL_CLS}>
                 <div className={ADMIN_FIELD_CLS}>
@@ -478,8 +458,6 @@ export default function EventCreate() {
                     style={{ backgroundImage: `url('${thumbnailUrl}')` }}
                     aria-hidden="true"
                   />
-                  {/* Phones have no hover, so the controls stay visible there —
-                      otherwise the cover image could never be replaced. */}
                   <div className="absolute inset-0 flex items-center justify-center gap-2 rounded-lg bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity max-[640px]:opacity-100 max-[640px]:bg-black/25 max-[640px]:items-end max-[640px]:p-2.5">
                     <button
                       type="button"
@@ -689,8 +667,6 @@ export default function EventCreate() {
         </section>
         )}
 
-        {/* On phones the save row sticks to the bottom of the viewport so a
-            long form can always be submitted without scrolling to the end. */}
         <div
           className={`${ADMIN_FORM_ACTIONS_CLS} max-[640px]:sticky max-[640px]:bottom-0 max-[640px]:z-10 max-[640px]:mt-0 max-[640px]:rounded-t-xl max-[640px]:bg-white/95 max-[640px]:px-3 max-[640px]:backdrop-blur-md max-[640px]:shadow-[0_-8px_24px_-14px_rgba(31,41,55,0.35)] max-[640px]:[padding-bottom:max(0.75rem,env(safe-area-inset-bottom))]`}
         >

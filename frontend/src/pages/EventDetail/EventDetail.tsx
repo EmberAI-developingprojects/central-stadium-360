@@ -99,8 +99,6 @@ export default function EventDetail() {
   const replayAvailable =
     (event?.replay_price ?? 0) > 0 && !replayExpired;
 
-  // Replay tiers grant access for the admin-set window
-  // (replay_available_until); without one, until the event's month ends (UB).
   const replayUntil = useMemo(() => {
     const until = event?.replay_available_until
       ? new Date(event.replay_available_until)
@@ -129,8 +127,6 @@ export default function EventDetail() {
     };
   }, [event?.replay_available_until, event?.live_end_at, event?.start_time]);
 
-  // Buying happens on the event's watch-detail page (which hosts the ticket
-  // modal). Guests are sent to log in first, then routed straight there.
   const openBuy = () => {
     if (!event) return;
     const dest = `/watch/events/${event.id}`;
@@ -401,7 +397,6 @@ export default function EventDetail() {
                                 </span>
                               )}
 
-                              {/* name + price */}
                               <div className="flex items-center justify-between gap-2">
                                 <span className="text-ink font-extrabold text-[15px] leading-none">
                                   {t(`ticket_tier_${tid}_short`)}
@@ -416,7 +411,6 @@ export default function EventDetail() {
                                 </div>
                               </div>
 
-                              {/* attributes: device count + replay status */}
                               <div className="mt-2.5 flex items-center gap-3 flex-wrap">
                                 <span className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold text-ink-soft">
                                   <svg

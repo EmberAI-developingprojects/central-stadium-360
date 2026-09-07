@@ -48,8 +48,6 @@ function StatusBadge({ status }: { status: string }) {
 
 type LoadState = OrderRecord | null | undefined;
 
-// Below 640px a 180px label column leaves nothing for the value, so the rows
-// become stacked blocks (label above value) — desktop layout is untouched.
 const DETAIL_TABLE_CLS =
   "w-full border-collapse text-[13px] " +
   "[&_tr]:border-b [&_tr]:border-[#f4f4f5] [&_tr:last-child]:border-b-0 " +

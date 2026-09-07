@@ -218,7 +218,7 @@ if ($Mode -eq 'raw' -and -not $OutFile) {
     # as the raster bytes finish. Feed the paper forward explicitly before the
     # partial cut. Override with PRINT_POST_CUT_FEED_MM if a POS80 clone needs
     # a slightly longer or shorter tail.
-    $postCutFeedMm = 24.0
+    $postCutFeedMm = 16.0
     if ($env:PRINT_POST_CUT_FEED_MM) {
       try {
         $postCutFeedMm = [Math]::Max(0.0, [double]::Parse($env:PRINT_POST_CUT_FEED_MM, [System.Globalization.CultureInfo]::InvariantCulture))

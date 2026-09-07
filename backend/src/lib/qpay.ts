@@ -16,6 +16,15 @@ interface CachedToken {
   expires_at: number;
 }
 
+export interface InvoiceLine {
+  description: string;
+  qty: number;
+  unitPrice: number;
+  classificationCode?: string;
+  barcode?: string;
+  note?: string;
+}
+
 export interface CreateInvoiceInput {
   senderInvoiceNo: string;
 
@@ -23,12 +32,9 @@ export interface CreateInvoiceInput {
   amountMnt: number;
   description: string;
   callbackUrl: string;
-  /**
-   * Sales-channel tag QPay shows per transaction in the merchant report —
-   * per QPay support it is supplied by US, not provisioned on their side.
-   * "web" for stadium.mn, the kiosk id (e.g. "gate-1") for kiosk sales.
-   */
   branchCode?: string;
+  lines?: InvoiceLine[];
+  customerTin?: string | null;
 }
 
 export interface CreateInvoiceResult {
@@ -56,6 +62,9 @@ export interface PaymentCheckRow {
   payment_amount: number | string;
   payment_date?: string;
   payment_currency?: string;
+  ebarimt_id?: string | null;
+  ebarimt_qr_data?: string | null;
+  ebarimt_lottery?: string | null;
 }
 
 export interface PaymentCheckResult {
@@ -66,6 +75,26 @@ export interface PaymentCheckResult {
 
 let tokenCache: CachedToken | null = null;
 
+const EPOCH_THRESHOLD_SEC = 1_000_000_000;
+
+function tokenExpiryMs(expiresIn: number): number {
+  if (!Number.isFinite(expiresIn)) return Date.now() + 60_000;
+  const lifetimeSec =
+    expiresIn > EPOCH_THRESHOLD_SEC
+      ? expiresIn - Math.floor(Date.now() / 1000)
+      : expiresIn;
+  return Date.now() + Math.max(1, lifetimeSec - 60) * 1000;
+}
+
+interface EbarimtV3Config {
+  invoiceCode: string;
+  districtCode: string;
+  taxType: string;
+  classificationCode: string;
+  taxProductCode: string;
+  vatEnabled: boolean;
+}
+
 function env() {
   const username = process.env.QPAY_USERNAME;
   const password = process.env.QPAY_PASSWORD;
@@ -73,12 +102,30 @@ function env() {
   const baseUrl = (
     process.env.QPAY_BASE_URL ?? "https://merchant.qpay.mn"
   ).replace(/\/$/, "");
-  return { username, password, invoiceCode, baseUrl };
+  const vatEnabled = process.env.EBARIMT_VAT !== "0";
+  const ebarimt: EbarimtV3Config = {
+    invoiceCode: process.env.QPAY_EBARIMT_INVOICE_CODE ?? "",
+    districtCode:
+      process.env.QPAY_EBARIMT_DISTRICT_CODE ??
+      process.env.EBARIMT_DISTRICT_CODE ??
+      "",
+    taxType: process.env.QPAY_EBARIMT_TAX_TYPE ?? (vatEnabled ? "1" : "2"),
+    classificationCode: process.env.EBARIMT_CLASSIFICATION_CODE ?? "",
+    taxProductCode: vatEnabled
+      ? ""
+      : (process.env.EBARIMT_TAX_PRODUCT_CODE ?? ""),
+    vatEnabled,
+  };
+  return { username, password, invoiceCode, baseUrl, ebarimt };
+}
+
+export function isEbarimtV3Enabled(): boolean {
+  return Boolean(env().ebarimt.invoiceCode);
 }
 
 export function isQPayConfigured(): boolean {
-  const { username, password, invoiceCode } = env();
-  return Boolean(username && password && invoiceCode);
+  const { username, password, invoiceCode, ebarimt } = env();
+  return Boolean(username && password && (invoiceCode || ebarimt.invoiceCode));
 }
 
 async function fetchNewToken(): Promise<CachedToken> {
@@ -100,11 +147,10 @@ async function fetchNewToken(): Promise<CachedToken> {
   }
   const data = (await res.json()) as TokenResponse;
 
-  const expires_at = Date.now() + Math.max(1, data.expires_in - 60) * 1000;
   return {
     access_token: data.access_token,
     refresh_token: data.refresh_token,
-    expires_at,
+    expires_at: tokenExpiryMs(data.expires_in),
   };
 }
 
@@ -120,7 +166,7 @@ async function refreshToken(refresh: string): Promise<CachedToken | null> {
     return {
       access_token: data.access_token,
       refresh_token: data.refresh_token,
-      expires_at: Date.now() + Math.max(1, data.expires_in - 60) * 1000,
+      expires_at: tokenExpiryMs(data.expires_in),
     };
   } catch {
     return null;
@@ -173,7 +219,6 @@ async function qpayDelete<T>(path: string): Promise<T> {
     const text = redactReceiptSecrets(await res.text());
     throw new Error(`qpay_${path}_failed:${res.status}:${text}`);
   }
-  // Cancel responses are typically empty; tolerate a non-JSON body.
   return (await res.json().catch(() => ({}))) as T;
 }
 
@@ -193,23 +238,13 @@ async function qpayGet<T>(path: string): Promise<T> {
   return (await res.json()) as T;
 }
 
-export async function createInvoice(
-  input: CreateInvoiceInput,
-): Promise<CreateInvoiceResult> {
-  const { invoiceCode } = env();
-  if (!invoiceCode) throw new Error("qpay_not_configured");
+const VAT_DIVISOR = 11;
 
-  const payload = {
-    invoice_code: invoiceCode,
-    sender_invoice_no: input.senderInvoiceNo,
-    invoice_receiver_code: input.receiverCode,
-    invoice_description: input.description,
-    amount: input.amountMnt,
-    callback_url: input.callbackUrl,
-    ...(input.branchCode ? { sender_branch_code: input.branchCode } : {}),
-  };
+function trunc4(n: number): number {
+  return Math.floor((n + Number.EPSILON) * 10000) / 10000;
+}
 
-  const data = await qpayPost<QPayCreateInvoiceApi>("/v2/invoice", payload);
+function toApiInvoice(data: QPayCreateInvoiceApi): CreateInvoiceResult {
   return {
     invoice_id: data.invoice_id,
     qr_text: data.qr_text,
@@ -223,23 +258,90 @@ export async function createInvoice(
   };
 }
 
+async function createEbarimtV3Invoice(
+  input: CreateInvoiceInput,
+  cfg: EbarimtV3Config,
+): Promise<CreateInvoiceResult> {
+  const lines = input.lines ?? [];
+  if (lines.length === 0) throw new Error("qpay_ebarimt_lines_required");
+  if (!cfg.districtCode) throw new Error("qpay_ebarimt_district_missing");
+
+  const payload = {
+    invoice_code: cfg.invoiceCode,
+    sender_invoice_no: input.senderInvoiceNo,
+    invoice_receiver_code: input.receiverCode,
+    ...(input.customerTin
+      ? { invoice_receiver_data: { register: input.customerTin } }
+      : {}),
+    ...(input.branchCode ? { sender_branch_code: input.branchCode } : {}),
+    invoice_description: input.description,
+    callback_url: input.callbackUrl,
+    tax_type: cfg.taxType,
+    district_code: cfg.districtCode,
+    lines: lines.map((line) => {
+      const lineTotal = line.qty * line.unitPrice;
+      return {
+        tax_product_code: cfg.taxProductCode,
+        line_description: line.description,
+        ...(line.barcode ? { barcode: line.barcode } : {}),
+        line_quantity: line.qty.toFixed(2),
+        line_unit_price: line.unitPrice.toFixed(2),
+        ...(line.note ? { note: line.note } : {}),
+        classification_code:
+          line.classificationCode ?? cfg.classificationCode ?? "",
+        ...(cfg.vatEnabled
+          ? {
+              taxes: [
+                {
+                  tax_code: "VAT",
+                  description: "НӨАТ",
+                  amount: trunc4(lineTotal / VAT_DIVISOR),
+                  note: "НӨАТ",
+                },
+              ],
+            }
+          : {}),
+      };
+    }),
+  };
+
+  const data = await qpayPost<QPayCreateInvoiceApi>(
+    "/v2/ebarimt_v3/create",
+    payload,
+  );
+  return toApiInvoice(data);
+}
+
+export async function createInvoice(
+  input: CreateInvoiceInput,
+): Promise<CreateInvoiceResult> {
+  const { invoiceCode, ebarimt } = env();
+  if (ebarimt.invoiceCode) {
+    return createEbarimtV3Invoice(input, ebarimt);
+  }
+  if (!invoiceCode) throw new Error("qpay_not_configured");
+
+  const payload = {
+    invoice_code: invoiceCode,
+    sender_invoice_no: input.senderInvoiceNo,
+    invoice_receiver_code: input.receiverCode,
+    invoice_description: input.description,
+    amount: input.amountMnt,
+    callback_url: input.callbackUrl,
+    ...(input.branchCode ? { sender_branch_code: input.branchCode } : {}),
+  };
+
+  const data = await qpayPost<QPayCreateInvoiceApi>("/v2/invoice", payload);
+  return toApiInvoice(data);
+}
+
 export async function getInvoice(
   invoiceId: string,
 ): Promise<CreateInvoiceResult> {
   const data = await qpayGet<QPayCreateInvoiceApi>(
     `/v2/invoice/${encodeURIComponent(invoiceId)}`,
   );
-  return {
-    invoice_id: data.invoice_id,
-    qr_text: data.qr_text,
-    qr_image: data.qr_image,
-    urls: (data.urls ?? []).map((u) => ({
-      name: u.name ?? "Bank",
-      description: u.description,
-      logo: u.logo,
-      link: u.link,
-    })),
-  };
+  return toApiInvoice(data);
 }
 
 export async function checkInvoicePayment(
@@ -264,7 +366,6 @@ export function isPaid(check: PaymentCheckResult): boolean {
   );
 }
 
-/** payment_id of the first PAID row, or null. Needed to issue the e-barimt. */
 export function paidPaymentId(check: PaymentCheckResult): string | null {
   const row = check.rows.find(
     (r) => String(r.payment_status).toUpperCase() === "PAID",
@@ -276,15 +377,9 @@ export interface EbarimtCreateResult {
   id: string;
   ebarimt_qr_data: string;
   ebarimt_lottery: string;
-  ebarimt_status: string; // "REGISTERED"
+  ebarimt_status: string;
 }
 
-/**
- * Issue the E-Barimt fiscal receipt for a paid QPay payment. QPay registers it
- * with the tax authority and returns the receipt QR + lottery number.
- * (E-Barimt for QPay payments is done here, cloud-side; the card-terminal rail
- * issues its receipt via the on-box POSAPI instead.)
- */
 export async function createEbarimt(
   paymentId: string,
   receiverType: "CITIZEN" | "COMPANY" = "CITIZEN",
@@ -295,13 +390,30 @@ export async function createEbarimt(
   });
 }
 
-/**
- * Cancel ("буцаалт") an E-Barimt previously issued via {@link createEbarimt} on
- * the QPay cloud rail. `ebarimtId` is the `id` returned by createEbarimt (and
- * persisted on `tickets.ebarimt_id`). QPay de-registers it with the tax
- * authority. The on-box POSAPI rail voids its own receipts via
- * `ebarimt.voidReceipt` instead — this is only for cloud-issued receipts.
- */
 export async function cancelEbarimt(ebarimtId: string): Promise<void> {
   await qpayDelete(`/v2/ebarimt/${encodeURIComponent(ebarimtId)}`);
+}
+
+export interface EbarimtReceipt {
+  id: string;
+  qrData: string;
+  lottery: string;
+}
+
+export function ebarimtFromCheck(
+  check: PaymentCheckResult,
+): EbarimtReceipt | null {
+  const row = check.rows.find(
+    (r) => String(r.payment_status).toUpperCase() === "PAID",
+  );
+  if (!row?.ebarimt_id) return null;
+  return {
+    id: String(row.ebarimt_id),
+    qrData: row.ebarimt_qr_data ?? "",
+    lottery: row.ebarimt_lottery ?? "",
+  };
+}
+
+export async function cancelEbarimtV3(paymentId: string): Promise<void> {
+  await qpayDelete(`/v2/ebarimt_v3/${encodeURIComponent(paymentId)}`);
 }

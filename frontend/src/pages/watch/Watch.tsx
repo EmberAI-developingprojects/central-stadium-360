@@ -156,9 +156,6 @@ export default function Watch() {
     return () => clearTimeout(t);
   }, [location.hash]);
 
-  // Scroll-spy: keep the active tab in sync with whichever section is centered
-  // in the viewport, so the header nav reflects what the user is actually looking
-  // at instead of only updating on click.
   useEffect(() => {
     const ids: TabId[] = ["live", "upcoming", "tickets"];
     const els = ids

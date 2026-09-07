@@ -144,7 +144,6 @@ export default function SiteFooter() {
             </ul>
           </div>
 
-          {/* Mobile-only compact contact row */}
           <div className="hidden max-[560px]:flex flex-col items-center gap-1 text-[13px] text-white/65">
             <a
               href="tel:+97677001212"
