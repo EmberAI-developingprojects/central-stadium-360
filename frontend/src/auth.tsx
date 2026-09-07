@@ -117,7 +117,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // --- Local dev-only auth bypass (gated on VITE_DEV_AUTH=1; never set in prod) ---
     if (import.meta.env.VITE_DEV_AUTH === "1") {
       setSession({
         identifier: "dev@local",

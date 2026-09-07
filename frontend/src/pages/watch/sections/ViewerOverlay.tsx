@@ -75,8 +75,6 @@ type VideoFullscreenElement = HTMLVideoElement & {
   webkitExitFullscreen?: () => void;
 };
 
-// Best-effort landscape lock for native fullscreen (Android/Chrome). No-op where
-// unsupported (iOS, desktop) — wrapped so a rejection never surfaces.
 function lockLandscape(): void {
   try {
     const o = (
@@ -97,11 +95,7 @@ function unlockOrientation(): void {
 
 type QualityLevel = { index: number; height: number; label: string };
 
-// Chat spam throttle: one send per 10s per viewer.
 const COOLDOWN_MS = 10_000;
-
-// Persisted position for the draggable floating "open chat" button. Null = the
-// default bottom-right anchor; once dragged we store {x,y} viewport coords.
 
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 4;
@@ -126,7 +120,6 @@ export function ViewerOverlay({
   const audioGainRef = useRef<GainNode | null>(null);
 
   const [cams, setCams] = useState<WatchCam[]>([]);
-  // Set when /watch/token refuses playback (no_ticket, device_limit_reached).
   const [watchError, setWatchError] = useState<{
     code: string;
     limit?: number;
@@ -142,26 +135,19 @@ export function ViewerOverlay({
   const [qualityIdx, setQualityIdx] = useState(-1);
   const [qualityOpen, setQualityOpen] = useState(false);
   const qualityRef = useRef<HTMLDivElement>(null);
-  const qualityRefM = useRef<HTMLDivElement>(null); // mobile on-video quality menu
-  // Mobile tap-to-reveal controls (auto-hide while playing).
+  const qualityRefM = useRef<HTMLDivElement>(null);
   const [mCtl, setMCtl] = useState(false);
   const onVideoTapRef = useRef<() => void>(() => {});
   const [isFs, setIsFs] = useState(false);
   const [pseudoFs, setPseudoFs] = useState(false);
-  // Track viewport size so CSS-fullscreen (iOS, where element fullscreen +
-  // orientation lock are unavailable) can rotate the stage to landscape while the
-  // phone is held upright, then un-rotate once the user physically turns it.
-  // Exact px (not dvh/dvw, which mis-resolve inside a transformed fixed element).
   const [vp, setVp] = useState<{ w: number; h: number }>(() => ({
     w: typeof window !== "undefined" ? window.innerWidth : 0,
     h: typeof window !== "undefined" ? window.innerHeight : 0,
   }));
   const portrait = vp.h >= vp.w;
   const [idle, setIdle] = useState(false);
-  const overControlsRef = useRef(false); // pointer parked on the control bar
+  const overControlsRef = useRef(false);
   const [isAtLive, setIsAtLive] = useState(true);
-  // Playhead position within the DVR window, 0–100 (100 = live edge). Drives the
-  // red timeline. dvrRef holds the current [start, live] bounds for seeking.
   const [dvrPct, setDvrPct] = useState(100);
   const dvrRef = useRef<{ start: number; live: number }>({ start: 0, live: 0 });
   const [chat, setChat] = useState<ChatMessage[]>([]);
@@ -205,9 +191,6 @@ export function ViewerOverlay({
     setZoom(1);
   }, [activeCam?.id]);
 
-  // Ticket + device-cap gate: the token call admits this device against the
-  // ticket's tier cap (Standard=1, 3-User=3, 5-User=5). A 30s heartbeat keeps
-  // the slot; closing the player releases it so another device can start.
   useEffect(() => {
     const deviceId = getDeviceId();
     let alive = true;
@@ -241,10 +224,6 @@ export function ViewerOverlay({
     };
   }, [featuredEvent.id]);
 
-  // Stream URLs carry an expiring path token — when playback dies on a fatal
-  // network error (token expired, CDN 403), fetch fresh tokenized URLs and let
-  // the source-loading effect resume. Throttled so a hard outage can't spam
-  // the backend.
   const lastTokenRefreshRef = useRef(0);
   const refreshStreamRef = useRef<() => void>(() => {});
   useEffect(() => {
@@ -258,8 +237,6 @@ export function ViewerOverlay({
     };
   }, [featuredEvent.id]);
 
-  // Native HLS (iOS Safari): the <video> element itself surfaces token/network
-  // failures — same recovery path.
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
@@ -268,8 +245,6 @@ export function ViewerOverlay({
     return () => v.removeEventListener("error", onError);
   }, []);
 
-  // Warm browser cache with all camera manifests so HLS switch skips the
-  // m3u8 round-trip on first camera change.
   useEffect(() => {
     if (cams.length === 0) return;
     const ctrl = new AbortController();
@@ -303,10 +278,6 @@ export function ViewerOverlay({
           maxMaxBufferLength: 60,
           maxBufferSize: 120 * 1000 * 1000,
           lowLatencyMode: true,
-          // Keep more played-back content so the DVR timeline can rewind further.
-          // The true rewind depth is still capped by Wowza's server-side nDVR
-          // window — beyond what the live playlist contains, there's nothing to
-          // seek to no matter how large this is.
           backBufferLength: 300,
           abrEwmaDefaultEstimate: 20_000_000,
           abrBandWidthFactor: 0.95,
@@ -322,8 +293,6 @@ export function ViewerOverlay({
             h?.recoverMediaError();
             return;
           }
-          // Network-fatal (incl. 403 on an expired stream token): fetch fresh
-          // tokenized URLs — the source effect reloads, then resume loading.
           refreshStreamRef.current();
           h?.startLoad();
         });
@@ -345,7 +314,6 @@ export function ViewerOverlay({
                         : `${l.height}p`,
           }));
           setQualityLevels(levels);
-          // Default to the highest-resolution rendition (not Auto).
           const highest = levels.reduce(
             (a, b) => (b.height > a.height ? b : a),
             levels[0],
@@ -424,9 +392,6 @@ export function ViewerOverlay({
     };
   }, [muted, volume, ensureAudioBoost]);
 
-  // Buffering indicator: show a spinner when the live stream stalls waiting for
-  // data, hide it as soon as frames resume. `waiting`/`stalled` while paused is
-  // expected (user paused), so the render guards on !paused.
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
@@ -505,8 +470,6 @@ export function ViewerOverlay({
       rotY = 0;
     let pinchInitialDist = 0;
     let pinchInitialZoom = 1;
-    // Tap detection: a short, low-movement press (not a drag/pinch) on the video
-    // toggles play/pause on mobile — YouTube-style tap-on-video.
     let tapDownX = 0;
     let tapDownY = 0;
     let tapDownT = 0;
@@ -541,8 +504,6 @@ export function ViewerOverlay({
     };
     const onUp = () => {
       isDragging = false;
-      // Treat a quick, still press as a tap → toggle the controls overlay
-      // (mobile only; desktop has its own control bar).
       if (
         !tapMoved &&
         performance.now() - tapDownT < 400 &&
@@ -562,7 +523,7 @@ export function ViewerOverlay({
         pinchInitialDist = Math.sqrt(dx * dx + dy * dy);
         pinchInitialZoom = zoomRef.current;
         isDragging = false;
-        tapMoved = true; // a pinch is never a tap
+        tapMoved = true;
       } else if (e.touches.length === 1) {
         onDown(e.touches[0].clientX, e.touches[0].clientY);
       }
@@ -674,9 +635,6 @@ export function ViewerOverlay({
       return;
     }
 
-    // 1. Try element-level fullscreen on the stage. iOS Safari 16.4+ and all
-    //    modern desktops support this. For 360° this is mandatory because we
-    //    need the canvas (not the raw equirectangular video) to be visible.
     if (stage) {
       if (stage.requestFullscreen) {
         try {
@@ -694,8 +652,6 @@ export function ViewerOverlay({
       }
     }
 
-    // 2. Legacy iOS Safari (<16.4): only <video> can go fullscreen. Use it for
-    //    flat 2D cameras. For 360°, prefer pseudoFs (don't degrade to flat).
     if (!is360 && video?.webkitEnterFullscreen) {
       try {
         video.webkitEnterFullscreen();
@@ -769,17 +725,6 @@ export function ViewerOverlay({
     };
   }, []);
 
-  // Make the stage shell fill the fullscreen area. This MUST use inline
-  // `!important`. The shell carries mobile utilities that pin/offset it —
-  // `max-[720px]:!h-[calc(100vw*9/16)]` (56.25vw !important height) and
-  // `max-[1100px]:!mx-[calc(50%-50vw)]` (a negative margin) — that are meant to
-  // be neutralised in fullscreen by the `[.is-fs_&]:!h-auto` / `!mx-0` overrides.
-  // But those overrides use a descendant-combinator arbitrary variant
-  // (`.is-fs .shell`) which the production (minified) CSS drops/mis-escapes, so
-  // they silently lose to the mobile !important utilities — the shell keeps its
-  // small 16:9 height and a ~half-viewport left margin (works in the unminified
-  // dev build, breaks in prod). Applying the fill imperatively with `important`
-  // priority beats any class rule in every build.
   useEffect(() => {
     const el = shellRef.current;
     if (!el) return;
@@ -808,8 +753,6 @@ export function ViewerOverlay({
     };
   }, [isFs, pseudoFs]);
 
-  // Auto-hide controls when the pointer is idle over the video (YouTube-style),
-  // on both desktop overlay and fullscreen.
   useEffect(() => {
     let t: ReturnType<typeof setTimeout> | null = null;
     const stage = stageRef.current;
@@ -939,8 +882,6 @@ export function ViewerOverlay({
     };
   }, []);
 
-  // Auto-unmute once on the first user interaction (autoplay starts muted by
-  // browser rule). Respects a later manual mute — we only ever unmute once.
   const autoUnmutedRef = useRef(false);
   const ensureUnmuted = () => {
     if (autoUnmutedRef.current) return;
@@ -1002,9 +943,6 @@ export function ViewerOverlay({
     return () => clearInterval(id);
   }, []);
 
-  // Seek within the DVR window by tapping or dragging the timeline (shared by the
-  // desktop and mobile bars). Clamps to the available buffer; if the window is
-  // tiny (low-latency), it just snaps near live.
   const seekFromPointer = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       e.stopPropagation();
@@ -1053,8 +991,6 @@ export function ViewerOverlay({
     };
   }, [qualityOpen]);
 
-  // Tapping the video toggles the mobile controls overlay (called from the
-  // 360° drag effect, which owns the canvas touch handlers).
   useEffect(() => {
     onVideoTapRef.current = () => {
       ensureUnmuted();
@@ -1062,13 +998,11 @@ export function ViewerOverlay({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  // Auto-hide the overlay while playing (keep it up when paused or menu open).
   useEffect(() => {
     if (!mCtl || paused || qualityOpen) return;
     const id = window.setTimeout(() => setMCtl(false), 3500);
     return () => window.clearTimeout(id);
   }, [mCtl, paused, qualityOpen]);
-  // Reveal controls whenever playback pauses.
   useEffect(() => {
     if (paused) setMCtl(true);
   }, [paused]);
@@ -1093,7 +1027,6 @@ export function ViewerOverlay({
         await videoRef.current.requestPictureInPicture();
     } catch {}
   };
-
 
   const onChatSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -1215,9 +1148,6 @@ export function ViewerOverlay({
             pseudoFs
               ? portrait
                 ? {
-                    // Held portrait: rotate the whole stage 90° so the video
-                    // fills the screen in landscape. Swap w/h to the viewport's
-                    // pixel dimensions; translateX brings the rotated box on-screen.
                     position: "fixed",
                     top: 0,
                     left: 0,
@@ -1233,7 +1163,6 @@ export function ViewerOverlay({
                     background: "#000",
                   }
                 : {
-                    // Phone turned to landscape: no rotation needed.
                     position: "fixed",
                     inset: 0,
                     width: "100dvw",
@@ -1270,8 +1199,6 @@ export function ViewerOverlay({
               poster={featuredEvent.image}
               onDoubleClick={toggleStageFs}
               onClick={() => {
-                // Non-360 cams: the canvas tap-detection doesn't run, so wire
-                // tap-to-reveal directly on the video for mobile.
                 if (!is360 && window.innerWidth <= 1100) onVideoTapRef.current();
               }}
             />
@@ -1379,16 +1306,11 @@ export function ViewerOverlay({
               </div>
             )}
 
-            {/* YouTube-style tap-to-reveal controls (mobile). Tap the video to
-                toggle; auto-hides while playing. Center = play/pause,
-                bottom-left = LIVE + elapsed, bottom-right = fullscreen,
-                top-right gear = quality (defaults to highest). */}
             <div
               className={`hidden max-[1100px]:block absolute inset-0 z-[4] [transition:opacity_.2s_ease] ${
                 mCtl ? "opacity-100" : "opacity-0 pointer-events-none"
               }`}
             >
-              {/* scrim — tap an empty area to hide the controls */}
               <button
                 type="button"
                 aria-label="Хяналт нуух"
@@ -1396,10 +1318,6 @@ export function ViewerOverlay({
                 className="absolute inset-0 w-full h-full bg-black/25 border-0 cursor-default"
               />
 
-              {/* top-left: active camera + quality label (mirrors the desktop
-                  VIEWER_MAIN_CAM_CLS badge; revealed/hidden with the controls).
-                  pointer-events-none so a tap on it still hits the scrim and
-                  dismisses the overlay. */}
               {activeCam && (
                 <span
                   className={`absolute top-2 left-2 z-[1] inline-block max-w-[70%] truncate pointer-events-none ${VIEWER_MAIN_CAM_BASE_CLS}`}
@@ -1408,7 +1326,6 @@ export function ViewerOverlay({
                 </span>
               )}
 
-              {/* top-right: quality gear + menu */}
               {(() => {
                 const visibleLevels = qualityLevels.filter(
                   (l) =>
@@ -1509,7 +1426,6 @@ export function ViewerOverlay({
                 );
               })()}
 
-              {/* center: play / pause */}
               <button
                 type="button"
                 onClick={togglePlay}
@@ -1528,8 +1444,6 @@ export function ViewerOverlay({
                 )}
               </button>
 
-              {/* red live-DVR progress timeline — tap/drag seeks within the
-                  buffer; sits above the bottom control row (mirrors desktop). */}
               <div className="absolute left-3 right-3 bottom-[calc(max(12px,env(safe-area-inset-bottom))+60px)] z-[2]">
                 <div
                   role="slider"
@@ -1553,7 +1467,6 @@ export function ViewerOverlay({
                 </div>
               </div>
 
-              {/* bottom-left: LIVE + elapsed running time */}
               <div className="absolute bottom-[max(12px,env(safe-area-inset-bottom))] left-3 flex items-center gap-2">
                 <button
                   type="button"
@@ -1579,7 +1492,6 @@ export function ViewerOverlay({
                 </span>
               </div>
 
-              {/* bottom-right: fullscreen */}
               <button
                 type="button"
                 onClick={toggleStageFs}
@@ -1614,10 +1526,6 @@ export function ViewerOverlay({
             className={VIEWER_MOBILE_CAMS_CLS}
             role="group"
             aria-label="Камерын өнцөг"
-            // Hidden in fullscreen. The `[.is-fs_&]:!hidden` class is dropped by
-            // the prod CSS minifier (see the shell-fill note above), so hide it
-            // inline — a normal inline style still beats the non-important
-            // `max-[1100px]:flex` utility in every build.
             style={{ display: isFs || pseudoFs ? "none" : undefined }}
           >
             {cams.map((cam, i) => (
@@ -1681,8 +1589,6 @@ export function ViewerOverlay({
               overControlsRef.current = false;
             }}
           >
-            {/* Red live-DVR progress timeline — tap/drag to seek within the
-                buffer (YouTube-live style). */}
             <div
               role="slider"
               aria-label="Дамжуулалтын шугам"
@@ -2028,8 +1934,6 @@ export function ViewerOverlay({
           </div>
         </section>
 
-        {/* YouTube-style: chat is docked inline below the player on mobile
-            (no floating button, no covering sheet). */}
         <aside className={VIEWER_CHAT_CLS} aria-label="Шууд чат">
           <header className={VIEWER_CHAT_HEAD_CLS}>
             <svg

@@ -133,7 +133,6 @@ const EVENT_STATUS: Record<string, { label: string; cls: string }> = {
   expired: { label: "Дууссан", cls: ADMIN_BADGE_CANCELLED_CLS },
 };
 
-// Matches the backend's kiosk retirement rule (start + 12h = over).
 const KIOSK_ENDED_AFTER_MS = 12 * 60 * 60 * 1000;
 
 function EventStatusBadge({
@@ -143,8 +142,6 @@ function EventStatusBadge({
   status: EventStatus;
   startTime?: string;
 }) {
-  // The stored status is unreliable for old rows (nothing flips a past event
-  // off "upcoming"), so a long-started event is labelled by the clock instead.
   const startMs = startTime ? new Date(startTime).getTime() : NaN;
   const s =
     !Number.isNaN(startMs) && Date.now() - startMs > KIOSK_ENDED_AFTER_MS
@@ -364,11 +361,6 @@ function SellThroughEventCard({ event }: { event: AdminSellThroughEvent }) {
   );
 }
 
-/**
- * One zone rendered as a stacked block below 640px, where the 4-5 column zone
- * tables cannot be read. Desktop never renders this (the parent list is
- * `hidden` above 640px).
- */
 function ZoneMobileRow({
   name,
   color,
@@ -626,8 +618,6 @@ function Segmented<T extends string>({
   options: Array<[T, string]>;
 }) {
   return (
-    // Below 640px this sits as a full-width child of ADMIN_FILTERS_CLS, so the
-    // segments share the row instead of huddling on the left.
     <div className="inline-flex bg-white border border-[#e4e4e7] rounded-md p-0.5 gap-0.5 max-[640px]:w-full">
       {options.map(([key, label]) => (
         <button
@@ -999,8 +989,6 @@ function SalesPanel() {
             className="!pl-9 !min-w-[300px]"
           />
         </div>
-        {/* Four long Mongolian labels never fit one 375px row — below 640px the
-            pills wrap onto two rows and share the width instead. */}
         <div className="inline-flex bg-white border border-[#e4e4e7] rounded-md p-0.5 gap-0.5 max-[640px]:w-full max-[640px]:flex-wrap">
           {(
             [

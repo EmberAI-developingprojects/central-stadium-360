@@ -6,15 +6,6 @@ import {
   ADMIN_PAGE_HEADER_CLS,
 } from "../_adminStyles";
 
-/**
- * First step of creating an event: pick the storefront.
- *
- * One `events` row can feed both the website (live/replay stream tickets) and
- * the stadium kiosk (printed zone admissions), but the two are set up very
- * differently — so the admin chooses up front and only fills the fields that
- * channel actually needs. The other channel stays switchable inside the form.
- */
-
 const CARD_CLS =
   "group flex flex-col items-start gap-3 no-underline text-left p-6 rounded-2xl border border-[#ececef] bg-white shadow-[0_1px_2px_rgba(24,24,27,0.04)] transition-all hover:border-zinc-300 hover:shadow-[0_4px_16px_rgba(24,24,27,0.08)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 max-[640px]:p-5 max-[640px]:min-w-0";
 const ICON_CLS =

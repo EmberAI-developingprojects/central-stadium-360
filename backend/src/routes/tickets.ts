@@ -20,10 +20,7 @@ tickets.use("*", requireUser);
 const createSchema = z.object({
   event_id: z.string().uuid(),
   ticket_type: z.enum(["live", "replay"]).optional(),
-  // New tier model. When provided, price comes from the fixed TICKET_TIERS
-  // catalog and the ticket grants live access on the tier's device cap.
   tier: z.enum(["standard", "multi3", "multi5"]).optional(),
-  // Optional buyer company TIN (7-14 digits) → issues a B2B e-barimt.
   ebarimt_tin: z
     .string()
     .trim()
@@ -46,8 +43,6 @@ tickets.post("/create", async (c) => {
     );
   }
   const { event_id, tier } = parsed.data;
-  // A tier purchase always grants live access (replay is bundled into multi5 and
-  // gated by tier, not ticket_type). Legacy callers may still send ticket_type.
   const ticket_type = tier ? "live" : (parsed.data.ticket_type ?? "live");
 
   const admin = getSupabaseAdmin();
@@ -87,7 +82,6 @@ tickets.post("/create", async (c) => {
   if (evErr) {
     return c.json({ ok: false, error: "internal_error" } as const, 500);
   }
-  // Kiosk-only events are not sold online at all.
   if (!event || !publishedOn(event.show_on_web)) {
     return c.json({ ok: false, error: "event_not_found" } as const, 404);
   }
@@ -100,12 +94,9 @@ tickets.post("/create", async (c) => {
     return c.json({ ok: false, error: "ticket_already_owned" } as const, 409);
   }
 
-  // Tier prices are per-event (admin-set) with platform defaults as fallback.
   const tierPrice = tier ? tierPriceForEvent(tier, event) : null;
 
   const pending = await findRecentPendingTicket(user.id, event.id, ticket_type);
-  // Only reuse a pending invoice if its amount still matches the selected tier —
-  // otherwise the user switched tiers and must get a fresh, correctly-priced QR.
   if (pending && (tierPrice === null || pending.price === tierPrice)) {
     const reuse = await reusePendingInvoice(pending, event.id);
     if (reuse.ok) {
@@ -173,18 +164,6 @@ tickets.get("/my", async (c) => {
 const MY_SELECT_COLS =
   "id,user_id,event_id,status,ticket_type,price,qpay_invoice_id,created_at,paid_at,refunded_at,ebarimt_id,ebarimt_qr_data,ebarimt_lottery";
 
-/**
- * User self-service refund ("тасалбар буцаах"). The buyer refunds their OWN paid
- * ticket: it voids ("буцаалт") the attached eBarimt fiscal receipt on the same
- * dual rail as the admin refund ({@link voidEbarimtForTicket}) and flips the
- * ticket to `refunded`. Ownership is enforced (a user can only refund their own
- * ticket) and only a `paid` ticket is refundable. Idempotent: re-refunding an
- * already-`refunded` ticket returns the current row without erroring.
- *
- * Business rule: only `live` tickets are self-refundable, and only until
- * 30 minutes after the event's live start (live_start_at ?? start_time).
- * Admin refunds (admin-tickets route) stay unrestricted for support cases.
- */
 const REFUND_WINDOW_AFTER_START_MS = 30 * 60 * 1000;
 
 tickets.post("/:id/refund", async (c) => {
@@ -200,13 +179,14 @@ tickets.post("/:id/refund", async (c) => {
 
   const { data: existing, error: selErr } = await admin
     .from("tickets")
-    .select("id,user_id,status,ebarimt_id,ticket_type,event_id")
+    .select("id,user_id,status,ebarimt_id,qpay_payment_id,ticket_type,event_id")
     .eq("id", id)
     .maybeSingle<{
       id: string;
       user_id: string;
       status: DbTicket["status"];
       ebarimt_id: string | null;
+      qpay_payment_id: string | null;
       ticket_type: DbTicket["ticket_type"];
       event_id: string;
     }>();
@@ -218,7 +198,6 @@ tickets.post("/:id/refund", async (c) => {
     return c.json({ ok: false, error: "forbidden" } as const, 403);
   }
 
-  // Idempotent: an already-refunded ticket just returns its current state.
   if (existing.status === "refunded") {
     const { data: row } = await admin
       .from("tickets")
@@ -235,13 +214,10 @@ tickets.post("/:id/refund", async (c) => {
     return c.json({ ok: false, error: "not_paid" } as const, 409);
   }
 
-  // Only live tickets are self-refundable.
   if (existing.ticket_type !== "live") {
     return c.json({ ok: false, error: "not_refundable" } as const, 409);
   }
 
-  // Refund window: until 30 minutes after the live start. An event without a
-  // start timestamp (unscheduled) stays refundable.
   const { data: ev } = await admin
     .from("events")
     .select("start_time,live_start_at")
@@ -258,11 +234,9 @@ tickets.post("/:id/refund", async (c) => {
     }
   }
 
-  // Void the fiscal eBarimt receipt first. Best-effort: it never throws, so a
-  // POS/QPay hiccup can't strand the ticket in a paid state — the outcome is
-  // surfaced in the response.
   const ebarimt = await voidEbarimtForTicket({
     ebarimt_id: existing.ebarimt_id,
+    qpay_payment_id: existing.qpay_payment_id,
   });
 
   const { error: updErr } = await admin

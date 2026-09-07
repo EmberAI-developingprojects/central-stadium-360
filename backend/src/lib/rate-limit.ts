@@ -9,9 +9,6 @@ const OTP_IP_MAX = 20;
 
 export type RateLimitResult = { success: boolean; reset: number };
 
-// In-memory fallback, used when Supabase is not configured (local dev) or
-// the counter RPC fails. Per-instance only — the shared source of truth is
-// the auth_rate_counters table.
 type Hits = { times: number[] };
 const memHits = new Map<string, Hits>();
 
@@ -66,8 +63,6 @@ export function checkIpLimit(key: string): Promise<RateLimitResult> {
   return hit("ip", key, IP_MAX);
 }
 
-// Separate buckets for OTP verification attempts: stricter than send limits
-// per identifier, looser per IP so one NAT'd venue doesn't lock everyone out.
 export function checkOtpIdentifierLimit(
   key: string,
 ): Promise<RateLimitResult> {

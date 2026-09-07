@@ -1,11 +1,5 @@
 import { QRCodeSVG } from "qrcode.react";
 
-/**
- * Scannable eBarimt (PosAPI 3.0) fiscal-receipt QR for the buyer's 360 ticket.
- * `value` is the raw `qrData` string from the receipt; a customer scans it with
- * the e-barimt app to claim the receipt + lottery. Always rendered on a white
- * card so it stays scannable on the dark ticket pages and when printed.
- */
 export function EbarimtQR({
   value,
   lottery,
@@ -15,7 +9,6 @@ export function EbarimtQR({
   value: string;
   lottery?: string | null;
   size?: number;
-  /** Set on light-background pages (e.g. admin) so the caption stays legible. */
   onLight?: boolean;
 }) {
   const labelCls = onLight

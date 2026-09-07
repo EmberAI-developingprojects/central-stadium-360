@@ -264,7 +264,6 @@ export const api = {
     event_id: string;
     ticket_type?: "live" | "replay";
     tier?: "standard" | "multi3" | "multi5";
-    /** Buyer company TIN → B2B e-barimt (7-10 digits). */
     ebarimt_tin?: string;
   }) => request<TicketCreateResponse>("POST", "/api/tickets/create", input),
 
@@ -276,8 +275,6 @@ export const api = {
 
   listMyTickets: () => request<DbTicket[]>("GET", "/api/tickets/my"),
 
-  // Buyer self-refund of their own paid ticket: voids the eBarimt receipt and
-  // flips the ticket to `refunded`. Idempotent server-side.
   refundMyTicket: (id: string) =>
     request<DbTicket>("POST", `/api/tickets/${encodeURIComponent(id)}/refund`),
 

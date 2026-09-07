@@ -12,7 +12,6 @@ export type TicketModalEvent = {
   desc?: string;
   live_price?: number;
   replay_price?: number;
-  /** Admin-set per-event tier prices; null/absent falls back to TICKET_TIERS. */
   price_standard?: number | null;
   price_multi3?: number | null;
   price_multi5?: number | null;

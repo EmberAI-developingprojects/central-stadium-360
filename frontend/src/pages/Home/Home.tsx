@@ -115,7 +115,6 @@ export default function Home() {
         writeCache(HOME_CONTENT_CACHE_KEY, c);
       })
       .catch(() => {
-        // Keep whatever the sessionStorage cache / defaults already rendered.
       });
     return () => {
       alive = false;
@@ -1550,8 +1549,6 @@ function FeaturedNewsHero({ items }: { items: NewsItem[] }) {
           aria-hidden="true"
         />
 
-        {/* Default brand content while news is loading. Same layout shape
-            as the real hero, so the swap is visually a label/title fade. */}
         <div
           className={`absolute inset-0 grid place-items-center px-6 py-16 max-[640px]:px-5 max-[640px]:py-12 [transition:opacity_.35s_ease] ${featured ? "opacity-0 pointer-events-none" : "opacity-100"}`}
           aria-hidden={featured ? "true" : undefined}

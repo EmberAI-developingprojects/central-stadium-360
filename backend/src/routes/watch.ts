@@ -39,10 +39,6 @@ function buildCamUrls(): { id: string; url: string | null }[] {
   return CAM_DEFS.map((cam) => ({ id: cam.id, url: resolveCamUrl(cam.id) }));
 }
 
-/**
- * One-line summary of live-stream config, logged at server boot so a
- * misconfiguration surfaces in logs instead of a silently-empty player.
- */
 export function logStreamConfig(): void {
   const configured = CAM_DEFS.map((c) => resolveCamUrl(c.id)).filter(
     (u): u is string => u !== null,
@@ -103,9 +99,9 @@ async function isEventLiveNow(eventId: string): Promise<boolean> {
   const now = Date.now();
   const startIso = data.live_start_at ?? data.start_time;
   const start = startIso ? new Date(startIso).getTime() : NaN;
-  if (Number.isNaN(start) || now < start) return false; // not started / upcoming
+  if (Number.isNaN(start) || now < start) return false;
   const end = data.live_end_at ? new Date(data.live_end_at).getTime() : NaN;
-  if (!Number.isNaN(end) && now > end + LIVE_END_GRACE_MS) return false; // ended
+  if (!Number.isNaN(end) && now > end + LIVE_END_GRACE_MS) return false;
   return true;
 }
 

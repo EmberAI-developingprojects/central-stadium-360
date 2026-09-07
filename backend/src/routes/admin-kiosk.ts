@@ -58,7 +58,6 @@ adminKiosk.get("/events", async (c) => {
       503,
     );
   }
-  // Mirrors /api/kiosk/events — web-only events are not sellable at a counter.
   await expireStalePendingOrders();
   const { data, error } = await withChannelFallback((withChannels) => {
     const q = admin
@@ -67,9 +66,6 @@ adminKiosk.get("/events", async (c) => {
         `id,title,description,status,start_time,image,thumbnail_url,zones(${ZONE_COLS})`,
       )
       .in("status", ["upcoming", "live"])
-      // An event that started more than half a day ago is over — without an
-      // explicit kiosk end time this cutoff is what retires it from the
-      // counter, so stale events never linger as a "Зарагдсан" card.
       .gte("start_time", kioskSaleCutoffIso());
     return (withChannels ? q.eq("show_on_kiosk", true) : q).order(
       "start_time",
@@ -156,8 +152,6 @@ adminKiosk.get("/sell-through", async (c) => {
     .select(`id,title,status,start_time,zones(${ZONE_COLS})`)
     .order("start_time", { ascending: true });
   if (scope === "onsale") {
-    // Same retirement rule as the kiosk feed: an event that started more than
-    // half a day ago is no longer "on sale" no matter what its status says.
     eventQuery = eventQuery
       .in("status", ["upcoming", "live"])
       .gte("start_time", kioskSaleCutoffIso());
@@ -597,6 +591,15 @@ adminKiosk.get("/orders/:id/status", async (c) => {
 
 const cardResultSchema = z.object({
   approved: z.boolean(),
+  ebarimt: z
+    .object({
+      id: z.string().nullable().optional(),
+      qrData: z.string().optional(),
+      ebarimt_qr_data: z.string().optional(),
+      lottery: z.string().optional(),
+      ebarimt_lottery: z.string().optional(),
+    })
+    .optional(),
 });
 
 adminKiosk.post("/orders/:id/card-result", async (c) => {
@@ -612,7 +615,11 @@ adminKiosk.post("/orders/:id/card-result", async (c) => {
       400,
     );
   }
-  const res = await applyCardResult(c.req.param("id"), parsed.data.approved);
+  const res = await applyCardResult(
+    c.req.param("id"),
+    parsed.data.approved,
+    parsed.data.ebarimt,
+  );
   if (!res.ok) {
     return c.json({ ok: false, error: res.error } as const, res.status as 402);
   }
@@ -661,12 +668,6 @@ const scanSchema = z.object({
   event_id: z.string().uuid().nullable().optional(),
 });
 
-/**
- * Same redemption as POST /api/kiosk/scan, but for a logged-in admin scanning
- * with a phone camera instead of a box holding the kiosk device key.
- * Single-use is enforced inside redeemTicket — a second scan of the same code
- * comes back as "already_used", never as a fresh admission.
- */
 adminKiosk.post("/scan", async (c) => {
   const body = await c.req.json().catch(() => ({}));
   const parsed = scanSchema.safeParse(body);
@@ -690,13 +691,6 @@ adminKiosk.post("/scan", async (c) => {
   return c.json({ ok: true, data: res.data } as const);
 });
 
-/**
- * Admitted-ticket log for the admin "Уншуулсан тасалбар" page.
- *
- * The scanner page's own history is in-memory and dies with the tab; this is
- * the durable view — every ticket whose status is "used", newest admission
- * first, filterable by event and searchable by code.
- */
 adminKiosk.get("/scanned", async (c) => {
   const admin = getSupabaseAdmin();
   if (!admin) {
@@ -714,8 +708,6 @@ adminKiosk.get("/scanned", async (c) => {
   );
   const offset = Math.max(0, Number(url.searchParams.get("offset")) || 0);
 
-  // zone_id is the only link from a ticket to its event, so resolve the
-  // event's zones first (same approach as /admission above).
   let zoneFilter: string[] | null = null;
   if (eventId) {
     const { data: zs } = await admin
@@ -751,7 +743,6 @@ adminKiosk.get("/scanned", async (c) => {
   };
   const rows = (data ?? []) as unknown as Row[];
 
-  // Resolve event titles in one round trip rather than per row.
   const eventIds = [
     ...new Set(
       rows.map((r) => r.zones?.event_id).filter((id): id is string => !!id),

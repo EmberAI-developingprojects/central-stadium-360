@@ -116,7 +116,7 @@ export function startCloudPrintPoller(print: typeof printDocument = printDocumen
                 // Fiscal receipt — only when the cloud has ebarimt data for the
                 // order (QPay rail today has none; prints once it appears).
                 const rkey = `receipt:${order.order_id}`;
-                if (order.ebarimt_qr_data && !ledger.has(rkey)) {
+                if (order.payment_method === 'qpay' && order.ebarimt_qr_data && !ledger.has(rkey)) {
                     // Full ТЕГ paper template. VAT here is 10% INCLUSIVE
                     // (price/11), matching how the bill itself was declared.
                     const vatable = config.ebarimtVatable;

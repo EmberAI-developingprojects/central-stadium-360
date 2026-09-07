@@ -34,9 +34,7 @@ export type EventRecord = {
   thumbnail_url: string | null;
   titleEn?: string;
   descEn?: string;
-  /** Listed & sellable on the website (live/replay stream tickets). */
   showOnWeb: boolean;
-  /** Listed & sellable on the stadium kiosk (in-person zone tickets). */
   showOnKiosk: boolean;
 };
 
@@ -56,15 +54,12 @@ export type OrderRecord = {
   status: OrderStatus;
   refundedAt?: string;
   accessExpiresAt?: string | null;
-  /** Ticket kind — self-refund is only offered for `live` tickets. */
   ticketType?: "live" | "replay";
-  /** Live start (live_start_at ?? start_time) — refund closes 30 min after. */
   liveStartAt?: string;
   image?: string;
   date?: string;
   payment?: string;
   paymentName?: string;
-  /** eBarimt receipt id — the DDTD-style fiscal number. */
   ebarimtId?: string | null;
   ebarimtLottery?: string | null;
   ebarimtQrData?: string | null;
@@ -229,8 +224,6 @@ function dbToEvent(row: DbEvent): EventRecord {
     thumbnail_url: row.thumbnail_url || row.image || null,
     titleEn: row.title_en ?? "",
     descEn: row.description_en ?? "",
-    // Undefined means migration 0029 has not landed — pre-split events were
-    // published to both surfaces.
     showOnWeb: row.show_on_web !== false,
     showOnKiosk: row.show_on_kiosk !== false,
   };
@@ -268,11 +261,6 @@ export async function getEvent(id: string): Promise<EventRecord | null> {
   return found ? dbToEvent(found) : null;
 }
 
-/**
- * Admin-scoped read. The public list only carries web-published events, so the
- * admin forms must go through the admin endpoint or a kiosk-only event would
- * be unopenable.
- */
 export async function getAdminEvent(id: string): Promise<EventRecord | null> {
   const res = await api.admin.getEvent(id);
   return res.ok ? dbToEvent(res.data) : null;
@@ -627,11 +615,6 @@ export async function getMyOrder(code: string): Promise<OrderRecord | null> {
   return orders.find((o) => o.code === code) || null;
 }
 
-/**
- * Buyer self-refund of their own paid ticket. Voids the eBarimt receipt and
- * flips the ticket to `refunded` server-side; returns the refund timestamp so
- * the caller can reflect the new state without a refetch.
- */
 export async function refundMyOrder(
   code: string,
 ): Promise<{ refundedAt: string | null }> {
@@ -721,4 +704,3 @@ export async function setUserDisabled(
 export async function deleteUser(id: string): Promise<void> {
   unwrap(await api.admin.deleteUser(id));
 }
-

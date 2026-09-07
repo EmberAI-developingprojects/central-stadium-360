@@ -1,17 +1,6 @@
-
-
-// minmax(0,1fr) (not bare 1fr) is essential: a bare 1fr track has an implicit
-// min-width:auto, so a wide child (data tables, tab rows) stretches the whole
-// column past the viewport — which the global `overflow-x: clip` on <body> then
-// clips, cutting off text/buttons. minmax(0,1fr) lets children shrink and scroll
-// their own overflow instead.
 export const ADMIN_SHELL_CLS =
   "admin-shell font-sans antialiased text-[13.5px] leading-[1.5] text-zinc-900 bg-[#fafafa] min-h-screen grid [grid-template-columns:248px_minmax(0,1fr)] max-[980px]:[grid-template-columns:minmax(0,1fr)]";
 
-// On mobile the sidebar becomes a fixed slide-in drawer (positioning/animation
-// classes are added in AdminLayout). It must NOT carry `relative`/`h-auto` here:
-// those override the drawer's `fixed`/`inset-y-0` (Tailwind orders `relative`
-// after `fixed`, so it would win) and drop the menu into flow at the top.
 export const ADMIN_SIDEBAR_CLS =
   "bg-white border-r border-[#ececef] py-4 px-3 flex flex-col gap-1 sticky top-0 h-screen";
 
@@ -22,7 +11,6 @@ export const ADMIN_BRAND_MARK_CLS =
 export const ADMIN_BRAND_TEXT_CLS =
   "flex flex-col leading-tight text-[11.5px] text-zinc-500 [&_strong]:text-zinc-900 [&_strong]:text-[13.5px] [&_strong]:font-semibold [&_strong]:tracking-[-0.01em] [&_strong]:mb-px";
 
-// On the mobile drawer the nav rows become real touch targets (>= 44px).
 export const ADMIN_NAV_CLS =
   "flex flex-col gap-0.5 flex-1 overflow-y-auto " +
   "[&_a]:flex [&_a]:items-center [&_a]:gap-2.5 [&_a]:py-[7px] [&_a]:px-2.5 [&_a]:rounded-md [&_a]:text-zinc-600 [&_a]:no-underline [&_a]:text-[13px] [&_a]:font-medium [&_a]:transition-colors " +
@@ -43,8 +31,6 @@ export const ADMIN_SIDEBAR_FOOTER_CLS =
   "max-[980px]:[&>button]:min-h-[44px] max-[980px]:[&>button]:py-2.5 max-[980px]:[&>button]:px-3 max-[980px]:[&>button]:text-[13.5px]";
 
 export const ADMIN_MAIN_CLS = "flex flex-col min-w-0";
-// The h1 must be allowed to shrink (min-w-0) and truncate on narrow screens,
-// otherwise a long page title pushes the avatar past the viewport edge.
 export const ADMIN_TOPBAR_CLS =
   "bg-white/85 backdrop-blur-md border-b border-[#ececef] h-[60px] flex items-center px-8 max-[640px]:px-4 max-[480px]:px-3 sticky top-0 z-[5] " +
   "[&_h1]:text-[15px] [&_h1]:font-semibold [&_h1]:m-0 [&_h1]:text-zinc-900 [&_h1]:tracking-[-0.01em] " +
@@ -55,15 +41,10 @@ export const ADMIN_TOPBAR_USER_CLS =
 export const ADMIN_AVATAR_CLS =
   "w-[30px] h-[30px] rounded-full bg-zinc-900 text-white grid place-items-center font-semibold text-[11px] tracking-tight max-[640px]:shrink-0";
 
-// min-w-0 lets this flex child shrink below its content's intrinsic width so
-// tables/tabs scroll internally instead of forcing page overflow. Tighter
-// padding on phones reclaims horizontal room.
 export const ADMIN_CONTENT_CLS =
   "p-8 max-[640px]:p-4 max-[480px]:p-3 flex-1 min-w-0 max-w-[1280px] w-full " +
   "max-[640px]:[padding-bottom:max(1rem,env(safe-area-inset-bottom))]";
 
-// On phones the title block and every action button each take a full row, so a
-// wide "Шинэ ..." button can never push the header past the viewport.
 export const ADMIN_PAGE_HEADER_CLS =
   "flex flex-wrap items-start justify-between gap-4 mb-6 " +
   "[&_h2]:text-[22px] [&_h2]:font-semibold [&_h2]:m-0 [&_h2]:mb-1 [&_h2]:text-zinc-900 [&_h2]:tracking-[-0.02em] [&_h2]:leading-tight " +
@@ -91,8 +72,6 @@ export const ADMIN_STAT_CARD_CLS =
 
 export const ADMIN_SPARKLINE_CLS = "w-full h-[160px] block";
 
-// `min-h` (not `h`) is used for the mobile bump so the desktop `h-9` string is
-// left untouched — min-height simply clamps the fixed height upwards on phones.
 export const ADMIN_BTN_CLS =
   "inline-flex items-center justify-center gap-1.5 h-9 px-3.5 rounded-md font-[inherit] text-[13px] font-medium border border-[#e4e4e7] bg-white text-zinc-900 cursor-pointer transition-colors no-underline outline-none " +
   "hover:bg-zinc-50 hover:border-zinc-300 active:bg-zinc-100 " +
@@ -108,8 +87,6 @@ export const ADMIN_BTN_GHOST_CLS =
 export const ADMIN_BTN_SM_CLS =
   "!h-8 !px-2.5 !text-[12.5px] max-[640px]:!min-h-[40px] max-[640px]:!px-3";
 
-// max-h-[calc(100vh-280px)] leaves almost nothing on a 667px-tall phone, so the
-// vertical cap is dropped below 640px and the wrapper simply grows with the page.
 export const ADMIN_TABLE_WRAP_CLS =
   "bg-white border border-[#ececef] rounded-xl overflow-auto max-h-[calc(100vh-280px)] [scrollbar-gutter:stable] " +
   "max-[980px]:[-webkit-overflow-scrolling:touch] max-[980px]:[overscroll-behavior-x:contain] " +
@@ -150,8 +127,6 @@ export const ADMIN_FIELD_CLS =
   "[&_textarea:disabled]:bg-zinc-50 [&_textarea:disabled]:text-zinc-400 [&_textarea:disabled]:cursor-not-allowed " +
   "[&_select]:font-[inherit] [&_select]:text-[13.5px] [&_select]:h-10 [&_select]:px-3 [&_select]:bg-white [&_select]:border [&_select]:border-[#e4e4e7] [&_select]:rounded-md [&_select]:text-zinc-900 [&_select]:outline-none [&_select]:transition-shadow " +
   "[&_select:focus]:border-zinc-400 [&_select:focus]:shadow-[0_0_0_3px_rgba(24,24,27,0.06)] " +
-  // 16px form controls on phones: iOS Safari zooms the whole page whenever a
-  // focused control renders below 16px, which then breaks the layout.
   "max-[640px]:[&_input]:text-[16px] max-[640px]:[&_input]:h-11 max-[640px]:[&_input]:w-full max-[640px]:[&_input]:min-w-0 " +
   "max-[640px]:[&_textarea]:text-[16px] max-[640px]:[&_textarea]:w-full " +
   "max-[640px]:[&_select]:text-[16px] max-[640px]:[&_select]:h-11 max-[640px]:[&_select]:w-full max-[640px]:[&_select]:min-w-0 " +
@@ -176,10 +151,6 @@ export const ADMIN_BADGE_CANCELLED_CLS = "!bg-amber-50 !text-amber-700";
 export const ADMIN_BADGE_DISABLED_CLS = "!bg-red-50 !text-red-700";
 export const ADMIN_BADGE_FEATURED_CLS = "!bg-amber-50 !text-amber-700";
 
-// Below 640px every direct child of a filter row takes a full line (search
-// wrappers, selects, buttons) — `[&_input]:!min-w-0` is important because some
-// pages pin the search box with `!min-w-[300px]`, which would otherwise overflow.
-// Text is bumped to 16px for the same iOS zoom reason as ADMIN_FIELD_CLS.
 export const ADMIN_FILTERS_CLS =
   "flex gap-2.5 items-center flex-wrap mb-4 " +
   "[&_input]:font-[inherit] [&_input]:text-[13px] [&_input]:h-9 [&_input]:px-3 [&_input]:bg-white [&_input]:border [&_input]:border-[#e4e4e7] [&_input]:rounded-md [&_input]:min-w-[260px] [&_input]:outline-none [&_input]:transition-shadow [&_input::placeholder]:text-zinc-400 [&_input:focus]:border-zinc-400 [&_input:focus]:shadow-[0_0_0_3px_rgba(24,24,27,0.06)] " +
@@ -208,36 +179,6 @@ export const ADMIN_ALERT_CLS =
 export const ADMIN_IMAGE_PREVIEW_CLS =
   "w-full max-w-[360px] [aspect-ratio:16/6] bg-zinc-100 [background-size:cover] [background-position:center] [background-repeat:no-repeat] rounded-lg border border-[#ececef] mt-2";
 
-// ---------------------------------------------------------------------------
-// Mobile list pattern (<= 640px)
-//
-// Wide list tables stay exactly as they are on desktop and are hidden below
-// 640px with ADMIN_DESKTOP_ONLY_CLS; a separate, mobile-only stack of record
-// cards renders in their place. The desktop DOM is therefore untouched.
-//
-//   <div className={`${ADMIN_TABLE_WRAP_CLS} ${ADMIN_DESKTOP_ONLY_CLS}`}>
-//     <table className={ADMIN_TABLE_CLS}>…</table>
-//   </div>
-//
-//   <div className={ADMIN_MOBILE_LIST_CLS}>
-//     {rows.map((r) => (
-//       <div key={r.id} className={ADMIN_MOBILE_CARD_CLS}>
-//         <div className={ADMIN_MOBILE_CARD_HEAD_CLS}>
-//           <Link to={…} className={ADMIN_LINK_CLS}>{r.title}</Link>
-//           <span className={ADMIN_BADGE_CLS}>{r.status}</span>
-//         </div>
-//         <div className={ADMIN_MOBILE_ROW_CLS}>
-//           <span className={ADMIN_MOBILE_LABEL_CLS}>Огноо</span>
-//           <span className={ADMIN_MOBILE_VALUE_CLS}>{r.date}</span>
-//         </div>
-//         <div className={ADMIN_MOBILE_ACTIONS_CLS}>
-//           <button className={`${ADMIN_BTN_CLS} ${ADMIN_BTN_SM_CLS}`}>Засах</button>
-//         </div>
-//       </div>
-//     ))}
-//   </div>
-// ---------------------------------------------------------------------------
-
 export const ADMIN_DESKTOP_ONLY_CLS = "max-[640px]:hidden";
 export const ADMIN_MOBILE_ONLY_CLS = "hidden max-[640px]:block";
 
@@ -246,7 +187,6 @@ export const ADMIN_MOBILE_LIST_CLS = "hidden max-[640px]:flex flex-col gap-2.5";
 export const ADMIN_MOBILE_CARD_CLS =
   "bg-white border border-[#ececef] rounded-xl p-4 flex flex-col gap-2.5 min-w-0 text-[13px] text-zinc-700";
 
-// First child = record title (grows, wraps); last child = badge/status (fixed).
 export const ADMIN_MOBILE_CARD_HEAD_CLS =
   "flex items-start justify-between gap-3 min-w-0 " +
   "[&>*:first-child]:min-w-0 [&>*:first-child]:text-[14px] [&>*:first-child]:font-semibold [&>*:first-child]:text-zinc-900 [&>*:first-child]:tracking-[-0.01em] [&>*:first-child]:break-words " +
@@ -262,7 +202,5 @@ export const ADMIN_MOBILE_VALUE_CLS =
 export const ADMIN_MOBILE_ACTIONS_CLS =
   "flex flex-wrap gap-2 pt-2.5 border-t border-[#f4f4f5] [&>*]:grow [&>*]:justify-center";
 
-// Generic escape hatch for any single element too wide for a phone (long ID
-// strings, code blocks, a small 2-3 column table): let it scroll on its own.
 export const ADMIN_SCROLL_X_CLS =
   "max-w-full overflow-x-auto max-[980px]:[-webkit-overflow-scrolling:touch] max-[980px]:[overscroll-behavior-x:contain]";

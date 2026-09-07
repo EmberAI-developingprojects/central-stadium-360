@@ -75,18 +75,14 @@ const MIN_ZOOM = 1;
 const MAX_ZOOM = 4;
 const ZOOM_STEP = 0.25;
 const BASE_FOV = 75;
-// Skip the pre-match warm-up frames on first load. Only applied when the
-// recording is comfortably longer than the skip so short clips still play.
 const INTRO_SKIP_SECS = 300;
 
 const camLabel = (rec: DbRecording) => `Камер ${rec.camera_number}`;
-// With multi-session events a camera can have several recordings; the session
-// start time is what tells them apart ("7/11 11:04" vs "7/12 09:40").
 const camSub = (rec: DbRecording) => {
   if (!rec.recording_started_at) return "360°";
   const d = new Date(rec.recording_started_at);
   if (Number.isNaN(d.getTime())) return "360°";
-  const ub = new Date(d.getTime() + 8 * 60 * 60 * 1000); // Asia/Ulaanbaatar
+  const ub = new Date(d.getTime() + 8 * 60 * 60 * 1000);
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${ub.getUTCMonth() + 1}/${ub.getUTCDate()} ${pad(ub.getUTCHours())}:${pad(ub.getUTCMinutes())}`;
 };
@@ -360,8 +356,6 @@ function VODViewer({ event }: { event: VODEventDetail }) {
   const activeRecording = recordings[camIdx] ?? null;
   const is360 = activeRecording != null;
 
-  // YouTube-style chapters (merged multi-session recordings). Sorted by offset;
-  // the current chapter is the last one at or before the playhead.
   const chapters = useMemo(() => {
     const raw = activeRecording?.chapters;
     if (!raw || raw.length === 0) return null;
@@ -474,8 +468,6 @@ function VODViewer({ event }: { event: VODEventDetail }) {
     const applyPendingSeek = () => {
       const seek = pendingSeekRef.current;
       if (seek !== null && Number.isFinite(seek)) {
-        // Guard: don't seek past the end of a short recording (would land at
-        // "ended" and immediately pause).
         const dur = video.duration;
         if (!Number.isFinite(dur) || dur <= 0 || seek < dur - 5) {
           try {
@@ -1023,8 +1015,6 @@ function VODViewer({ event }: { event: VODEventDetail }) {
   }
 
   return (
-    // VOD has no chat panel — drop the live layout's 300px chat column so the
-    // player stretches across the remaining width.
     <div
       className={`${VIEWER_BODY_CLS} ![grid-template-columns:132px_minmax(0,1fr)]`}
     >

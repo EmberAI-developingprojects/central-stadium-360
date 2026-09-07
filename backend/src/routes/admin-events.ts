@@ -29,9 +29,6 @@ const SELECT_COLS_NO_EN =
 
 let eventEnColumnsAvailable: boolean | null = null;
 
-// The admin form is the only surface that reads/writes the publish flags, so
-// it always asks for them — unless a query has proved migration 0029 has not
-// been pushed yet, in which case both surfaces stay "published" by default.
 function selectCols(withChannels: boolean = channelColumnsReady()): string {
   const base =
     eventEnColumnsAvailable === false ? SELECT_COLS_NO_EN : SELECT_COLS_FULL;
@@ -283,8 +280,6 @@ adminEvents.on(["PATCH", "PUT"], "/:id", async (c) => {
   if (!data) {
     return c.json({ ok: false, error: "not_found" } as const, 404);
   }
-  // Ticket access windows anchor on the event's live end and its admin-set
-  // replay window — re-stamp them whenever either changes.
   if (
     parsed.data.live_end_at !== undefined ||
     parsed.data.replay_available_until !== undefined
@@ -422,9 +417,6 @@ adminEvents.post("/:id/end-live", async (c) => {
     `[end-live] event=${id} stopped=${stopResult.stopped.length} alreadyOffline=${stopResult.alreadyOffline.length} failed=${stopResult.failed.length}`,
   );
 
-  // Wait for Wowza to finalize the recorded video asset (encoding + upload).
-  // This is a coarse first pass — discoverRecordingsForEvent will still return
-  // an empty list if the asset isn't FINISHED yet, and can be retried later.
   await new Promise((r) => setTimeout(r, 10000));
 
   let discovered: DbRecording[] = [];
@@ -528,8 +520,6 @@ adminEvents.on(["PATCH", "PUT"], "/:id/zones/:zoneId", async (c) => {
       400,
     );
   }
-  // Capacity can never drop below what is already sold — the DB's
-  // sold <= capacity check would otherwise reject the row as an opaque 500.
   if (parsed.data.capacity !== undefined) {
     const { data: current } = await admin
       .from("zones")
@@ -572,10 +562,6 @@ adminEvents.delete("/:id/zones/:zoneId", async (c) => {
       503,
     );
   }
-  // Refuse to delete a zone that has sold (or is holding) tickets —
-  // venue_tickets.zone_id cascades ON DELETE, so this would silently destroy
-  // paid, already-printed tickets. The client hides the remove button for such
-  // rows, but its snapshot can be stale; the server is the authority.
   const { data: zone } = await admin
     .from("zones")
     .select("sold")

@@ -37,7 +37,6 @@ export function buildCallbackUrl(
   return `${base}/api/payments/qpay-callback?${params.toString()}`;
 }
 
-/** Callback URL for an in-person kiosk order (signed the same way). */
 export function buildKioskCallbackUrl(
   backendUrl: string,
   orderId: string,

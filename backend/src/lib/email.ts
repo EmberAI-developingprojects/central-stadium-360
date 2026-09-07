@@ -31,16 +31,11 @@ export interface SendEmailInput {
   to: string;
   subject: string;
   html: string;
-  /** Optional plain-text alternative. */
   text?: string;
-  /** Optional display name for the To header ("Name <email>"). */
   fullName?: string | null;
-  /** Override the default From address. */
   from?: string;
   replyTo?: string;
-  /** Short label attached as a Resend tag (analytics). */
   tag?: string;
-  /** Dedup key — a retried webhook with the same key won't send twice. */
   idempotencyKey?: string;
 }
 
@@ -60,17 +55,10 @@ function escapeHtml(s: string): string {
     .replace(/'/g, "&#39;");
 }
 
-/** Escape then convert newlines to <br/> — safe for interpolating into HTML. */
 function escapeMultiline(s: string): string {
   return escapeHtml(s).replace(/\n/g, "<br/>");
 }
 
-/**
- * The verify endpoint lives on the SUPABASE project domain
- * (…supabase.co/auth/v1/verify). The hook's `site_url` points at the public
- * site (stadium.mn) where that path doesn't exist — links built on it landed
- * on the SPA and appeared dead. Always build on the project URL.
- */
 export function buildConfirmationUrl(
   payload: SupabaseEmailHookPayload,
 ): string {
@@ -80,7 +68,6 @@ export function buildConfirmationUrl(
     /\/+$/,
     "",
   );
-  // GoTrue's verify endpoint knows a single "email_change" type.
   const verifyType =
     email_action_type === "email_change_current" ||
     email_action_type === "email_change_new"
@@ -110,22 +97,13 @@ type RenderedEmail = {
   tag: string;
 };
 
-// --- Brand & config ---------------------------------------------------------
-
 const BRAND_NAME = "Төв Цэнгэлдэх Хүрээлэн";
-/** Short label shown in the footer context line. */
 const BRAND_TAGLINE = "Монголын спорт, соёлын төв";
 
-/** Optional logo image shown in the header. Set EMAIL_LOGO_URL to a hosted
- *  PNG/SVG (recommended: white/light logo on transparent bg, ~150px wide).
- *  When unset the header shows a gold monogram chip + brand name. */
 const LOGO_URL = process.env.EMAIL_LOGO_URL?.trim() || "";
-/** Public site link used in the footer. */
 const SITE_LINK = process.env.EMAIL_SITE_LINK?.trim() || "https://stadium.mn";
-/** Support address shown for security-sensitive notes. */
 const SUPPORT_EMAIL = process.env.EMAIL_SUPPORT?.trim() || "help@stadium.mn";
 
-// Palette — pre-blended tones (no CSS opacity, which many clients drop).
 const C = {
   page: "#eef0f6",
   card: "#ffffff",
@@ -149,12 +127,8 @@ const C = {
   warnText: "#9a3412",
 };
 
-// --- Shell ------------------------------------------------------------------
-
 type NoteKind = "info" | "warn";
 
-/** Dark-mode overrides. Honored by clients that support prefers-color-scheme
- *  (Apple Mail, iOS Mail, some others); Gmail keeps the light inline styles. */
 const DARK_STYLE = `
   @media (prefers-color-scheme: dark) {
     .em-body { background:#0b0e1c !important; }
@@ -285,7 +259,6 @@ function renderShell(opts: {
             <tr>
               <td class="em-pad em-muted" style="padding:0 32px 8px;font-size:12.5px;line-height:1.55;color:${C.muted};">
                 ${escapeHtml(
-                  // fallback helper text is action-agnostic
                   "Хэрэв товч ажиллахгүй бол доорх холбоосыг хөтчийнхөө хаягийн мөрөнд хуулж тавина уу:",
                 )}
               </td>
@@ -358,8 +331,6 @@ function renderShell(opts: {
 
   return { html, text };
 }
-
-// --- Per-action content -----------------------------------------------------
 
 type ActionContent = {
   subject: string;
@@ -494,18 +465,12 @@ export function renderEmail(payload: SupabaseEmailHookPayload): RenderedEmail {
   };
 }
 
-// --- Resend transactional email ------------------------------------------
-
-// Default sender. Resend requires the domain (stadium.mn) to be verified.
-// Override per-deploy with RESEND_FROM.
 const DEFAULT_FROM =
   process.env.RESEND_FROM?.trim() || `${BRAND_NAME} <no-reply@stadium.mn>`;
 
 const MAX_RETRIES = 2;
 const RETRY_BASE_MS = 300;
 
-// Resend error names worth retrying (transient / server-side). Validation and
-// auth errors are permanent, so we fail fast on those.
 const TRANSIENT_ERROR_NAMES = new Set([
   "rate_limit_exceeded",
   "internal_server_error",
@@ -525,12 +490,6 @@ function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-/**
- * Send one transactional email via Resend. Retries transient failures up to
- * twice with exponential backoff; pass `idempotencyKey` so a retried Supabase
- * webhook can't send the same mail twice. When RESEND_API_KEY is unset it logs
- * and returns without sending, so local dev works without credentials.
- */
 export async function sendEmail(
   input: SendEmailInput,
 ): Promise<EmailSendResult> {
@@ -576,12 +535,10 @@ export async function sendEmail(
         return { ok: true, provider: "resend", messageId: data?.id };
       }
       lastError = `${error.name}: ${error.message}`;
-      // Permanent error (validation, bad from, etc.) — don't retry.
       if (!TRANSIENT_ERROR_NAMES.has(error.name) || attempt === MAX_RETRIES) {
         break;
       }
     } catch (err) {
-      // Network / unexpected throw — always transient.
       lastError = (err as Error).message ?? "network_error";
       if (attempt === MAX_RETRIES) break;
     }

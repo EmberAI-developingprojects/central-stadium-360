@@ -1,12 +1,5 @@
-// Concurrent-device enforcement for ticket tiers (Standard=1, 3-User=3, 5-User=5).
-// Backed by the public.sessions table (ticket_id, device_id, last_seen_at), which
-// existed in the schema but was previously unused.
-
 import { getSupabaseAdmin } from "./supabase";
 
-// A device counts as "active" if its session was seen within this window. The
-// player should heartbeat (touchSession) well inside it; a closed tab goes stale
-// and frees the slot.
 const STALE_SECONDS = 90;
 
 export type DeviceAdmitResult =
@@ -14,11 +7,6 @@ export type DeviceAdmitResult =
   | { ok: false; error: "device_limit_reached"; active: number; limit: number }
   | { ok: false; error: "internal_error" };
 
-/**
- * Admit `deviceId` to stream on `ticketId`, enforcing `maxDevices`. Re-admits a
- * device that already holds a slot (heartbeat); otherwise admits only if the
- * count of distinct active devices is below the cap. Blocks the (N+1)th device.
- */
 export async function admitDevice(
   ticketId: string,
   deviceId: string,
@@ -28,7 +16,6 @@ export async function admitDevice(
   if (!admin) return { ok: false, error: "internal_error" };
   const nowIso = new Date().toISOString();
 
-  // Already holding a slot? Just refresh the heartbeat.
   const { data: existing, error: exErr } = await admin
     .from("sessions")
     .select("id")
@@ -46,7 +33,6 @@ export async function admitDevice(
     return { ok: true, active };
   }
 
-  // New device — enforce the cap against currently-active distinct devices.
   const active = await countActiveDevices(ticketId);
   if (active >= maxDevices) {
     return {
@@ -66,7 +52,6 @@ export async function admitDevice(
   return { ok: true, active: active + 1 };
 }
 
-/** Heartbeat an already-admitted device so it keeps its slot. */
 export async function touchSession(
   ticketId: string,
   deviceId: string,
@@ -80,7 +65,6 @@ export async function touchSession(
     .eq("device_id", deviceId);
 }
 
-/** Release a device's slot (e.g. on explicit stream stop / logout). */
 export async function releaseDevice(
   ticketId: string,
   deviceId: string,

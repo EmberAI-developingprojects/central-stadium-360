@@ -105,7 +105,6 @@ hook.post("/email-hook", async (c) => {
       text: rendered.textBody,
       fullName,
       tag: rendered.tag,
-      // Same auth action → same key, so a retried webhook won't double-send.
       idempotencyKey: `auth-${payload.user.id}-${payload.email_data.token_hash}`,
     });
     return c.json({ ok: true, data: result } as const);

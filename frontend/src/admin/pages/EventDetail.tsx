@@ -137,7 +137,6 @@ function dbToRecord(row: import("@cs360/shared").DbEvent): EventRecord {
   };
 }
 
-/** Kiosk events have no stream — "live" just means the show is on right now. */
 function kioskStatusLabel(status: EventStatus): string {
   if (status === "upcoming") return "Удахгүй";
   if (status === "live") return "Явагдаж байна";
@@ -169,8 +168,6 @@ export default function EventDetail() {
       api.admin.getEvent(id),
       api.admin.listEventRecordings(id),
       api.admin.listTickets({ eventId: id }),
-      // Paid-only kiosk sales for this event (zones.sold would also count
-      // pending holds, which is the wrong number for a report).
       api.admin.kiosk.sellThrough("all"),
     ]);
     if (evRes.ok) setEvent(dbToRecord(evRes.data));
@@ -274,8 +271,6 @@ export default function EventDetail() {
 
   const status = deriveEventStatus(event);
   const readyCount = recordings.filter((r) => r.status === "ready").length;
-  // A kiosk-only event has no stream, no recordings and no replay window —
-  // every streaming-side section below is web-only.
   const kioskOnly = event.showOnKiosk && !event.showOnWeb;
 
   return (

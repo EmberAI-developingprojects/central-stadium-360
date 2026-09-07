@@ -1,12 +1,6 @@
 import { newZoneDraft, type ZoneDraft } from "../lib/kiosk-zones";
 import { ADMIN_FIELD_CLS } from "../_adminStyles";
 
-/**
- * Admin-defined kiosk zones as plain form rows — no per-row save. The page's
- * single submit button writes them together with the event. Rows can be
- * renamed, added and removed freely; a row that already sold tickets can't be
- * removed (its tickets reference the zone), only renamed or re-priced.
- */
 export default function KioskZoneFields({
   value,
   onChange,
@@ -44,8 +38,6 @@ export default function KioskZoneFields({
               }
               placeholder="Төрлийн нэр (ж: VIP)"
               aria-label="Төрлийн нэр"
-              /* This input is not inside ADMIN_FIELD_CLS, so it needs its own
-                 16px bump — below that iOS Safari zooms the page on focus. */
               className="flex-1 min-w-0 bg-transparent border-0 border-b border-transparent focus:border-zinc-300 focus:outline-none text-[13.5px] font-semibold text-zinc-900 placeholder:font-normal placeholder:text-zinc-400 py-0.5 max-[640px]:text-[16px] max-[640px]:min-h-[40px]"
             />
             {d.sold > 0 ? (

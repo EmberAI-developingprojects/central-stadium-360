@@ -8,10 +8,14 @@ import { TICKET_TIERS } from "@cs360/shared";
 import { getSupabaseAdmin } from "./supabase";
 import {
   cancelEbarimt,
+  cancelEbarimtV3,
   createEbarimt,
   createInvoice,
+  ebarimtFromCheck,
   getInvoice,
+  isEbarimtV3Enabled,
   isQPayConfigured,
+  type PaymentCheckResult,
 } from "./qpay";
 import { buildCallbackUrl, getCallbackSecret } from "./qpay-signature";
 import {
@@ -21,32 +25,18 @@ import {
   voidReceipt,
 } from "./ebarimt";
 
-/** Dev-only: route online-ticket e-barimt through the local PosAPI test rig. */
 function posapiForOnline(): boolean {
   return process.env.EBARIMT_POSAPI_FOR_ONLINE === "1";
 }
 
-/**
- * Issue + persist an eBarimt fiscal receipt for a PAID online 360 ticket.
- *
- * Real QPay online payments get their receipt from QPay's cloud
- * (`createEbarimt(payment_id)`) — the correct rail for card-not-present online
- * sales. The local PosAPI 3.0 test rig is used only when `qpayPaymentId` is
- * absent (e.g. DEV_FAKE_PAY) or the `EBARIMT_POSAPI_FOR_ONLINE` dev flag is set.
- *
- * Best-effort: a failure is logged but never blocks the payment. The
- * `is('ebarimt_lottery', null)` guard keeps it idempotent — a second call on an
- * already-issued ticket won't overwrite or double-issue.
- */
 export async function issueEbarimtForTicket(
   ticketId: string,
   opts: {
     eventTitle: string;
     ticketType: TicketType;
     price: number;
-    /** QPay payment id for a real online payment; enables the cloud rail. */
     qpayPaymentId?: string | null;
-    /** Buyer company TIN — issues a B2B receipt (no lottery) when present. */
+    qpayCheck?: PaymentCheckResult | null;
     customerTin?: string | null;
   },
 ): Promise<void> {
@@ -55,8 +45,17 @@ export async function issueEbarimtForTicket(
 
   const useQpayCloud = Boolean(opts.qpayPaymentId) && !posapiForOnline();
   try {
-    let receipt: { id: string; qrData: string; lottery: string };
-    if (useQpayCloud) {
+    let receipt: { id: string; qrData: string; lottery: string } | null;
+    if (useQpayCloud && isEbarimtV3Enabled()) {
+      receipt = opts.qpayCheck ? ebarimtFromCheck(opts.qpayCheck) : null;
+      if (!receipt) {
+        console.error(
+          "ticket_ebarimt_v3_missing",
+          ticketId,
+          opts.qpayPaymentId,
+        );
+      }
+    } else if (useQpayCloud) {
       const r = await createEbarimt(
         opts.qpayPaymentId!,
         opts.customerTin ? "COMPANY" : "CITIZEN",
@@ -81,22 +80,20 @@ export async function issueEbarimtForTicket(
       });
       receipt = { id: r.id, qrData: r.qrData, lottery: r.lottery };
     }
-    // qrData/lottery are DISPLAY-ONLY — persisted here solely to re-render the
-    // buyer's receipt QR, and MUST NEVER be logged (see `redactReceiptSecrets`
-    // policy in lib/ebarimt.ts). Do not console.log `receipt` / `r`.
     await admin
       .from("tickets")
       .update({
-        ebarimt_id: receipt.id,
-        ebarimt_qr_data: receipt.qrData,
-        ebarimt_lottery: receipt.lottery,
+        ...(opts.qpayPaymentId ? { qpay_payment_id: opts.qpayPaymentId } : {}),
+        ...(receipt
+          ? {
+              ebarimt_id: receipt.id,
+              ebarimt_qr_data: receipt.qrData,
+              ebarimt_lottery: receipt.lottery,
+            }
+          : {}),
       })
       .eq("id", ticketId)
       .is("ebarimt_lottery", null);
-    // PosAPI issuance only enters the on-box local queue — flush it to the
-    // national eBarimt system so a freshly-issued receipt isn't left pending
-    // until the POS's own schedule fires. Mirrors the void path. Best-effort;
-    // the QPay cloud rail registers server-side and needs no local send.
     if (!useQpayCloud) {
       await sendData().catch((err) =>
         console.error("ebarimt_senddata_after_issue_failed", err),
@@ -111,34 +108,24 @@ export type VoidEbarimtResult =
   | { voided: true; alreadyVoided: boolean; rail: "posapi" | "qpay" }
   | { voided: false; reason: "no_receipt" | "not_configured" | "error" };
 
-/**
- * Void ("буцаалт") the eBarimt receipt attached to a ticket that is being
- * refunded. Mirrors the dual-rail logic of {@link issueEbarimtForTicket}:
- * PosAPI-issued receipts are voided on the local POS (and the return is
- * transmitted via {@link sendData}); QPay-cloud receipts are cancelled through
- * QPay's API.
- *
- * The rail is inferred from the receipt id shape — PosAPI ids are long all-digit
- * strings (e.g. `0379008467880010967900000…`), QPay cloud ids are not. The
- * caller passes the persisted `ebarimt_id`.
- *
- * Best-effort: never throws. The ebarimt_* columns are left in place as an audit
- * trail of the (now-voided) receipt.
- */
 export async function voidEbarimtForTicket(ticket: {
   ebarimt_id: string | null;
+  qpay_payment_id?: string | null;
 }): Promise<VoidEbarimtResult> {
   const ebarimtId = ticket.ebarimt_id;
   if (!ebarimtId) return { voided: false, reason: "no_receipt" };
 
   const isPosApiId = /^\d{20,}$/.test(ebarimtId);
   try {
+    if (!isPosApiId && isEbarimtV3Enabled() && ticket.qpay_payment_id) {
+      await cancelEbarimtV3(ticket.qpay_payment_id);
+      return { voided: true, alreadyVoided: false, rail: "qpay" };
+    }
     if (isPosApiId) {
       if (!isEbarimtConfigured()) {
         return { voided: false, reason: "not_configured" };
       }
       const r = await voidReceipt({ id: ebarimtId });
-      // Transmit the return to the national eBarimt system (best-effort).
       await sendData().catch((err) =>
         console.error("ebarimt_senddata_after_void_failed", err),
       );
@@ -162,12 +149,6 @@ export async function markUserViewed(userId: string): Promise<void> {
     .is("first_viewed_at", null);
 }
 
-/**
- * PostgREST `or` filter: a ticket is usable while its access window is open.
- * A NULL expiry means "not stamped yet" (the event's live_end_at wasn't known
- * at purchase/payment time) — treat it as open, not expired; the window gets
- * stamped when the admin sets live_end_at or by resolvePaidAccessExpiry.
- */
 function notExpiredFilter(nowIso: string): string {
   return `access_expires_at.is.null,access_expires_at.gt.${nowIso}`;
 }
@@ -223,12 +204,6 @@ export async function findBestLiveTicket(
   return data;
 }
 
-/**
- * Replay/VOD access — stricter than {@link hasValidTicketForEvent}. Only the
- * `multi5` tier bundles replay; legacy `replay`-type tickets keep their access.
- * A `standard` or `multi3` (live-only) ticket does NOT grant replay, even though
- * it grants live viewing. Same expiry semantics as the live check.
- */
 export async function hasReplayAccess(
   userId: string,
   eventId: string,
@@ -368,18 +343,11 @@ export type CreateTicketInvoiceInput = {
   price: number;
   tier?: TicketTier;
   maxDevices?: number;
-  /** Buyer company TIN for a B2B e-barimt (optional). */
   ebarimtTin?: string | null;
 };
 
-// Asia/Ulaanbaatar is a fixed UTC+8 (no DST since 2017).
 const UB_OFFSET_MS = 8 * 60 * 60 * 1000;
 
-/**
- * First instant of the next calendar month in Ulaanbaatar time. Replay tiers
- * stay watchable "until the event's month ends" — Naadam live on Jul 11 →
- * replay available through Jul 31, expiring Aug 1 00:00 UB.
- */
 function endOfMonthUlaanbaatar(iso: string): string | null {
   const t = new Date(iso).getTime();
   if (Number.isNaN(t)) return null;
@@ -394,15 +362,9 @@ function endOfMonthUlaanbaatar(iso: string): string | null {
 
 export type EventAccessWindow = {
   live_end_at?: string | null;
-  /** Admin-set replay window ("нөхөж үзэх хоног" on the event form). */
   replay_available_until?: string | null;
 };
 
-/**
- * When a ticket's access ends. Live-only tiers get 30 days past live end.
- * Replay tiers follow the admin-set event replay window; if the admin didn't
- * set one, fall back to the end of the event's month (UB time).
- */
 export function tierAccessExpiry(
   tier: TicketTier | null | undefined,
   event: EventAccessWindow,
@@ -425,11 +387,6 @@ export function tierAccessExpiry(
   ).toISOString();
 }
 
-/**
- * Re-anchor every live-type ticket of an event after the admin changes its
- * live end or replay window — reads the event's current window itself so all
- * callers stay in sync with the stored values.
- */
 export async function stampAccessExpiryForEvent(eventId: string): Promise<void> {
   const admin = getSupabaseAdmin();
   if (!admin) return;
@@ -452,12 +409,6 @@ export async function stampAccessExpiryForEvent(eventId: string): Promise<void> 
   }
 }
 
-/**
- * Expiry to stamp when a pending ticket flips to paid and none was stored at
- * purchase time (event live_end_at unknown then). Legacy replay tickets run
- * 30 days from payment; live tickets anchor on the event's live end per tier.
- * Returns undefined when nothing should be stamped (yet).
- */
 export async function resolvePaidAccessExpiry(
   ticket: {
     ticket_type: TicketType;
@@ -502,15 +453,9 @@ export async function createTicketInvoice(
     return { ok: false, error: "event_not_for_sale", status: 409 };
   }
 
-  // Local dev-only bypass (gated on DEV_FAKE_PAY=1; never set in prod). Skips
-  // QPay entirely: issues an immediately-PAID ticket with a synthetic invoice id
-  // so the buy → watch flow can be exercised without a QPay merchant. The
-  // payment-status poll returns paid because the row is already status='paid'.
   if (process.env.DEV_FAKE_PAY === "1") {
     const ticketId = randomUUID();
     const nowIso = new Date().toISOString();
-    // Guarantee a future access window even if the event has no live_end_at,
-    // so the ticket passes the watch-token access_expires_at > now() check.
     const fallbackExpiry = new Date(
       Date.now() + LIVE_ACCESS_WINDOW_DAYS * 24 * 60 * 60 * 1000,
     ).toISOString();
@@ -535,7 +480,6 @@ export async function createTicketInvoice(
     if (insErr) {
       return { ok: false, error: "ticket_insert_failed", status: 500 };
     }
-    // The dev ticket is already PAID → issue its eBarimt now (best-effort).
     await issueEbarimtForTicket(ticketId, {
       eventTitle: event.title,
       ticketType,
@@ -600,6 +544,15 @@ export async function createTicketInvoice(
       branchCode: "web",
       amountMnt: price,
       description: `Ticket: ${event.title}`,
+      lines: [
+        {
+          description: `${event.title} (${ticketType})`,
+          qty: 1,
+          unitPrice: price,
+          note: tier ?? undefined,
+        },
+      ],
+      customerTin: ebarimtTin,
       callbackUrl,
     });
   } catch (_err) {

@@ -89,14 +89,9 @@ export function TicketModal({
     ctaLabel,
   } = useMemo(() => resolveTicketKind(event, t), [event, t]);
 
-  // Tier selection (live purchases only). Replay stays on its legacy flow.
   const [tier, setTier] = useState<TicketTier>("standard");
-  // Optional buyer company TIN → B2B e-barimt (empty = personal / B2C).
   const [companyTin, setCompanyTin] = useState("");
   const useTiers = kind === "live";
-  // Replay tiers grant access for the admin-set event window
-  // (replay_available_until); without one, until the event's month ends
-  // (Ulaanbaatar time): Naadam live Jul 11 → "7 сар дуустал" → until Aug 1.
   const replayUntil = useMemo(() => {
     const until = event.replay_available_until
       ? new Date(event.replay_available_until)
@@ -104,7 +99,6 @@ export function TicketModal({
     if (until && !Number.isNaN(until.getTime())) {
       return {
         kind: "date" as const,
-        // YYYY-MM-DD in Ulaanbaatar time (sv-SE renders ISO-style dates).
         date: until.toLocaleDateString("sv-SE", {
           timeZone: "Asia/Ulaanbaatar",
         }),
@@ -123,9 +117,6 @@ export function TicketModal({
       }),
     };
   }, [event.replay_available_until, event.live_end_at, event.start_time]);
-  // Displayed/charged amount: per-event tier price (admin-set, platform
-  // default fallback) for live, legacy price otherwise. The backend computes
-  // the same via tierPriceForEvent — keep them in sync.
   const payTotal = useTiers ? tierPriceForEvent(tier, event) : total;
   const QR_TTL_MS = 10 * 60 * 1000;
 
@@ -199,9 +190,6 @@ export function TicketModal({
       onPurchased();
       setSuccess(order);
       setStep("success");
-      // The e-barimt is issued best-effort during the paid transition, so it may
-      // not be ready the instant the ticket flips to paid. Poll the paid ticket a
-      // few times until the receipt (DDTD / lottery / QR) lands, then surface it.
       void (async () => {
         const ticketId = invoice.ticket_id;
         for (let i = 0; i < 8; i++) {

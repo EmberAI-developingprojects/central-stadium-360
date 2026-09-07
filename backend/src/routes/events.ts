@@ -29,7 +29,6 @@ events.get("/", async (c) => {
   const NO_EN =
     "id,title,description,status,start_time,price,live_price,replay_price,price_standard,price_multi3,price_multi5,live_start_at,live_end_at,replay_available_until,thumbnail_url,image,featured,created_at";
 
-  // Kiosk-only events are never listed on the website.
   let { data, error } = await withChannelFallback((withChannels) => {
     const q = supabase.from("events").select(FULL);
     return (withChannels ? q.eq("show_on_web", true) : q).order("start_time", {
@@ -199,7 +198,6 @@ events.get("/:id/replay", async (c) => {
   if (error) {
     return c.json({ ok: false, error: error.message } as const, 500);
   }
-  // A kiosk-only event has no web replay page.
   if (!event || !publishedOn(event.show_on_web)) {
     return c.json({ ok: false, error: "not_found" } as const, 404);
   }
