@@ -3,6 +3,7 @@ import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { once } from '../lib/idempotency.js';
 import { issueReceipt } from '../ebarimt/posapi.js';
+import { recordIssued } from '../ebarimt/issued.js';
 import { printDocument } from '../print/winprint.js';
 import { receiptSpec } from '../print/layout.js';
 import { config } from '../config.js';
@@ -36,6 +37,21 @@ ebarimtRouter.post('/receipt', async (req: Request, res: Response) => {
             customerTin,
             paymentCode,
         }));
+        // Hand the printer what PosAPI actually issued. The cloud's print-jobs
+        // feed reports ДДТД, date and VAT as null, so cloudprint.ts would
+        // otherwise print a barimt with no fiscal id and no buyer company —
+        // and would sit out RECEIPT_WAIT_MS waiting for data it already has.
+        recordIssued({
+            orderRef,
+            id: receipt.id,
+            qrData: receipt.qrData,
+            lottery: receipt.lottery,
+            date: receipt.date,
+            totalVAT: receipt.totalVAT,
+            totalCityTax: 0,
+            customerTin,
+            posNo: receipt.posNo,
+        });
         let printed: boolean | null = null;
         let printError: string | null = null;
         if (AUTOPRINT_EBARIMT) {

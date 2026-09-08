@@ -1,6 +1,5 @@
 import { config } from '../config.js';
 const base = () => config.ebarimtPosApiUrl.replace(/\/$/, '');
-/** Round to 2 decimals (MNT receipts carry tugrik with fractional VAT). */
 function r2(n) {
     return Math.round(n * 100) / 100;
 }
@@ -16,10 +15,6 @@ export async function getInfo(force = false) {
     infoCache = { at: Date.now(), info };
     return info;
 }
-/**
- * Issue a fiscal receipt. Resolves merchantTin/posNo from /rest/info (the
- * registered merchant) and computes VAT (10% inclusive) per line.
- */
 export async function issueReceipt(input) {
     const info = await getInfo();
     const merchant = info.merchants[0];
@@ -88,15 +83,12 @@ export async function issueReceipt(input) {
         lottery: String(json.lottery ?? ''),
         totalAmount,
         totalVAT,
-        // Header fields the paper receipt must show per TEG's official layout.
         merchantName: String(merchant.name ?? merchant.brandName ?? merchant.legalName ?? ''),
         merchantTin,
         posNo: String(info.posNo ?? ''),
         districtCode: config.ebarimtDistrictCode,
         branchNo: config.ebarimtBranchNo,
-        // POSAPI stamps `date` on the accepted bill; fall back to now if it did not.
         date: String(json.date ?? new Date().toISOString()),
-        // The signed items (post-VAT) — the printer prints exactly what POSAPI recorded.
         items,
         vatable,
         raw: json,

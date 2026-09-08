@@ -1,35 +1,17 @@
 import { config } from '../config.js';
-// Real SAO_* enum values extracted from Golomt's DualConnector.dll metadata
-// (2026-09-01): SALE=1, REFUND=3, VOID=4, SETTLEMENT=59. The old 200/201/202/500
-// defaults were placeholders that made the service NRE-crash as "error 91".
 const OP = {
     SALE: Number(process.env.POS_OP_SALE ?? 1),
     VOID: Number(process.env.POS_OP_VOID ?? 4),
     REFUND: Number(process.env.POS_OP_REFUND ?? 3),
     SETTLEMENT: Number(process.env.POS_OP_SETTLEMENT ?? 59),
 };
-// Envelope amount is in MINOR units (möngö, ₮ × 100) — field-proven 2026-09-02:
-// sending "10000" made the terminal charge 100.00₮.
 const AMOUNT_MULT = Number(process.env.POS_AMOUNT_MULTIPLIER ?? 100);
-// Terminal channel params — PobRestLibrary passes these straight into
-// DCLink.SetChannelTerminalParam / Exchange. Values match DualConnector.xml
-// (terminal on COM10 @ 115200) and the 3-minute card timeout, in seconds.
 const COM_PORT = process.env.POS_COM_PORT ?? '10';
 const BAUD_RATE = process.env.POS_BAUDRATE ?? '115200';
-// Exchange timeout is in MILLISECONDS — field-proven 2026-09-01: sending "180"
-// cancelled the terminal ~0.2s after the card prompt ("Operation timeout",
-// code 11). 180000 = the intended 3 minutes for tap + PIN.
 const EXCHANGE_TIMEOUT_MS = String(Number(process.env.POS_EXCHANGE_TIMEOUT_MS
     ?? (process.env.POS_EXCHANGE_TIMEOUT_S
         ? Number(process.env.POS_EXCHANGE_TIMEOUT_S) * 1000
         : 180000)));
-/**
- * Full 14-field request contract of PobRestLibrary (recovered from the DLL's
- * field table, 2026-09-01). EVERY string field must be present: the service
- * calls .Equals("") on cMode/cMode2/cardEntryMode without a null check, so a
- * missing key = NullReferenceException = the infamous "91 Issuer system error".
- * All values are strings — the service Int32.Parse-es the numeric ones itself.
- */
 function baseEnvelope(operationCode, requestID) {
     return {
         requestID,
@@ -114,14 +96,6 @@ async function sendToPos(payload) {
     }
     return unwrapPosResult(outer);
 }
-/**
- * The live Golomt WCF service answers as
- *   { "PosResult": "{\"data\":\"<base64>\",\"responseCode\":\"91\",...}" }
- * — a JSON string inside a JSON envelope, with the transaction detail base64'd
- * inside THAT. Field-observed 2026-08-29; without this unwrap even an approved
- * sale (responseCode "00") would read as declined, because the code never
- * surfaced out of the PosResult wrapper.
- */
 function unwrapPosResult(outer) {
     if (!outer || typeof outer !== 'object' || typeof outer.PosResult !== 'string') {
         return outer;

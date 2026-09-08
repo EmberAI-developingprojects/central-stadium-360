@@ -5,23 +5,8 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import QRCode from 'qrcode';
 import { config } from '../config.js';
-/**
- * Prints a receipt/ticket on the on-box POS80 thermal printer (Windows).
- *
- * We render with GDI+ in a PowerShell helper (print_doc.ps1) rather than raw
- * ESC/POS because Mongolian Cyrillic — Ө/Ү in particular — has no single-byte
- * codepage the printer could render. The helper rasterises the layout (Unicode
- * text + QR PNGs) and sends it to the named printer via the Windows spooler, so
- * there are no native Node deps (none would build here without Visual Studio).
- */
-// scripts/print_doc.ps1 sits next to the compiled output's ../scripts at runtime;
-// resolve relative to this module so it works from both src (tsx) and dist.
 const here = dirname(fileURLToPath(import.meta.url));
 const SCRIPT = join(here, '..', '..', 'scripts', 'print_doc.ps1');
-/**
- * Render [spec] and print it (or, when [outFile] is set, save a PNG preview
- * instead of printing — used for testing the layout without a printer).
- */
 export async function printDocument(spec, outFile) {
     const dir = await mkdtemp(join(tmpdir(), 'kiosk-print-'));
     try {
@@ -49,15 +34,10 @@ export async function printDocument(spec, outFile) {
             '-SpecPath',
             specPath,
             ...(outFile ? ['-OutFile', outFile] : ['-PrinterName', config.printerName]),
-            // Native ESC/POS raster by default — the POS80 driver kept rescaling GDI
-            // pages (shrunken/oversized tickets). PRINT_MODE=gdi restores the old path.
             '-Mode',
             process.env.PRINT_MODE ?? 'raw',
         ];
         const out = await runPowershell(args);
-        // Surface the script's PAGE/PRINTED lines on the bridge console — they show
-        // the page size the driver ACTUALLY granted, which is the whole diagnosis
-        // when a thermal driver clips or splits a ticket.
         for (const line of out.split('\n')) {
             const t = line.trim();
             if (t.startsWith('PAGE') ||

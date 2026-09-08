@@ -2,12 +2,10 @@ import { config } from '../config.js';
 
 const base = (): string => config.ebarimtPosApiUrl.replace(/\/$/, '');
 
-/** Round to 2 decimals (MNT receipts carry tugrik with fractional VAT). */
 function r2(n: number): number {
     return Math.round(n * 100) / 100;
 }
 
-/** A merchant registered on the local PosAPI service (from /rest/info). */
 export interface PosApiMerchant {
     tin: string;
     vatPayer: boolean;
@@ -16,13 +14,11 @@ export interface PosApiMerchant {
     legalName?: string;
 }
 
-/** Decoded GET /rest/info response — only the fields we read are typed. */
 export interface PosApiInfo {
     posNo?: string;
     merchants: PosApiMerchant[];
 }
 
-/** Decoded POST /rest/receipt response — dynamic; only the fields we read are typed. */
 interface PosApiReceiptResponse {
     status?: string;
     message?: string;
@@ -33,7 +29,6 @@ interface PosApiReceiptResponse {
     [key: string]: unknown;
 }
 
-/** One line item as POSAPI records (and the printer prints) it. */
 export interface PosApiReceiptItem {
     name: string;
     barCode: string;
@@ -93,10 +88,6 @@ export async function getInfo(force = false): Promise<PosApiInfo> {
     return info;
 }
 
-/**
- * Issue a fiscal receipt. Resolves merchantTin/posNo from /rest/info (the
- * registered merchant) and computes VAT (10% inclusive) per line.
- */
 export async function issueReceipt(input: ReceiptInput): Promise<IssuedReceipt> {
     const info = await getInfo();
     const merchant = info.merchants[0];
@@ -165,15 +156,12 @@ export async function issueReceipt(input: ReceiptInput): Promise<IssuedReceipt> 
         lottery: String(json.lottery ?? ''),
         totalAmount,
         totalVAT,
-        // Header fields the paper receipt must show per TEG's official layout.
         merchantName: String(merchant.name ?? merchant.brandName ?? merchant.legalName ?? ''),
         merchantTin,
         posNo: String(info.posNo ?? ''),
         districtCode: config.ebarimtDistrictCode,
         branchNo: config.ebarimtBranchNo,
-        // POSAPI stamps `date` on the accepted bill; fall back to now if it did not.
         date: String(json.date ?? new Date().toISOString()),
-        // The signed items (post-VAT) — the printer prints exactly what POSAPI recorded.
         items,
         vatable,
         raw: json,

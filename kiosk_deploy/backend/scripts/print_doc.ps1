@@ -93,13 +93,35 @@ function Invoke-Layout {
         $kFmt = New-Object System.Drawing.StringFormat; $kFmt.Alignment = [System.Drawing.StringAlignment]::Near
         $vFmt = New-Object System.Drawing.StringFormat; $vFmt.Alignment = [System.Drawing.StringAlignment]::Far
         $k = [string]$b.k; $v = [string]$b.v
-        $h = ($g.MeasureString($v, $f, $innerW, $vFmt)).Height
-        if ($draw) {
-          $rect = New-Object System.Drawing.RectangleF($pad, $y, $innerW, $h)
-          $g.DrawString($k, $f, $grey, $rect, $kFmt)
-          $g.DrawString($v, $f, $black, $rect, $vFmt)
+        # Key and value get their OWN columns. Both used to be drawn into the
+        # same full-width rect, so as soon as they did not both fit the value
+        # printed straight through the key — an event name came out as a pile
+        # of overlapping glyphs, and so did the line total next to a long item
+        # name. Measure them apart, and when they cannot share a row, stack the
+        # value under its key (the same shape the long DDTD id already uses).
+        $gutter = [int]($dpi * 0.06)             # ~1.5mm between the columns
+        $vW = [double]($g.MeasureString($v, $f)).Width
+        $kW = [double]($g.MeasureString($k, $f)).Width
+        if (($kW + $gutter + $vW) -le $innerW) {
+          $vCol = [single]([Math]::Ceiling($vW) + 1)
+          $kCol = [single][Math]::Max(1, $innerW - $vCol - $gutter)
+          $hK = ($g.MeasureString($k, $f, [int]$kCol, $kFmt)).Height
+          $hV = ($g.MeasureString($v, $f, [int]$vCol, $vFmt)).Height
+          $h = [single][Math]::Max($hK, $hV)
+          if ($draw) {
+            $g.DrawString($k, $f, $grey, (New-Object System.Drawing.RectangleF([single]$pad, [single]$y, $kCol, $h)), $kFmt)
+            $g.DrawString($v, $f, $black, (New-Object System.Drawing.RectangleF([single]($pad + $kCol + $gutter), [single]$y, $vCol, $h)), $vFmt)
+          }
+          $y += $h
+        } else {
+          $hK = [single]($g.MeasureString($k, $f, $innerW, $kFmt)).Height
+          $hV = [single]($g.MeasureString($v, $f, $innerW, $vFmt)).Height
+          if ($draw) {
+            $g.DrawString($k, $f, $grey, (New-Object System.Drawing.RectangleF([single]$pad, [single]$y, [single]$innerW, $hK)), $kFmt)
+            $g.DrawString($v, $f, $black, (New-Object System.Drawing.RectangleF([single]$pad, [single]($y + $hK), [single]$innerW, $hV)), $vFmt)
+          }
+          $y += $hK + $hV
         }
-        $y += $h
         $f.Dispose()
       }
       'rule' {
@@ -133,7 +155,16 @@ function Invoke-Layout {
 }
 
 # Pass 1: measure total height on a scratch surface.
+#
+# The scratch surface MUST carry the print resolution. GDI+ converts a
+# Point-sized font to device units through the Graphics OWN DpiY, so a default
+# 96dpi scratch bitmap measures a text line at ~17px where the 203dpi page
+# bitmap then draws that same line at ~37px — a 2.1x under-count on every text
+# and kv row. The page bitmap came out far too short and everything past its
+# bottom edge was silently clipped: the e-barimt QR, the lottery number and the
+# ticket code never made it onto the paper.
 $scratch = New-Object System.Drawing.Bitmap 8, 8
+$scratch.SetResolution($dpi, $dpi)
 $mg = [System.Drawing.Graphics]::FromImage($scratch)
 $mg.TextRenderingHint = [System.Drawing.Text.TextRenderingHint]::AntiAliasGridFit
 $hPx = Invoke-Layout -g $mg -draw $false
@@ -244,8 +275,21 @@ if ($Mode -eq 'raw' -and -not $OutFile) {
       $di.pDataType = 'RAW'
       if (-not [RawPrn]::StartDocPrinter($h, 1, [ref]$di)) { throw 'StartDocPrinter failed' }
       [void][RawPrn]::StartPagePrinter($h)
-      $written = 0
-      if (-not [RawPrn]::WritePrinter($h, $bytes, $bytes.Length, [ref]$written)) { throw 'WritePrinter failed' }
+      # The spooler may accept FEWER bytes than handed to it — a single
+      # WritePrinter call that ignores dwWritten silently drops the tail, which
+      # is why long documents came out guillotined mid-QR. Write in chunks and
+      # keep going until every byte is in.
+      $sent = 0
+      $chunkSize = 65536
+      while ($sent -lt $bytes.Length) {
+        $n = [Math]::Min($chunkSize, $bytes.Length - $sent)
+        $buf = New-Object byte[] $n
+        [Array]::Copy($bytes, $sent, $buf, 0, $n)
+        $written = 0
+        if (-not [RawPrn]::WritePrinter($h, $buf, $n, [ref]$written)) { throw 'WritePrinter failed' }
+        if ($written -le 0) { throw "WritePrinter stalled at $sent/$($bytes.Length) bytes" }
+        $sent += $written
+      }
       [void][RawPrn]::EndPagePrinter($h)
       [void][RawPrn]::EndDocPrinter($h)
     } finally {
