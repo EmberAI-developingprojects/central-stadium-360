@@ -10,12 +10,11 @@ import {
   cancelEbarimt,
   cancelEbarimtV3,
   createEbarimt,
+  createEbarimtV3,
   createInvoice,
-  ebarimtFromCheck,
   getInvoice,
   isEbarimtV3Enabled,
   isQPayConfigured,
-  type PaymentCheckResult,
 } from "./qpay";
 import { buildCallbackUrl, getCallbackSecret } from "./qpay-signature";
 import {
@@ -36,7 +35,6 @@ export async function issueEbarimtForTicket(
     ticketType: TicketType;
     price: number;
     qpayPaymentId?: string | null;
-    qpayCheck?: PaymentCheckResult | null;
     customerTin?: string | null;
   },
 ): Promise<void> {
@@ -47,14 +45,10 @@ export async function issueEbarimtForTicket(
   try {
     let receipt: { id: string; qrData: string; lottery: string } | null;
     if (useQpayCloud && isEbarimtV3Enabled()) {
-      receipt = opts.qpayCheck ? ebarimtFromCheck(opts.qpayCheck) : null;
-      if (!receipt) {
-        console.error(
-          "ticket_ebarimt_v3_missing",
-          ticketId,
-          opts.qpayPaymentId,
-        );
-      }
+      receipt = await createEbarimtV3(
+        opts.qpayPaymentId!,
+        opts.customerTin ? "COMPANY" : "CITIZEN",
+      );
     } else if (useQpayCloud) {
       const r = await createEbarimt(
         opts.qpayPaymentId!,

@@ -15,8 +15,8 @@ import { getSupabaseAdmin } from "./supabase";
 import {
   checkInvoicePayment,
   createEbarimt,
+  createEbarimtV3,
   createInvoice,
-  ebarimtFromCheck,
   isEbarimtV3Enabled,
   isPaid,
   isQPayConfigured,
@@ -366,10 +366,7 @@ async function issueEbarimtForVenueOrder(
   try {
     let receipt: EbarimtReceipt | null;
     if (isEbarimtV3Enabled()) {
-      receipt = ebarimtFromCheck(check);
-      if (!receipt) {
-        console.error("venue_order_ebarimt_v3_missing", order.id, paymentId);
-      }
+      receipt = await createEbarimtV3(paymentId, "CITIZEN");
     } else {
       const r = await createEbarimt(paymentId, "CITIZEN");
       receipt = {
