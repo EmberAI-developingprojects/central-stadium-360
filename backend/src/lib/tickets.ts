@@ -15,6 +15,7 @@ import {
   getInvoice,
   isEbarimtV3Enabled,
   isQPayConfigured,
+  type EbarimtReceipt,
 } from "./qpay";
 import { buildCallbackUrl, getCallbackSecret } from "./qpay-signature";
 import {
@@ -43,7 +44,7 @@ export async function issueEbarimtForTicket(
 
   const useQpayCloud = Boolean(opts.qpayPaymentId) && !posapiForOnline();
   try {
-    let receipt: { id: string; qrData: string; lottery: string } | null;
+    let receipt: EbarimtReceipt | null;
     if (useQpayCloud && isEbarimtV3Enabled()) {
       receipt = await createEbarimtV3(
         opts.qpayPaymentId!,
@@ -56,8 +57,12 @@ export async function issueEbarimtForTicket(
       );
       receipt = {
         id: r.id,
+        ddtd: r.id,
         qrData: r.ebarimt_qr_data,
         lottery: r.ebarimt_lottery,
+        date: null,
+        vat: 0,
+        cityTax: 0,
       };
     } else {
       if (!isEbarimtConfigured()) return;
@@ -72,7 +77,15 @@ export async function issueEbarimtForTicket(
         paymentCode: "PAYMENT_CARD",
         customerTin: opts.customerTin,
       });
-      receipt = { id: r.id, qrData: r.qrData, lottery: r.lottery };
+      receipt = {
+        id: r.id,
+        ddtd: r.id,
+        qrData: r.qrData,
+        lottery: r.lottery,
+        date: r.date,
+        vat: 0,
+        cityTax: 0,
+      };
     }
     await admin
       .from("tickets")
@@ -81,8 +94,12 @@ export async function issueEbarimtForTicket(
         ...(receipt
           ? {
               ebarimt_id: receipt.id,
+              ebarimt_ddtd: receipt.ddtd || receipt.id,
               ebarimt_qr_data: receipt.qrData,
               ebarimt_lottery: receipt.lottery,
+              ebarimt_date: receipt.date,
+              ebarimt_vat: receipt.vat,
+              ebarimt_city_tax: receipt.cityTax,
             }
           : {}),
       })

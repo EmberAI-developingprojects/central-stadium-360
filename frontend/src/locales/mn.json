@@ -206,6 +206,14 @@
   "order_vat": "НӨАТ (багтсан)",
   "order_total_paid": "Нийт төлсөн",
   "order_ebarimt_ddtd": "И-баримтын дугаар (ДДТД)",
+  "order_ebarimt_title": "И-БАРИМТ",
+  "order_ebarimt_seller": "Борлуулагч",
+  "order_ebarimt_tin": "ТТД",
+  "order_ebarimt_date": "Баримтын огноо",
+  "order_city_tax": "НХАТ",
+  "order_ebarimt_type": "Баримтын төрөл",
+  "order_ebarimt_type_b2c": "Иргэн",
+  "order_ebarimt_type_b2b": "Байгууллага",
   "order_ebarimt_lottery": "И-баримт сугалаа",
   "ticket_ebarimt_issuing": "И-баримт үүсгэж байна…",
   "order_payment_method": "Төлбөрийн хэрэгсэл:",
@@ -444,7 +452,6 @@
   "footer_years_copyright": "1958 - 2025 © \"Төв Цэнгэлдэх Хүрээлэн\" - Бүх эрх хуулиар хамгаалагдсан",
   "footer_built_by_prefix": "Вэбсайтыг",
   "footer_built_by_suffix": "хөгжүүлэв",
-
   "about_intro_label": "1958 ОНООС",
   "about_intro_title": "БИДНИЙ ТУХАЙ",
   "about_intro_lead": "ТӨВ ЦЭНГЭЛДЭХ ХҮРЭЭЛЭН НЬ 1958 ОНД БҮГД НАЙРАМДАХ ХЯТАД АРД УЛСЫН ТУСЛАМЖТАЙГААР БАЙГУУЛАГДСАН БӨГӨӨД ТӨМӨР БЕТОН БОЛОН ТООСГОН ХОЛИМОГ ХИЙЦТЭЙ, ТӨВ АСРЫГ НЬ 1971 ОНД МОНГОЛЫН ТАЛ БҮРЭН ГҮЙЦЭЭЖ БАРЬСАН ЮМ. НИЙТ 12,500 ХҮНИЙ СУУДЛЫН БАГТААМЖТАЙ, 105 X 68 МЕТР ХЭМЖЭЭТЭЙ СТАНДАРТ ТАЛБАЙТАЙ.",
@@ -454,7 +461,6 @@
   "about_mission_title": "ЭРХЭМ ЗОРИЛГО",
   "about_mission_text": "Техник, тоног төхөөрөмжийн шинэчлэл хийж үйлчлүүлэгчдийн тав тухтай, аюулгүй, сэтгэл ханамжтай орчныг бий болгох, чадварлаг мэргэшсэн хамт олныг бүрдүүлэх, олон улсын стандартад нийцсэн шинэ цэнгэлдэх хүрээлэн болно.",
   "about_continue": "Цааш үргэлжлүүлэх",
-
   "about_achievements_title": "Төв цэгээс эхэлсэн амжилтууд",
   "about_ach_1_pre": "Нийт ",
   "about_ach_1_highlight": "12,000+",
@@ -468,7 +474,6 @@
   "about_ach_3_highlight": "1000+",
   "about_ach_3_post": " авто зогсоолтой",
   "about_ach_3_desc": "Төв цэнгэлдэх тойроод өөрсдийн эзэмшлийн авто зогсоолтой.",
-
   "about_director_label": "Удирдлагын мэндчилгээ",
   "about_director_heading": "Төв цэнгэлдэх хүрээлэн — үндэсний эв нэгдлийн төв цэг. Та бүхэндээ үргэлж нээлттэй, эрхэмсэг орон зай байх болно.",
   "about_director_quote": "ЭРХЭМ ХҮНДЭТ ИРГЭД ЭЭ, ТА БҮХЭНДЭЭ ТӨВ ЦЭНГЭЛДЭХ ХҮРЭЭЛЭНГИЙН ХАМТ ОЛНЫ НЭРИЙН ӨМНӨӨС ХАЛУУН МЭНД ДЭВШҮҮЛЖ БУЙДАА ГҮНЭЭ БАЯРТАЙ БАЙНА.",
@@ -483,13 +488,11 @@
   "about_director_position_org": "«Төв Цэнгэлдэх Хүрээлэн» ХХК — ийн",
   "about_director_position_role": "Гүйцэтгэх захирал",
   "about_director_photo_alt": "Д. Лхагвадулам — Гүйцэтгэх захирал",
-
   "about_history_label": "Түүхэн замнал",
   "about_history_heading": "Үе үеийн удирдагчид",
   "about_history_present": "одоо",
   "about_history_scroll_left": "Зүүн тийш",
   "about_history_scroll_right": "Баруун тийш",
-
   "history_detail_back": "Түүхэн хэсэг",
   "history_detail_bio_label": "Намтар",
   "history_detail_position_label": "Албан тушаал",

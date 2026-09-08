@@ -390,18 +390,31 @@ export async function cancelEbarimt(ebarimtId: string): Promise<void> {
 
 export interface EbarimtReceipt {
   id: string;
+  ddtd: string;
   qrData: string;
   lottery: string;
+  date: string | null;
+  vat: number;
+  cityTax: number;
 }
 
 interface EbarimtV3Api {
   id?: string;
   ebarimt_id?: string;
+  ebarimt_receipt_id?: string;
   ebarimt_qr_data?: string;
   qr_data?: string;
   ebarimt_lottery?: string;
   lottery?: string;
-  ebarimt_status?: string;
+  vat_amount?: string | number;
+  city_tax_amount?: string | number;
+  barimt_status?: string;
+  barimt_status_date?: string;
+}
+
+function num(v: string | number | undefined): number {
+  const n = Number(v ?? 0);
+  return Number.isFinite(n) ? n : 0;
 }
 
 export async function createEbarimtV3(
@@ -414,8 +427,12 @@ export async function createEbarimtV3(
   });
   return {
     id: String(data.id ?? data.ebarimt_id ?? ""),
+    ddtd: String(data.ebarimt_receipt_id ?? ""),
     qrData: data.ebarimt_qr_data ?? data.qr_data ?? "",
     lottery: data.ebarimt_lottery ?? data.lottery ?? "",
+    date: data.barimt_status_date ?? null,
+    vat: num(data.vat_amount),
+    cityTax: num(data.city_tax_amount),
   };
 }
 

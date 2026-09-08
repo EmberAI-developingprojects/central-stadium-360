@@ -44,7 +44,7 @@ type RawTicketRow = {
 
 const SELECT_COLS = `
   id,user_id,event_id,status,ticket_type,price,qpay_invoice_id,created_at,paid_at,refunded_at,access_expires_at,
-  ebarimt_id,ebarimt_qr_data,ebarimt_lottery,
+  ebarimt_id,ebarimt_ddtd,ebarimt_qr_data,ebarimt_lottery,ebarimt_date,ebarimt_vat,ebarimt_city_tax,
   users:users(email,phone,full_name),
   events:events(title)
 `.replace(/\s+/g, "");

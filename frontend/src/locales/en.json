@@ -206,6 +206,14 @@
   "order_vat": "VAT (included)",
   "order_total_paid": "Total Paid",
   "order_ebarimt_ddtd": "eBarimt No. (DDTD)",
+  "order_ebarimt_title": "E-BARIMT",
+  "order_ebarimt_seller": "Seller",
+  "order_ebarimt_tin": "TIN",
+  "order_ebarimt_date": "Receipt date",
+  "order_city_tax": "City tax",
+  "order_ebarimt_type": "Receipt type",
+  "order_ebarimt_type_b2c": "Individual",
+  "order_ebarimt_type_b2b": "Company",
   "order_ebarimt_lottery": "eBarimt lottery",
   "ticket_ebarimt_issuing": "Issuing your eBarimt receipt…",
   "order_payment_method": "Payment Method:",
@@ -444,7 +452,6 @@
   "footer_years_copyright": "© 1958–2026 National Stadium of Mongolia. All rights reserved.",
   "footer_built_by_prefix": "Built by",
   "footer_built_by_suffix": "",
-
   "about_intro_label": "SINCE 1958",
   "about_intro_title": "ABOUT US",
   "about_intro_lead": "THE CENTRAL STADIUM WAS BUILT IN 1958 WITH THE SUPPORT OF THE PEOPLE'S REPUBLIC OF CHINA, CONSTRUCTED WITH A MIX OF REINFORCED CONCRETE AND BRICK. THE CENTRAL CANOPY WAS FULLY COMPLETED BY THE MONGOLIAN SIDE IN 1971. IT HAS A TOTAL SEATING CAPACITY OF 12,500 AND A STANDARD FIELD MEASURING 105 × 68 METERS.",
@@ -454,7 +461,6 @@
   "about_mission_title": "MISSION",
   "about_mission_text": "Modernize equipment and infrastructure to create a comfortable, safe, and satisfying environment for our visitors; assemble a skilled and dedicated team; and become a modern stadium meeting international standards.",
   "about_continue": "Continue",
-
   "about_achievements_title": "Milestones from our Central Point",
   "about_ach_1_pre": "Total of ",
   "about_ach_1_highlight": "12,000+",
@@ -468,7 +474,6 @@
   "about_ach_3_highlight": "1,000+",
   "about_ach_3_post": " parking spaces",
   "about_ach_3_desc": "Our own parking areas surrounding the stadium.",
-
   "about_director_label": "Director's Message",
   "about_director_heading": "Central Stadium — a symbol of national unity. A space that will always remain open and dignified for you.",
   "about_director_quote": "DEAR CITIZENS, ON BEHALF OF THE CENTRAL STADIUM TEAM, I AM PROFOUNDLY HAPPY TO EXTEND MY WARMEST GREETINGS TO ALL OF YOU.",
@@ -483,13 +488,11 @@
   "about_director_position_org": "Central Stadium LLC",
   "about_director_position_role": "Executive Director",
   "about_director_photo_alt": "D. Lkhagvadulam — Executive Director",
-
   "about_history_label": "Heritage",
   "about_history_heading": "A legacy built by generations of leaders",
   "about_history_present": "present",
   "about_history_scroll_left": "Scroll left",
   "about_history_scroll_right": "Scroll right",
-
   "history_detail_back": "Heritage",
   "history_detail_bio_label": "Biography",
   "history_detail_position_label": "Position",

@@ -237,8 +237,12 @@ export interface DbTicket {
   access_expires_at: string | null;
   qpay_payment_id?: string | null;
   ebarimt_id?: string | null;
+  ebarimt_ddtd?: string | null;
   ebarimt_qr_data?: string | null;
   ebarimt_lottery?: string | null;
+  ebarimt_date?: string | null;
+  ebarimt_vat?: number | null;
+  ebarimt_city_tax?: number | null;
   ebarimt_customer_tin?: string | null;
 }
 
@@ -375,8 +379,12 @@ export interface DbVenueOrder {
   paid_at: string | null;
   buyer_phone: string | null;
   ebarimt_id: string | null;
+  ebarimt_ddtd?: string | null;
   ebarimt_qr_data: string | null;
   ebarimt_lottery: string | null;
+  ebarimt_date?: string | null;
+  ebarimt_vat?: number | null;
+  ebarimt_city_tax?: number | null;
   kiosk_id: string | null;
   created_at: string;
 }
