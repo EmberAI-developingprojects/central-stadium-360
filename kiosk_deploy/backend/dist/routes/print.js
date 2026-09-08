@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { once } from '../lib/idempotency.js';
 import { printDocument } from '../print/winprint.js';
 import { ticketSpec, receiptSpec } from '../print/layout.js';
+import { hasPrinted } from '../cloudprint.js';
 export const printRouter = Router();
 /**
  * Printing runs through the bridge because the POS80 thermal printer is a local
@@ -67,5 +68,19 @@ printRouter.post('/receipt', async (req, res) => {
     catch (e) {
         res.status(502).json({ error: 'printer_unreachable', detail: String(e) });
     }
+});
+/**
+ * Has this order's slip come out of the printer yet?
+ *
+ * The auto-printer (cloudprint.ts) prints a paid order a beat after payment,
+ * so the kiosk shows a "please wait for your receipt" screen and polls this
+ * until `printed` turns true — instead of guessing with a fixed timer.
+ */
+printRouter.get('/status', (req, res) => {
+    const ref = String(req.query.ref ?? '').trim();
+    if (!ref) {
+        return res.status(400).json({ error: 'missing_ref' });
+    }
+    res.json({ ref, printed: hasPrinted(ref) });
 });
 //# sourceMappingURL=print.js.map

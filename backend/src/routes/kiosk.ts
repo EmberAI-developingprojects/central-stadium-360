@@ -118,6 +118,7 @@ type PrintJobOrderRow = {
   ebarimt_date: string | null;
   ebarimt_vat: number | string | null;
   ebarimt_city_tax: number | string | null;
+  ebarimt_customer_tin: string | null;
   events: { title: string | null; start_time: string | null } | null;
 };
 
@@ -134,7 +135,7 @@ kiosk.get("/print-jobs", async (c) => {
   let query = admin
     .from("venue_orders")
     .select(
-      "id,reference,status,items,total,payment_method,paid_at,kiosk_id,qpay_invoice_id,ebarimt_id,ebarimt_ddtd,ebarimt_qr_data,ebarimt_lottery,ebarimt_date,ebarimt_vat,ebarimt_city_tax,events:events(title,start_time)",
+      "id,reference,status,items,total,payment_method,paid_at,kiosk_id,qpay_invoice_id,ebarimt_id,ebarimt_ddtd,ebarimt_qr_data,ebarimt_lottery,ebarimt_date,ebarimt_vat,ebarimt_city_tax,ebarimt_customer_tin,events:events(title,start_time)",
     )
     .eq("status", "paid")
     .gte("paid_at", sinceIso)
@@ -216,6 +217,8 @@ kiosk.get("/print-jobs", async (c) => {
       ebarimt_vat: o.ebarimt_vat == null ? null : Number(o.ebarimt_vat),
       ebarimt_city_tax:
         o.ebarimt_city_tax == null ? null : Number(o.ebarimt_city_tax),
+      // Present only on B2B sales; the bridge prints a Худ.авагч ТТД row.
+      ebarimt_customer_tin: o.ebarimt_customer_tin,
       tickets: (byOrder.get(o.id) ?? []).map((t) => ({
         code: t.code,
         zone_name_mn: zoneName.get(t.zone_id) ?? "",
@@ -238,6 +241,13 @@ const createOrderSchema = z.object({
   method: z.enum(["qpay", "card"]),
   buyer_phone: z.string().trim().min(1).nullable().optional(),
   kiosk_id: z.string().trim().min(1).nullable().optional(),
+  // B2B: buying company's register/TIN, 7-12 digits.
+  customer_tin: z
+    .string()
+    .trim()
+    .regex(/^\d{7,12}$/)
+    .nullable()
+    .optional(),
 });
 
 kiosk.post("/orders", async (c) => {
