@@ -4,18 +4,17 @@ import { config } from './config.js';
 import { printDocument } from './print/winprint.js';
 import { ticketSpec, receiptSpec, combineSpecs } from './print/layout.js';
 import type { PrintSpec } from './print/layout.js';
-/** One line item of a paid order, as the cloud's print-jobs feed reports it. */
+import { findIssued } from './ebarimt/issued.js';
+
 interface CloudOrderItem {
     zone_name_mn?: string;
     unit_price?: number;
     qty?: number;
 }
-/** One entry ticket of an order (each prints its own QR). */
 interface CloudTicket {
     code?: string;
     zone_name_mn?: string;
 }
-/** One recently paid order in the print-jobs feed. */
 interface CloudOrder {
     order_id?: string | number;
     reference?: string;
@@ -28,31 +27,24 @@ interface CloudOrder {
     ebarimt_ddtd?: string;
     ebarimt_qr_data?: string;
     ebarimt_lottery?: string;
+    /**
+     * Buyer company ТТД for a B2B sale. The cloud issues the barimt (Rail A),
+     * so it is the only party that knows this — the bridge never sees the
+     * choice. Reading it here means the slip prints 'ААН (B2B)' and a
+     * Худ.авагч ТТД row the moment the cloud starts sending the field.
+     */
+    ebarimt_customer_tin?: string;
     ebarimt_date?: string;
     ebarimt_vat?: number | null;
     ebarimt_city_tax?: number | null;
     items?: CloudOrderItem[];
     tickets?: CloudTicket[];
 }
-/** Body of GET /api/kiosk/print-jobs. */
+
 interface PrintJobsResponse {
     data?: CloudOrder[];
 }
-/**
- * Cloud print poller.
- *
- * The shipped kiosk web build never calls the bridge's /print routes, so the
- * bridge itself polls the cloud backend for recently PAID orders of this kiosk
- * (GET /api/kiosk/print-jobs, gated by X-Kiosk-Key) and prints each entry
- * ticket exactly once. A small on-disk ledger of printed codes survives
- * restarts, so a bridge restart inside the cloud's 15-minute window never
- * reprints a ticket.
- */
-/**
- * How long to hold a paid order's tickets while the cloud registers its
- * e-barimt, so both land on one slip. Issuance normally completes within a
- * second or two of payment; past this the tickets print on their own.
- */
+
 const RECEIPT_WAIT_MS = 20000;
 
 const LEDGER_PATH = path.resolve('printed-codes.json');
@@ -110,13 +102,20 @@ export function startCloudPrintPoller(print: typeof printDocument = printDocumen
                 if (ticketsDone && receiptDone)
                     continue;
 
-                const hasReceipt = order.payment_method === 'qpay' && !!order.ebarimt_qr_data;
+                // Any rail that produced an e-barimt joins it onto the ticket.
+                // This used to require payment_method === 'qpay', so a CARD sale —
+                // the rail this kiosk actually runs — printed its ticket alone here
+                // while /ebarimt/receipt printed the fiscal receipt as a SECOND slip.
+                // One purchase, one piece of paper, whichever rail issued the barimt.
+                // Rail B (routes/ebarimt.ts → local PosAPI) records what it issued.
+                // Prefer it: the feed reports ДДТД, date and VAT as null, and a
+                // B2B sale's buyer TIN never reaches the cloud at all.
+                const issued = findIssued(order.reference, order.order_id);
+                const hasReceipt = !!issued || !!order.ebarimt_qr_data;
                 // Zone name → unit price, for the ticket's Үнэ row.
                 const priceByZone = new Map((order.items ?? []).map((i): [string | undefined, number | undefined] => [i.zone_name_mn, i.unit_price]));
 
-                const buildReceipt = (): PrintSpec => {
-                    // Full ТЕГ paper template. VAT here is 10% INCLUSIVE
-                    // (price/11), matching how the bill itself was declared.
+                const buildReceipt = (compact: boolean): PrintSpec => {
                     const vatable = config.ebarimtVatable;
                     const items = (order.items ?? []).map((i) => {
                         const lineTotal = (i.qty ?? 1) * (i.unit_price ?? 0);
@@ -130,42 +129,44 @@ export function startCloudPrintPoller(print: typeof printDocument = printDocumen
                         };
                     });
                     const subtotal = items.reduce((a, i) => a + i.totalAmount, 0);
-                    // Prefer the VAT the tax authority actually registered for
-                    // this bill; fall back to the per-line 1/11 computation.
-                    const totalVAT = order.ebarimt_vat != null
-                        ? Number(order.ebarimt_vat)
-                        : Math.round(items.reduce((a, i) => a + i.totalVAT, 0) * 100) / 100;
+                    const totalVAT = issued?.totalVAT
+                        ?? (order.ebarimt_vat != null
+                            ? Number(order.ebarimt_vat)
+                            : Math.round(items.reduce((a, i) => a + i.totalVAT, 0) * 100) / 100);
                     return receiptSpec({
+                        compact,
                         orderRef: order.reference ?? '',
                         // Legal identity + bill meta, as the standard requires.
                         merchantName: config.ebarimtMerchantName,
                         merchantTin: config.ebarimtMerchantTin,
-                        posNo: config.ebarimtPosNo,
+                        posNo: issued?.posNo || config.ebarimtPosNo,
                         districtCode: config.ebarimtDistrictCode,
                         branchNo: config.ebarimtBranchNo,
-                        id: order.ebarimt_ddtd || order.ebarimt_id || '',
-                        date: order.ebarimt_date || order.paid_at || '',
+                        // Set → the slip prints 'ААН (B2B)' and a Худ.авагч ТТД row.
+                        customerTin: issued?.customerTin || order.ebarimt_customer_tin || undefined,
+                        id: issued?.id || order.ebarimt_ddtd || order.ebarimt_id || '',
+                        date: issued?.date || order.ebarimt_date || order.paid_at || '',
                         items,
                         subtotal,
                         totalVAT,
-                        totalCityTax: order.ebarimt_city_tax != null
-                            ? Number(order.ebarimt_city_tax)
-                            : 0,
+                        totalCityTax: issued?.totalCityTax
+                            ?? (order.ebarimt_city_tax != null
+                                ? Number(order.ebarimt_city_tax)
+                                : 0),
                         total: order.total ?? subtotal,
                         paymentLabel: order.payment_method === 'qpay' ? 'QPay' : 'Карт',
-                        ebarimtQrData: order.ebarimt_qr_data,
-                        ebarimtLottery: order.ebarimt_lottery ?? '',
+                        ebarimtQrData: issued?.qrData || order.ebarimt_qr_data,
+                        ebarimtLottery: issued?.lottery || order.ebarimt_lottery || '',
                     });
                 };
 
                 if (!ticketsDone) {
-                    // One purchase, one slip: hold the tickets briefly so the
-                    // e-barimt (issued cloud-side a moment after payment) rides
-                    // along. If it never shows, the buyer still gets their
-                    // tickets and the receipt follows on its own.
                     const paidMs = order.paid_at ? Date.parse(order.paid_at) : NaN;
                     const waited = Number.isNaN(paidMs) ? Infinity : Date.now() - paidMs;
-                    if (order.payment_method === 'qpay' && !hasReceipt && waited < RECEIPT_WAIT_MS)
+                    // Hold the tickets briefly on EVERY rail: a card sale registers
+                    // its e-barimt a moment after approval too, and without the wait
+                    // the ticket raced ahead and left the receipt to print on its own.
+                    if (!hasReceipt && waited < RECEIPT_WAIT_MS)
                         continue;
 
                     const specs: PrintSpec[] = all.map((tk, idx) => ticketSpec({
@@ -174,17 +175,17 @@ export function startCloudPrintPoller(print: typeof printDocument = printDocumen
                         event: order.event_title ?? '',
                         zone: tk.zone_name_mn ?? '',
                         quantity: 1,
-                        // "1 ширхэг" on single-ticket orders; "n / total" only
-                        // when several physical tickets need telling apart.
                         seq: all.length > 1 ? `${idx + 1} / ${all.length}` : undefined,
                         price: priceByZone.get(tk.zone_name_mn),
                         startsAt: order.event_start ?? '',
                         purchasedAt: order.paid_at ?? '',
                         venue: config.venueName,
                         qrData: tk.code!,
+                        // The receipt below repeats price and purchase time.
+                        compact: hasReceipt,
                     }));
                     if (hasReceipt)
-                        specs.push(buildReceipt());
+                        specs.push(buildReceipt(true));
                     if (specs.length === 0)
                         continue;
 
@@ -200,7 +201,7 @@ export function startCloudPrintPoller(print: typeof printDocument = printDocumen
                 else if (hasReceipt && !receiptDone) {
                     // Tickets already went out without the receipt — print it
                     // on its own now that the e-barimt has landed.
-                    await print(buildReceipt());
+                    await print(buildReceipt(false));
                     ledger.add(rkey);
                     saveLedger(ledger);
                     console.log(`[cloudprint] receipt printed (order ${String(order.reference).slice(0, 8)})`);
@@ -209,8 +210,6 @@ export function startCloudPrintPoller(print: typeof printDocument = printDocumen
         }
         catch (e) {
             failures += 1;
-            // First failure logs immediately; then once a minute so a dead
-            // network doesn't flood the console.
             if (failures === 1 || failures % 12 === 0)
                 console.warn(`[cloudprint] poll failed (${failures}x): ${String(e)}`);
         }

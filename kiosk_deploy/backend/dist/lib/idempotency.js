@@ -1,8 +1,4 @@
 const store = new Map();
-/**
- * Run `fn` at most once per `key`. Concurrent/duplicate calls with the same key
- * get the first call's result instead of re-executing the side effect.
- */
 export async function once(key, fn) {
     const existing = store.get(key);
     if (existing?.status === 'done')

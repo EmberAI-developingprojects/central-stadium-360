@@ -14,12 +14,6 @@ interface MockSettlementRow {
   settledAt: string;
 }
 
-/**
- * MockTerminal — always approves, no hardware. Lets the kiosk run end-to-end
- * (ticket + И-Баримт + email) on a dev box with no acquirer connected. Every
- * result carries `simulated: true` so nothing downstream mistakes it for a real
- * charge. This is the default driver until the Golomt terminal is provisioned.
- */
 export class MockTerminal implements PaymentTerminal {
   name = 'mock';
 

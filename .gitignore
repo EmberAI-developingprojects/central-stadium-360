@@ -50,3 +50,7 @@ kiosk_deploy/IPPOS*/
 
 # Kiosk bridge runtime ledger (per-box, never ship)
 kiosk_deploy/backend/printed-codes.json
+
+# Kiosk scratch: local launch tests and hand-made script backups
+kiosk_deploy/_test_*.bat
+*.ps1.bak

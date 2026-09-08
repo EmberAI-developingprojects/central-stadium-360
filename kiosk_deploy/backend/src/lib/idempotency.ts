@@ -5,10 +5,6 @@ interface Entry {
 
 const store = new Map<string, Entry>();
 
-/**
- * Run `fn` at most once per `key`. Concurrent/duplicate calls with the same key
- * get the first call's result instead of re-executing the side effect.
- */
 export async function once<T>(key: string, fn: () => Promise<T>): Promise<T> {
   const existing = store.get(key);
   if (existing?.status === 'done')

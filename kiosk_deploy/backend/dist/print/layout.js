@@ -47,15 +47,15 @@ export function ticketSpec(t) {
         // "2 / 3" numbering so gate staff can tell the physical tickets apart.
         { type: 'kv', k: 'Тасалбар', v: t.seq ?? `${t.quantity} ширхэг` },
     ];
-    if (t.price != null)
+    if (t.price != null && !t.compact)
         blocks.push({ type: 'kv', k: 'Үнэ', v: mnt(t.price) });
     blocks.push({ type: 'kv', k: 'Тоглолтын огноо', v: dt(t.startsAt) });
-    if (t.purchasedAt)
+    if (t.purchasedAt && !t.compact)
         blocks.push({ type: 'kv', k: 'Худалдан авсан', v: dt(t.purchasedAt) });
     // Below the QR: the short ticket code only. The trailing space is deliberately
     // large — a thermal printer's cutter sits ~12mm past the print head, so a
     // short tail gets the last printed lines guillotined mid-document.
-    blocks.push({ type: 'space', mm: 2 }, { type: 'qr', data: t.qrData, sizeMm: 38 }, { type: 'text', text: t.code ?? t.qrData, align: 'center', size: 'md', bold: true }, { type: 'space', mm: 14 });
+    blocks.push({ type: 'space', mm: 2 }, { type: 'qr', data: t.qrData, sizeMm: t.compact ? 34 : 38 }, { type: 'text', text: t.code ?? t.qrData, align: 'center', size: 'md', bold: true }, { type: 'space', mm: 14 });
     return { title: `Ticket ${t.orderRef}`, blocks };
 }
 export function receiptSpec(r) {
@@ -69,7 +69,7 @@ export function receiptSpec(r) {
     const paymentLabel = r.paymentLabel ?? 'Карт';
     const billTypeLabel = r.customerTin ? 'ААН (B2B)' : 'Иргэн (B2C)';
     const blocks = [];
-    if (r.merchantName) {
+    if (r.merchantName && !r.compact) {
         blocks.push({ type: 'text', text: r.merchantName.toUpperCase(), align: 'center', size: 'lg', bold: true });
     }
     blocks.push({ type: 'text', text: 'И-БАРИМТ', align: 'center', size: 'md', bold: true });
@@ -86,8 +86,12 @@ export function receiptSpec(r) {
         blocks.push({ type: 'kv', k: 'Худ.авагч ТТД', v: r.customerTin });
     blocks.push({ type: 'rule' });
     blocks.push({ type: 'kv', k: 'Огноо', v: dt(r.date ?? new Date().toISOString()) });
-    if (r.id)
-        blocks.push({ type: 'kv', k: 'ДДТД', v: r.id });
+    if (r.id) {
+        // Long fiscal ids wrap across the full width, so the key would print
+        // over the value in a shared kv row — stack them instead.
+        blocks.push({ type: 'text', text: 'ДДТД', align: 'left', size: 'sm' });
+        blocks.push({ type: 'text', text: r.id, align: 'left', size: 'sm', bold: true });
+    }
     blocks.push({ type: 'rule' });
     for (const it of items) {
         const unit = it.measureUnit ?? 'ширхэг';
@@ -108,18 +112,20 @@ export function receiptSpec(r) {
     blocks.push({ type: 'kv', k: 'Төлбөрийн хэлбэр', v: paymentLabel });
     blocks.push({ type: 'space', mm: 2 });
     if (r.ebarimtQrData)
-        blocks.push({ type: 'qr', data: r.ebarimtQrData, sizeMm: 40 });
+        blocks.push({ type: 'qr', data: r.ebarimtQrData, sizeMm: r.compact ? 36 : 40 });
     if (r.ebarimtLottery) {
         blocks.push({ type: 'space', mm: 1 });
         blocks.push({ type: 'text', text: 'Сугалааны дугаар', align: 'center', size: 'sm' });
         blocks.push({ type: 'text', text: r.ebarimtLottery, align: 'center', size: 'xl', bold: true });
     }
-    blocks.push({ type: 'space', mm: 2 });
-    blocks.push({ type: 'text', text: 'И-Баримт аппаар уншуулж', align: 'center', size: 'sm' });
-    blocks.push({ type: 'text', text: 'баталгаажуулна уу', align: 'center', size: 'sm' });
-    if (r.orderRef) {
-        blocks.push({ type: 'space', mm: 1 });
-        blocks.push({ type: 'text', text: `Захиалга: ${r.orderRef}`, align: 'center', size: 'sm' });
+    if (!r.compact) {
+        blocks.push({ type: 'space', mm: 2 });
+        blocks.push({ type: 'text', text: 'И-Баримт аппаар уншуулж', align: 'center', size: 'sm' });
+        blocks.push({ type: 'text', text: 'баталгаажуулна уу', align: 'center', size: 'sm' });
+        if (r.orderRef) {
+            blocks.push({ type: 'space', mm: 1 });
+            blocks.push({ type: 'text', text: `Захиалга: ${r.orderRef}`, align: 'center', size: 'sm' });
+        }
     }
     // Cutter offset — see ticketSpec: a short tail loses the last lines.
     blocks.push({ type: 'space', mm: 14 });

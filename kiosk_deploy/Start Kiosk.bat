@@ -65,7 +65,15 @@ if not errorlevel 1 (
 ) else (
   echo === Starting on-box bridge ^(e-barimt / print / email^) ===
   REM Explicitly unset PORT so it never overrides the bridge's default 1017.
-  start "kiosk-bridge" /D "%ROOT%backend" cmd /k "set PORT=&& node dist\server.js"
+  set "PORT="
+  REM Launch the bridge with NO console of its own, logging to backend\bridge-*.log.
+  REM It used to run in a "cmd /k" window; on an unattended kiosk that is a trap.
+  REM Windows consoles ship with QuickEdit ON, so one stray click inside the
+  REM window selects text and BLOCKS the process at its next write — the bridge
+  REM freezes with port 1017 still listening and every request timing out, which
+  REM looks exactly like a dead card reader. Start-Process detaches cleanly and
+  REM leaves no window to click in.
+  powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath 'node.exe' -ArgumentList 'dist\server.js' -WorkingDirectory '%ROOT%backend' -RedirectStandardOutput '%ROOT%backend\bridge-out.log' -RedirectStandardError '%ROOT%backend\bridge-err.log' -WindowStyle Hidden"
 )
 
 :kiosk
