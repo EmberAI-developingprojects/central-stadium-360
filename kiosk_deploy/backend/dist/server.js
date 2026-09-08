@@ -6,6 +6,7 @@ import { posRouter } from './routes/pos.js';
 import { ebarimtRouter } from './routes/ebarimt.js';
 import { printRouter } from './routes/print.js';
 import { emailRouter } from './routes/email.js';
+import { cloudRouter } from './routes/cloud.js';
 import { startCloudPrintPoller } from './cloudprint.js';
 const app = express();
 app.use(express.json());
@@ -15,6 +16,7 @@ app.use('/pos', posRouter);
 app.use('/ebarimt', ebarimtRouter);
 app.use('/print', printRouter);
 app.use('/email', emailRouter);
+app.use('/cloud', cloudRouter);
 async function preflight() {
     const rows = [];
     if (config.posDriver === 'mock') {

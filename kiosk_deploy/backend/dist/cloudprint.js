@@ -22,12 +22,28 @@ function saveLedger(set) {
     }
     catch { /* a full disk must not stop the kiosk */ }
 }
+/**
+ * The live ledger, shared with GET /print/status.
+ *
+ * The kiosk UI holds the buyer on a "printing…" screen until the slip is out,
+ * so it needs to know when this poller actually printed an order. Only the
+ * poller owns the set; this is a read-only window onto it.
+ */
+let liveLedger = null;
+/** Has the auto-printer already produced the slip for this order? */
+export function hasPrinted(orderId) {
+    const l = liveLedger;
+    if (!l)
+        return false;
+    return l.has(`order:${orderId}`);
+}
 export function startCloudPrintPoller(print = printDocument) {
     if (!config.cloudApiBase || !config.cloudKioskKey) {
         console.log('  cloud auto-print     : OFF — set KIOSK_API_BASE + KIOSK_KEY in .env to enable');
         return null;
     }
     const ledger = loadLedger();
+    liveLedger = ledger;
     let failures = 0;
     let stopped = false;
     const tick = async () => {

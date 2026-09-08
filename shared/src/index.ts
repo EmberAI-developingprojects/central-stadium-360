@@ -385,6 +385,8 @@ export interface DbVenueOrder {
   ebarimt_date?: string | null;
   ebarimt_vat?: number | null;
   ebarimt_city_tax?: number | null;
+  /** Buying company's TIN on a B2B kiosk sale (migration 0032). */
+  ebarimt_customer_tin?: string | null;
   kiosk_id: string | null;
   created_at: string;
 }
@@ -421,6 +423,12 @@ export interface KioskCreateOrderInput {
   method: PaymentMethod;
   buyer_phone?: string | null;
   kiosk_id?: string | null;
+  /**
+   * Buying company's TIN for a B2B sale — set when the buyer taps
+   * "Байгууллага" at the kiosk. The e-barimt is then issued to the company
+   * (COMPANY / B2B_RECEIPT) instead of a citizen.
+   */
+  customer_tin?: string | null;
 }
 
 export interface KioskCreateOrderResponse {

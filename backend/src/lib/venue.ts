@@ -147,6 +147,7 @@ export async function createKioskOrder(
     payment_method: input.method,
     buyer_phone: input.buyer_phone ?? null,
     kiosk_id: input.kiosk_id ?? null,
+    ebarimt_customer_tin: input.customer_tin?.trim() || null,
   });
   if (insErr) {
     await releaseItems(reserved);
@@ -368,11 +369,14 @@ async function issueEbarimtForVenueOrder(
   const paymentId = paidPaymentId(check);
   if (!paymentId) return;
   try {
+    // A kiosk buyer who picked "Байгууллага" left their company TIN on the
+    // order; QPay must then issue the barimt to that company, not a citizen.
+    const receiverType = order.ebarimt_customer_tin ? "COMPANY" : "CITIZEN";
     let receipt: EbarimtReceipt;
     if (isEbarimtV3Enabled()) {
-      receipt = await createEbarimtV3(paymentId, "CITIZEN");
+      receipt = await createEbarimtV3(paymentId, receiverType);
     } else {
-      const r = await createEbarimt(paymentId, "CITIZEN");
+      const r = await createEbarimt(paymentId, receiverType);
       receipt = {
         id: r.id,
         ddtd: r.id,
