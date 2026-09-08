@@ -1,4 +1,4 @@
-export const EBARIMT_MERCHANT_NAME = "Үндэсний Төв Цэнгэлдэх Хүрээлэн";
+export const EBARIMT_MERCHANT_NAME = "Төв цэнгэлдэх хүрээлэн";
 export const EBARIMT_MERCHANT_TIN = "43900438296";
 
 export function receiptDate(iso?: string | null): string {

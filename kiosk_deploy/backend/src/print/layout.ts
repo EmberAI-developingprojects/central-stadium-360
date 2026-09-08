@@ -72,6 +72,10 @@ export interface ReceiptInput {
 function mnt(n: number): string {
     return `${Math.round(n).toLocaleString('en-US')}₮`;
 }
+/** Tax lines keep 2 decimals — VAT is 1/11 of an inclusive price, never round. */
+function tax(n: number): string {
+    return `${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}₮`;
+}
 function dt(iso: string): string {
     const d = new Date(iso);
     if (Number.isNaN(d.getTime()))
@@ -79,6 +83,32 @@ function dt(iso: string): string {
     const p = (x: number) => String(x).padStart(2, '0');
     return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
+function trimTrailingSpace(blocks: PrintBlock[]): PrintBlock[] {
+    let end = blocks.length;
+    while (end > 0 && blocks[end - 1].type === 'space')
+        end--;
+    return blocks.slice(0, end);
+}
+
+/**
+ * Join several documents onto ONE slip so a purchase comes out as a single
+ * piece of paper instead of a ticket plus a separate receipt. Every section but
+ * the last loses its trailing cutter margin — that 14mm tail only earns its
+ * place at the very end, where the guillotine actually sits.
+ */
+export function combineSpecs(title: string, specs: PrintSpec[]): PrintSpec {
+    const parts = specs.filter((s) => s.blocks.length > 0);
+    const blocks: PrintBlock[] = [];
+    parts.forEach((s, i) => {
+        const last = i === parts.length - 1;
+        blocks.push(...(last ? s.blocks : trimTrailingSpace(s.blocks)));
+        if (!last) {
+            blocks.push({ type: 'space', mm: 3 }, { type: 'rule' }, { type: 'space', mm: 3 });
+        }
+    });
+    return { title, blocks };
+}
+
 export function ticketSpec(t: TicketInput): PrintSpec {
     const blocks: PrintBlock[] = [
         { type: 'text', text: t.venue, align: 'center', size: 'lg', bold: true },
@@ -147,9 +177,9 @@ export function receiptSpec(r: ReceiptInput): PrintSpec {
 
     blocks.push({ type: 'kv', k: 'Барааны дүн', v: mnt(subtotal) });
     if (totalVAT > 0)
-        blocks.push({ type: 'kv', k: 'НӨАТ (10%)', v: mnt(totalVAT) });
+        blocks.push({ type: 'kv', k: 'НӨАТ (10%)', v: tax(totalVAT) });
     if (r.totalCityTax && r.totalCityTax > 0)
-        blocks.push({ type: 'kv', k: 'НХАТ', v: mnt(r.totalCityTax) });
+        blocks.push({ type: 'kv', k: 'НХАТ', v: tax(r.totalCityTax) });
     blocks.push({ type: 'rule' });
     blocks.push({ type: 'text', text: `НИЙТ ДҮН   ${mnt(total)}`, align: 'right', size: 'md', bold: true });
     blocks.push({ type: 'space', mm: 1 });

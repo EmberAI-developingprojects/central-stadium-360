@@ -152,7 +152,7 @@ function labels(lang: 'mn' | 'en'): Labels {
       : 'Scan with the И-Баримт app to claim your fiscal receipt.',
     lottery: mn ? 'Сугалааны дугаар' : 'Lottery number',
     footer: mn
-      ? 'Энэ имэйлийг Үндэсний цэнгэлдэх хүрээлэнгийн тасалбарын киоскоос илгээв.'
+      ? 'Энэ имэйлийг Төв цэнгэлдэх хүрээлэнгийн тасалбарын киоскоос илгээв.'
       : 'Sent by the National Stadium ticket kiosk.',
   };
 }
