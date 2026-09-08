@@ -10,7 +10,7 @@ const PHONE_DISPLAY = "(+976) 7700-1212";
 const PHONE_TEL = "+97677001212";
 const EMAIL = "info@stadium.mn";
 
-const MAP_PLACE = "Үндэсний Төв Цэнгэлдэх Хүрээлэн";
+const MAP_PLACE = "Төв цэнгэлдэх хүрээлэн";
 
 const MAP_EMBED_SRC = `https://www.google.com/maps?q=${encodeURIComponent(
   MAP_PLACE,
