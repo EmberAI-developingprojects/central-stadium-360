@@ -61,8 +61,12 @@ export type OrderRecord = {
   payment?: string;
   paymentName?: string;
   ebarimtId?: string | null;
+  ebarimtDdtd?: string | null;
   ebarimtLottery?: string | null;
   ebarimtQrData?: string | null;
+  ebarimtDate?: string | null;
+  ebarimtVat?: number | null;
+  ebarimtCityTax?: number | null;
 };
 
 export type UserRole = "admin" | "user";
@@ -176,8 +180,12 @@ function ticketToOrder(t: AdminTicketRow): OrderRecord {
     payment: "qpay",
     paymentName: "QPay",
     ebarimtId: t.ebarimt_id ?? null,
+    ebarimtDdtd: t.ebarimt_ddtd ?? null,
     ebarimtLottery: t.ebarimt_lottery ?? null,
     ebarimtQrData: t.ebarimt_qr_data ?? null,
+    ebarimtDate: t.ebarimt_date ?? null,
+    ebarimtVat: t.ebarimt_vat ?? null,
+    ebarimtCityTax: t.ebarimt_city_tax ?? null,
   };
 }
 
@@ -601,8 +609,12 @@ export async function listMyOrders(): Promise<OrderRecord[]> {
         image: ev?.image || undefined,
         date: ev?.start_time || undefined,
         ebarimtId: t.ebarimt_id ?? null,
+        ebarimtDdtd: t.ebarimt_ddtd ?? null,
         ebarimtLottery: t.ebarimt_lottery ?? null,
         ebarimtQrData: t.ebarimt_qr_data ?? null,
+        ebarimtDate: t.ebarimt_date ?? null,
+        ebarimtVat: t.ebarimt_vat ?? null,
+        ebarimtCityTax: t.ebarimt_city_tax ?? null,
       } satisfies OrderRecord;
     })
     .sort((a, b) =>

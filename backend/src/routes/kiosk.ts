@@ -1,6 +1,11 @@
 import { Hono } from "hono";
 import { z } from "zod";
-import type { KioskEvent, KioskZone, VenueOrderItem } from "@cs360/shared";
+import type {
+  DbVenueOrder,
+  KioskEvent,
+  KioskZone,
+  VenueOrderItem,
+} from "@cs360/shared";
 import { getSupabaseAdmin } from "../lib/supabase";
 import { requireKiosk, type KioskEnv } from "../middleware/require-kiosk";
 import {
@@ -10,6 +15,7 @@ import {
   getKioskOrderStatus,
   kioskSaleCutoffIso,
   redeemTicket,
+  retryEbarimtForOrder,
 } from "../lib/venue";
 import {
   getCallbackSecret,
@@ -103,9 +109,15 @@ type PrintJobOrderRow = {
   payment_method: string | null;
   paid_at: string | null;
   kiosk_id: string | null;
+  qpay_invoice_id: string | null;
+  status: string;
   ebarimt_id: string | null;
+  ebarimt_ddtd: string | null;
   ebarimt_qr_data: string | null;
   ebarimt_lottery: string | null;
+  ebarimt_date: string | null;
+  ebarimt_vat: number | string | null;
+  ebarimt_city_tax: number | string | null;
   events: { title: string | null; start_time: string | null } | null;
 };
 
@@ -122,7 +134,7 @@ kiosk.get("/print-jobs", async (c) => {
   let query = admin
     .from("venue_orders")
     .select(
-      "id,reference,items,total,payment_method,paid_at,kiosk_id,ebarimt_id,ebarimt_qr_data,ebarimt_lottery,events:events(title,start_time)",
+      "id,reference,status,items,total,payment_method,paid_at,kiosk_id,qpay_invoice_id,ebarimt_id,ebarimt_ddtd,ebarimt_qr_data,ebarimt_lottery,ebarimt_date,ebarimt_vat,ebarimt_city_tax,events:events(title,start_time)",
     )
     .eq("status", "paid")
     .gte("paid_at", sinceIso)
@@ -134,6 +146,29 @@ kiosk.get("/print-jobs", async (c) => {
     return c.json({ ok: false, error: error.message } as const, 500);
   }
   const orders = (data ?? []) as unknown as PrintJobOrderRow[];
+
+  const missing = orders.filter(
+    (o) => o.payment_method === "qpay" && !o.ebarimt_lottery,
+  );
+  if (missing.length > 0) {
+    await Promise.all(
+      missing.map((o) =>
+        retryEbarimtForOrder(o as unknown as DbVenueOrder).then((done) => {
+          if (!done) return;
+          return admin
+            .from("venue_orders")
+            .select(
+              "ebarimt_id,ebarimt_ddtd,ebarimt_qr_data,ebarimt_lottery,ebarimt_date,ebarimt_vat,ebarimt_city_tax",
+            )
+            .eq("id", o.id)
+            .maybeSingle()
+            .then(({ data: fresh }) => {
+              if (fresh) Object.assign(o, fresh);
+            });
+        }),
+      ),
+    );
+  }
 
   const byOrder = new Map<string, { code: string; zone_id: string }[]>();
   if (orders.length > 0) {
@@ -174,8 +209,13 @@ kiosk.get("/print-jobs", async (c) => {
       payment_method: o.payment_method,
       items: o.items ?? [],
       ebarimt_id: o.ebarimt_id,
+      ebarimt_ddtd: o.ebarimt_ddtd ?? o.ebarimt_id,
       ebarimt_qr_data: o.ebarimt_qr_data,
       ebarimt_lottery: o.ebarimt_lottery,
+      ebarimt_date: o.ebarimt_date,
+      ebarimt_vat: o.ebarimt_vat == null ? null : Number(o.ebarimt_vat),
+      ebarimt_city_tax:
+        o.ebarimt_city_tax == null ? null : Number(o.ebarimt_city_tax),
       tickets: (byOrder.get(o.id) ?? []).map((t) => ({
         code: t.code,
         zone_name_mn: zoneName.get(t.zone_id) ?? "",

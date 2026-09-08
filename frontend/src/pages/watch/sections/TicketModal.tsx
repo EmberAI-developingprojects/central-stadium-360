@@ -20,6 +20,12 @@ import { formatRemaining, money } from "../utils";
 import type { TicketModalEvent } from "../types";
 import { pickEventLocale } from "../../../lib/eventLocale";
 import {
+  EBARIMT_MERCHANT_NAME,
+  EBARIMT_MERCHANT_TIN,
+  receiptDate,
+  taxMoney,
+} from "../../../lib/ebarimt";
+import {
   TICKET_ALERT_CLS,
   TICKET_CHECKOUT_CLS,
   TICKET_FINEPRINT_CLS,
@@ -200,8 +206,12 @@ export function TicketModal({
                 ? {
                     ...prev,
                     ebarimtId: full.ebarimtId,
+                    ebarimtDdtd: full.ebarimtDdtd,
                     ebarimtLottery: full.ebarimtLottery,
                     ebarimtQrData: full.ebarimtQrData,
+                    ebarimtDate: full.ebarimtDate,
+                    ebarimtVat: full.ebarimtVat,
+                    ebarimtCityTax: full.ebarimtCityTax,
                   }
                 : prev,
             );
@@ -634,18 +644,80 @@ export function TicketModal({
               <strong>{success.code}</strong>
             </div>
             <div className="mx-auto mt-3 w-full max-w-[320px] rounded-xl bg-[rgba(255,255,255,0.04)] border border-solid border-[rgba(255,255,255,0.10)] p-4 text-left">
-              <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.08em] text-[rgba(255,255,255,0.55)]">
-                {t("order_payment_title")}
+              <div className="mb-2 text-center text-[11px] font-bold uppercase tracking-[0.08em] text-[rgba(255,255,255,0.55)]">
+                {t("order_ebarimt_title")}
               </div>
               <dl className="flex flex-col gap-1.5 m-0 text-[13px] [&>div]:flex [&>div]:justify-between [&>div]:gap-3">
+                <div>
+                  <dt className="text-[rgba(255,255,255,0.6)]">
+                    {t("order_ebarimt_seller")}
+                  </dt>
+                  <dd className="m-0 text-right font-semibold text-[rgba(255,255,255,0.9)]">
+                    {EBARIMT_MERCHANT_NAME}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-[rgba(255,255,255,0.6)]">
+                    {t("order_ebarimt_tin")}
+                  </dt>
+                  <dd className="m-0 font-mono text-[rgba(255,255,255,0.9)] tabular-nums">
+                    {EBARIMT_MERCHANT_TIN}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-[rgba(255,255,255,0.6)]">
+                    {t("order_ebarimt_type")}
+                  </dt>
+                  <dd className="m-0 text-[rgba(255,255,255,0.9)]">
+                    {companyTin.trim()
+                      ? t("order_ebarimt_type_b2b")
+                      : t("order_ebarimt_type_b2c")}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-[rgba(255,255,255,0.6)]">
+                    {t("order_ebarimt_date")}
+                  </dt>
+                  <dd className="m-0 text-[rgba(255,255,255,0.9)] tabular-nums">
+                    {receiptDate(success.ebarimtDate ?? success.purchasedAt)}
+                  </dd>
+                </div>
+
+                <div className="mt-1 pt-2 border-t border-dashed border-[rgba(255,255,255,0.10)]">
+                  <dt className="text-[rgba(255,255,255,0.75)]">
+                    {success.title}
+                  </dt>
+                  <dd className="m-0 shrink-0 text-right font-semibold text-[rgba(255,255,255,0.9)] tabular-nums">
+                    1 × {money(success.total)}
+                  </dd>
+                </div>
+
+                <div className="mt-1 pt-2 border-t border-dashed border-[rgba(255,255,255,0.10)]">
+                  <dt className="text-[rgba(255,255,255,0.6)]">
+                    {t("order_subtotal")}
+                  </dt>
+                  <dd className="m-0 font-semibold text-[rgba(255,255,255,0.9)] tabular-nums">
+                    {money(success.total)}
+                  </dd>
+                </div>
                 <div>
                   <dt className="text-[rgba(255,255,255,0.6)]">
                     {t("order_vat")}
                   </dt>
                   <dd className="m-0 font-semibold text-[rgba(255,255,255,0.9)] tabular-nums">
-                    {money(Math.round(success.total / 11))}
+                    {taxMoney(success.ebarimtVat ?? success.total / 11)}
                   </dd>
                 </div>
+                {(success.ebarimtCityTax ?? 0) > 0 && (
+                  <div>
+                    <dt className="text-[rgba(255,255,255,0.6)]">
+                      {t("order_city_tax")}
+                    </dt>
+                    <dd className="m-0 font-semibold text-[rgba(255,255,255,0.9)] tabular-nums">
+                      {taxMoney(success.ebarimtCityTax ?? 0)}
+                    </dd>
+                  </div>
+                )}
                 <div>
                   <dt className="text-white font-bold">
                     {t("order_total_paid")}
@@ -654,13 +726,20 @@ export function TicketModal({
                     {money(success.total)}
                   </dd>
                 </div>
-                {success.ebarimtId && (
+                <div>
+                  <dt className="text-[rgba(255,255,255,0.6)]">
+                    {t("order_payment_method")}
+                  </dt>
+                  <dd className="m-0 text-[rgba(255,255,255,0.9)]">QPay</dd>
+                </div>
+
+                {(success.ebarimtDdtd || success.ebarimtId) && (
                   <div className="mt-1 pt-2 border-t border-dashed border-[rgba(255,255,255,0.10)]">
                     <dt className="text-[rgba(255,255,255,0.6)] shrink-0">
                       {t("order_ebarimt_ddtd")}
                     </dt>
                     <dd className="m-0 font-mono text-[11px] font-semibold text-[rgba(255,255,255,0.85)] break-all text-right">
-                      {success.ebarimtId}
+                      {success.ebarimtDdtd || success.ebarimtId}
                     </dd>
                   </div>
                 )}

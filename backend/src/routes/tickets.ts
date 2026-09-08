@@ -149,7 +149,7 @@ tickets.get("/my", async (c) => {
   const { data, error } = await admin
     .from("tickets")
     .select(
-      "id,user_id,event_id,status,ticket_type,price,qpay_invoice_id,created_at,paid_at,refunded_at,ebarimt_id,ebarimt_qr_data,ebarimt_lottery",
+      "id,user_id,event_id,status,ticket_type,price,qpay_invoice_id,created_at,paid_at,refunded_at,ebarimt_id,ebarimt_ddtd,ebarimt_qr_data,ebarimt_lottery,ebarimt_date,ebarimt_vat,ebarimt_city_tax",
     )
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
@@ -162,7 +162,7 @@ tickets.get("/my", async (c) => {
 });
 
 const MY_SELECT_COLS =
-  "id,user_id,event_id,status,ticket_type,price,qpay_invoice_id,created_at,paid_at,refunded_at,ebarimt_id,ebarimt_qr_data,ebarimt_lottery";
+  "id,user_id,event_id,status,ticket_type,price,qpay_invoice_id,created_at,paid_at,refunded_at,ebarimt_id,ebarimt_ddtd,ebarimt_qr_data,ebarimt_lottery,ebarimt_date,ebarimt_vat,ebarimt_city_tax";
 
 const REFUND_WINDOW_AFTER_START_MS = 30 * 60 * 1000;
 

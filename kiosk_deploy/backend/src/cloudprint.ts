@@ -24,8 +24,12 @@ interface CloudOrder {
     total?: number;
     payment_method?: string;
     ebarimt_id?: string;
+    ebarimt_ddtd?: string;
     ebarimt_qr_data?: string;
     ebarimt_lottery?: string;
+    ebarimt_date?: string;
+    ebarimt_vat?: number | null;
+    ebarimt_city_tax?: number | null;
     items?: CloudOrderItem[];
     tickets?: CloudTicket[];
 }
@@ -132,7 +136,11 @@ export function startCloudPrintPoller(print: typeof printDocument = printDocumen
                         };
                     });
                     const subtotal = items.reduce((a, i) => a + i.totalAmount, 0);
-                    const totalVAT = Math.round(items.reduce((a, i) => a + i.totalVAT, 0) * 100) / 100;
+                    // Prefer the VAT the tax authority actually registered for
+                    // this bill; fall back to the per-line 1/11 computation.
+                    const totalVAT = order.ebarimt_vat != null
+                        ? Number(order.ebarimt_vat)
+                        : Math.round(items.reduce((a, i) => a + i.totalVAT, 0) * 100) / 100;
                     await print(receiptSpec({
                         orderRef: order.reference ?? '',
                         // Legal identity + bill meta, as the standard requires.
@@ -141,11 +149,14 @@ export function startCloudPrintPoller(print: typeof printDocument = printDocumen
                         posNo: config.ebarimtPosNo,
                         districtCode: config.ebarimtDistrictCode,
                         branchNo: config.ebarimtBranchNo,
-                        id: order.ebarimt_id ?? '',
-                        date: order.paid_at ?? '',
+                        id: order.ebarimt_ddtd || order.ebarimt_id || '',
+                        date: order.ebarimt_date || order.paid_at || '',
                         items,
                         subtotal,
                         totalVAT,
+                        totalCityTax: order.ebarimt_city_tax != null
+                            ? Number(order.ebarimt_city_tax)
+                            : 0,
                         total: order.total ?? subtotal,
                         paymentLabel: order.payment_method === 'qpay' ? 'QPay' : 'Карт',
                         ebarimtQrData: order.ebarimt_qr_data,

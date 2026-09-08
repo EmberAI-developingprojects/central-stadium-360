@@ -220,6 +220,10 @@ export async function getKioskOrderStatus(
   if (!order) return { ok: false, error: "not_found", status: 404 };
 
   if (order.status === "paid") {
+    if (await retryEbarimtForOrder(order)) {
+      const fresh = await loadOrder(orderId);
+      if (fresh) return { ok: true, data: await loadOrderView(fresh) };
+    }
     return { ok: true, data: await loadOrderView(order) };
   }
 
@@ -364,33 +368,82 @@ async function issueEbarimtForVenueOrder(
   const paymentId = paidPaymentId(check);
   if (!paymentId) return;
   try {
-    let receipt: EbarimtReceipt | null;
+    let receipt: EbarimtReceipt;
     if (isEbarimtV3Enabled()) {
       receipt = await createEbarimtV3(paymentId, "CITIZEN");
     } else {
       const r = await createEbarimt(paymentId, "CITIZEN");
       receipt = {
         id: r.id,
+        ddtd: r.id,
         qrData: r.ebarimt_qr_data,
         lottery: r.ebarimt_lottery,
+        date: null,
+        vat: 0,
+        cityTax: 0,
       };
     }
-    await admin
+    const { error } = await admin
       .from("venue_orders")
       .update({
         qpay_payment_id: paymentId,
-        ...(receipt
-          ? {
-              ebarimt_id: receipt.id,
-              ebarimt_qr_data: receipt.qrData,
-              ebarimt_lottery: receipt.lottery,
-            }
-          : {}),
+        ebarimt_id: receipt.id,
+        ebarimt_ddtd: receipt.ddtd || receipt.id,
+        ebarimt_qr_data: receipt.qrData,
+        ebarimt_lottery: receipt.lottery,
+        ebarimt_date: receipt.date,
+        ebarimt_vat: receipt.vat,
+        ebarimt_city_tax: receipt.cityTax,
       })
       .eq("id", order.id)
       .is("ebarimt_lottery", null);
+    if (error) {
+      console.error(
+        "venue_order_ebarimt_persist_failed",
+        order.id,
+        error.message.slice(0, 300),
+      );
+    }
   } catch (err) {
-    console.error("venue_order_ebarimt_failed", order.id, err);
+    console.error(
+      "venue_order_ebarimt_failed",
+      order.id,
+      String(err).slice(0, 300),
+    );
+  }
+}
+
+const EBARIMT_RETRY_INTERVAL_MS = 20_000;
+const EBARIMT_RETRY_WINDOW_MS = 6 * 60 * 60 * 1000;
+const lastEbarimtAttempt = new Map<string, number>();
+
+export async function retryEbarimtForOrder(
+  order: DbVenueOrder,
+): Promise<boolean> {
+  if (order.status !== "paid") return false;
+  if (order.payment_method !== "qpay") return false;
+  if (order.ebarimt_lottery || !order.qpay_invoice_id) return false;
+  if (!isQPayConfigured()) return false;
+
+  const paidMs = order.paid_at ? new Date(order.paid_at).getTime() : 0;
+  if (!paidMs || Date.now() - paidMs > EBARIMT_RETRY_WINDOW_MS) return false;
+
+  const last = lastEbarimtAttempt.get(order.id) ?? 0;
+  if (Date.now() - last < EBARIMT_RETRY_INTERVAL_MS) return false;
+  lastEbarimtAttempt.set(order.id, Date.now());
+
+  try {
+    const check = await checkInvoicePayment(order.qpay_invoice_id);
+    if (!isPaid(check)) return false;
+    await issueEbarimtForVenueOrder(order, check);
+    return true;
+  } catch (err) {
+    console.error(
+      "venue_order_ebarimt_retry_failed",
+      order.id,
+      String(err).slice(0, 300),
+    );
+    return false;
   }
 }
 
@@ -400,7 +453,7 @@ async function loadOrder(orderId: string): Promise<DbVenueOrder | null> {
   const { data } = await admin
     .from("venue_orders")
     .select(
-      "id,event_id,reference,status,items,total,payment_method,qpay_invoice_id,qpay_payment_id,paid_at,buyer_phone,ebarimt_id,ebarimt_qr_data,ebarimt_lottery,kiosk_id,created_at",
+      "id,event_id,reference,status,items,total,payment_method,qpay_invoice_id,qpay_payment_id,paid_at,buyer_phone,ebarimt_id,ebarimt_ddtd,ebarimt_qr_data,ebarimt_lottery,ebarimt_date,ebarimt_vat,ebarimt_city_tax,kiosk_id,created_at",
     )
     .eq("id", orderId)
     .maybeSingle<DbVenueOrder>();
