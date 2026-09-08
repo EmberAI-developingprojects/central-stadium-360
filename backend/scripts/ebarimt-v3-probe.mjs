@@ -29,13 +29,17 @@ const DISTRICT =
   env.QPAY_EBARIMT_DISTRICT_CODE || env.EBARIMT_DISTRICT_CODE || "";
 const CLASSIFICATION = env.EBARIMT_CLASSIFICATION_CODE || "";
 
-if (!env.QPAY_USERNAME || !env.QPAY_PASSWORD) {
-  console.error("QPAY_USERNAME / QPAY_PASSWORD missing from backend/.env");
-  process.exit(1);
-}
-if (!INVOICE_CODE) {
-  console.error("QPAY_EBARIMT_INVOICE_CODE missing from backend/.env");
-  process.exit(1);
+for (const [k, v] of [
+  ["QPAY_USERNAME", env.QPAY_USERNAME],
+  ["QPAY_PASSWORD", env.QPAY_PASSWORD],
+  ["QPAY_EBARIMT_INVOICE_CODE", INVOICE_CODE],
+  ["QPAY_EBARIMT_DISTRICT_CODE", DISTRICT],
+  ["EBARIMT_CLASSIFICATION_CODE", CLASSIFICATION],
+]) {
+  if (!v) {
+    console.error(`${k} missing from backend/.env`);
+    process.exit(1);
+  }
 }
 
 const vat = (total) =>
@@ -44,7 +48,6 @@ const vat = (total) =>
 const basic = Buffer.from(`${env.QPAY_USERNAME}:${env.QPAY_PASSWORD}`).toString(
   "base64",
 );
-
 const authRes = await fetch(`${BASE}/v2/auth/token`, {
   method: "POST",
   headers: {
@@ -69,7 +72,7 @@ const payload = {
   sender_invoice_no: `PROBE-${Date.now()}`,
   invoice_receiver_code: "83",
   sender_branch_code: "web",
-  invoice_description: "eBarimt 3.0 probe — Төв цэнгэлдэх хүрээлэн",
+  invoice_description: "eBarimt 3.0 probe",
   callback_url: "https://example.com/callback",
   tax_type: env.QPAY_EBARIMT_TAX_TYPE || "1",
   district_code: DISTRICT,
@@ -91,10 +94,10 @@ const payload = {
   })),
 };
 
-console.log("\nrequest ->", `${BASE}/v2/ebarimt_v3/create`);
-console.log(JSON.stringify(payload, null, 2));
+const expected = products.reduce((s, p) => s + p.qty * p.unitPrice, 0);
+console.log(`\nPOST ${BASE}/v2/invoice`);
 
-const res = await fetch(`${BASE}/v2/ebarimt_v3/create`, {
+const res = await fetch(`${BASE}/v2/invoice`, {
   method: "POST",
   headers: {
     Authorization: `Bearer ${access_token}`,
@@ -103,10 +106,33 @@ const res = await fetch(`${BASE}/v2/ebarimt_v3/create`, {
   body: JSON.stringify(payload),
 });
 const text = await res.text();
-console.log("\nresponse <-", res.status);
+let data;
 try {
-  console.log(JSON.stringify(JSON.parse(text), null, 2));
+  data = JSON.parse(text);
 } catch {
-  console.log(text);
+  data = null;
 }
-process.exit(res.ok ? 0 : 1);
+
+console.log(`response ${res.status}`);
+if (!res.ok || !data?.invoice_id) {
+  console.log(text);
+  process.exit(1);
+}
+
+console.log("invoice_id:", data.invoice_id);
+console.log("qr_text length:", (data.qr_text ?? "").length);
+console.log("bank urls:", (data.urls ?? []).length);
+
+const detail = await fetch(`${BASE}/v2/invoice/${data.invoice_id}`, {
+  headers: { Authorization: `Bearer ${access_token}` },
+});
+const inv = await detail.json();
+console.log("\ninvoice_status:", inv.invoice_status);
+console.log("total_amount:", inv.total_amount, `(expected ${expected})`);
+console.log("tax_amount:", inv.tax_amount, `(expected ${expected / 11})`);
+for (const l of inv.lines ?? []) {
+  console.log(
+    `  ${l.line_description} | ${l.line_quantity} x ${l.line_unit_price} | VAT ${l.taxes?.[0]?.amount}`,
+  );
+}
+console.log("\nOK. Unpaid probe invoice, it will simply expire.");

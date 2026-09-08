@@ -129,7 +129,6 @@ payments.post("/qpay-callback", async (c) => {
     ticketType: ticket.ticket_type,
     price: ticket.price,
     qpayPaymentId: paidPaymentId(check),
-    qpayCheck: check,
     customerTin: ticket.ebarimt_customer_tin,
   });
 
@@ -232,8 +231,7 @@ statusRoute.get("/:invoiceId", async (c) => {
         ticketType: ticket.ticket_type,
         price: ticket.price,
         qpayPaymentId: paidPaymentId(check),
-        qpayCheck: check,
-        customerTin: ticket.ebarimt_customer_tin,
+            customerTin: ticket.ebarimt_customer_tin,
       });
     }
 

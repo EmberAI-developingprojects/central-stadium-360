@@ -62,9 +62,6 @@ export interface PaymentCheckRow {
   payment_amount: number | string;
   payment_date?: string;
   payment_currency?: string;
-  ebarimt_id?: string | null;
-  ebarimt_qr_data?: string | null;
-  ebarimt_lottery?: string | null;
 }
 
 export interface PaymentCheckResult {
@@ -305,10 +302,7 @@ async function createEbarimtV3Invoice(
     }),
   };
 
-  const data = await qpayPost<QPayCreateInvoiceApi>(
-    "/v2/ebarimt_v3/create",
-    payload,
-  );
+  const data = await qpayPost<QPayCreateInvoiceApi>("/v2/invoice", payload);
   return toApiInvoice(data);
 }
 
@@ -400,17 +394,28 @@ export interface EbarimtReceipt {
   lottery: string;
 }
 
-export function ebarimtFromCheck(
-  check: PaymentCheckResult,
-): EbarimtReceipt | null {
-  const row = check.rows.find(
-    (r) => String(r.payment_status).toUpperCase() === "PAID",
-  );
-  if (!row?.ebarimt_id) return null;
+interface EbarimtV3Api {
+  id?: string;
+  ebarimt_id?: string;
+  ebarimt_qr_data?: string;
+  qr_data?: string;
+  ebarimt_lottery?: string;
+  lottery?: string;
+  ebarimt_status?: string;
+}
+
+export async function createEbarimtV3(
+  paymentId: string,
+  receiverType: "CITIZEN" | "COMPANY" = "CITIZEN",
+): Promise<EbarimtReceipt> {
+  const data = await qpayPost<EbarimtV3Api>("/v2/ebarimt_v3/create", {
+    payment_id: paymentId,
+    ebarimt_receiver_type: receiverType,
+  });
   return {
-    id: String(row.ebarimt_id),
-    qrData: row.ebarimt_qr_data ?? "",
-    lottery: row.ebarimt_lottery ?? "",
+    id: String(data.id ?? data.ebarimt_id ?? ""),
+    qrData: data.ebarimt_qr_data ?? data.qr_data ?? "",
+    lottery: data.ebarimt_lottery ?? data.lottery ?? "",
   };
 }
 
