@@ -7,7 +7,6 @@ import { posRouter } from './routes/pos.js';
 import { ebarimtRouter } from './routes/ebarimt.js';
 import { printRouter } from './routes/print.js';
 import { emailRouter } from './routes/email.js';
-import { cloudRouter } from './routes/cloud.js';
 import { startCloudPrintPoller } from './cloudprint.js';
 
 /** One preflight table row: [label, status, detail]. */
@@ -26,7 +25,6 @@ app.use('/pos', posRouter);
 app.use('/ebarimt', ebarimtRouter);
 app.use('/print', printRouter);
 app.use('/email', emailRouter);
-app.use('/cloud', cloudRouter);
 
 async function preflight(): Promise<void> {
     const rows: PreflightRow[] = [];
