@@ -23,6 +23,61 @@ const ReceiptBody = z.object({
     paymentCode: z.string().optional(),
 });
 
+/**
+ * GET /ebarimt/org?regno=1234567 — who is this register number?
+ *
+ * A B2B buyer types their organisation's *register* number, but the receipt
+ * needs its ТТД, and the buyer needs to see a name before they accept. ТЕГ's
+ * public directory answers both, in two hops:
+ *
+ *   getTinInfo?regNo=2027496   -> 43900438296
+ *   getInfo?tin=43900438296    -> { name: "Төвцэнгэлдэх хүрээлэн", ... }
+ *
+ * It runs here rather than in the browser because api.ebarimt.mn sends no CORS
+ * headers. Note this is the *public* directory, not the on-box PosAPI — it
+ * works even while PosAPI activation is still blocked.
+ */
+const EBARIMT_DIRECTORY = 'https://api.ebarimt.mn/api/info/check';
+
+async function directoryGet(path: string): Promise<any> {
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), 8000);
+    try {
+        const r = await fetch(`${EBARIMT_DIRECTORY}/${path}`, { signal: ctl.signal });
+        if (!r.ok) return null;
+        return await r.json();
+    }
+    catch {
+        return null;
+    }
+    finally {
+        clearTimeout(t);
+    }
+}
+
+ebarimtRouter.get('/org', async (req, res) => {
+    const regno = String(req.query.regno ?? '').trim();
+    if (!/^\d{7}$/.test(regno)) {
+        return res.status(400).json({ error: 'invalid_regno', hint: 'Register number is 7 digits.' });
+    }
+    const tinRes = await directoryGet(`getTinInfo?regNo=${encodeURIComponent(regno)}`);
+    const tin = tinRes && tinRes.status === 200 && tinRes.data ? String(tinRes.data) : '';
+    if (!tin) {
+        return res.json({ found: false, regno, tin: '', name: '' });
+    }
+    const infoRes = await directoryGet(`getInfo?tin=${encodeURIComponent(tin)}`);
+    const info = infoRes && infoRes.status === 200 ? infoRes.data : null;
+    // A TIN with no directory entry is still a usable TIN; the buyer just
+    // cannot confirm a name, so say so rather than pretending it failed.
+    res.json({
+        found: true,
+        regno,
+        tin,
+        name: (info && info.name) ? String(info.name) : '',
+        vatPayer: info ? info.vatPayer === true : null,
+    });
+});
+
 const AUTOPRINT_EBARIMT = (process.env.PRINT_EBARIMT ?? 'on').toLowerCase() !== 'off';
 
 ebarimtRouter.post('/receipt', async (req: Request, res: Response) => {
