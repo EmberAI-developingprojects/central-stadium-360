@@ -427,6 +427,8 @@ function toNewsPayload(items: NewsItem[]): Partial<DbHomeNews>[] {
     label_en: it.labelEn?.trim() ? it.labelEn : null,
     title_en: it.titleEn?.trim() ? it.titleEn : null,
     body_en: it.bodyEn?.trim() ? it.bodyEn : null,
+    // The save replaces every row, so the original date has to travel with it.
+    ...(it.createdAt ? { created_at: it.createdAt } : {}),
   }));
 }
 function toPartnerPayload(items: Partner[]): Partial<DbHomePartner>[] {

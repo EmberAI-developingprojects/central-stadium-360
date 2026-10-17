@@ -73,6 +73,7 @@ const newsItemSchema = z.object({
   label_en: z.string().nullable().optional(),
   title_en: z.string().nullable().optional(),
   body_en: z.string().nullable().optional(),
+  created_at: z.string().datetime({ offset: true }).optional(),
 });
 
 const partnerItemSchema = z.object({

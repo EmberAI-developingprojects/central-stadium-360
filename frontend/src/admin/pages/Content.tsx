@@ -283,7 +283,8 @@ export default function Content() {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {tab === "news" &&
-            content.news.map((it) => (
+            // Stored oldest → newest (that order is sort_order); shown newest first.
+            [...content.news].reverse().map((it) => (
               <NewsListItem
                 key={it.id}
                 item={it}

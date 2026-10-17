@@ -1506,8 +1506,9 @@ const HERO_SLIDE_MS = 7000;
 const HERO_TEXT_OUT_MS = 450;
 const HERO_SWIPE_PX = 50;
 
+// Same order as the news list: a higher sort_order was entered later.
 const byNewest = (a: NewsItem, b: NewsItem) =>
-  (b.createdAt || "").localeCompare(a.createdAt || "");
+  (b.sortOrder ?? 0) - (a.sortOrder ?? 0);
 
 // The featured story leads, followed by the two newest other stories. When the
 // featured story is itself the newest, the "other" list simply starts one
