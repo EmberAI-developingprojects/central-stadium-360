@@ -117,6 +117,10 @@ export default {
             letterSpacing: "normal",
           },
         },
+        heroProgress: {
+          from: { transform: "scaleX(0)" },
+          to: { transform: "scaleX(1)" },
+        },
         "partners-marquee": {
           from: { transform: "translateX(0)" },
           to: { transform: "translateX(-50%)" },
@@ -154,6 +158,7 @@ export default {
         "react-rise": "reactRise 2s ease-out forwards",
         "reveal-up": "revealUp 600ms cubic-bezier(.2,.8,.2,1) both",
         "hero-grow": "heroGrow 1700ms cubic-bezier(.19,1,.22,1) both",
+        "hero-progress": "heroProgress var(--hero-slide-ms,7000ms) linear both",
         "partners-marquee": "partners-marquee 40s linear infinite",
         "admin-fade-in": "adminFadeIn 140ms ease-out",
         "admin-scale-in": "adminScaleIn 160ms cubic-bezier(.34,1.56,.64,1) both",

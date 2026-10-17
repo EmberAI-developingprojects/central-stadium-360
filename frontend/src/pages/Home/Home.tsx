@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type TouchEvent as ReactTouchEvent,
+} from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import SiteHeader from "../../components/SiteHeader";
@@ -1496,28 +1502,161 @@ function newsExcerpt(item: NewsItem, body: string, max = 220): string {
   return raw.slice(0, max).replace(/\s+\S*$/, "") + "…";
 }
 
-function pickFeaturedNews(items: NewsItem[]): NewsItem | null {
-  if (!items || items.length === 0) return null;
+const HERO_SLIDE_MS = 7000;
+const HERO_TEXT_OUT_MS = 450;
+const HERO_SWIPE_PX = 50;
 
-  const featured = items
-    .filter((n) => n.featured)
-    .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
-  return featured[0] ?? null;
+const byNewest = (a: NewsItem, b: NewsItem) =>
+  (b.createdAt || "").localeCompare(a.createdAt || "");
+
+// The featured story leads, followed by the two newest other stories. When the
+// featured story is itself the newest, the "other" list simply starts one
+// further down. With nothing featured, the three newest stories rotate.
+function pickHeroSlides(items: NewsItem[]): NewsItem[] {
+  if (!items || items.length === 0) return [];
+  const newest = [...items].sort(byNewest);
+  const featured = newest.find((n) => n.featured) ?? null;
+  if (!featured) return newest.slice(0, 3);
+  return [featured, ...newest.filter((n) => n.id !== featured.id).slice(0, 2)];
+}
+
+function usePrefersReducedMotion(): boolean {
+  const [reduced, setReduced] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+    if (!mq) return;
+    const onChange = () => setReduced(mq.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+  return reduced;
 }
 
 function FeaturedNewsHero({ items }: { items: NewsItem[] }) {
   const { i18n } = useTranslation();
-  const featured = pickFeaturedNews(items);
-  const loc = featured
-    ? pickNewsLocale(featured, i18n.language)
+  const slides = pickHeroSlides(items);
+  const count = slides.length;
+  const slideKey = slides.map((s) => s.id).join("|");
+
+  // `active` drives the photo and the indicators the moment a change starts;
+  // `shown` drives the words, which swap only after the old ones have left.
+  const [active, setActive] = useState(0);
+  const [shown, setShown] = useState(0);
+  const [leaving, setLeaving] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [onScreen, setOnScreen] = useState(true);
+  const [pageVisible, setPageVisible] = useState(
+    () => typeof document === "undefined" || !document.hidden,
+  );
+  const reducedMotion = usePrefersReducedMotion();
+
+  const sectionRef = useRef<HTMLElement>(null);
+  const swapTimer = useRef<number | null>(null);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+
+  // A new set of stories (cache, then the network) starts again at the lead.
+  useEffect(() => {
+    if (swapTimer.current !== null) window.clearTimeout(swapTimer.current);
+    swapTimer.current = null;
+    setActive(0);
+    setShown(0);
+    setLeaving(false);
+  }, [slideKey]);
+
+  useEffect(
+    () => () => {
+      if (swapTimer.current !== null) window.clearTimeout(swapTimer.current);
+    },
+    [],
+  );
+
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      ([entry]) => setOnScreen(entry?.isIntersecting ?? true),
+      { threshold: 0.25 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const onVis = () => setPageVisible(!document.hidden);
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, []);
+
+  const goTo = (next: number) => {
+    if (count < 2) return;
+    const target = ((next % count) + count) % count;
+    if (target === active) return;
+    setActive(target);
+    if (swapTimer.current !== null) window.clearTimeout(swapTimer.current);
+    if (reducedMotion) {
+      setShown(target);
+      setLeaving(false);
+      return;
+    }
+    setLeaving(true);
+    swapTimer.current = window.setTimeout(() => {
+      swapTimer.current = null;
+      setShown(target);
+      setLeaving(false);
+    }, HERO_TEXT_OUT_MS);
+  };
+
+  const autoplay = count > 1 && !reducedMotion;
+  const paused = hovered || focused || !onScreen || !pageVisible;
+
+  const current = slides[Math.min(shown, Math.max(count - 1, 0))] ?? null;
+  const loc = current
+    ? pickNewsLocale(current, i18n.language)
     : { label: "", title: "", body: "" };
-  const excerpt = featured ? newsExcerpt(featured, loc.body) : "";
+  const excerpt = current ? newsExcerpt(current, loc.body) : "";
+
+  const onTouchStart = (e: ReactTouchEvent) => {
+    const t = e.touches[0];
+    touchStart.current = t ? { x: t.clientX, y: t.clientY } : null;
+  };
+  const onTouchEnd = (e: ReactTouchEvent) => {
+    const start = touchStart.current;
+    touchStart.current = null;
+    const t = e.changedTouches[0];
+    if (!start || !t) return;
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    if (Math.abs(dx) < HERO_SWIPE_PX || Math.abs(dx) < Math.abs(dy)) return;
+    goTo(dx < 0 ? active + 1 : active - 1);
+  };
 
   return (
     <section
+      ref={sectionRef}
       className="relative w-full overflow-hidden bg-black text-white isolate -mt-[64px] max-[920px]:-mt-[56px]"
       id="featured-news"
       aria-label="Онцлох мэдээ"
+      aria-roledescription={count > 1 ? "carousel" : undefined}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocus={() => setFocused(true)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+          setFocused(false);
+        }
+      }}
+      onTouchStart={count > 1 ? onTouchStart : undefined}
+      onTouchEnd={count > 1 ? onTouchEnd : undefined}
+      onKeyDown={(e) => {
+        if (count < 2) return;
+        if (e.key === "ArrowRight") goTo(active + 1);
+        else if (e.key === "ArrowLeft") goTo(active - 1);
+      }}
     >
       <div className="relative w-full min-h-[calc(100vh+64px)] min-h-[calc(100dvh+64px)] max-[920px]:min-h-[calc(100vh+56px)] max-[920px]:min-h-[calc(100dvh+56px)]">
         <img
@@ -1528,20 +1667,23 @@ function FeaturedNewsHero({ items }: { items: NewsItem[] }) {
           decoding="async"
           className="absolute inset-0 w-full h-full object-cover object-center"
         />
-        {featured?.image && (
-          <img
-            key={featured.image}
-            src={featured.image}
-            alt={loc.title}
-            loading="eager"
-            fetchPriority="high"
-            decoding="async"
-            referrerPolicy="no-referrer"
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).style.display = "none";
-            }}
-            className="absolute inset-0 w-full h-full object-cover object-center"
-          />
+        {slides.map((s, i) =>
+          s.image ? (
+            <img
+              key={s.id}
+              src={s.image}
+              alt={i === active ? loc.title : ""}
+              aria-hidden={i === active ? undefined : "true"}
+              loading="eager"
+              fetchPriority={i === 0 ? "high" : "low"}
+              decoding="async"
+              referrerPolicy="no-referrer"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.display = "none";
+              }}
+              className={`absolute inset-0 w-full h-full object-cover object-center [transition:opacity_1.2s_ease,transform_9s_cubic-bezier(.2,.6,.2,1)] [will-change:opacity,transform] motion-reduce:!scale-100 motion-reduce:[transition:opacity_.3s_ease] ${i === active ? "opacity-100 scale-100" : "opacity-0 scale-[1.08]"}`}
+            />
+          ) : null,
         )}
 
         <div
@@ -1550,8 +1692,8 @@ function FeaturedNewsHero({ items }: { items: NewsItem[] }) {
         />
 
         <div
-          className={`absolute inset-0 grid place-items-center px-6 py-16 max-[640px]:px-5 max-[640px]:py-12 [transition:opacity_.35s_ease] ${featured ? "opacity-0 pointer-events-none" : "opacity-100"}`}
-          aria-hidden={featured ? "true" : undefined}
+          className={`absolute inset-0 grid place-items-center px-6 py-16 max-[640px]:px-5 max-[640px]:py-12 [transition:opacity_.35s_ease] ${current ? "opacity-0 pointer-events-none" : "opacity-100"}`}
+          aria-hidden={current ? "true" : undefined}
         >
           <div className="max-w-[860px] text-center">
             <span
@@ -1576,70 +1718,112 @@ function FeaturedNewsHero({ items }: { items: NewsItem[] }) {
         </div>
 
         <div
-          className={`absolute inset-0 grid place-items-center px-6 py-16 max-[640px]:px-5 max-[640px]:py-12 [transition:opacity_.35s_ease] ${featured ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+          className={`absolute inset-0 grid place-items-center px-6 py-16 max-[640px]:px-5 max-[640px]:py-12 [transition:opacity_.35s_ease] ${current ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+          aria-live={autoplay && !paused ? "off" : "polite"}
         >
           <div
-            key={featured?.id ?? "empty"}
-            className="max-w-[860px] text-center"
+            className={`[transition:opacity_.45s_ease,transform_.45s_ease,filter_.45s_ease] motion-reduce:!transition-none ${leaving ? "opacity-0 -translate-y-3 blur-[6px]" : "opacity-100 translate-y-0 blur-0"}`}
           >
-            <span
-              style={{ animationDelay: "0ms" }}
-              className="inline-flex items-center gap-2 mb-6 px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-sm text-[11px] tracking-[0.18em] uppercase font-semibold text-white/95 max-[640px]:mb-5 max-[640px]:text-[10px] motion-safe:animate-hero-grow [transform-origin:center_center] [will-change:transform,opacity,filter] motion-reduce:!animate-none"
+            <div
+              key={current?.id ?? "empty"}
+              className="max-w-[860px] text-center"
             >
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
+              <span
+                style={{ animationDelay: "0ms" }}
+                className="inline-flex items-center gap-2 mb-6 px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-sm text-[11px] tracking-[0.18em] uppercase font-semibold text-white/95 max-[640px]:mb-5 max-[640px]:text-[10px] motion-safe:animate-hero-grow [transform-origin:center_center] [will-change:transform,opacity,filter] motion-reduce:!animate-none"
               >
-                <path d="M4 11a9 9 0 0 1 9 9" />
-                <path d="M4 4a16 16 0 0 1 16 16" />
-                <circle cx="5" cy="19" r="1" />
-              </svg>
-              Мэдээ мэдээлэл
-            </span>
-            <h1
-              style={{ animationDelay: "180ms" }}
-              className="m-0 text-gold-pale font-extrabold uppercase leading-[1.16] tracking-[0.015em] text-[44px] max-[920px]:text-[32px] max-[640px]:text-[24px] drop-shadow-[0_2px_14px_rgba(0,0,0,0.55)] [text-shadow:0_1px_0_rgba(0,0,0,0.25)] motion-safe:animate-hero-grow [transform-origin:center_center] [will-change:transform,opacity,filter] motion-reduce:!animate-none"
-            >
-              {loc.title}
-            </h1>
-            {excerpt && (
-              <p
-                style={{ animationDelay: "440ms" }}
-                className="mt-6 mx-auto max-w-[680px] text-white/90 text-[17px] font-medium leading-[1.65] max-[640px]:text-[14.5px] max-[640px]:mt-5 max-[640px]:leading-[1.6] motion-safe:animate-hero-grow [transform-origin:center_center] [will-change:transform,opacity,filter] motion-reduce:!animate-none"
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M4 11a9 9 0 0 1 9 9" />
+                  <path d="M4 4a16 16 0 0 1 16 16" />
+                  <circle cx="5" cy="19" r="1" />
+                </svg>
+                Мэдээ мэдээлэл
+              </span>
+              <h1
+                style={{ animationDelay: "180ms" }}
+                className="m-0 text-gold-pale font-extrabold uppercase leading-[1.16] tracking-[0.015em] text-[44px] max-[920px]:text-[32px] max-[640px]:text-[24px] drop-shadow-[0_2px_14px_rgba(0,0,0,0.55)] [text-shadow:0_1px_0_rgba(0,0,0,0.25)] motion-safe:animate-hero-grow [transform-origin:center_center] [will-change:transform,opacity,filter] motion-reduce:!animate-none"
               >
-                {excerpt}
-              </p>
-            )}
-            <Link
-              to={featured ? `/news/${featured.id}` : "#"}
-              style={{ animationDelay: "640ms" }}
-              className="inline-flex items-center gap-2 mt-9 px-7 py-3.5 rounded-full border border-white/75 text-white text-[13px] font-semibold tracking-[0.16em] uppercase no-underline hover:bg-white hover:text-ink hover:border-white transition-colors duration-200 max-[640px]:mt-7 max-[640px]:px-6 max-[640px]:py-3 max-[640px]:text-[11.5px] motion-safe:animate-hero-grow [transform-origin:center_center] [will-change:transform,opacity,filter] motion-reduce:!animate-none"
-            >
-              Дэлгэрэнгүй үзэх
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
+                {loc.title}
+              </h1>
+              {excerpt && (
+                <p
+                  style={{ animationDelay: "440ms" }}
+                  className="mt-6 mx-auto max-w-[680px] text-white/90 text-[17px] font-medium leading-[1.65] max-[640px]:text-[14.5px] max-[640px]:mt-5 max-[640px]:leading-[1.6] motion-safe:animate-hero-grow [transform-origin:center_center] [will-change:transform,opacity,filter] motion-reduce:!animate-none"
+                >
+                  {excerpt}
+                </p>
+              )}
+              <Link
+                to={current ? `/news/${current.id}` : "#"}
+                style={{ animationDelay: "640ms" }}
+                className="inline-flex items-center gap-2 mt-9 px-7 py-3.5 rounded-full border border-white/75 text-white text-[13px] font-semibold tracking-[0.16em] uppercase no-underline hover:bg-white hover:text-ink hover:border-white transition-colors duration-200 max-[640px]:mt-7 max-[640px]:px-6 max-[640px]:py-3 max-[640px]:text-[11.5px] motion-safe:animate-hero-grow [transform-origin:center_center] [will-change:transform,opacity,filter] motion-reduce:!animate-none"
               >
-                <line x1="5" y1="12" x2="19" y2="12" />
-                <polyline points="12 5 19 12 12 19" />
-              </svg>
-            </Link>
+                Дэлгэрэнгүй үзэх
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                  <polyline points="12 5 19 12 12 19" />
+                </svg>
+              </Link>
+            </div>
           </div>
         </div>
+
+        {count > 1 && (
+          <div
+            className="absolute left-1/2 -translate-x-1/2 bottom-[112px] z-[2] flex items-center gap-2.5 max-[920px]:bottom-[96px] max-[640px]:bottom-[84px]"
+            role="group"
+            aria-label="Мэдээ сонгох"
+          >
+            {slides.map((s, i) => {
+              const isActive = i === active;
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => goTo(i)}
+                  aria-label={`Мэдээ ${i + 1} / ${count}`}
+                  aria-current={isActive ? "true" : undefined}
+                  className={`relative h-[3px] rounded-full overflow-hidden bg-white/30 cursor-pointer border-0 p-0 outline-none [transition:width_.5s_cubic-bezier(.2,.8,.2,1),background-color_.2s_ease] hover:bg-white/50 focus-visible:ring-2 focus-visible:ring-white/90 focus-visible:ring-offset-4 focus-visible:ring-offset-black/40 before:content-[''] before:absolute before:-inset-y-3 before:inset-x-0 ${isActive ? "w-14" : "w-7"}`}
+                >
+                  {isActive && (
+                    <span
+                      key={`${s.id}-${active}`}
+                      aria-hidden="true"
+                      style={
+                        {
+                          "--hero-slide-ms": `${HERO_SLIDE_MS}ms`,
+                          animationPlayState: paused ? "paused" : "running",
+                        } as CSSProperties
+                      }
+                      onAnimationEnd={() => goTo(active + 1)}
+                      className={`absolute inset-0 rounded-full bg-white origin-left ${autoplay ? "animate-hero-progress" : ""}`}
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
     </section>
   );
