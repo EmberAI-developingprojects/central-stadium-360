@@ -59,11 +59,24 @@ app.use(
   }),
 );
 
-// MAINTENANCE_MODE=1 freezes writes (e.g. while the database is being moved):
-// reads keep working, anything that would change data gets a 503.
+// MAINTENANCE_MODE=1 freezes the database (e.g. while it is being moved).
+// Only these pure reads stay open; everything else gets a 503 — including
+// GETs that write, such as payment status checks and watch tokens.
+const MAINTENANCE_READS = new Set([
+  "/api/health",
+  "/api/events",
+  "/api/content",
+  "/api/history",
+]);
 app.use("*", async (c, next) => {
   if (process.env.MAINTENANCE_MODE !== "1") return next();
-  if (["GET", "HEAD", "OPTIONS"].includes(c.req.method)) return next();
+  if (c.req.method === "OPTIONS") return next();
+  if (
+    (c.req.method === "GET" || c.req.method === "HEAD") &&
+    MAINTENANCE_READS.has(c.req.path.replace(/\/+$/, ""))
+  ) {
+    return next();
+  }
   c.header("Retry-After", "1800");
   return c.json({ ok: false, error: "maintenance" } as const, 503);
 });
