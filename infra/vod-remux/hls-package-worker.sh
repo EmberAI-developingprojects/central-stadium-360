@@ -8,7 +8,7 @@
 # has the hls.js path with a signed-query loader; the recordings row just
 # needs master_playlist_path to point at hls/index.m3u8.
 #
-# Env (injected by launch-hls.sh): AWS keys, SUPABASE_URL/SERVICE_KEY, EVENT_ID
+# Env (injected by launch-hls.sh): AWS keys, BACKEND_URL, INTERNAL_API_SECRET, EVENT_ID
 set -u -o pipefail
 export AWS_DEFAULT_REGION=ap-northeast-2
 BUCKET=360record
@@ -68,8 +68,8 @@ for cam in cam1 cam2 cam3 cam4; do
   fi
 
   code=$(curl -s -o /tmp/patch_out -w "%{http_code}" -X PATCH \
-    "$SUPABASE_URL/rest/v1/recordings?event_id=eq.$EVENT_ID&channel_arn=eq.wowza:merged:$cam" \
-    -H "apikey: $SUPABASE_SERVICE_KEY" -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" \
+    "$BACKEND_URL/api/internal/recordings?event_id=$EVENT_ID&channel_arn=wowza:merged:$cam" \
+    -H "x-internal-secret: $INTERNAL_API_SECRET" \
     -H "Content-Type: application/json" \
     -d "{\"master_playlist_path\": \"$dst/index.m3u8\"}")
   if [ "$code" -ge 300 ]; then

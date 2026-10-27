@@ -5,7 +5,7 @@
 # session becomes its own recordings row; the unplayable 60-98 GB merged.mp4
 # rows and files are removed at the end.
 #
-# Env (injected by launch-hls-sessions.sh): AWS keys, SUPABASE_URL/SERVICE_KEY, EVENT_ID
+# Env (injected by launch-hls-sessions.sh): AWS keys, BACKEND_URL, INTERNAL_API_SECRET, EVENT_ID
 set -u
 export AWS_DEFAULT_REGION=ap-northeast-2
 BUCKET=360record
@@ -91,10 +91,10 @@ while IFS='|' read -r camnum vid dur started label; do
 
   # actual duration from segment count is more honest than the nominal dur when
   # a session was truncated; but nominal is fine for the label ordering.
-  code=$(curl -s -o /tmp/up -w "%{http_code}" -X POST \
-    "$SUPABASE_URL/rest/v1/recordings?on_conflict=event_id,channel_arn" \
-    -H "apikey: $SUPABASE_SERVICE_KEY" -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" \
-    -H "Content-Type: application/json" -H "Prefer: resolution=merge-duplicates" \
+  code=$(curl -s -o /tmp/up -w "%{http_code}" -X PUT \
+    "$BACKEND_URL/api/internal/recordings" \
+    -H "x-internal-secret: $INTERNAL_API_SECRET" \
+    -H "Content-Type: application/json" \
     -d "{
       \"event_id\": \"$EVENT_ID\",
       \"camera_number\": $camnum,
@@ -115,8 +115,8 @@ done <<< "$SESSIONS"
 # retire the unplayable merged rows + files
 echo "=== cleanup merged rows/files $(date -u) ==="
 curl -s -o /dev/null -X DELETE \
-  "$SUPABASE_URL/rest/v1/recordings?event_id=eq.$EVENT_ID&channel_arn=like.wowza:merged:*" \
-  -H "apikey: $SUPABASE_SERVICE_KEY" -H "Authorization: Bearer $SUPABASE_SERVICE_KEY"
+  "$BACKEND_URL/api/internal/recordings?event_id=$EVENT_ID&channel_arn_prefix=wowza:merged:" \
+  -H "x-internal-secret: $INTERNAL_API_SECRET"
 for cam in cam1 cam2 cam3 cam4; do
   aws s3 rm "s3://$BUCKET/wowza/$EVENT_ID/$cam/merged.mp4" >/dev/null 2>&1 || true
 done

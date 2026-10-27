@@ -11,8 +11,8 @@ USERDATA=$(mktemp)
   echo '#!/bin/bash'
   echo "export AWS_ACCESS_KEY_ID='$(val AWS_ACCESS_KEY_ID)'"
   echo "export AWS_SECRET_ACCESS_KEY='$(val AWS_SECRET_ACCESS_KEY)'"
-  echo "export SUPABASE_URL='$(val SUPABASE_URL)'"
-  echo "export SUPABASE_SERVICE_KEY='$(val SUPABASE_SERVICE_KEY)'"
+  echo "export BACKEND_URL='$(val PUBLIC_BACKEND_URL)'"
+  echo "export INTERNAL_API_SECRET='$(val INTERNAL_API_SECRET)'"
   echo "export EVENT_ID='$EVENT_ID'"
   echo 'mkdir -p /data'
   tail -n +2 hls-package-worker.sh

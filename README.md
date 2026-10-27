@@ -92,7 +92,7 @@ central-stadium-360/
 ├── frontend/        React 18 + Vite — public site and /admin panel
 ├── backend/         Hono API on Cloud Run — tickets, streaming, kiosk, payments
 ├── shared/          TypeScript types shared across packages (@cs360/shared)
-├── supabase/        SQL migrations (0001 … ) — pnpm db:push
+├── supabase/        SQL migrations (0001 … ), applied to Cloud SQL with psql
 └── kiosk_deploy/    Deployable kiosk bundle for the Windows box
     ├── web/           Flutter web build (touch UI)
     ├── backend/       kiosk-bridge (printing · POS · e-Barimt · auto-print)
@@ -111,7 +111,7 @@ pnpm install
 
 # 2. Configure environment
 cp backend/.env.example backend/.env
-#   → fill in Supabase, QPay, AWS, Wowza credentials
+#   → fill in DATABASE_URL (via cloud-sql-proxy), AUTH_JWT_SECRET, QPay, AWS, Wowza credentials
 
 # 3. Run everything
 pnpm dev
@@ -125,7 +125,6 @@ Useful scripts:
 ```bash
 pnpm typecheck     # strict TS across all packages
 pnpm build         # shared → frontend → backend
-pnpm db:push       # apply supabase/migrations to the linked project
 ```
 
 ---

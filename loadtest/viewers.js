@@ -17,7 +17,7 @@
 //
 // ENV:
 //   BASE_URL   API base (default http://localhost:3000)
-//   TOKENS     comma-separated Supabase JWTs; VUs round-robin over them.
+//   TOKENS     comma-separated access tokens (from POST /api/auth/login); VUs round-robin over them.
 //              At 15k VUs you do NOT need 15k tokens — a few hundred reused is fine.
 //   AUTH_TOKEN single JWT (fallback if TOKENS unset)
 //   HLS_URL    bypass auth+token and pull this master playlist directly
