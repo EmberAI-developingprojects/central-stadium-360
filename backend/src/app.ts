@@ -60,6 +60,15 @@ app.use(
   }),
 );
 
+// MAINTENANCE_MODE=1 freezes writes (e.g. while the database is being moved):
+// reads keep working, anything that would change data gets a 503.
+app.use("*", async (c, next) => {
+  if (process.env.MAINTENANCE_MODE !== "1") return next();
+  if (["GET", "HEAD", "OPTIONS"].includes(c.req.method)) return next();
+  c.header("Retry-After", "1800");
+  return c.json({ ok: false, error: "maintenance" } as const, 503);
+});
+
 app.route("/events", events);
 app.route("/auth", auth);
 app.route("/tickets", tickets);
