@@ -24,7 +24,7 @@ import type {
   VenueOrderItem,
   VenueTicketStatus,
 } from "@cs360/shared";
-import { getSupabaseAdmin } from "../lib/supabase";
+import { getDb } from "../lib/db";
 import {
   requireUser,
   requireAdmin,
@@ -51,7 +51,7 @@ const ORDER_COLS =
   "id,event_id,reference,status,items,total,payment_method,qpay_invoice_id,paid_at,buyer_phone,ebarimt_id,ebarimt_qr_data,ebarimt_lottery,kiosk_id,created_at";
 
 adminKiosk.get("/events", async (c) => {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
@@ -99,7 +99,7 @@ adminKiosk.get("/events", async (c) => {
 });
 
 adminKiosk.get("/stats", async (c) => {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
@@ -137,7 +137,7 @@ type SellThroughEventRow = {
 };
 
 adminKiosk.get("/sell-through", async (c) => {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
@@ -239,7 +239,7 @@ type ReconOrderRow = {
 };
 
 adminKiosk.get("/reconciliation", async (c) => {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
@@ -381,7 +381,7 @@ type AdmissionEventRow = {
 };
 
 adminKiosk.get("/admission", async (c) => {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
@@ -508,7 +508,7 @@ type RawOrderRow = DbVenueOrder & {
 };
 
 adminKiosk.get("/orders", async (c) => {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
@@ -627,7 +627,7 @@ adminKiosk.post("/orders/:id/card-result", async (c) => {
 });
 
 adminKiosk.get("/orders/:id", async (c) => {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
@@ -692,7 +692,7 @@ adminKiosk.post("/scan", async (c) => {
 });
 
 adminKiosk.get("/scanned", async (c) => {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,

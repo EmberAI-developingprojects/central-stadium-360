@@ -1,7 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth, useRequireAuth } from "../../auth";
-import { supabase } from "../../lib/supabase";
 import { api } from "../../lib/api";
 import {
   BACK_CLS,
@@ -82,28 +81,17 @@ export default function Settings() {
     if (newPw !== confirmPw) {
       return setAlert({ kind: "error", msg: "Шинэ нууц үг таарахгүй байна." });
     }
-    if (!supabase) {
-      return setAlert({ kind: "error", msg: "Сервер тохиргоо дутуу байна." });
-    }
-
     setBusy(true);
-
-    const check = await api.login({
-      identifier: session.identifier,
-      password: currentPw,
+    const res = await api.changePassword({
+      current_password: currentPw,
+      new_password: newPw,
     });
-    if (!check.ok) {
-      setBusy(false);
-      return setAlert({ kind: "error", msg: "Одоогийн нууц үг буруу байна." });
-    }
-
-    const { error } = await supabase.auth.updateUser({ password: newPw });
     setBusy(false);
-    if (error) {
-      return setAlert({
-        kind: "error",
-        msg: error.message || "Шинэчлэхэд алдаа гарлаа.",
-      });
+    if (!res.ok) {
+      if (res.error === "invalid_credentials") {
+        return setAlert({ kind: "error", msg: "Одоогийн нууц үг буруу байна." });
+      }
+      return setAlert({ kind: "error", msg: "Шинэчлэхэд алдаа гарлаа." });
     }
     setCurrentPw("");
     setNewPw("");

@@ -5,7 +5,7 @@ import type {
   TicketStatus,
   TicketType,
 } from "@cs360/shared";
-import { getSupabaseAdmin } from "../lib/supabase";
+import { getDb } from "../lib/db";
 import {
   requireUser,
   requireAdmin,
@@ -73,7 +73,7 @@ function toRow(r: RawTicketRow): AdminTicketRow {
 }
 
 adminTickets.get("/", async (c) => {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
@@ -107,7 +107,7 @@ adminTickets.get("/", async (c) => {
 });
 
 adminTickets.get("/stats", async (c) => {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
@@ -158,7 +158,7 @@ adminTickets.get("/stats", async (c) => {
 });
 
 adminTickets.get("/:id", async (c) => {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
@@ -182,7 +182,7 @@ adminTickets.get("/:id", async (c) => {
 });
 
 adminTickets.post("/:id/refund", async (c) => {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
@@ -238,7 +238,7 @@ adminTickets.post("/:id/refund", async (c) => {
 });
 
 adminTickets.delete("/:id", async (c) => {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,

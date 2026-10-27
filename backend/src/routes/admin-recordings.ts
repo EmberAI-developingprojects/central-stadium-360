@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import type { DbRecording } from "@cs360/shared";
-import { getSupabaseAdmin } from "../lib/supabase";
+import { getDb } from "../lib/db";
 import {
   requireUser,
   requireAdmin,
@@ -29,7 +29,7 @@ const createSchema = z.object({
 });
 
 adminRecordings.post("/", async (c) => {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,

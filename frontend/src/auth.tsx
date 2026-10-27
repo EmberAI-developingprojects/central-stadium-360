@@ -8,12 +8,18 @@ import {
   type ReactNode,
 } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import type {
-  Session as SbSession,
-  User as SbUser,
-} from "@supabase/supabase-js";
-import { supabase } from "./lib/supabase";
-import { api, type AuthSessionPayload, type MeResponse } from "./lib/api";
+import {
+  api,
+  type AuthSessionPayload,
+  type MeResponse,
+  type ProfilePatch,
+} from "./lib/api";
+import {
+  clearSession,
+  getStoredSession,
+  onSessionChange,
+  setSessionTokens,
+} from "./lib/session";
 import type { UserRole } from "./data/store";
 
 export type Session = {
@@ -86,29 +92,16 @@ type AuthContextValue = {
 
 const AuthCtx = createContext<AuthContextValue | null>(null);
 
-type SbUserMetadata = {
-  full_name?: string;
-  bio?: string;
-  avatar?: string | null;
-  phone?: string;
-};
-
-function sessionFromSupabase(
-  user: SbUser | null | undefined,
-  profile: MeResponse | null,
-): SessionState {
-  if (!user) return null;
-  const md = (user.user_metadata ?? {}) as SbUserMetadata;
-  const identifier =
-    profile?.phone || profile?.email || user.phone || user.email || "";
+function sessionFromMe(me: MeResponse): SessionState {
+  const identifier = me.phone || me.email || "";
   if (!identifier) return null;
   return {
     identifier,
-    fullname: profile?.full_name || md.full_name || "",
-    avatar: md.avatar ?? null,
-    bio: md.bio ?? "",
-    phone: md.phone ?? (profile?.phone || user.phone || ""),
-    role: profile?.role ?? "user",
+    fullname: me.full_name || "",
+    avatar: me.avatar ?? null,
+    bio: me.bio ?? "",
+    phone: me.metadata_phone ?? (me.phone || ""),
+    role: me.role ?? "user",
   };
 }
 
@@ -129,51 +122,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       return;
     }
-    if (!supabase) {
-      setLoading(false);
-      return;
-    }
     let cancelled = false;
 
-    const hydrate = async (sb: SbSession | null) => {
-      if (!sb?.user) {
+    const hydrate = async () => {
+      if (!getStoredSession()) {
         if (!cancelled) setSession(null);
         return;
       }
-
       const res = await api.me();
       if (cancelled) return;
       if (res.ok) {
-        setSession(sessionFromSupabase(sb.user, res.data));
-      } else if (res.status === 403 && res.error === "account_deleted") {
-        await supabase!.auth.signOut().catch(() => undefined);
-        if (!cancelled) setSession(null);
+        setSession(sessionFromMe(res.data));
+      } else if (
+        res.status === 401 ||
+        (res.status === 403 && res.error === "account_deleted")
+      ) {
+        clearSession();
       }
     };
 
-    supabase.auth.getSession().then(({ data }) => {
-      void hydrate(data.session).finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+    void hydrate().finally(() => {
+      if (!cancelled) setLoading(false);
     });
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, sb) => {
-      void hydrate(sb);
+    // Sign-out anywhere (logout, refused refresh) drops the React session.
+    const unsubscribe = onSessionChange((stored) => {
+      if (!stored && !cancelled) setSession(null);
     });
     return () => {
       cancelled = true;
-      sub.subscription.unsubscribe();
+      unsubscribe();
     };
   }, []);
 
   const hydrateFromPayload = useCallback(
     async (payload: AuthSessionPayload) => {
-      if (!supabase) return;
-      await supabase.auth.setSession({
-        access_token: payload.session.access_token,
-        refresh_token: payload.session.refresh_token,
-      });
-
+      setSessionTokens(payload.session);
       setSession({
         identifier: payload.user.phone || payload.user.email || "",
         fullname: "",
@@ -182,6 +166,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         phone: payload.user.phone || "",
         role: payload.user.role,
       });
+      const me = await api.me();
+      if (me.ok) setSession(sessionFromMe(me.data));
     },
     [],
   );
@@ -272,22 +258,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
-    if (supabase) {
-      await supabase.auth.signOut().catch(() => undefined);
+    const stored = getStoredSession();
+    if (stored) {
+      await api.logout(stored.refresh_token).catch(() => undefined);
     }
+    clearSession();
     setSession(null);
   }, []);
 
   const updateSession = useCallback<AuthContextValue["updateSession"]>(
     async (patch) => {
-      if (!supabase) return;
-      const md: Partial<SbUserMetadata> = {};
+      const md: ProfilePatch = {};
       if (typeof patch.fullname === "string") md.full_name = patch.fullname;
       if (typeof patch.bio === "string") md.bio = patch.bio;
       if (patch.avatar !== undefined) md.avatar = patch.avatar;
       if (typeof patch.phone === "string") md.phone = patch.phone;
       if (Object.keys(md).length > 0) {
-        await supabase.auth.updateUser({ data: md });
+        await api.updateProfile(md);
       }
       setSession((prev) => (prev ? { ...prev, ...patch } : prev));
     },

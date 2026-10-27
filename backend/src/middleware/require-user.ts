@@ -1,6 +1,6 @@
 import type { Context, Next } from "hono";
-import { getSupabaseAdmin } from "../lib/supabase";
-import { getSupabaseForAccessToken } from "../lib/supabase-anon";
+import { getDb } from "../lib/db";
+import { verifyAccessToken } from "../lib/auth/tokens";
 
 export interface AuthedUser {
   id: string;
@@ -12,10 +12,11 @@ export type AuthEnv = {
   Variables: {
     user: AuthedUser;
     accessToken: string;
+    sessionId: string;
   };
 };
 
-function getBearer(authHeader: string | undefined): string | null {
+export function getBearer(authHeader: string | undefined): string | null {
   if (!authHeader) return null;
   const [scheme, token] = authHeader.split(/\s+/);
   if (scheme?.toLowerCase() !== "bearer" || !token) return null;
@@ -33,6 +34,7 @@ export async function requireUser(
       role: "admin",
     });
     c.set("accessToken", "dev");
+    c.set("sessionId", "00000000-0000-0000-0000-000000000000");
     return next();
   }
 
@@ -40,51 +42,71 @@ export async function requireUser(
   if (!token) {
     return c.json({ ok: false, error: "unauthorized" } as const, 401);
   }
-  const sb = getSupabaseForAccessToken(token);
-  if (!sb) {
+  const claims = await verifyAccessToken(token);
+  if (!claims) {
+    return c.json({ ok: false, error: "unauthorized" } as const, 401);
+  }
+  const db = getDb();
+  if (!db) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
       503,
     );
   }
-  const { data, error } = await sb.auth.getUser(token);
-  if (error || !data.user) {
+
+  // One round trip: the account, its profile, and whether this session is
+  // still live (logout, password change and bans take effect immediately).
+  const { rows } = await db.query<{
+    phone: string | null;
+    email: string | null;
+    meta: { full_name?: string } | null;
+    banned: boolean;
+    session_live: boolean;
+    role: "user" | "admin" | null;
+    profile_phone: string | null;
+    deleted_at: string | null;
+    has_profile: boolean;
+  }>(
+    `SELECT au.phone, au.email, au.raw_user_meta_data AS meta,
+            coalesce(au.banned_until > now(), false) AS banned,
+            (s.id IS NOT NULL AND s.revoked_at IS NULL AND s.expires_at > now()) AS session_live,
+            u.role, u.phone AS profile_phone, u.deleted_at, (u.id IS NOT NULL) AS has_profile
+       FROM auth.users au
+       LEFT JOIN public.auth_sessions s ON s.id = $2 AND s.user_id = au.id
+       LEFT JOIN public.users u ON u.id = au.id
+      WHERE au.id = $1`,
+    [claims.userId, claims.sessionId],
+  );
+  const row = rows[0];
+  if (!row || row.banned || !row.session_live) {
     return c.json({ ok: false, error: "unauthorized" } as const, 401);
   }
-
-  let role: "user" | "admin" = "user";
-  let phone: string | null = data.user.phone ?? null;
-  const admin = getSupabaseAdmin();
-  if (admin) {
-    const { data: row } = await admin
-      .from("users")
-      .select("role, phone")
-      .eq("id", data.user.id)
-      .maybeSingle<{ role: "user" | "admin"; phone: string | null }>();
-    if (row) {
-      role = row.role;
-      phone = row.phone ?? phone;
-    } else {
-      const md = (data.user.user_metadata ?? {}) as { full_name?: string };
-      const authPhone = data.user.phone ? `+${data.user.phone}` : null;
-      const { error: upsertErr } = await admin.from("users").upsert(
-        {
-          id: data.user.id,
-          phone: authPhone,
-          email: data.user.email ?? null,
-          full_name: md.full_name ?? "",
-          role: "user",
-        },
-        { onConflict: "id" },
-      );
-      if (!upsertErr) {
-        phone = authPhone ?? phone;
-      }
-    }
+  if (row.deleted_at) {
+    return c.json({ ok: false, error: "account_deleted" } as const, 403);
   }
 
-  c.set("user", { id: data.user.id, phone, role });
+  let role: "user" | "admin" = row.role ?? "user";
+  let phone = row.profile_phone ?? row.phone ?? null;
+  if (!row.has_profile) {
+    // The on_auth_user_created trigger normally creates this row.
+    const authPhone = row.phone ? `+${row.phone}` : null;
+    const { error } = await db.from("users").upsert(
+      {
+        id: claims.userId,
+        phone: authPhone,
+        email: row.email ?? null,
+        full_name: row.meta?.full_name ?? "",
+        role: "user",
+      },
+      { onConflict: "id" },
+    );
+    if (!error) phone = authPhone ?? phone;
+    role = "user";
+  }
+
+  c.set("user", { id: claims.userId, phone, role });
   c.set("accessToken", token);
+  c.set("sessionId", claims.sessionId);
   await next();
 }
 

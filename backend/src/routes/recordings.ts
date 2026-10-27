@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import type { DbRecording } from "@cs360/shared";
-import { getSupabaseAdmin } from "../lib/supabase";
+import { getDb } from "../lib/db";
 import { requireUser, type AuthEnv } from "../middleware/require-user";
 import { hasReplayAccess, markUserViewed } from "../lib/tickets";
 import {
@@ -13,7 +13,7 @@ const recordings = new Hono<AuthEnv>();
 recordings.use("*", requireUser);
 
 recordings.post("/:id/sign-url", async (c) => {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,

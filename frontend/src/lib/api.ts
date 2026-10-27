@@ -39,7 +39,7 @@ import type {
   TicketStatus,
   UserRole,
 } from "@cs360/shared";
-import { supabase } from "./supabase";
+import { getAccessToken, getStoredSession, refreshSession } from "./session";
 
 const BASE_URL =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "";
@@ -49,10 +49,24 @@ export type ApiResult<T> =
   | { ok: false; error: string; status: number; details?: unknown };
 
 async function authHeader(): Promise<Record<string, string>> {
-  if (!supabase) return {};
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
+  const token = await getAccessToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+/**
+ * fetch with the bearer token; if the server says 401 while we hold a
+ * session (e.g. the token expired in a sleeping tab), refresh once and retry.
+ */
+async function authedFetch(
+  url: string,
+  init: RequestInit & { headers?: Record<string, string> },
+): Promise<Response> {
+  const send = async () =>
+    fetch(url, { ...init, headers: { ...init.headers, ...(await authHeader()) } });
+  const res = await send();
+  if (res.status !== 401 || !getStoredSession()) return res;
+  const refreshed = await refreshSession();
+  return refreshed ? send() : res;
 }
 
 async function request<T>(
@@ -63,11 +77,10 @@ async function request<T>(
   const url = `${BASE_URL}${path}`;
   let res: Response;
   try {
-    res = await fetch(url, {
+    res = await authedFetch(url, {
       method,
       headers: {
         ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
-        ...(await authHeader()),
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
@@ -118,6 +131,17 @@ export type MeResponse = {
   created_at: string | null;
   phone_confirmed_at: string | null;
   email_confirmed_at: string | null;
+  bio: string;
+  avatar: string | null;
+  /** Contact phone the user typed on their profile, if any. */
+  metadata_phone: string | null;
+};
+
+export type ProfilePatch = {
+  full_name?: string;
+  bio?: string;
+  avatar?: string | null;
+  phone?: string;
 };
 
 export type WatchCam = {
@@ -202,9 +226,16 @@ export const api = {
       input,
     ),
 
-  logout: () => request<void>("POST", "/api/auth/logout"),
+  logout: (refreshToken?: string) =>
+    request<void>("POST", "/api/auth/logout", { refresh_token: refreshToken }),
 
   me: () => request<MeResponse>("GET", "/api/auth/me"),
+
+  updateProfile: (patch: ProfilePatch) =>
+    request<void>("PATCH", "/api/auth/me", patch),
+
+  changePassword: (input: { current_password: string; new_password: string }) =>
+    request<void>("POST", "/api/auth/change-password", input),
 
   deleteAccount: () => request<void>("DELETE", "/api/auth/account"),
 
@@ -511,11 +542,7 @@ export const api = {
       const url = `${BASE_URL}/api/admin/uploads/image`;
       let res: Response;
       try {
-        res = await fetch(url, {
-          method: "POST",
-          headers: { ...(await authHeader()) },
-          body: form,
-        });
+        res = await authedFetch(url, { method: "POST", body: form });
       } catch (err) {
         return {
           ok: false,

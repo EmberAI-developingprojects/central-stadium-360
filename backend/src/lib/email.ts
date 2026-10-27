@@ -9,22 +9,11 @@ export type EmailActionType =
   | "email_change_new"
   | "reauthentication";
 
-export interface SupabaseEmailHookPayload {
-  user: {
-    id: string;
-    email?: string;
-    phone?: string;
-    user_metadata?: Record<string, unknown> | null;
-  };
-  email_data: {
-    token: string;
-    token_hash: string;
-    redirect_to: string;
-    email_action_type: EmailActionType;
-    site_url: string;
-    token_new?: string;
-    token_hash_new?: string;
-  };
+export interface AuthEmailInput {
+  action: EmailActionType;
+  fullName: string | null;
+  /** Where the email's button sends the reader, e.g. our verify-email link. */
+  ctaUrl: string;
 }
 
 export interface SendEmailInput {
@@ -57,37 +46,6 @@ function escapeHtml(s: string): string {
 
 function escapeMultiline(s: string): string {
   return escapeHtml(s).replace(/\n/g, "<br/>");
-}
-
-export function buildConfirmationUrl(
-  payload: SupabaseEmailHookPayload,
-): string {
-  const { token_hash, redirect_to, email_action_type, site_url } =
-    payload.email_data;
-  const base = (process.env.SUPABASE_URL || site_url || "").replace(
-    /\/+$/,
-    "",
-  );
-  const verifyType =
-    email_action_type === "email_change_current" ||
-    email_action_type === "email_change_new"
-      ? "email_change"
-      : email_action_type;
-  const params = new URLSearchParams({
-    token: token_hash,
-    type: verifyType,
-    redirect_to,
-  });
-  return `${base}/auth/v1/verify?${params.toString()}`;
-}
-
-function pickFullName(payload: SupabaseEmailHookPayload): string | null {
-  const md = payload.user.user_metadata ?? null;
-  if (md && typeof md === "object") {
-    const v = (md as Record<string, unknown>).full_name;
-    if (typeof v === "string" && v.trim()) return v.trim();
-  }
-  return null;
 }
 
 type RenderedEmail = {
@@ -439,10 +397,9 @@ function contentFor(action: EmailActionType): ActionContent {
   }
 }
 
-export function renderEmail(payload: SupabaseEmailHookPayload): RenderedEmail {
-  const fullName = pickFullName(payload);
-  const ctaUrl = buildConfirmationUrl(payload);
-  const action = payload.email_data.email_action_type;
+export function renderEmail(input: AuthEmailInput): RenderedEmail {
+  const fullName = input.fullName?.trim() || null;
+  const { action, ctaUrl } = input;
   const greeting = fullName ? `Сайн байна уу, ${fullName}!` : "Сайн байна уу!";
 
   const c = contentFor(action);
@@ -499,6 +456,7 @@ export async function sendEmail(
       to: input.to,
       subject: input.subject,
       tag: input.tag,
+      ...(process.env.NODE_ENV !== "production" ? { text: input.text } : {}),
     });
     return {
       ok: true,

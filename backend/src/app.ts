@@ -9,8 +9,6 @@ import tickets from "./routes/tickets";
 import payments from "./routes/payments";
 import kiosk from "./routes/kiosk";
 import adminKiosk from "./routes/admin-kiosk";
-import smsHook from "./routes/sms-hook";
-import emailHook from "./routes/email-hook";
 import adminEvents from "./routes/admin-events";
 import adminContent, { publicContent } from "./routes/admin-content";
 import adminHistory, { publicHistory } from "./routes/history";
@@ -20,6 +18,7 @@ import adminTickets from "./routes/admin-tickets";
 import adminRecordings from "./routes/admin-recordings";
 import recordings from "./routes/recordings";
 import watch from "./routes/watch";
+import internalRecordings from "./routes/internal-recordings";
 
 const startedAt = Date.now();
 
@@ -74,8 +73,6 @@ app.route("/auth", auth);
 app.route("/tickets", tickets);
 app.route("/payments", payments);
 app.route("/kiosk", kiosk);
-app.route("/internal", smsHook);
-app.route("/internal", emailHook);
 app.route("/admin/events", adminEvents);
 app.route("/admin/content", adminContent);
 app.route("/admin/users", adminUsers);
@@ -88,6 +85,7 @@ app.route("/content", publicContent);
 app.route("/history", publicHistory);
 app.route("/admin/history", adminHistory);
 app.route("/watch", watch);
+app.route("/internal", internalRecordings);
 
 app.get("/health", (c) => {
   const payload: HealthResponse = {

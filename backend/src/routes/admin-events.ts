@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import type { DbEvent, DbRecording, DbZone } from "@cs360/shared";
-import { getSupabaseAdmin } from "../lib/supabase";
+import { getDb } from "../lib/db";
 import { discoverRecordingsForEvent } from "../lib/recordings";
 import { stopAllCameraStreams } from "../lib/ivs";
 import { stampAccessExpiryForEvent } from "../lib/tickets";
@@ -99,7 +99,7 @@ type AdminEventListRaw = DbEvent & {
 export type AdminEventListRow = DbEvent & { recording_count: number };
 
 adminEvents.get("/", async (c) => {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
@@ -135,7 +135,7 @@ adminEvents.get("/", async (c) => {
 });
 
 adminEvents.get("/:id", async (c) => {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
@@ -168,7 +168,7 @@ adminEvents.get("/:id", async (c) => {
 });
 
 adminEvents.post("/", async (c) => {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
@@ -223,7 +223,7 @@ adminEvents.post("/", async (c) => {
 });
 
 adminEvents.on(["PATCH", "PUT"], "/:id", async (c) => {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
@@ -290,7 +290,7 @@ adminEvents.on(["PATCH", "PUT"], "/:id", async (c) => {
 });
 
 adminEvents.post("/:id/feature", async (c) => {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
@@ -326,7 +326,7 @@ adminEvents.post("/:id/feature", async (c) => {
 });
 
 adminEvents.delete("/:id", async (c) => {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
@@ -345,7 +345,7 @@ const RECORDING_COLS =
   "id,event_id,camera_number,channel_arn,s3_bucket,s3_key_prefix,master_playlist_path,duration_seconds,recording_started_at,recording_ended_at,status,created_at,chapters";
 
 adminEvents.get("/:id/recordings", async (c) => {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
@@ -365,7 +365,7 @@ adminEvents.get("/:id/recordings", async (c) => {
 });
 
 adminEvents.post("/:id/rediscover", async (c) => {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
@@ -392,7 +392,7 @@ adminEvents.post("/:id/rediscover", async (c) => {
 });
 
 adminEvents.post("/:id/end-live", async (c) => {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
@@ -451,7 +451,7 @@ const zoneCreateSchema = z.object({
 const zonePatchSchema = zoneCreateSchema.partial();
 
 adminEvents.get("/:id/zones", async (c) => {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
@@ -470,7 +470,7 @@ adminEvents.get("/:id/zones", async (c) => {
 });
 
 adminEvents.post("/:id/zones", async (c) => {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
@@ -501,7 +501,7 @@ adminEvents.post("/:id/zones", async (c) => {
 });
 
 adminEvents.on(["PATCH", "PUT"], "/:id/zones/:zoneId", async (c) => {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
@@ -555,7 +555,7 @@ adminEvents.on(["PATCH", "PUT"], "/:id/zones/:zoneId", async (c) => {
 });
 
 adminEvents.delete("/:id/zones/:zoneId", async (c) => {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,

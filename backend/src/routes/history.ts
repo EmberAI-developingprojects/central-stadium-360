@@ -1,14 +1,14 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import type { DbHistoryFigure } from "@cs360/shared";
-import { getSupabaseAdmin } from "../lib/supabase";
+import { getDb } from "../lib/db";
 import {
   requireUser,
   requireAdmin,
   type AuthEnv,
 } from "../middleware/require-user";
 
-type SupabaseAdmin = NonNullable<ReturnType<typeof getSupabaseAdmin>>;
+type SupabaseAdmin = NonNullable<ReturnType<typeof getDb>>;
 
 const FIGURE_COLS_FULL =
   "id,name,role,year_start,year_end,image,bio,name_en,role_en,bio_en,sort_order,created_at";
@@ -84,7 +84,7 @@ const figuresSchema = z.array(figureSchema);
 export const publicHistory = new Hono();
 
 publicHistory.get("/", async (c) => {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
@@ -116,7 +116,7 @@ adminHistory.use("*", requireUser);
 adminHistory.use("*", async (c, next) => requireAdmin(c, next));
 
 adminHistory.get("/", async (c) => {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
@@ -143,7 +143,7 @@ adminHistory.get("/", async (c) => {
 });
 
 adminHistory.put("/", async (c) => {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,

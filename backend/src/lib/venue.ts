@@ -11,7 +11,7 @@ import type {
   VenueOrderItem,
   VenueTicketStatus,
 } from "@cs360/shared";
-import { getSupabaseAdmin } from "./supabase";
+import { getDb } from "./db";
 import {
   checkInvoicePayment,
   createEbarimt,
@@ -70,7 +70,7 @@ function backendUrl(): string {
 export async function createKioskOrder(
   input: KioskCreateOrderInput,
 ): Promise<VenueResult<KioskCreateOrderResponse>> {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin)
     return { ok: false, error: "supabase_not_configured", status: 503 };
 
@@ -213,7 +213,7 @@ export async function createKioskOrder(
 export async function getKioskOrderStatus(
   orderId: string,
 ): Promise<VenueResult<KioskOrderStatus>> {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin)
     return { ok: false, error: "supabase_not_configured", status: 503 };
 
@@ -257,7 +257,7 @@ export async function applyCardResult(
   approved: boolean,
   ebarimt?: CardEbarimtResult,
 ): Promise<VenueResult<KioskOrderStatus>> {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin)
     return { ok: false, error: "supabase_not_configured", status: 503 };
 
@@ -289,7 +289,7 @@ async function persistCardEbarimt(
   const id = ebarimt?.id ?? null;
   if (!qrData && !lottery && !id) return;
 
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) return;
   const patch: Partial<
     Pick<DbVenueOrder, "ebarimt_id" | "ebarimt_qr_data" | "ebarimt_lottery">
@@ -310,7 +310,7 @@ async function persistCardEbarimt(
 }
 
 async function settleOrder(order: DbVenueOrder): Promise<KioskOrderStatus> {
-  const admin = getSupabaseAdmin()!;
+  const admin = getDb()!;
   const nowIso = new Date().toISOString();
 
   const { data: claimed } = await admin
@@ -364,7 +364,7 @@ async function issueEbarimtForVenueOrder(
   order: DbVenueOrder,
   check: PaymentCheckResult,
 ): Promise<void> {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) return;
   const paymentId = paidPaymentId(check);
   if (!paymentId) return;
@@ -452,7 +452,7 @@ export async function retryEbarimtForOrder(
 }
 
 async function loadOrder(orderId: string): Promise<DbVenueOrder | null> {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) return null;
   const { data } = await admin
     .from("venue_orders")
@@ -465,7 +465,7 @@ async function loadOrder(orderId: string): Promise<DbVenueOrder | null> {
 }
 
 async function loadOrderView(order: DbVenueOrder): Promise<KioskOrderStatus> {
-  const admin = getSupabaseAdmin()!;
+  const admin = getDb()!;
   const { data: tickets } = await admin
     .from("venue_tickets")
     .select("code,zone_id")
@@ -499,7 +499,7 @@ function toView(
 const PENDING_ORDER_TTL_MS = 15 * 60 * 1000;
 
 export async function expireStalePendingOrders(): Promise<void> {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) return;
   const cutoffIso = new Date(Date.now() - PENDING_ORDER_TTL_MS).toISOString();
   const { data } = await admin
@@ -525,7 +525,7 @@ export async function expireStalePendingOrders(): Promise<void> {
 }
 
 async function releaseItems(items: KioskOrderItemInput[]): Promise<void> {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) return;
   for (const i of items) {
     await admin.rpc("release_zone", { p_zone: i.zone_id, p_qty: i.qty });
@@ -537,7 +537,7 @@ async function failOrder(
   reserved: KioskOrderItemInput[],
 ): Promise<void> {
   await releaseItems(reserved);
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (admin) await admin.from("venue_orders").delete().eq("id", orderId);
 }
 
@@ -545,7 +545,7 @@ async function failOrderRow(order: DbVenueOrder): Promise<void> {
   await releaseItems(
     order.items.map((it) => ({ zone_id: it.zone_id, qty: it.qty })),
   );
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (admin) {
     await admin
       .from("venue_orders")
@@ -570,7 +570,7 @@ function blankResult(verdict: ScanVerdict, code: string): KioskScanResult {
 export async function admissionCounts(
   eventId: string,
 ): Promise<{ sold: number; admitted: number }> {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) return { sold: 0, admitted: 0 };
   const { data: zoneRows } = await admin
     .from("zones")
@@ -596,7 +596,7 @@ export async function redeemTicket(
   rawCode: string,
   gateEventId?: string | null,
 ): Promise<VenueResult<KioskScanResult>> {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin)
     return { ok: false, error: "supabase_not_configured", status: 503 };
 

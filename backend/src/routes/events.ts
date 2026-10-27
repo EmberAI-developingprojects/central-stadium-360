@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import type { DbEvent, DbRecording, EventStatus } from "@cs360/shared";
-import { getSupabaseAdmin } from "../lib/supabase";
-import { getSupabaseForAccessToken } from "../lib/supabase-anon";
+import { getDb } from "../lib/db";
+import { verifyAccessToken } from "../lib/auth/tokens";
 import {
   createTicketInvoice,
   findRecentPendingTicket,
@@ -16,7 +16,7 @@ import { publishedOn, withChannelFallback } from "../lib/event-channels";
 const events = new Hono<AuthEnv>();
 
 events.get("/", async (c) => {
-  const supabase = getSupabaseAdmin();
+  const supabase = getDb();
   if (!supabase) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
@@ -85,7 +85,7 @@ type ArchivedRaw = {
 };
 
 events.get("/archived", async (c) => {
-  const supabase = getSupabaseAdmin();
+  const supabase = getDb();
   if (!supabase) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
@@ -168,15 +168,12 @@ async function resolveUserIdFromAuth(
   if (!authHeader) return null;
   const [scheme, token] = authHeader.split(/\s+/);
   if (scheme?.toLowerCase() !== "bearer" || !token) return null;
-  const sb = getSupabaseForAccessToken(token);
-  if (!sb) return null;
-  const { data, error } = await sb.auth.getUser(token);
-  if (error || !data.user) return null;
-  return data.user.id;
+  const claims = await verifyAccessToken(token);
+  return claims?.userId ?? null;
 }
 
 events.get("/:id/replay", async (c) => {
-  const supabase = getSupabaseAdmin();
+  const supabase = getDb();
   if (!supabase) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
@@ -260,7 +257,7 @@ events.get("/:id/replay", async (c) => {
 
 events.post("/:id/buy-replay", requireUser, async (c) => {
   const user = c.get("user");
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,

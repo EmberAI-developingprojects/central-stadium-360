@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import type { DbTicket, PaymentStatus } from "@cs360/shared";
-import { getSupabaseAdmin } from "../lib/supabase";
+import { getDb } from "../lib/db";
 import { requireUser, type AuthEnv } from "../middleware/require-user";
 import {
   checkInvoicePayment,
@@ -16,7 +16,7 @@ import {
 } from "../lib/qpay-signature";
 
 async function eventTitleFor(
-  admin: ReturnType<typeof getSupabaseAdmin>,
+  admin: ReturnType<typeof getDb>,
   eventId: string,
 ): Promise<string> {
   if (!admin) return "Ticket";
@@ -44,7 +44,7 @@ payments.post("/qpay-callback", async (c) => {
     return c.json({ ok: false, error: "bad_signature" } as const, 401);
   }
 
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
@@ -148,7 +148,7 @@ statusRoute.get("/:invoiceId", async (c) => {
     return c.json({ ok: false, error: "invalid_invoice" } as const, 400);
   }
 
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,

@@ -5,7 +5,7 @@ import type { AuthEnv } from "../middleware/require-user";
 import { requireUser } from "../middleware/require-user";
 import { findBestLiveTicket, markUserViewed } from "../lib/tickets";
 import { admitDevice, releaseDevice, touchSession } from "../lib/sessions";
-import { getSupabaseAdmin } from "../lib/supabase";
+import { getDb } from "../lib/db";
 import {
   isStreamTokenConfigured,
   tokenizeStreamUrl,
@@ -67,7 +67,7 @@ export function logStreamConfig(): void {
 }
 
 export async function getViewedUserCount(): Promise<number> {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) return 0;
   const { count } = await admin
     .from("users")
@@ -84,7 +84,7 @@ const tokenQuerySchema = z.object({
 const LIVE_END_GRACE_MS = 10 * 60 * 1000;
 
 async function isEventLiveNow(eventId: string): Promise<boolean> {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) return false;
   const { data } = await admin
     .from("events")
@@ -169,7 +169,7 @@ async function parseOwnedSession(
   const body = await c.req.json().catch(() => ({}));
   const parsed = sessionBodySchema.safeParse(body);
   if (!parsed.success) return null;
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) return null;
   const user = c.get("user");
   const { data } = await admin

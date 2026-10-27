@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import type { DbTicket } from "@cs360/shared";
 import { TICKET_TIERS, tierPriceForEvent } from "@cs360/shared";
-import { getSupabaseAdmin } from "../lib/supabase";
+import { getDb } from "../lib/db";
 import { requireUser, type AuthEnv } from "../middleware/require-user";
 import {
   createTicketInvoice,
@@ -45,7 +45,7 @@ tickets.post("/create", async (c) => {
   const { event_id, tier } = parsed.data;
   const ticket_type = tier ? "live" : (parsed.data.ticket_type ?? "live");
 
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
@@ -138,7 +138,7 @@ tickets.post("/create", async (c) => {
 
 tickets.get("/my", async (c) => {
   const user = c.get("user");
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
@@ -169,7 +169,7 @@ const REFUND_WINDOW_AFTER_START_MS = 30 * 60 * 1000;
 tickets.post("/:id/refund", async (c) => {
   const user = c.get("user");
   const id = c.req.param("id");
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,

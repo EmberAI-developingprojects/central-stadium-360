@@ -8,7 +8,7 @@ import type {
   DbHomeService,
   HomeContentResponse,
 } from "@cs360/shared";
-import { getSupabaseAdmin } from "../lib/supabase";
+import { getDb } from "../lib/db";
 import {
   requireUser,
   requireAdmin,
@@ -122,7 +122,7 @@ const TABLE_FOR_SECTION = {
 } as const;
 
 adminContent.put("/:section", async (c) => {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
@@ -277,7 +277,7 @@ let contentInflight: Promise<HomeContentResponse | { error: string }> | null =
 async function loadHomeContent(): Promise<
   HomeContentResponse | { error: string }
 > {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) return { error: "supabase_not_configured" };
 
   type NewsQueryResult = {

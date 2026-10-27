@@ -6,7 +6,7 @@ import type {
   KioskZone,
   VenueOrderItem,
 } from "@cs360/shared";
-import { getSupabaseAdmin } from "../lib/supabase";
+import { getDb } from "../lib/db";
 import { requireKiosk, type KioskEnv } from "../middleware/require-kiosk";
 import {
   applyCardResult,
@@ -51,7 +51,7 @@ kiosk.post("/qpay-callback", async (c) => {
 kiosk.use("*", requireKiosk);
 
 kiosk.get("/events", async (c) => {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,
@@ -123,7 +123,7 @@ type PrintJobOrderRow = {
 };
 
 kiosk.get("/print-jobs", async (c) => {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return c.json(
       { ok: false, error: "supabase_not_configured" } as const,

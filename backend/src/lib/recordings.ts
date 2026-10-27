@@ -1,7 +1,7 @@
 import { HeadObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 import type { DbEvent, DbRecording } from "@cs360/shared";
-import { getSupabaseAdmin } from "./supabase";
+import { getDb } from "./db";
 import {
   isWowzaConfigured,
   listVideosForLiveStream,
@@ -132,7 +132,7 @@ export async function discoverRecordingsForEvent(
     return [];
   }
 
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) return [];
 
   type Insertable = Pick<
@@ -211,7 +211,7 @@ export async function discoverRecordingsForEvent(
 
   const { data, error } = await admin
     .from("recordings")
-    .upsert(found, { onConflict: "event_id,camera_number" })
+    .upsert(found, { onConflict: "event_id,channel_arn" })
     .select(RECORDING_COLS);
   if (error) {
     console.error("[recordings] upsert failed:", error);

@@ -1,4 +1,4 @@
-import { getSupabaseAdmin } from "./supabase";
+import { getDb } from "./db";
 
 const WINDOW_MS = 10 * 60 * 1000;
 const WINDOW_SECONDS = WINDOW_MS / 1000;
@@ -6,6 +6,8 @@ const ID_MAX = 3;
 const IP_MAX = 5;
 const OTP_ID_MAX = 5;
 const OTP_IP_MAX = 20;
+const LOGIN_ID_MAX = 10;
+const LOGIN_IP_MAX = 30;
 
 export type RateLimitResult = { success: boolean; reset: number };
 
@@ -34,7 +36,7 @@ async function hit(
   max: number,
 ): Promise<RateLimitResult> {
   const fullKey = `${prefix}:${key}`;
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (admin) {
     const { data, error } = await admin.rpc("auth_rate_limit_hit", {
       p_key: fullKey,
@@ -71,4 +73,14 @@ export function checkOtpIdentifierLimit(
 
 export function checkOtpIpLimit(key: string): Promise<RateLimitResult> {
   return hit("otp-ip", key, OTP_IP_MAX);
+}
+
+export function checkLoginIdentifierLimit(
+  key: string,
+): Promise<RateLimitResult> {
+  return hit("login-id", key, LOGIN_ID_MAX);
+}
+
+export function checkLoginIpLimit(key: string): Promise<RateLimitResult> {
+  return hit("login-ip", key, LOGIN_IP_MAX);
 }

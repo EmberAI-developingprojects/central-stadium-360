@@ -1,4 +1,4 @@
-import { getSupabaseAdmin } from "./supabase";
+import { getDb } from "./db";
 
 const STALE_SECONDS = 90;
 
@@ -12,7 +12,7 @@ export async function admitDevice(
   deviceId: string,
   maxDevices: number,
 ): Promise<DeviceAdmitResult> {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) return { ok: false, error: "internal_error" };
   const nowIso = new Date().toISOString();
 
@@ -56,7 +56,7 @@ export async function touchSession(
   ticketId: string,
   deviceId: string,
 ): Promise<void> {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) return;
   await admin
     .from("sessions")
@@ -69,7 +69,7 @@ export async function releaseDevice(
   ticketId: string,
   deviceId: string,
 ): Promise<void> {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) return;
   await admin
     .from("sessions")
@@ -79,7 +79,7 @@ export async function releaseDevice(
 }
 
 async function countActiveDevices(ticketId: string): Promise<number> {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) return 0;
   const staleIso = new Date(Date.now() - STALE_SECONDS * 1000).toISOString();
   const { data, error } = await admin

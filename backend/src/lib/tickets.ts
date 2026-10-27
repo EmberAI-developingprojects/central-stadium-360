@@ -5,7 +5,7 @@ import type {
   TicketTier,
 } from "@cs360/shared";
 import { TICKET_TIERS } from "@cs360/shared";
-import { getSupabaseAdmin } from "./supabase";
+import { getDb } from "./db";
 import {
   cancelEbarimt,
   cancelEbarimtV3,
@@ -39,7 +39,7 @@ export async function issueEbarimtForTicket(
     customerTin?: string | null;
   },
 ): Promise<void> {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) return;
 
   const useQpayCloud = Boolean(opts.qpayPaymentId) && !posapiForOnline();
@@ -151,7 +151,7 @@ export async function voidEbarimtForTicket(ticket: {
 }
 
 export async function markUserViewed(userId: string): Promise<void> {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) return;
   await admin
     .from("users")
@@ -168,7 +168,7 @@ export async function hasValidTicketForEvent(
   userId: string,
   eventId: string,
 ): Promise<boolean> {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) return false;
   const nowIso = new Date().toISOString();
   const { data, error } = await admin
@@ -197,7 +197,7 @@ export async function findBestLiveTicket(
   userId: string,
   eventId: string,
 ): Promise<LiveTicketRow | null> {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) return null;
   const nowIso = new Date().toISOString();
   const { data, error } = await admin
@@ -219,7 +219,7 @@ export async function hasReplayAccess(
   userId: string,
   eventId: string,
 ): Promise<boolean> {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) return false;
   const nowIso = new Date().toISOString();
   const { data, error } = await admin
@@ -243,7 +243,7 @@ export async function hasPaidTicket(
   eventId: string,
   ticketType: TicketType,
 ): Promise<boolean> {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) return false;
   const nowIso = new Date().toISOString();
   const { data, error } = await admin
@@ -274,7 +274,7 @@ export async function findRecentPendingTicket(
   ticketType: TicketType,
   withinMinutes = 15,
 ): Promise<PendingTicketRow | null> {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) return null;
   const sinceIso = new Date(
     Date.now() - withinMinutes * 60 * 1000,
@@ -327,7 +327,7 @@ export async function reusePendingInvoice(
     };
     return { ok: true, data };
   } catch (_err) {
-    const admin = getSupabaseAdmin();
+    const admin = getDb();
     if (admin) {
       await admin
         .from("tickets")
@@ -399,7 +399,7 @@ export function tierAccessExpiry(
 }
 
 export async function stampAccessExpiryForEvent(eventId: string): Promise<void> {
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) return;
   const { data: event } = await admin
     .from("events")
@@ -436,7 +436,7 @@ export async function resolvePaidAccessExpiry(
     ).toISOString();
   }
   if (!ticket.event_id) return undefined;
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) return undefined;
   const { data } = await admin
     .from("events")
@@ -456,7 +456,7 @@ export async function createTicketInvoice(
 ): Promise<CreateTicketInvoiceResult> {
   const { userId, event, ticketType, price, tier, maxDevices, ebarimtTin } =
     input;
-  const admin = getSupabaseAdmin();
+  const admin = getDb();
   if (!admin) {
     return { ok: false, error: "supabase_not_configured", status: 503 };
   }

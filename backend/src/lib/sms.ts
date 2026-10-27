@@ -39,9 +39,9 @@ function defaultText(otp: string): string {
 }
 
 async function sendViaDev(msg: SmsMessage): Promise<SmsResult> {
-  const _text = msg.text ?? defaultText(msg.otp);
-  void _text;
-  void msg;
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`[sms:dev] to=${msg.phone} text=${msg.text ?? defaultText(msg.otp)}`);
+  }
   return {
     ok: true,
     provider: "dev",
