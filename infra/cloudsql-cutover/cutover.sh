@@ -48,8 +48,9 @@ tag_url() {
     python3 -I -c "import json,sys; t=[x for x in json.load(sys.stdin)['status'].get('traffic',[]) if x.get('tag')=='$TAG']; print(t[0]['url'] if t else '')"
 }
 # Rows of every public/auth COPY block in a dump, as "table<TAB>row", sorted.
+# Supabase quotes table names ("auth"."users"), newer pg_dump does not.
 dump_rows() {
-  awk '/^COPY "(public|auth)"\./{t=$2; f=1; next} f&&/^\\\.$/{f=0; next} f{print t"\t"$0}' "$1" | sort
+  awk '/^COPY "?(public|auth)"?\./{t=$2; gsub(/"/,"",t); f=1; next} f&&/^\\\.$/{f=0; next} f{print t"\t"$0}' "$1" | sort
 }
 
 step_preflight() {
@@ -106,7 +107,7 @@ step_backup() {
   say "uploading backup to $BACKUP_BUCKET/cutover-$STAMP"
   gcloud storage cp -r $WORK $BACKUP_BUCKET/cutover-$STAMP --project=$PROJECT >/dev/null
   say "backup done:"
-  grep -E '"public"\.' $WORK/row_counts.txt
+  grep -E '^public\.' $WORK/row_counts.txt
 }
 
 step_restore() {
