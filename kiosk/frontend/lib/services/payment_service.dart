@@ -22,6 +22,7 @@ class PaymentService {
     required List<OrderLine> items,
     required PaymentMethod method,
     String? buyerPhone,
+    String? customerTin,
   }) async {
     final data = await _post('orders', {
       'event_id': eventId,
@@ -30,6 +31,9 @@ class PaymentService {
       ],
       'method': method.name, // 'qpay' | 'card'
       if (buyerPhone != null && buyerPhone.isNotEmpty) 'buyer_phone': buyerPhone,
+      // B2B: QPay settles cloud-side, so the company must be on the order
+      // before the invoice is paid — the barimt cannot be re-issued after.
+      if (customerTin != null && customerTin.isNotEmpty) 'customer_tin': customerTin,
     });
     return KioskOrder.fromJson(data);
   }

@@ -107,10 +107,43 @@ class S {
   String get confirmingPayment => _t('Төлбөрийг баталгаажуулж байна…', 'Confirming payment…');
   String get reservationExpired =>
       _t('Захиалга цуцлагдлаа — дахин эхлүүлнэ үү.', 'Reservation expired — please start again.');
+  String get tryAgain => _t('Дахин оролдох', 'Try again');
+
+  // И-Баримт receiver (B2C / B2B)
+  String get receiptFor => _t('И-Баримт хэнд бичих вэ?', 'Who is the receipt for?');
+  String get receiptForSub => _t(
+      'Байгууллагын нэр дээр бичүүлэх бол регистрийн дугаараа оруулна.',
+      'To bill a company, enter its register number.');
+  String get asPerson => _t('Хувь хүн', 'Individual');
+  String get asCompany => _t('Байгууллага', 'Company');
+  String get companyRegno => _t('Байгууллагын регистрийн дугаар', "Company's register number");
+  String get companyRegnoSub => _t('7 оронтой дугаар', '7 digits');
+  String get checkCompany => _t('Шалгах', 'Check');
+  String get checkingCompany => _t('Байгууллагыг шалгаж байна…', 'Checking the company…');
+  String get isThisYourCompany => _t('Энэ байгууллага мөн үү?', 'Is this your organisation?');
+  String get companyNameUnknown => _t('(нэр олдсонгүй)', '(name not listed)');
+  String get regnoShort => _t('РД', 'Reg.');
+  String get tinShort => _t('ТТД', 'TIN');
+  String get yesThisIsIt => _t('Тийм, зөв байна', "Yes, that's it");
+  String get no => _t('Үгүй', 'No');
+  String get companyNotFound => _t('Байгууллага олдсонгүй', 'Organisation not found');
+  String get companyNotFoundSub => _t(
+      'Регистрийн дугаараа шалгаад дахин оруулна уу, эсвэл хувь хүнээр авна уу.',
+      'Check the register number and try again, or take it as an individual.');
+  String get receiptTo => _t('И-Баримт', 'Receipt');
+  String get changeReceiver => _t('Өөрчлөх', 'Change');
+  String get waitingPrint =>
+      _t('Та баримт хэвлэх хүртэл түр хүлээнэ үү', 'Please wait while your receipt prints');
+  String get waitingPrintSub => _t(
+      'Тасалбар болон И-Баримт хэвлэгдэж байна. Хэвлэгчээс баримтаа авна уу.',
+      'Your ticket and fiscal receipt are printing. Please take them from the printer.');
+  String get printSlow => _t(
+      'Төлбөр амжилттай хийгдсэн. Баримт хэвлэгдээгүй бол ажилтанд хандана уу.',
+      'Your payment went through. If nothing printed, please ask a member of staff.');
 
   // Confirmation (all-digital — nothing is printed)
   String get confirmed => _t('БАТАЛГААЖЛАА', 'CONFIRMED');
-  String get enjoyShow => _t('Сайхан үзээрэй.', 'Enjoy the show.');
+  String get enjoyShow => _t('Цагийг сайхан өнгөрүүлээрэй.', 'Have a wonderful time.');
   String get confirmIntro => _t(
       'Доорх QR-уудыг утсаараа уншуулна уу. Тасалбараа хадгалахын тулд дэлгэцийн зургийг авч болно.',
       'Scan the QR codes below with your phone. Take a photo of the screen to keep them.');

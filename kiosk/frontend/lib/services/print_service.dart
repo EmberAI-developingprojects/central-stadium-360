@@ -49,6 +49,29 @@ class PrintService {
     });
   }
 
+  /// GET {bridge}/print/status?ref= — has the auto-printer produced this
+  /// order's slip yet?
+  ///
+  /// The bridge polls the cloud for paid orders and prints them a beat after
+  /// payment, so the kiosk holds the buyer on a "please wait" screen until the
+  /// paper is actually out instead of guessing with a fixed timer. Any error
+  /// answers false: a failed poll must never be read as "printed".
+  static Future<bool> hasPrinted(String orderRef) async {
+    try {
+      final uri = KioskConfig
+          .bridge('print/status')
+          .replace(queryParameters: {'ref': orderRef});
+      final res = await http
+          .get(uri, headers: const {'Accept': 'application/json'})
+          .timeout(const Duration(seconds: 8));
+      if (res.statusCode != 200) return false;
+      final j = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+      return j['printed'] == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   static Future<void> _post(String path, Map<String, Object?> body) async {
     final res = await http
         .post(KioskConfig.bridge(path),

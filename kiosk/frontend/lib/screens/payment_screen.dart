@@ -8,12 +8,14 @@ import '../models/payment.dart';
 import '../models/ticket_order.dart';
 import '../services/bridge_service.dart';
 import '../services/payment_service.dart';
+import '../services/print_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import '../theme/decorations.dart';
 import '../theme/formatting.dart';
 import '../widgets/kiosk_scaffold.dart';
 import '../widgets/qr_placeholder.dart';
+import '../widgets/receiver_picker.dart';
 import 'confirmation_screen.dart';
 
 /// Payment screen (portrait): order summary, then method choice + detail.
@@ -33,6 +35,23 @@ class PaymentScreen extends StatefulWidget {
 class _PaymentScreenState extends State<PaymentScreen> {
   PaymentMethod? _method;
   bool _processing = false; // card / simulate spinner
+  bool _printing = false; // holding the buyer until the slip is out
+  /// Who the И-Баримт is written to, once the buyer has answered.
+  Receiver? _receiver;
+
+  /// True while the "Хувь хүн / Байгууллага" question is on screen.
+  ///
+  /// It is asked at a different moment on each rail, because that is where the
+  /// barimt is actually written:
+  ///   QPay — straight after the method is picked, since QPay stamps the
+  ///          barimt the instant the invoice is paid and it cannot then be
+  ///          re-issued to a company, so the company must be on the order.
+  ///   Card — after the terminal approves, since the bridge issues that barimt
+  ///          itself and the buyer should not be held up before paying.
+  bool _askReceiver = false;
+
+  /// The card order that is already paid and waiting for the answer above.
+  KioskOrder? _cardOrder;
   bool _creating = false; // creating the QPay invoice
   KioskOrder? _order; // live QPay order (carries the QR)
   String? _error;
@@ -86,6 +105,27 @@ class _PaymentScreenState extends State<PaymentScreen> {
       _error = null;
     });
     if (m == PaymentMethod.qpay && KioskConfig.isLive) {
+      // Ask before the invoice exists — see [_askReceiver].
+      setState(() => _askReceiver = true);
+    } else if (m == PaymentMethod.card) {
+      // Start the terminal read on this very tap. It used to draw a card panel
+      // with a second "follow the terminal" button, which buyers read as the
+      // machine being stuck — one payment, one tap.
+      await _payCard();
+    } else if (m == PaymentMethod.qpay) {
+      await _startQpay(); // offline demo
+    }
+  }
+
+  /// The buyer answered "Хувь хүн / Байгууллага"; carry on down their rail.
+  Future<void> _onReceiverChosen(Receiver r) async {
+    setState(() {
+      _receiver = r;
+      _askReceiver = false;
+    });
+    if (_method == PaymentMethod.card) {
+      await _finishCard();
+    } else {
       await _startQpay();
     }
   }
@@ -102,6 +142,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         eventId: widget.order.event.id,
         items: _items,
         method: PaymentMethod.qpay,
+        customerTin: _receiver?.tin,
       );
       if (!mounted) return;
       setState(() {
@@ -111,7 +152,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       final result = await PaymentService.pollUntilSettled(order.orderId);
       if (!mounted) return;
       if (result.status == PaymentStatus.paid) {
-        _goConfirm(result);
+        await _goConfirm(result);
       } else {
         setState(() => _error = _msg(context));
       }
@@ -135,6 +176,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
         await _simulate();
         return;
       }
+      // The company is not known yet — it is asked for after approval — and
+      // it is not needed here either: the bridge issues this rail's barimt
+      // locally and records the buyer TIN with it.
       final order = await PaymentService.createOrder(
         eventId: widget.order.event.id,
         items: _items,
@@ -144,21 +188,60 @@ class _PaymentScreenState extends State<PaymentScreen> {
         orderRef: order.reference,
         amount: widget.order.total,
       );
+      if (!mounted) return;
+      if (!approved) {
+        await PaymentService.cardResult(order.orderId, approved: false);
+        if (!mounted) return;
+        setState(() {
+          _processing = false;
+          _error = _msg(context);
+        });
+        return;
+      }
+      // Paid. The buyer is no longer racing the reservation hold, and must not
+      // have the screen pulled out from under them while they answer.
+      _timer?.cancel();
+      setState(() {
+        _cardOrder = order;
+        _processing = false;
+        _askReceiver = true;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _processing = false;
+        _error = _msg(context);
+      });
+    }
+  }
+
+  /// Card rail, part two: write the barimt to whoever the buyer named, then
+  /// report the charge so the backend settles the order and mints tickets.
+  Future<void> _finishCard() async {
+    final order = _cardOrder;
+    if (order == null) return;
+    setState(() => _processing = true);
+    try {
       EbarimtReceipt? eb;
-      if (approved) {
+      try {
         eb = await BridgeService.issueEbarimt(
           orderRef: order.reference,
           items: _receiptLines,
+          customerTin: _receiver?.tin,
         );
+      } catch (_) {
+        // The card is already charged. A barimt that cannot be issued right
+        // now must not cost the buyer their tickets — report the sale anyway.
+        eb = null;
       }
       final result = await PaymentService.cardResult(
         order.orderId,
-        approved: approved,
+        approved: true,
         ebarimt: eb,
       );
       if (!mounted) return;
       if (result.status == PaymentStatus.paid) {
-        _goConfirm(result);
+        await _goConfirm(result);
       } else {
         setState(() {
           _processing = false;
@@ -179,7 +262,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     setState(() => _processing = true);
     await Future.delayed(const Duration(seconds: 2));
     if (!mounted) return;
-    _goConfirm(_simulatedResult());
+    await _goConfirm(_simulatedResult());
   }
 
   KioskOrderStatus _simulatedResult() {
@@ -201,8 +284,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  void _goConfirm(KioskOrderStatus result) {
+  Future<void> _goConfirm(KioskOrderStatus result) async {
     _timer?.cancel();
+    // The bridge's auto-printer picks the paid order up from the cloud and
+    // prints the ticket + И-Баримт a beat later. Hold the buyer here until the
+    // paper is actually out, otherwise they walk off at the thank-you screen
+    // while their receipt is still coming.
+    await _waitForPrint(result.orderId);
+    if (!mounted) return;
     final confirmed =
         widget.order.copyWith(method: _method, reference: result.reference);
     Navigator.of(context).pushReplacement(
@@ -210,6 +299,24 @@ class _PaymentScreenState extends State<PaymentScreen> {
         builder: (_) => ConfirmationScreen(order: confirmed, result: result),
       ),
     );
+  }
+
+  /// Poll the bridge until the slip is printed, or give up after 90s.
+  ///
+  /// Giving up still continues to the confirmation screen: the payment has
+  /// already succeeded, so a slow printer must never look like a failed sale.
+  Future<void> _waitForPrint(String orderRef) async {
+    if (!KioskConfig.isLive) return;
+    setState(() {
+      _processing = false;
+      _printing = true;
+    });
+    final deadline = DateTime.now().add(const Duration(seconds: 90));
+    while (mounted && DateTime.now().isBefore(deadline)) {
+      if (await PrintService.hasPrinted(orderRef)) break;
+      await Future<void>.delayed(const Duration(seconds: 1));
+    }
+    if (mounted) setState(() => _printing = false);
   }
 
   String _msg(BuildContext context) => context.lang == Lang.mn
@@ -220,7 +327,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
   Widget build(BuildContext context) {
     final s = S.of(context);
     return KioskScaffold(
-      showBack: !_processing,
+      // No way back once the card is charged and we are only asking who the
+      // barimt belongs to.
+      showBack: !_processing &&
+          !_printing &&
+          !(_askReceiver && _method == PaymentMethod.card),
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(56, 28, 56, 36),
         child: Column(
@@ -228,8 +339,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
           children: [
             _summary(context, widget.order),
             const SizedBox(height: 36),
-            if (_processing)
+            if (_printing)
+              _printingView(s)
+            else if (_processing)
               _processingView(s)
+            else if (_askReceiver)
+              ReceiverPicker(onChosen: _onReceiverChosen)
             else ...[
               Text(s.howToPay, style: KioskText.h1),
               const SizedBox(height: 22),
@@ -292,8 +407,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
               Text(formatMnt(order.total), style: KioskText.display.copyWith(fontSize: 40)),
             ],
           ),
-          const SizedBox(height: 24),
-          _holdBanner(s),
+          // The reservation countdown is meaningless once the money is taken —
+          // the card rail keeps this screen up afterwards to ask who the
+          // barimt belongs to.
+          if (_cardOrder == null) ...[
+            const SizedBox(height: 24),
+            _holdBanner(s),
+          ],
         ],
       ),
     );
@@ -342,6 +462,33 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
+  /// A one-line reminder of who the barimt goes to, with a way back.
+  Widget _receiverBanner(S s) {
+    final r = _receiver!;
+    final who = r.isCompany
+        ? (r.name.isEmpty ? '${s.tinShort} ${r.tin}' : r.name)
+        : s.asPerson;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
+      decoration: BoxDecoration(
+        color: AppColors.glassHi,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.stroke),
+      ),
+      child: Row(
+        children: [
+          Icon(r.isCompany ? Icons.apartment_rounded : Icons.person_rounded,
+              size: 22, color: AppColors.textSoft),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text('${s.receiptTo}: $who',
+                style: KioskText.body.copyWith(fontSize: 17, color: AppColors.text)),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ---- Method detail ----------------------------------------------------
   Widget _methodDetail(S s) {
     if (_method == null) {
@@ -371,6 +518,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          if (_receiver != null) ...[
+            _receiverBanner(s),
+            const SizedBox(height: 22),
+          ],
           Text(s.scanToPay, style: KioskText.title),
           const SizedBox(height: 22),
           // Live: the real QPay PNG. Offline: the decorative placeholder.
@@ -413,12 +564,53 @@ class _PaymentScreenState extends State<PaymentScreen> {
             Text(_error!, textAlign: TextAlign.center, style: KioskText.body.copyWith(color: AppColors.danger)),
             const SizedBox(height: 16),
           ],
-          PrimaryButton(
-            label: KioskConfig.isLive ? s.cardPrompt : s.simulateApproved,
-            icon: Icons.check_rounded,
-            onPressed: _payCard,
-          ),
+          // Live: the charge already started when the buyer tapped "Bank card",
+          // so a button here only makes sense as a retry after a decline.
+          if (!KioskConfig.isLive)
+            PrimaryButton(
+              label: s.simulateApproved,
+              icon: Icons.check_rounded,
+              onPressed: _payCard,
+            )
+          else if (_error != null)
+            PrimaryButton(
+              label: s.tryAgain,
+              icon: Icons.refresh_rounded,
+              onPressed: _payCard,
+            ),
         ],
+      ),
+    );
+  }
+
+  /// "Та баримт хэвлэх хүртэл түр хүлээнэ үү" — shown between a successful
+  /// payment and the confirmation screen while the printer runs.
+  Widget _printingView(S s) {
+    return _Card(
+      center: true,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 56),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(
+              width: 56,
+              height: 56,
+              child: CircularProgressIndicator(strokeWidth: 4, color: AppColors.magenta),
+            ),
+            const SizedBox(height: 28),
+            Text(s.waitingPrint, textAlign: TextAlign.center, style: KioskText.title),
+            const SizedBox(height: 14),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text(
+                s.waitingPrintSub,
+                textAlign: TextAlign.center,
+                style: KioskText.body.copyWith(fontSize: 17),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

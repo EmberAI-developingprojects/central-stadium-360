@@ -33,9 +33,13 @@ class KioskConfig {
 
   /// Base URL of the on-box hardware bridge (kiosk-bridge) for card payments,
   /// fiscal receipts and printing. Loopback by default.
+  ///
+  /// Port 1017, not 7070: after a reboot Windows' WinNAT/Hyper-V dynamic port
+  /// reservations captured 7070 and the bridge died with `listen EACCES`.
+  /// Reservations can never touch ports below 1025, so the bridge moved there.
   static const String bridgeBase = String.fromEnvironment(
     'KIOSK_BRIDGE_BASE',
-    defaultValue: 'http://127.0.0.1:7070',
+    defaultValue: 'http://127.0.0.1:1017',
   );
 
   /// Build a full URL for a kiosk API path, e.g. `events` → `{base}/api/kiosk/events`.
@@ -55,6 +59,15 @@ class KioskConfig {
   /// How long to wait on a catalog fetch before falling back to cached/mock.
   static const Duration fetchTimeout = Duration(seconds: 8);
 
-  /// How long to wait on a single payment/print call before erroring.
+  /// How long to wait on a single cloud payment/print call before erroring.
   static const Duration paymentTimeout = Duration(seconds: 15);
+
+  /// How long to wait on the card terminal.
+  ///
+  /// A real card sale takes 20-60s — the buyer taps, enters a PIN, the host
+  /// answers. The 15s [paymentTimeout] aborted the call mid-sale, so APPROVED
+  /// charges (auth 842044, field-observed 2026-09-02) rendered as
+  /// "Төлбөр амжилтгүй" and never reported back, leaving the order pending
+  /// while the buyer had been debited. Must stay above the bridge's own 210s.
+  static const Duration cardTimeout = Duration(seconds: 220);
 }

@@ -151,7 +151,13 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
             const SizedBox(height: 18),
             Center(child: Text(s.confirmed, style: KioskText.label.copyWith(color: AppColors.accent))),
             const SizedBox(height: 12),
-            Center(child: Text(s.enjoyShow, style: KioskText.display)),
+            Center(
+              child: Text(
+                s.enjoyShow,
+                textAlign: TextAlign.center,
+                style: KioskText.display,
+              ),
+            ),
             const SizedBox(height: 12),
             Center(
               child: SizedBox(
