@@ -93,6 +93,8 @@ adminKiosk.get("/events", async (c) => {
       image: e.image,
       thumbnail_url: e.thumbnail_url,
       zones,
+      kind: e.kind ?? "event",
+      rink_duration_minutes: e.rink_duration_minutes ?? null,
     };
   });
   return c.json({ ok: true, data: events } as const);

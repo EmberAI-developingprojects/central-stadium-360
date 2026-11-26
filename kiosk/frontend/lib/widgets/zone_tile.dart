@@ -12,7 +12,16 @@ class ZoneTile extends StatelessWidget {
   final Zone zone;
   final bool selected;
   final VoidCallback onTap;
-  const ZoneTile({super.key, required this.zone, required this.selected, required this.onTap});
+
+  /// Shown instead of the zone name (a rink shows "Размер 38").
+  final String? title;
+  const ZoneTile({
+    super.key,
+    required this.zone,
+    required this.selected,
+    required this.onTap,
+    this.title,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -43,10 +52,12 @@ class ZoneTile extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(zone.name(lang), style: KioskText.title),
-                        const SizedBox(height: 6),
-                        Text(zone.desc(lang),
-                            style: KioskText.body.copyWith(fontSize: 17, color: AppColors.textSoft)),
+                        Text(title ?? zone.name(lang), style: KioskText.title),
+                        if (zone.desc(lang).isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Text(zone.desc(lang),
+                              style: KioskText.body.copyWith(fontSize: 17, color: AppColors.textSoft)),
+                        ],
                         const SizedBox(height: 12),
                         _availability(context),
                       ],

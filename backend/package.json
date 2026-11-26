@@ -7,7 +7,8 @@
     "dev": "tsx watch src/dev.ts",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "start": "node dist/dev.js"
+    "start": "node dist/dev.js",
+    "test": "node --import tsx --test --test-concurrency=1 test/*.test.ts"
   },
   "dependencies": {
     "@aws-sdk/client-ivs": "^3.1075.0",

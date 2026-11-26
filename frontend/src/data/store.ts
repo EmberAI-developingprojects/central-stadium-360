@@ -69,7 +69,7 @@ export type OrderRecord = {
   ebarimtCityTax?: number | null;
 };
 
-export type UserRole = "admin" | "user";
+export type UserRole = "admin" | "user" | "scanner";
 
 export type UserRecord = {
   id: string;

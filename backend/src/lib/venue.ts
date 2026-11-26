@@ -26,6 +26,7 @@ import {
 } from "./qpay";
 import { buildKioskCallbackUrl, getCallbackSecret } from "./qpay-signature";
 import { publishedOn, withChannelFallback } from "./event-channels";
+import { normalizeRinkPhone } from "./rink";
 
 const KIOSK_SALE_GRACE_MS = 12 * 60 * 60 * 1000;
 
@@ -81,13 +82,14 @@ export async function createKioskOrder(
     id: string;
     title: string;
     status: string;
+    kind?: string;
     show_on_kiosk?: boolean;
   };
   const { data: event, error: evErr } = await withChannelFallback<SaleEvent>(
     (withChannels) =>
       admin
         .from("events")
-        .select("id,title,status" + (withChannels ? ",show_on_kiosk" : ""))
+        .select("id,title,status,kind" + (withChannels ? ",show_on_kiosk" : ""))
         .eq("id", input.event_id)
         .maybeSingle<SaleEvent>(),
   );
@@ -95,6 +97,13 @@ export async function createKioskOrder(
   if (!event) return { ok: false, error: "event_not_found", status: 404 };
   if (event.status === "expired" || !publishedOn(event.show_on_kiosk)) {
     return { ok: false, error: "event_not_on_sale", status: 409 };
+  }
+  // A rink ticket is tied to the buyer's phone: the LED board and the
+  // end-of-time SMS both use it.
+  let buyerPhone = input.buyer_phone?.trim() || null;
+  if (event.kind === "rink") {
+    buyerPhone = normalizeRinkPhone(buyerPhone);
+    if (!buyerPhone) return { ok: false, error: "phone_required", status: 400 };
   }
 
   const zoneIds = [...new Set(items.map((i) => i.zone_id))];
@@ -145,7 +154,7 @@ export async function createKioskOrder(
     items: orderItems,
     total,
     payment_method: input.method,
-    buyer_phone: input.buyer_phone ?? null,
+    buyer_phone: buyerPhone,
     kiosk_id: input.kiosk_id ?? null,
     ebarimt_customer_tin: input.customer_tin?.trim() || null,
   });
@@ -623,6 +632,17 @@ export async function redeemTicket(
     .eq("id", ticket.order_id)
     .maybeSingle<{ event_id: string; items: VenueOrderItem[] }>();
   const eventId = order?.event_id ?? null;
+  // Rink tickets are timed sessions: only the rink scanner may start them.
+  if (eventId) {
+    const { data: kindRow } = await admin
+      .from("events")
+      .select("kind")
+      .eq("id", eventId)
+      .maybeSingle<{ kind: string }>();
+    if (kindRow?.kind === "rink") {
+      return { ok: true, data: blankResult("wrong_event", code) };
+    }
+  }
   const zoneName =
     order?.items?.find((it) => it.zone_id === ticket.zone_id)?.zone_name_mn ??
     null;

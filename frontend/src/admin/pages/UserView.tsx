@@ -143,6 +143,36 @@ export default function UserView() {
     }
   };
 
+  // Rink staff: may scan rink tickets and show the LED board, nothing else.
+  const toggleScanner = async () => {
+    const next: UserRole = user.role === "scanner" ? "user" : "scanner";
+    const ok = await confirm({
+      title:
+        next === "scanner"
+          ? "Тасалбар шалгагч болгох уу?"
+          : "Шалгагч эрхийг хасах уу?",
+      message:
+        next === "scanner"
+          ? "Энэ хэрэглэгч зөвхөн мөсөн гулгуурын тасалбар уншуулах болон LED дэлгэц харах эрхтэй болно."
+          : "Энэ хэрэглэгч энгийн хэрэглэгч болно.",
+      confirmLabel: next === "scanner" ? "Шалгагч болгох" : "Эрх хасах",
+      cancelLabel: "Болих",
+      variant: next === "scanner" ? "default" : "warning",
+    });
+    if (!ok) return;
+    try {
+      await setUserRole(user.id, next);
+      toast.success(
+        next === "scanner"
+          ? "Тасалбар шалгагч болголоо."
+          : "Шалгагч эрхийг хаслаа.",
+      );
+      load();
+    } catch (e) {
+      toast.error((e as Error).message || "Эрх солих боломжгүй.");
+    }
+  };
+
   const toggleDisabled = async () => {
     const next = !user.disabled;
     if (next) {
@@ -237,7 +267,11 @@ export default function UserView() {
                         : ADMIN_BADGE_CLS
                     }
                   >
-                    {user.role === "admin" ? "Админ" : "Хэрэглэгч"}
+                    {user.role === "admin"
+                      ? "Админ"
+                      : user.role === "scanner"
+                        ? "Тасалбар шалгагч"
+                        : "Хэрэглэгч"}
                   </span>
                 </td>
               </tr>
@@ -284,6 +318,17 @@ export default function UserView() {
             >
               {user.role === "admin" ? "Эрх хасах" : "Админ болгох"}
             </button>
+            {user.role !== "admin" && (
+              <button
+                type="button"
+                className={ADMIN_BTN_CLS}
+                onClick={toggleScanner}
+              >
+                {user.role === "scanner"
+                  ? "Шалгагч эрхийг хасах"
+                  : "Тасалбар шалгагч болгох"}
+              </button>
+            )}
             <button
               type="button"
               className={ADMIN_BTN_CLS}

@@ -37,7 +37,7 @@ import {
   ADMIN_TABLE_WRAP_CLS,
 } from "../_adminStyles";
 
-type RoleFilter = "all" | "admin" | "user" | "disabled";
+type RoleFilter = "all" | "admin" | "scanner" | "user" | "disabled";
 
 export default function UsersList() {
   const confirm = useConfirm();
@@ -142,7 +142,8 @@ export default function UsersList() {
 
   const filtered = (users || []).filter((u) => {
     if (filter === "admin" && u.role !== "admin") return false;
-    if (filter === "user" && u.role === "admin") return false;
+    if (filter === "scanner" && u.role !== "scanner") return false;
+    if (filter === "user" && u.role !== "user") return false;
     if (filter === "disabled" && !u.disabled) return false;
     if (!q) return true;
     const needle = q.toLowerCase();
@@ -270,6 +271,7 @@ export default function UsersList() {
             [
               ["all", "Бүгд"],
               ["admin", "Админ"],
+              ["scanner", "Шалгагч"],
               ["user", "Хэрэглэгч"],
               ["disabled", "Хязгаарлагдсан"],
             ] as Array<[RoleFilter, string]>
@@ -424,6 +426,10 @@ export default function UsersList() {
                             </svg>
                             Админ
                           </span>
+                        ) : u.role === "scanner" ? (
+                          <span className="inline-flex items-center rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-[11px] font-semibold px-2 py-0.5">
+                            Шалгагч
+                          </span>
                         ) : (
                           <span className="inline-flex items-center rounded-full bg-zinc-100 text-zinc-600 border border-zinc-200 text-[11px] font-medium px-2 py-0.5">
                             Хэрэглэгч
@@ -551,6 +557,10 @@ export default function UsersList() {
                           <path d="M12 2l3 7h7l-5.5 4 2 8L12 17l-6.5 4 2-8L2 9h7z" />
                         </svg>
                         Админ
+                      </span>
+                    ) : u.role === "scanner" ? (
+                      <span className="inline-flex items-center rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-[11px] font-semibold px-2 py-0.5">
+                        Шалгагч
                       </span>
                     ) : (
                       <span className="inline-flex items-center rounded-full bg-zinc-100 text-zinc-600 border border-zinc-200 text-[11px] font-medium px-2 py-0.5">
@@ -755,6 +765,7 @@ function AddUserModal({
             >
               <option value="user">Хэрэглэгч</option>
               <option value="admin">Админ</option>
+              <option value="scanner">Тасалбар шалгагч</option>
             </select>
           </div>
 

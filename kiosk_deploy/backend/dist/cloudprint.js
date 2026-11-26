@@ -153,6 +153,12 @@ export function startCloudPrintPoller(print = printDocument) {
                         qrData: tk.code,
                         // The receipt below repeats price and purchase time.
                         compact: hasReceipt,
+                        rink: order.kind === 'rink'
+                            ? {
+                                durationMinutes: order.rink_duration_minutes ?? 0,
+                                phoneMasked: order.buyer_phone_masked ?? null,
+                            }
+                            : undefined,
                     }));
                     if (hasReceipt)
                         specs.push(buildReceipt(true));

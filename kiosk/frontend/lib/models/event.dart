@@ -20,6 +20,12 @@ class Event {
   final Color tint; // faint hue used for fallback / scrims
   final List<Zone> zones;
 
+  /// 'event' for a match, 'rink' for ice-rink skate rental (zones are sizes).
+  final String kind;
+
+  /// Rink only: minutes of skating, counted from the first scan at the rink.
+  final int? rinkDurationMinutes;
+
   const Event({
     required this.id,
     required this.title,
@@ -33,7 +39,11 @@ class Event {
     required this.icon,
     required this.tint,
     required this.zones,
+    this.kind = 'event',
+    this.rinkDurationMinutes,
   });
+
+  bool get isRink => kind == 'rink';
 
   /// Build an Event from the cs360 `GET /api/kiosk/events` payload (a
   /// `KioskEvent`: single-language `title`/`description`, `start_time`, `image`,
@@ -61,6 +71,8 @@ class Event {
       icon: iconForKey(null),
       tint: zones.isNotEmpty ? zones.first.color : const Color(0xFF2F6E8F),
       zones: zones,
+      kind: (j['kind'] as String?) ?? 'event',
+      rinkDurationMinutes: (j['rink_duration_minutes'] as num?)?.toInt(),
     );
   }
 

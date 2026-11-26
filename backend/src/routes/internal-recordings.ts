@@ -9,7 +9,7 @@ import { getDb } from "../lib/db";
 
 const internalRecordings = new Hono();
 
-async function requireInternalSecret(c: Context, next: Next) {
+export async function requireInternalSecret(c: Context, next: Next) {
   const expected = process.env.INTERNAL_API_SECRET;
   if (!expected) {
     return c.json({ ok: false, error: "internal_api_not_configured" } as const, 503);

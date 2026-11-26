@@ -206,7 +206,7 @@ class _Slide extends StatelessWidget {
                     children: [
                       Icon(Icons.calendar_today_rounded, size: 16, color: Colors.white.withValues(alpha: 0.85)),
                       const SizedBox(width: 8),
-                      Text(s.eventDate(event.startsAt),
+                      Text(s.eventWhen(event),
                           style: KioskText.body.copyWith(fontSize: 16, color: Colors.white.withValues(alpha: 0.85))),
                       const SizedBox(width: 22),
                       if (soldOut)

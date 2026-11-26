@@ -38,6 +38,13 @@ import type {
   TicketCreateResponse,
   TicketStatus,
   UserRole,
+  AdminRink,
+  AdminRinkInput,
+  AdminRinkLive,
+  RinkBoard,
+  RinkOvertimeInvoice,
+  RinkScanResult,
+  RinkTicketView,
 } from "@cs360/shared";
 import { getAccessToken, getStoredSession, refreshSession } from "./session";
 
@@ -118,7 +125,7 @@ export type AuthSessionPayload = {
     id: string;
     phone: string | null;
     email?: string | null;
-    role: "user" | "admin";
+    role: UserRole;
   };
 };
 
@@ -127,7 +134,7 @@ export type MeResponse = {
   phone: string | null;
   email: string | null;
   full_name: string;
-  role: "user" | "admin";
+  role: UserRole;
   created_at: string | null;
   phone_confirmed_at: string | null;
   email_confirmed_at: string | null;
@@ -180,6 +187,30 @@ export type SignedRecordingUrl = {
 };
 
 export const api = {
+  // Rink staff (role scanner, or admin).
+  scanner: {
+    scan: (code: string) =>
+      request<RinkScanResult>("POST", "/api/scanner/scan", { code }),
+    ticket: (code: string) =>
+      request<RinkTicketView>("GET", `/api/scanner/tickets/${encodeURIComponent(code)}`),
+    overtimeQPay: (code: string) =>
+      request<RinkOvertimeInvoice>(
+        "POST",
+        `/api/scanner/tickets/${encodeURIComponent(code)}/overtime/qpay`,
+      ),
+    overtimeStatus: (code: string) =>
+      request<RinkTicketView>(
+        "GET",
+        `/api/scanner/tickets/${encodeURIComponent(code)}/overtime/status`,
+      ),
+    overtimeCash: (code: string) =>
+      request<RinkTicketView>(
+        "POST",
+        `/api/scanner/tickets/${encodeURIComponent(code)}/overtime/cash`,
+      ),
+    board: () => request<RinkBoard>("GET", "/api/scanner/board"),
+  },
+
   registerPhone: (input: {
     fullName: string;
     phone: string;
@@ -428,7 +459,7 @@ export const api = {
       email: string;
       password: string;
       full_name?: string;
-      role?: "user" | "admin";
+      role?: UserRole;
     }) => request<AdminUserRow>("POST", "/api/admin/users", input),
     listUsers: () => request<AdminUserRow[]>("GET", "/api/admin/users"),
     getUser: (id: string) =>
@@ -441,6 +472,15 @@ export const api = {
       }),
     deleteUser: (id: string) =>
       request<{ id: string }>("DELETE", `/api/admin/users/${id}`),
+
+    rink: {
+      list: () => request<AdminRink[]>("GET", "/api/admin/rink"),
+      create: (input: AdminRinkInput) =>
+        request<AdminRink>("POST", "/api/admin/rink", input),
+      update: (id: string, input: AdminRinkInput) =>
+        request<AdminRink>("PUT", `/api/admin/rink/${id}`, input),
+      live: () => request<AdminRinkLive>("GET", "/api/admin/rink/live"),
+    },
 
     kiosk: {
       listEvents: () => request<KioskEvent[]>("GET", "/api/admin/kiosk/events"),

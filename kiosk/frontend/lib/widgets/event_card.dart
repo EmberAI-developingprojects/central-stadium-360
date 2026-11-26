@@ -87,7 +87,7 @@ class EventCard extends StatelessWidget {
                                 size: 16, color: AppColors.textMuted),
                             const SizedBox(width: 8),
                             Flexible(
-                              child: Text(s.eventDate(event.startsAt),
+                              child: Text(s.eventWhen(event),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: KioskText.body

@@ -1,11 +1,12 @@
 import type { Context, Next } from "hono";
 import { getDb } from "../lib/db";
 import { verifyAccessToken } from "../lib/auth/tokens";
+import type { UserRole } from "@cs360/shared";
 
 export interface AuthedUser {
   id: string;
   phone: string | null;
-  role: "user" | "admin";
+  role: UserRole;
 }
 
 export type AuthEnv = {
@@ -62,7 +63,7 @@ export async function requireUser(
     meta: { full_name?: string } | null;
     banned: boolean;
     session_live: boolean;
-    role: "user" | "admin" | null;
+    role: UserRole | null;
     profile_phone: string | null;
     deleted_at: string | null;
     has_profile: boolean;
@@ -85,7 +86,7 @@ export async function requireUser(
     return c.json({ ok: false, error: "account_deleted" } as const, 403);
   }
 
-  let role: "user" | "admin" = row.role ?? "user";
+  let role: UserRole = row.role ?? "user";
   let phone = row.profile_phone ?? row.phone ?? null;
   if (!row.has_profile) {
     // The on_auth_user_created trigger normally creates this row.
@@ -119,6 +120,21 @@ export function requireAdmin(
     return c.json({ ok: false, error: "unauthorized" } as const, 401);
   }
   if (user.role !== "admin") {
+    return c.json({ ok: false, error: "forbidden" } as const, 403);
+  }
+  return next();
+}
+
+/** Rink staff: the scanner role, or an admin. */
+export function requireStaff(
+  c: Context<AuthEnv>,
+  next: Next,
+): Response | Promise<void> {
+  const user = c.get("user");
+  if (!user) {
+    return c.json({ ok: false, error: "unauthorized" } as const, 401);
+  }
+  if (user.role !== "admin" && user.role !== "scanner") {
     return c.json({ ok: false, error: "forbidden" } as const, 403);
   }
   return next();

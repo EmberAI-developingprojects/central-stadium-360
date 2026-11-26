@@ -233,7 +233,7 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
           const SizedBox(height: 24),
           Text(order.event.title, style: KioskText.h1),
           const SizedBox(height: 10),
-          Text(s.eventDate(order.event.startsAt), style: KioskText.body.copyWith(fontSize: 17)),
+          Text(s.eventWhen(order.event), style: KioskText.body.copyWith(fontSize: 17)),
           const SizedBox(height: 16),
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,

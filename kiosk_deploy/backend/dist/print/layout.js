@@ -1,3 +1,6 @@
+function rinkDuration(minutes) {
+    return minutes % 60 === 0 ? `${minutes / 60} цаг` : `${minutes} минут`;
+}
 function mnt(n) {
     return `${Math.round(n).toLocaleString('en-US')}₮`;
 }
@@ -37,6 +40,8 @@ export function combineSpecs(title, specs) {
     return { title, blocks };
 }
 export function ticketSpec(t) {
+    if (t.rink)
+        return rinkTicketSpec(t, t.rink);
     const blocks = [
         { type: 'text', text: t.venue, align: 'center', size: 'lg', bold: true },
         { type: 'text', text: 'НЭВТРЭХ ТАСАЛБАР', align: 'center', size: 'sm' },
@@ -56,6 +61,24 @@ export function ticketSpec(t) {
     // large — a thermal printer's cutter sits ~12mm past the print head, so a
     // short tail gets the last printed lines guillotined mid-document.
     blocks.push({ type: 'space', mm: 2 }, { type: 'qr', data: t.qrData, sizeMm: t.compact ? 34 : 38 }, { type: 'text', text: t.code ?? t.qrData, align: 'center', size: 'md', bold: true }, { type: 'space', mm: 14 });
+    return { title: `Ticket ${t.orderRef}`, blocks };
+}
+function rinkTicketSpec(t, rink) {
+    const blocks = [
+        { type: 'text', text: t.venue, align: 'center', size: 'lg', bold: true },
+        { type: 'text', text: 'МӨСӨН ГУЛГУУРЫН ТАСАЛБАР', align: 'center', size: 'sm' },
+        { type: 'rule' },
+        { type: 'kv', k: 'Гутлын размер', v: t.zone },
+        { type: 'kv', k: 'Гулгах хугацаа', v: rinkDuration(rink.durationMinutes) },
+        { type: 'kv', k: 'Тасалбар', v: t.seq ?? `${t.quantity} ширхэг` },
+    ];
+    if (rink.phoneMasked)
+        blocks.push({ type: 'kv', k: 'Утас', v: rink.phoneMasked });
+    if (t.price != null && !t.compact)
+        blocks.push({ type: 'kv', k: 'Үнэ', v: mnt(t.price) });
+    if (t.purchasedAt && !t.compact)
+        blocks.push({ type: 'kv', k: 'Худалдан авсан', v: dt(t.purchasedAt) });
+    blocks.push({ type: 'space', mm: 1 }, { type: 'text', text: 'Цаг тань орохдоо тасалбараа уншуулснаас эхэлнэ.', align: 'center', size: 'sm' }, { type: 'text', text: 'Цаг хэтэрвэл минут бүрт нэмэлт төлбөртэй.', align: 'center', size: 'sm' }, { type: 'text', text: 'Зөвхөн өнөөдөр хүчинтэй.', align: 'center', size: 'sm' }, { type: 'space', mm: 2 }, { type: 'qr', data: t.qrData, sizeMm: t.compact ? 34 : 38 }, { type: 'text', text: t.code ?? t.qrData, align: 'center', size: 'md', bold: true }, { type: 'space', mm: 14 });
     return { title: `Ticket ${t.orderRef}`, blocks };
 }
 export function receiptSpec(r) {

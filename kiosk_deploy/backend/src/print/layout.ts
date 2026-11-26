@@ -29,6 +29,16 @@ export interface TicketInput {
     qrData: string;
     /** Joined onto one slip with the receipt — drop rows the receipt repeats. */
     compact?: boolean;
+    /**
+     * Ice rink skate rental: the zone is a skate size, the time starts at the
+     * first scan (not at a fixed date), and the buyer finds themselves on the
+     * LED board by this masked phone.
+     */
+    rink?: { durationMinutes: number; phoneMasked: string | null };
+}
+
+function rinkDuration(minutes: number): string {
+    return minutes % 60 === 0 ? `${minutes / 60} цаг` : `${minutes} минут`;
 }
 
 /** Full receipt item as issued by POSAPI / built by cloudprint.ts. */
@@ -114,6 +124,7 @@ export function combineSpecs(title: string, specs: PrintSpec[]): PrintSpec {
 }
 
 export function ticketSpec(t: TicketInput): PrintSpec {
+    if (t.rink) return rinkTicketSpec(t, t.rink);
     const blocks: PrintBlock[] = [
         { type: 'text', text: t.venue, align: 'center', size: 'lg', bold: true },
         { type: 'text', text: 'НЭВТРЭХ ТАСАЛБАР', align: 'center', size: 'sm' },
@@ -135,6 +146,34 @@ export function ticketSpec(t: TicketInput): PrintSpec {
     blocks.push({ type: 'space', mm: 2 }, { type: 'qr', data: t.qrData, sizeMm: t.compact ? 34 : 38 }, { type: 'text', text: t.code ?? t.qrData, align: 'center', size: 'md', bold: true }, { type: 'space', mm: 14 });
     return { title: `Ticket ${t.orderRef}`, blocks };
 }
+function rinkTicketSpec(t: TicketInput, rink: NonNullable<TicketInput['rink']>): PrintSpec {
+    const blocks: PrintBlock[] = [
+        { type: 'text', text: t.venue, align: 'center', size: 'lg', bold: true },
+        { type: 'text', text: 'МӨСӨН ГУЛГУУРЫН ТАСАЛБАР', align: 'center', size: 'sm' },
+        { type: 'rule' },
+        { type: 'kv', k: 'Гутлын размер', v: t.zone },
+        { type: 'kv', k: 'Гулгах хугацаа', v: rinkDuration(rink.durationMinutes) },
+        { type: 'kv', k: 'Тасалбар', v: t.seq ?? `${t.quantity} ширхэг` },
+    ];
+    if (rink.phoneMasked)
+        blocks.push({ type: 'kv', k: 'Утас', v: rink.phoneMasked });
+    if (t.price != null && !t.compact)
+        blocks.push({ type: 'kv', k: 'Үнэ', v: mnt(t.price) });
+    if (t.purchasedAt && !t.compact)
+        blocks.push({ type: 'kv', k: 'Худалдан авсан', v: dt(t.purchasedAt) });
+    blocks.push(
+        { type: 'space', mm: 1 },
+        { type: 'text', text: 'Цаг тань орохдоо тасалбараа уншуулснаас эхэлнэ.', align: 'center', size: 'sm' },
+        { type: 'text', text: 'Цаг хэтэрвэл минут бүрт нэмэлт төлбөртэй.', align: 'center', size: 'sm' },
+        { type: 'text', text: 'Зөвхөн өнөөдөр хүчинтэй.', align: 'center', size: 'sm' },
+        { type: 'space', mm: 2 },
+        { type: 'qr', data: t.qrData, sizeMm: t.compact ? 34 : 38 },
+        { type: 'text', text: t.code ?? t.qrData, align: 'center', size: 'md', bold: true },
+        { type: 'space', mm: 14 },
+    );
+    return { title: `Ticket ${t.orderRef}`, blocks };
+}
+
 export function receiptSpec(r: ReceiptInput): PrintSpec {
     const items: ReceiptItem[] = r.items ?? (r.lines ?? []).map((l) => ({
         name: l.name, qty: l.qty, unitPrice: l.unitPrice,

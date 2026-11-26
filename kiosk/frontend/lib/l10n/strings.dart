@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'app_lang.dart';
+import '../models/event.dart';
 
 /// All UI strings, localized MN/EN. Access with `S.of(context)`.
 class S {
@@ -76,6 +77,32 @@ class S {
 
   // Event detail
   String get chooseZone => _t('Бүсээ сонгоно уу', 'Choose your zone');
+
+  // Ice rink
+  String get chooseSize => _t('Гутлын размераа сонгоно уу', 'Choose your skate size');
+  String get sizesHint => _t('Нэг тасалбар = нэг хос гутал.', 'One ticket = one pair of skates.');
+  String sizeLabel(String size) => _t('Размер $size', 'Size $size');
+  String rinkDuration(int minutes) {
+    final mn = minutes % 60 == 0 ? '${minutes ~/ 60} цаг' : '$minutes минут';
+    final en = minutes % 60 == 0 ? '${minutes ~/ 60} h' : '$minutes min';
+    return _t('$mn гулгана', '$en on the ice');
+  }
+  String get rinkStartsAtScan =>
+      _t('Цаг тань тасалбараа уншуулснаас эхэлнэ', 'Your time starts when your ticket is scanned');
+  String get rinkOvertimeNote =>
+      _t('Цаг хэтэрвэл минут бүрт нэмэлт төлбөртэй.', 'Going over time is charged per minute.');
+  /// The "when" line for a card or summary: a rink has a duration, not a date.
+  String eventWhen(Event e) =>
+      e.isRink ? rinkDuration(e.rinkDurationMinutes ?? 0) : eventDate(e.startsAt);
+
+  String get phoneTitle => _t('Утасны дугаараа оруулна уу', 'Enter your phone number');
+  String get phoneHint => _t(
+        'Цаг дуусахаас 10 минутын өмнө SMS ирнэ. LED дэлгэц дээр дугаараараа өөрийгөө харна.',
+        'You get an SMS 10 minutes before your time ends, and find yourself on the LED board by your number.',
+      );
+  String get phoneLabel => _t('Утас', 'Phone');
+  String get skatesLabel => _t('Гутал', 'Skates');
+  String get phoneInvalid => _t('8 оронтой гар утасны дугаар оруулна уу', 'Enter an 8-digit mobile number');
   String get zonesHint => _t('Бүс гэдэг нь талбай, тоот суудал биш.', 'Zones are areas, not numbered seats.');
   String get quantity => _t('ТОО ШИРХЭГ', 'QUANTITY');
   String get total => _t('НИЙТ ДҮН', 'TOTAL');

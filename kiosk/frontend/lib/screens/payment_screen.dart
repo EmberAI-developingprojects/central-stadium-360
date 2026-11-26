@@ -142,6 +142,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         eventId: widget.order.event.id,
         items: _items,
         method: PaymentMethod.qpay,
+        buyerPhone: widget.order.buyerPhone,
         customerTin: _receiver?.tin,
       );
       if (!mounted) return;
@@ -183,6 +184,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         eventId: widget.order.event.id,
         items: _items,
         method: PaymentMethod.card,
+        buyerPhone: widget.order.buyerPhone,
       );
       final approved = await BridgeService.posCharge(
         orderRef: order.reference,
@@ -392,8 +394,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
           const SizedBox(height: 14),
           Text(order.event.title, style: KioskText.h1),
           const SizedBox(height: 24),
-          _line(s.when, s.eventDate(order.event.startsAt)),
-          _line(s.zone, order.zone.name(lang)),
+          _line(s.when, s.eventWhen(order.event)),
+          order.event.isRink
+              ? _line(s.skatesLabel, s.sizeLabel(order.zone.nameMn))
+              : _line(s.zone, order.zone.name(lang)),
+          if (order.buyerPhone != null) _line(s.phoneLabel, order.buyerPhone!),
           _line(s.quantityLabel, '${order.quantity}'),
           _line(s.unitPrice, formatMnt(order.zone.price)),
           const SizedBox(height: 8),

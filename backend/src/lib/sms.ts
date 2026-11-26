@@ -2,7 +2,8 @@ export type SmsProvider = "dev" | "twilio" | "mobicom" | "skytel" | "callpro";
 
 export interface SmsMessage {
   phone: string;
-  otp: string;
+  /** Verification code; the default text quotes it. Omit when `text` is set. */
+  otp?: string;
 
   text?: string;
 }
@@ -34,7 +35,7 @@ function normalizeMnPhone(raw: string): string {
   return digits;
 }
 
-function defaultText(otp: string): string {
+function defaultText(otp: string = ""): string {
   return `Төв Цэнгэлдэх — баталгаажуулах код: ${otp}`;
 }
 

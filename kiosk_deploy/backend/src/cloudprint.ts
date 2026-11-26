@@ -39,6 +39,10 @@ interface CloudOrder {
     ebarimt_city_tax?: number | null;
     items?: CloudOrderItem[];
     tickets?: CloudTicket[];
+    /** 'rink' for ice-rink skate rental (cloud sends these since migration 0034). */
+    kind?: string;
+    rink_duration_minutes?: number | null;
+    buyer_phone_masked?: string | null;
 }
 
 interface PrintJobsResponse {
@@ -200,6 +204,12 @@ export function startCloudPrintPoller(print: typeof printDocument = printDocumen
                         qrData: tk.code!,
                         // The receipt below repeats price and purchase time.
                         compact: hasReceipt,
+                        rink: order.kind === 'rink'
+                            ? {
+                                durationMinutes: order.rink_duration_minutes ?? 0,
+                                phoneMasked: order.buyer_phone_masked ?? null,
+                            }
+                            : undefined,
                     }));
                     if (hasReceipt)
                         specs.push(buildReceipt(true));

@@ -1,6 +1,8 @@
 // Browser-side session for the backend's own auth: the access/refresh token
 // pair lives in sessionStorage (per tab, like before), the access token is
 // refreshed shortly before it expires, and listeners hear about sign-in/out.
+// A device such as the rink's LED screen can opt into localStorage instead
+// (keepSignedInOnThisDevice) so it stays signed in across restarts.
 
 export type StoredSession = {
   access_token: string;
@@ -12,6 +14,7 @@ export type StoredSession = {
 type Listener = (session: StoredSession | null) => void;
 
 const STORAGE_KEY = "cs360.session";
+const DEVICE_KEY = "cs360.session.device";
 // Written by the old Supabase client; its tokens no longer validate.
 const LEGACY_KEY = "cs360.auth";
 const REFRESH_MARGIN_SECONDS = 60;
@@ -23,10 +26,20 @@ const listeners = new Set<Listener>();
 let current: StoredSession | null = load();
 let refreshing: Promise<StoredSession | null> | null = null;
 
+function onDevice(): boolean {
+  try {
+    return localStorage.getItem(DEVICE_KEY) !== null;
+  } catch {
+    return false;
+  }
+}
+
 function load(): StoredSession | null {
   try {
     sessionStorage.removeItem(LEGACY_KEY);
-    const raw = sessionStorage.getItem(STORAGE_KEY);
+    const raw = onDevice()
+      ? localStorage.getItem(DEVICE_KEY)
+      : sessionStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<StoredSession>;
     if (
@@ -43,8 +56,12 @@ function load(): StoredSession | null {
 function save(next: StoredSession | null) {
   current = next;
   try {
-    if (next) sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    else sessionStorage.removeItem(STORAGE_KEY);
+    if (next && onDevice()) localStorage.setItem(DEVICE_KEY, JSON.stringify(next));
+    else if (next) sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    else {
+      sessionStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(DEVICE_KEY);
+    }
   } catch {}
   for (const fn of listeners) fn(next);
 }
@@ -71,6 +88,19 @@ export function setSessionTokens(tokens: {
 
 export function clearSession() {
   save(null);
+}
+
+/** Keep the current session in localStorage so this device survives restarts. */
+export function keepSignedInOnThisDevice() {
+  if (!current) return;
+  try {
+    localStorage.setItem(DEVICE_KEY, JSON.stringify(current));
+    sessionStorage.removeItem(STORAGE_KEY);
+  } catch {}
+}
+
+export function isKeptOnThisDevice(): boolean {
+  return onDevice();
 }
 
 export function onSessionChange(fn: Listener): () => void {

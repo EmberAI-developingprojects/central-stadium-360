@@ -41,6 +41,7 @@ import {
 import { consumeOtp, generateNumericCode, issueOtp } from "../lib/auth/otp";
 import { getBearer, requireUser, type AuthEnv } from "../middleware/require-user";
 import { randomBytes } from "node:crypto";
+import type { UserRole } from "@cs360/shared";
 
 const auth = new Hono<AuthEnv>();
 
@@ -218,7 +219,7 @@ function notConfigured(c: Context): Response {
 }
 
 type Profile = {
-  role: "user" | "admin";
+  role: UserRole;
   phone: string | null;
   email: string | null;
   full_name: string;
@@ -235,10 +236,15 @@ async function loadProfile(db: Db, userId: string): Promise<Profile | null> {
   return data ?? null;
 }
 
+function roleOf(profile: Profile | null): UserRole {
+  const role = profile?.role;
+  return role === "admin" || role === "scanner" ? role : "user";
+}
+
 function sessionPayload(
   tokens: SessionTokens,
   user: AuthUser,
-  role: "user" | "admin",
+  role: UserRole,
 ) {
   return {
     session: tokens,
@@ -405,7 +411,7 @@ auth.post("/verify-phone", async (c) => {
 
   const profile = await loadProfile(db, user.id);
   const tokens = await createSession(db, user.id, clientInfo(c));
-  const role = profile?.role === "admin" ? "admin" : "user";
+  const role = roleOf(profile);
   return c.json({
     ok: true,
     data: {
@@ -465,7 +471,7 @@ auth.post("/login", async (c) => {
   const tokens = await createSession(db, user.id, clientInfo(c));
   return c.json({
     ok: true,
-    data: sessionPayload(tokens, user, profile?.role === "admin" ? "admin" : "user"),
+    data: sessionPayload(tokens, user, roleOf(profile)),
   } as const);
 });
 
@@ -489,7 +495,7 @@ auth.post("/refresh", async (c) => {
   }
   return c.json({
     ok: true,
-    data: sessionPayload(refreshed.tokens, user, profile?.role === "admin" ? "admin" : "user"),
+    data: sessionPayload(refreshed.tokens, user, roleOf(profile)),
   } as const);
 });
 

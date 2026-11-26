@@ -13,6 +13,7 @@ import '../widgets/kiosk_scaffold.dart';
 import '../widgets/quantity_selector.dart';
 import '../widgets/zone_tile.dart';
 import 'payment_screen.dart';
+import 'rink_phone_screen.dart';
 
 /// Event detail (portrait): scrollable hero + zone picker, with the
 /// quantity/total/continue bar pinned at the bottom.
@@ -36,8 +37,13 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
   void _continue() {
     final order = TicketOrder(event: widget.event, zone: _selected!, quantity: _qty);
+    // A rink ticket needs the buyer's phone (LED board, SMS) before payment.
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => PaymentScreen(order: order)),
+      MaterialPageRoute(
+        builder: (_) => widget.event.isRink
+            ? RinkPhoneScreen(order: order)
+            : PaymentScreen(order: order),
+      ),
     );
   }
 
@@ -72,21 +78,31 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                   const SizedBox(height: 12),
                   Text(event.title, style: KioskText.display),
                   const SizedBox(height: 24),
-                  _infoRow(Icons.calendar_today_rounded, s.eventDate(event.startsAt)),
-                  const SizedBox(height: 14),
-                  _infoRow(Icons.place_outlined, event.venue),
+                  if (event.isRink) ...[
+                    _infoRow(Icons.timer_outlined, s.rinkDuration(event.rinkDurationMinutes ?? 0)),
+                    const SizedBox(height: 14),
+                    _infoRow(Icons.qr_code_scanner_rounded, s.rinkStartsAtScan),
+                    const SizedBox(height: 14),
+                    _infoRow(Icons.info_outline_rounded, s.rinkOvertimeNote),
+                  ] else ...[
+                    _infoRow(Icons.calendar_today_rounded, s.eventDate(event.startsAt)),
+                    const SizedBox(height: 14),
+                    _infoRow(Icons.place_outlined, event.venue),
+                  ],
                   const SizedBox(height: 22),
                   Text(event.description(lang), style: KioskText.body),
                   const SizedBox(height: 40),
                   // Zones
-                  Text(s.chooseZone, style: KioskText.h1),
+                  Text(event.isRink ? s.chooseSize : s.chooseZone, style: KioskText.h1),
                   const SizedBox(height: 8),
-                  Text(s.zonesHint, style: KioskText.body.copyWith(fontSize: 17)),
+                  Text(event.isRink ? s.sizesHint : s.zonesHint,
+                      style: KioskText.body.copyWith(fontSize: 17)),
                   const SizedBox(height: 22),
                   ...event.zones.map((z) => Padding(
                         padding: const EdgeInsets.only(bottom: 14),
                         child: ZoneTile(
                           zone: z,
+                          title: event.isRink ? s.sizeLabel(z.nameMn) : null,
                           selected: _selected?.id == z.id,
                           onTap: () => setState(() {
                             _selected = z;

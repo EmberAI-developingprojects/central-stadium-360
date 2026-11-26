@@ -22,6 +22,7 @@ import {
   verifyTicketSignature,
 } from "../lib/qpay-signature";
 import { withChannelFallback } from "../lib/event-channels";
+import { expireStaleRinkTickets, maskPhone } from "../lib/rink";
 
 const kiosk = new Hono<KioskEnv>();
 
@@ -59,12 +60,13 @@ kiosk.get("/events", async (c) => {
     );
   }
   await expireStalePendingOrders();
+  await expireStaleRinkTickets();
+  const EVENT_COLS = `id,title,description,status,start_time,image,thumbnail_url,kind,rink_duration_minutes,zones(${ZONE_COLS})`;
   const { data, error } = await withChannelFallback((withChannels) => {
     const q = admin
       .from("events")
-      .select(
-        `id,title,description,status,start_time,image,thumbnail_url,zones(${ZONE_COLS})`,
-      )
+      .select(EVENT_COLS)
+      .eq("kind", "event")
       .in("status", ["upcoming", "live"])
       .gte("start_time", kioskSaleCutoffIso());
     return (withChannels ? q.eq("show_on_kiosk", true) : q).order(
@@ -75,9 +77,20 @@ kiosk.get("/events", async (c) => {
   if (error) {
     return c.json({ ok: false, error: error.message } as const, 500);
   }
+  // A rink has no date: it is on sale for as long as the admin keeps it on.
+  const { data: rinks, error: rinkErr } = await admin
+    .from("events")
+    .select(EVENT_COLS)
+    .eq("kind", "rink")
+    .eq("show_on_kiosk", true)
+    .in("status", ["upcoming", "live"])
+    .order("created_at", { ascending: true });
+  if (rinkErr) {
+    return c.json({ ok: false, error: rinkErr.message } as const, 500);
+  }
 
   const events: KioskEvent[] = (
-    (data ?? []) as unknown as Array<
+    [...(rinks ?? []), ...(data ?? [])] as unknown as Array<
       Omit<KioskEvent, "zones"> & { zones: KioskZone[] }
     >
   ).map((e) => {
@@ -94,6 +107,8 @@ kiosk.get("/events", async (c) => {
       image: e.image,
       thumbnail_url: e.thumbnail_url,
       zones,
+      kind: e.kind ?? "event",
+      rink_duration_minutes: e.rink_duration_minutes ?? null,
     };
   });
   return c.json({ ok: true, data: events } as const);
@@ -119,7 +134,13 @@ type PrintJobOrderRow = {
   ebarimt_vat: number | string | null;
   ebarimt_city_tax: number | string | null;
   ebarimt_customer_tin: string | null;
-  events: { title: string | null; start_time: string | null } | null;
+  buyer_phone: string | null;
+  events: {
+    title: string | null;
+    start_time: string | null;
+    kind: string | null;
+    rink_duration_minutes: number | null;
+  } | null;
 };
 
 kiosk.get("/print-jobs", async (c) => {
@@ -135,7 +156,7 @@ kiosk.get("/print-jobs", async (c) => {
   let query = admin
     .from("venue_orders")
     .select(
-      "id,reference,status,items,total,payment_method,paid_at,kiosk_id,qpay_invoice_id,ebarimt_id,ebarimt_ddtd,ebarimt_qr_data,ebarimt_lottery,ebarimt_date,ebarimt_vat,ebarimt_city_tax,ebarimt_customer_tin,events:events(title,start_time)",
+      "id,reference,status,items,total,payment_method,paid_at,kiosk_id,qpay_invoice_id,ebarimt_id,ebarimt_ddtd,ebarimt_qr_data,ebarimt_lottery,ebarimt_date,ebarimt_vat,ebarimt_city_tax,ebarimt_customer_tin,buyer_phone,events:events(title,start_time,kind,rink_duration_minutes)",
     )
     .eq("status", "paid")
     .gte("paid_at", sinceIso)
@@ -219,6 +240,12 @@ kiosk.get("/print-jobs", async (c) => {
         o.ebarimt_city_tax == null ? null : Number(o.ebarimt_city_tax),
       // Present only on B2B sales; the bridge prints a Худ.авагч ТТД row.
       ebarimt_customer_tin: o.ebarimt_customer_tin,
+      // Rink: the slip shows the skating time and the buyer's masked phone,
+      // which is how they find themselves on the LED board.
+      kind: o.events?.kind ?? "event",
+      rink_duration_minutes: o.events?.rink_duration_minutes ?? null,
+      buyer_phone_masked:
+        o.events?.kind === "rink" ? maskPhone(o.buyer_phone) : null,
       tickets: (byOrder.get(o.id) ?? []).map((t) => ({
         code: t.code,
         zone_name_mn: zoneName.get(t.zone_id) ?? "",

@@ -19,6 +19,9 @@ import adminRecordings from "./routes/admin-recordings";
 import recordings from "./routes/recordings";
 import watch from "./routes/watch";
 import internalRecordings from "./routes/internal-recordings";
+import internalRink from "./routes/internal-rink";
+import scanner from "./routes/scanner";
+import adminRink from "./routes/admin-rink";
 
 const startedAt = Date.now();
 
@@ -26,7 +29,7 @@ export const app = new Hono().basePath("/api");
 
 const requestLogger = logger();
 app.use("*", async (c, next) => {
-  if (c.req.path === "/api/health") return next();
+  if (c.req.path === "/api/health" || process.env.NODE_ENV === "test") return next();
   return requestLogger(c, next);
 });
 app.use("*", compress());
@@ -93,11 +96,14 @@ app.route("/admin/uploads", adminUploads);
 app.route("/admin/tickets", adminTickets);
 app.route("/admin/recordings", adminRecordings);
 app.route("/admin/kiosk", adminKiosk);
+app.route("/admin/rink", adminRink);
+app.route("/scanner", scanner);
 app.route("/recordings", recordings);
 app.route("/content", publicContent);
 app.route("/history", publicHistory);
 app.route("/admin/history", adminHistory);
 app.route("/watch", watch);
+app.route("/internal/rink", internalRink);
 app.route("/internal", internalRecordings);
 
 app.get("/health", (c) => {

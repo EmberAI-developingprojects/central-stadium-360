@@ -18,12 +18,16 @@ class TicketOrder {
   /// Order reference, assigned by the backend on success. Mocked here.
   final String? reference;
 
+  /// Rink only: the buyer's 8-digit mobile, for the LED board and the SMS.
+  final String? buyerPhone;
+
   const TicketOrder({
     required this.event,
     required this.zone,
     required this.quantity,
     this.method,
     this.reference,
+    this.buyerPhone,
   });
 
   int get total => zone.price * quantity;
@@ -32,6 +36,7 @@ class TicketOrder {
     int? quantity,
     PaymentMethod? method,
     String? reference,
+    String? buyerPhone,
   }) {
     return TicketOrder(
       event: event,
@@ -39,6 +44,7 @@ class TicketOrder {
       quantity: quantity ?? this.quantity,
       method: method ?? this.method,
       reference: reference ?? this.reference,
+      buyerPhone: buyerPhone ?? this.buyerPhone,
     );
   }
 }

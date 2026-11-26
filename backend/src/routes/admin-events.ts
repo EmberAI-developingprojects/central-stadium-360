@@ -111,6 +111,8 @@ adminEvents.get("/", async (c) => {
       admin
         .from("events")
         .select(`${selectCols(withChannels)},recordings(count)`)
+        // Rinks are managed on their own page (admin-rink).
+        .eq("kind", "event")
         .order("start_time", { ascending: true }),
     );
   let { data, error } = await listAll();

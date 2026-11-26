@@ -8,7 +8,7 @@ export interface HealthResponse {
   uptime: number;
 }
 
-export type UserRole = "user" | "admin";
+export type UserRole = "user" | "admin" | "scanner";
 export type EventStatus =
   | "upcoming"
   | "live"
@@ -324,7 +324,16 @@ export interface PaymentStatus {
 }
 
 export type PaymentMethod = "qpay" | "card";
-export type VenueTicketStatus = "valid" | "used" | "void";
+export type VenueTicketStatus =
+  | "valid"
+  | "used"
+  | "void"
+  // ice rink sessions (migration 0034)
+  | "active"
+  | "overdue"
+  | "done";
+
+export type EventKind = "event" | "rink";
 
 export interface DbZone {
   id: string;
@@ -410,6 +419,9 @@ export interface KioskEvent {
   image: string | null;
   thumbnail_url: string | null;
   zones: KioskZone[];
+  kind: EventKind;
+  /** Rink only: minutes of skating, counted from the first scan. */
+  rink_duration_minutes: number | null;
 }
 
 export interface KioskOrderItemInput {
@@ -607,4 +619,116 @@ export interface AdminScannedTicket {
 export interface AdminScannedTicketsPage {
   rows: AdminScannedTicket[];
   total: number;
+}
+
+// ---------------------------------------------------------------- ice rink
+
+export type RinkScanVerdict =
+  | "started"
+  | "just_started"
+  | "finished"
+  | "overdue"
+  | "already_done"
+  | "expired"
+  | "voided"
+  | "not_found"
+  | "not_rink";
+
+export interface RinkTicketView {
+  code: string;
+  status: VenueTicketStatus;
+  size: string;
+  phone_masked: string | null;
+  event_title: string;
+  duration_minutes: number;
+  started_at: string | null;
+  ends_at: string | null;
+  ended_at: string | null;
+  /** Whole minutes left (negative once late); null before the first scan. */
+  remaining_minutes: number | null;
+  overtime_minutes: number | null;
+  overtime_amount: number | null;
+  overtime_paid_via: "qpay" | "cash" | null;
+  overtime_paid_at: string | null;
+}
+
+export interface RinkScanResult {
+  verdict: RinkScanVerdict;
+  code: string;
+  ticket: RinkTicketView | null;
+}
+
+export interface RinkOvertimeInvoice {
+  code: string;
+  amount: number;
+  qr_text: string;
+  urls: QPayInvoiceLink[];
+}
+
+export interface RinkBoardRow {
+  phone_masked: string;
+  size: string;
+  /** warning: ≤5 minutes left; late: past the end and still on the ice. */
+  status: "on_time" | "warning" | "late";
+  ends_at: string;
+  remaining_minutes: number;
+}
+
+export interface RinkBoard {
+  server_time: string;
+  rows: RinkBoardRow[];
+}
+
+export interface RinkSizeInput {
+  size: string;
+  count: number;
+}
+
+export interface RinkSize {
+  zone_id: string;
+  size: string;
+  count: number;
+  /** Pairs bought and not yet returned. */
+  out: number;
+  available: number;
+}
+
+export interface AdminRink {
+  id: string;
+  title: string;
+  price: number;
+  duration_minutes: number;
+  overtime_per_minute: number;
+  on_sale: boolean;
+  sizes: RinkSize[];
+  created_at: string;
+}
+
+export interface AdminRinkInput {
+  title: string;
+  price: number;
+  duration_minutes: number;
+  overtime_per_minute: number;
+  on_sale?: boolean;
+  sizes: RinkSizeInput[];
+}
+
+export interface AdminRinkSession extends RinkTicketView {
+  phone: string | null;
+  paid_at: string | null;
+}
+
+export interface AdminRinkLive {
+  server_time: string;
+  active: AdminRinkSession[];
+  overdue: AdminRinkSession[];
+  /** Today's (Ulaanbaatar) finished sessions, newest first. */
+  done_today: AdminRinkSession[];
+  totals: {
+    sold_today: number;
+    on_ice: number;
+    overdue: number;
+    overtime_paid_qpay: number;
+    overtime_paid_cash: number;
+  };
 }

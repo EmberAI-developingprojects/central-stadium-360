@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, type ReactNode } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { useAuth, RequireAdmin } from "./auth";
+import { useAuth, RequireAdmin, RequireStaff, homePathFor } from "./auth";
 import Home from "./pages/Home";
 
 const Events = lazy(() => import("./pages/Events"));
@@ -48,6 +48,10 @@ const AdminScannedTickets = lazy(
   () => import("./admin/pages/ScannedTickets"),
 );
 const Gate = lazy(() => import("./pages/Gate/Gate"));
+const AdminRink = lazy(() => import("./admin/pages/Rink"));
+const ScannerHome = lazy(() => import("./pages/Rink/ScannerHome"));
+const RinkScan = lazy(() => import("./pages/Rink/RinkScan"));
+const RinkBoard = lazy(() => import("./pages/Rink/RinkBoard"));
 
 function RouteFallback() {
   return (
@@ -87,9 +91,7 @@ function ScrollToTop() {
 function GuestOnly({ children }: { children: ReactNode }) {
   const { session } = useAuth();
   if (session && session.identifier) {
-    return (
-      <Navigate to={session.role === "admin" ? "/admin" : "/watch"} replace />
-    );
+    return <Navigate to={homePathFor(session.role)} replace />;
   }
   return <>{children}</>;
 }
@@ -178,6 +180,9 @@ export default function App() {
           <Route path="/settings" element={<Settings />} />
           <Route path="/orders/:code" element={<OrderDetail />} />
           <Route path="/gate" element={<Gate />} />
+          <Route path="/scanner" element={<RequireStaff><ScannerHome /></RequireStaff>} />
+          <Route path="/scanner/scan" element={<RequireStaff><RinkScan /></RequireStaff>} />
+          <Route path="/scanner/board" element={<RequireStaff><RinkBoard /></RequireStaff>} />
           <Route
             path="/admin"
             element={
@@ -195,6 +200,7 @@ export default function App() {
             <Route path="orders" element={<OrdersList />} />
             <Route path="orders/:code" element={<OrderView />} />
             <Route path="kiosk" element={<Kiosk />} />
+            <Route path="rink" element={<AdminRink />} />
             <Route path="scan" element={<AdminScan />} />
             <Route path="scanned" element={<AdminScannedTickets />} />
             <Route path="users" element={<UsersList />} />

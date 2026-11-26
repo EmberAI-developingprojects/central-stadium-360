@@ -17,7 +17,7 @@ adminUsers.use("*", async (c, next) => requireAdmin(c, next));
 
 const SELECT_COLS = "id,phone,email,full_name,role,created_at,deleted_at";
 
-const roleSchema = z.object({ role: z.enum(["user", "admin"]) });
+const roleSchema = z.object({ role: z.enum(["user", "admin", "scanner"]) });
 
 function isSelf(c: { get: (k: "user") => { id: string } }, targetId: string) {
   return c.get("user").id === targetId;
@@ -104,7 +104,7 @@ adminUsers.patch("/:id/role", async (c) => {
     );
   }
 
-  if (parsed.data.role === "user") {
+  if (parsed.data.role !== "admin") {
     const { count, error: cntErr } = await admin
       .from("users")
       .select("id", { count: "exact", head: true })
@@ -138,7 +138,7 @@ const createUserSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
   full_name: z.string().optional(),
-  role: z.enum(["user", "admin"]).optional().default("user"),
+  role: z.enum(["user", "admin", "scanner"]).optional().default("user"),
 });
 
 adminUsers.post("/", async (c) => {

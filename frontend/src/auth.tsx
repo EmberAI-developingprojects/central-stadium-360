@@ -370,10 +370,42 @@ export function useRequireAdmin(): Session | null {
         replace: true,
       });
     } else if (session.role !== "admin") {
-      navigate("/watch", { replace: true });
+      navigate(homePathFor(session.role), { replace: true });
     }
   }, [session, loading, navigate, loc.pathname]);
   return session && session.role === "admin" ? session : null;
+}
+
+/** Where a signed-in user lands when no `next` page was asked for. */
+export function homePathFor(role: UserRole): string {
+  if (role === "admin") return "/admin";
+  if (role === "scanner") return "/scanner";
+  return "/watch";
+}
+
+/** Rink staff: the scanner role, or an admin. */
+export function useRequireStaff(): Session | null {
+  const { session, loading } = useAuth();
+  const navigate = useNavigate();
+  const loc = useLocation();
+  const allowed = session?.role === "admin" || session?.role === "scanner";
+  useEffect(() => {
+    if (loading) return;
+    if (!session) {
+      navigate(`/login?next=${encodeURIComponent(loc.pathname)}`, {
+        replace: true,
+      });
+    } else if (!allowed) {
+      navigate(homePathFor(session.role), { replace: true });
+    }
+  }, [session, loading, allowed, navigate, loc.pathname]);
+  return allowed ? session : null;
+}
+
+export function RequireStaff({ children }: { children: ReactNode }) {
+  const session = useRequireStaff();
+  if (!session) return null;
+  return <>{children}</>;
 }
 
 export function RequireAdmin({ children }: { children: ReactNode }) {

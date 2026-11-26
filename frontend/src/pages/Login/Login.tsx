@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useAuth } from "../../auth";
+import { homePathFor, useAuth } from "../../auth";
 import {
   BACK_CLS,
   BTN_RESET_STYLE as BACK_BTN_STYLE,
@@ -89,11 +89,7 @@ export default function Login() {
     if (!awaitingSession) return;
     if (loading || !session) return;
     const nextParam = params.get("next");
-    const dest = nextParam
-      ? safeNext(nextParam)
-      : session.role === "admin"
-        ? "/admin"
-        : "/watch";
+    const dest = nextParam ? safeNext(nextParam) : homePathFor(session.role);
     navigate(dest, { replace: true });
   }, [awaitingSession, session, loading, params, navigate]);
 
