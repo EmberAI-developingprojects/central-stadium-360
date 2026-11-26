@@ -54,3 +54,7 @@ kiosk_deploy/backend/printed-codes.json
 # Kiosk scratch: local launch tests and hand-made script backups
 kiosk_deploy/_test_*.bat
 *.ps1.bak
+
+# Local notes and plans (not shared)
+/docs/
+/CLAUDE.md
